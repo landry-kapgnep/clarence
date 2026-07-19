@@ -29152,18 +29152,15 @@ function activeEntities() {
   const sel = selectActive(autoEntities, [...manualEntities, ...forced], removedKeys);
   return filterByRules(sel, { disabledTypes, keepValues: parseLines($("alwaysKeep")?.value) });
 }
-function renderTypeToggles(types) {
-  const box = $("typeToggles");
+function renderTypeChips(boxId, disabledSet) {
+  const box = $(boxId);
   if (!box) return;
-  if (!types.length) {
-    box.innerHTML = '<span class="hint">Lance une analyse pour voir les types d\xE9tect\xE9s.</span>';
-    return;
-  }
-  box.innerHTML = types.map((t) => {
-    const off = disabledTypes.has(t);
-    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t}" ${off ? "" : "checked"}>${esc(TYPE_DISPLAY[t] || t)}</label>`;
+  box.innerHTML = Object.entries(TYPE_DISPLAY).filter(([t]) => t !== "PERSONNALISE").map(([t, label]) => {
+    const off = disabledSet.has(t);
+    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t}" ${off ? "" : "checked"}>${esc(label)}</label>`;
   }).join("");
 }
+renderTypeChips("typeToggles", disabledTypes);
 function annotateHTML(text, entities) {
   let html = "";
   let cursor = 0;
@@ -29220,7 +29217,7 @@ function refreshOverlayIfOpen() {
 function render() {
   const entities = activeEntities();
   $("results").hidden = false;
-  renderTypeToggles([...new Set(autoEntities.map((e) => e.type))]);
+  renderTypeChips("typeToggles", disabledTypes);
   const annPreview = clipToLimit(currentText, entities, PREVIEW_LIMIT);
   $("annotated").innerHTML = annotateHTML(annPreview.text, annPreview.entities) + (annPreview.truncated ? "\u2026" : "");
   $("annotatedMoreBtn").hidden = !annPreview.truncated;
@@ -29335,7 +29332,8 @@ $("typeToggles")?.addEventListener("change", (ev) => {
   if (!cb) return;
   if (cb.checked) disabledTypes.delete(cb.dataset.type);
   else disabledTypes.add(cb.dataset.type);
-  render();
+  if (currentText) render();
+  else renderTypeChips("typeToggles", disabledTypes);
 });
 $("maskSelBtn").addEventListener("click", maskSelection);
 $("copyBtn").addEventListener("click", copyClean);
@@ -29400,21 +29398,13 @@ var chosenFile = null;
 var fileOutBlob = null;
 var fileOutName = "";
 var fileDisabledTypes = /* @__PURE__ */ new Set();
-function renderFileTypeToggles() {
-  const box = $("fileTypeToggles");
-  if (!box) return;
-  box.innerHTML = Object.entries(TYPE_DISPLAY).filter(([t]) => t !== "PERSONNALISE").map(([t, label]) => {
-    const off = fileDisabledTypes.has(t);
-    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t}" ${off ? "" : "checked"}>${esc(label)}</label>`;
-  }).join("");
-}
-renderFileTypeToggles();
+renderTypeChips("fileTypeToggles", fileDisabledTypes);
 $("fileTypeToggles")?.addEventListener("change", (ev) => {
   const cb = ev.target.closest("input[data-type]");
   if (!cb) return;
   if (cb.checked) fileDisabledTypes.delete(cb.dataset.type);
   else fileDisabledTypes.add(cb.dataset.type);
-  renderFileTypeToggles();
+  renderTypeChips("fileTypeToggles", fileDisabledTypes);
 });
 function fileSetStatus(msg, cls = "") {
   $("fileStatus").textContent = msg;

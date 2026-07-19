@@ -92,21 +92,21 @@ function activeEntities() {
   return filterByRules(sel, { disabledTypes, keepValues: parseLines($('alwaysKeep')?.value) });
 }
 
-// Puces de types : décocher un type le laisse visible (non masqué).
-// `types` vient de l'analyse texte OU du dernier traitement de fichier —
-// le panneau « Personnaliser » est partagé entre les deux modes.
-function renderTypeToggles(types) {
-  const box = $('typeToggles');
+// Puces de types : décocher un type le laisse visible (non masqué). Rendues de
+// façon identique dans les deux modes — TOUS les types connus, tout de suite,
+// sans attendre une analyse (décocher un type absent du texte est sans effet).
+// `disabledSet` : le Set propre au mode (disabledTypes / fileDisabledTypes).
+function renderTypeChips(boxId, disabledSet) {
+  const box = $(boxId);
   if (!box) return;
-  if (!types.length) {
-    box.innerHTML = '<span class="hint">Lance une analyse pour voir les types détectés.</span>';
-    return;
-  }
-  box.innerHTML = types.map(t => {
-    const off = disabledTypes.has(t);
-    return `<label class="type-chip ${off ? 'off' : ''}"><input type="checkbox" data-type="${t}" ${off ? '' : 'checked'}>${esc(TYPE_DISPLAY[t] || t)}</label>`;
-  }).join('');
+  box.innerHTML = Object.entries(TYPE_DISPLAY)
+    .filter(([t]) => t !== 'PERSONNALISE') // les masques manuels/forcés sont intouchables
+    .map(([t, label]) => {
+      const off = disabledSet.has(t);
+      return `<label class="type-chip ${off ? 'off' : ''}"><input type="checkbox" data-type="${t}" ${off ? '' : 'checked'}>${esc(label)}</label>`;
+    }).join('');
 }
+renderTypeChips('typeToggles', disabledTypes); // visibles dès l'ouverture, avant toute analyse
 
 function annotateHTML(text, entities) {
   let html = '';
@@ -174,7 +174,7 @@ function refreshOverlayIfOpen() {
 function render() {
   const entities = activeEntities();
   $('results').hidden = false;
-  renderTypeToggles([...new Set(autoEntities.map(e => e.type))]);
+  renderTypeChips('typeToggles', disabledTypes);
 
   const annPreview = clipToLimit(currentText, entities, PREVIEW_LIMIT);
   $('annotated').innerHTML = annotateHTML(annPreview.text, annPreview.entities) + (annPreview.truncated ? '…' : '');
@@ -303,7 +303,10 @@ $('typeToggles')?.addEventListener('change', ev => {
   if (!cb) return;
   if (cb.checked) disabledTypes.delete(cb.dataset.type);
   else disabledTypes.add(cb.dataset.type);
-  render();
+  // Les puces sont visibles avant toute analyse : ne re-masquer que si un
+  // texte a déjà été analysé, sinon juste refléter l'état coché/décoché.
+  if (currentText) render();
+  else renderTypeChips('typeToggles', disabledTypes);
 });
 $('maskSelBtn').addEventListener('click', maskSelection);
 $('copyBtn').addEventListener('click', copyClean);
@@ -380,27 +383,16 @@ let fileOutBlob = null;
 let fileOutName = '';
 let fileDisabledTypes = new Set(); // types que l'utilisateur exclut du masquage fichier
 
-// Contrairement au mode texte (puces générées après analyse), le flux fichier
-// est en un seul clic : on affiche donc TOUS les types connus statiquement,
-// cochés par défaut, pour régler AVANT de traiter. Re-traiter = re-cliquer.
-function renderFileTypeToggles() {
-  const box = $('fileTypeToggles');
-  if (!box) return;
-  box.innerHTML = Object.entries(TYPE_DISPLAY)
-    .filter(([t]) => t !== 'PERSONNALISE') // les masques manuels/forcés sont intouchables
-    .map(([t, label]) => {
-      const off = fileDisabledTypes.has(t);
-      return `<label class="type-chip ${off ? 'off' : ''}"><input type="checkbox" data-type="${t}" ${off ? '' : 'checked'}>${esc(label)}</label>`;
-    }).join('');
-}
-renderFileTypeToggles();
+// Puces du mode Fichier : mêmes puces statiques (fonction partagée), cochées
+// par défaut, réglables AVANT de traiter (le flux fichier est en un clic).
+renderTypeChips('fileTypeToggles', fileDisabledTypes);
 
 $('fileTypeToggles')?.addEventListener('change', ev => {
   const cb = ev.target.closest('input[data-type]');
   if (!cb) return;
   if (cb.checked) fileDisabledTypes.delete(cb.dataset.type);
   else fileDisabledTypes.add(cb.dataset.type);
-  renderFileTypeToggles();
+  renderTypeChips('fileTypeToggles', fileDisabledTypes);
 });
 
 function fileSetStatus(msg, cls = '') {
