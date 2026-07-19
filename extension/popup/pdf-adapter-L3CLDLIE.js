@@ -31638,6 +31638,9 @@ globalThis.pdfjsLib = {
 };
 
 // src/files/pdf-adapter.js
+if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
+  GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("vendor/pdf.worker.min.mjs");
+}
 var PARAGRAPH_GAP_RATIO = 1.6;
 var HEADING_SIZE_RATIO = 1.3;
 function fontSizeOf(item) {

@@ -4,10 +4,12 @@
 // redistribution sur des runs nécessaire) — le seul vrai risque est la
 // fidélité de l'extraction, pas la réécriture.
 //
-// pdfjs-dist tourne sans Worker réel : GlobalWorkerOptions.workerSrc n'est
-// jamais configuré, donc la lib retombe sur son mode "fake worker" (même
-// thread) — même choix que numThreads=1 pour le NER, pour les mêmes raisons
-// CSP MV3. Validé : le bundle esbuild ne contient ni eval() ni new Function().
+// Worker pdfjs : en NAVIGATEUR, la v6 exige GlobalWorkerOptions.workerSrc
+// (aucun repli automatique — vérifié en vrai Chrome, l'extension plantait) ;
+// en Node (tests), elle s'en passe toute seule. On pointe donc vers le worker
+// embarqué dans vendor/ (copié par build.mjs, comme les .wasm du NER)
+// uniquement quand l'API d'extension existe. Local, CSP 'self', zéro code
+// distant. Validé : le bundle esbuild ne contient ni eval() ni new Function().
 //
 // Limites assumées et documentées, jamais silencieuses :
 // - PDF scanné (sans couche texte) → aucune unité extraite ; le garde-fou
@@ -19,6 +21,10 @@
 //   la largeur de page mélangerait l'ordre de lecture des colonnes. Hors
 //   scope v1, comme les zones de texte/notes pour DOCX à l'origine.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('vendor/pdf.worker.min.mjs');
+}
 
 // Un écart vertical supérieur à ce multiple de la taille de police de la
 // ligne précédente marque un nouveau paragraphe (ligne vide en Markdown) ;

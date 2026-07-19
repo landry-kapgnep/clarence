@@ -29396,7 +29396,7 @@ var FILE_TYPES = {
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-3USI3OQ3.js"), outExt: ".md" }
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-L3CLDLIE.js"), outExt: ".md" }
 };
 var chosenFile = null;
 var fileOutBlob = null;

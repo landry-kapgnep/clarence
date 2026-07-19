@@ -29,4 +29,8 @@ mkdirSync('extension/vendor', { recursive: true });
 for (const f of ['ort-wasm.wasm', 'ort-wasm-simd.wasm']) {
   cpSync(`node_modules/@xenova/transformers/dist/${f}`, `extension/vendor/${f}`);
 }
+// Worker pdfjs : exigé en navigateur (v6 refuse de démarrer sans workerSrc —
+// pas de repli automatique, contrairement à Node). Servi depuis vendor/ comme
+// les .wasm : local, CSP 'self', jamais de code distant (MV3).
+cpSync('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs', 'extension/vendor/pdf.worker.min.mjs');
 console.log('Build OK → extension/');
