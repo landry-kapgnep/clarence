@@ -1,0 +1,248 @@
+// Passe 2 — NER local. Regroupement WordPiece + relocalisation portés du
+// prototype validé (ce modèle ne renvoie pas d'offsets fiables).
+//
+// IMPORTANT — découpage en fenêtres : BERT ne traite que ~512 tokens. Sans
+// découpage, tout ce qui dépasse (~1 500-2 000 caractères FR) serait ignoré
+// SILENCIEUSEMENT — le pire mode de défaillance pour un anonymiseur. On
+// découpe donc en fenêtres avec recouvrement, et on fusionne les résultats.
+
+export const NER_MODEL = 'Xenova/bert-base-multilingual-cased-ner-hrl';
+
+export const CHUNK_SIZE = 1000;   // caractères ≈ 250-400 tokens FR, marge large sous 512
+export const CHUNK_OVERLAP = 120; // évite de trancher une entité à la frontière
+
+// Mots-outils français qu'on ne capitalise jamais avant de passer le texte au
+// NER. Le modèle est "cased" : un nom en minuscule (ex. "je m'appelle jean
+// dupont") est hors distribution et souvent ignoré. On aide le modèle en
+// capitalisant tout mot minuscule candidat à un nom propre, SAUF ces mots-outils
+// — sinon toute la phrase serait capitalisée et le signal casse deviendrait
+// inutile. Sur-capitaliser un mot commun (absent de cette liste) peut produire
+// un faux positif, mais un faux positif se retire d'un clic ; un nom raté est
+// une fuite silencieuse — voir cadrage-mvp.md §5.
+const STOPWORDS_FR = new Set([
+  'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'ce', 'cet', 'cette', 'ces',
+  'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son', 'sa', 'ses',
+  'notre', 'nos', 'votre', 'vos', 'leur', 'leurs', 'au', 'aux', 'l',
+  'à', 'dans', 'en', 'sur', 'sous', 'avec', 'sans', 'pour', 'par', 'chez', 'vers', 'entre',
+  'depuis', 'pendant', 'avant', 'après', 'malgré', 'selon', 'jusque', 'jusqu', 'contre', 'envers', 'via',
+  'et', 'ou', 'mais', 'donc', 'or', 'ni', 'car', 'que', 'qui', 'quoi', 'dont', 'où',
+  'si', 'comme', 'quand', 'lorsque', 'puisque', 'tandis',
+  'je', 'tu', 'il', 'elle', 'on', 'nous', 'vous', 'ils', 'elles',
+  'moi', 'toi', 'lui', 'eux', 'se', 'me', 'te', 'y',
+  'celui', 'celle', 'ceux', 'celles',
+  'est', 'sont', 'suis', 'es', 'était', 'étaient', 'sera', 'seront', 'serait', 'soit',
+  'ai', 'as', 'a', 'avons', 'avez', 'ont', 'avait', 'avaient', 'aura', 'auront', 'eu',
+  'fait', 'faites', 'faisons', 'font', 'faisait', 'dit', 'dites', 'disons', 'disent',
+  'va', 'vais', 'vas', 'allons', 'allez', 'vont', 'allait', 'allaient',
+  'peut', 'peux', 'pouvons', 'pouvez', 'peuvent', 'pouvait', 'pu',
+  'doit', 'dois', 'devons', 'devez', 'doivent', 'devait',
+  'veut', 'veux', 'voulons', 'voulez', 'veulent', 'voulait',
+  'très', 'bien', 'plus', 'moins', 'aussi', 'encore', 'déjà', 'toujours', 'jamais', 'souvent', 'parfois',
+  'ici', 'là', 'ainsi', 'alors', 'ensuite', 'enfin', 'aujourd', 'hui', 'hier', 'demain', 'maintenant',
+  'oui', 'non', 'ne', 'pas', 'peu', 'trop', 'tout', 'tous', 'toute', 'toutes',
+  'bonjour', 'bonsoir', 'merci', 'cordialement', 'svp'
+]);
+
+// Capitalise chaque mot entièrement minuscule qui n'est pas un mot-outil.
+// Préserve la longueur exacte de la chaîne (les offsets restent valides) ;
+// un mot déjà capitalisé (même partiellement) n'est jamais modifié.
+export function boostCase(text) {
+  return text.split(/(\p{L}+)/u).map(tok => {
+    if (!/^\p{L}+$/u.test(tok)) return tok;
+    const lower = tok.toLowerCase();
+    if (tok !== lower || tok.length < 2 || STOPWORDS_FR.has(lower)) return tok;
+    return tok[0].toUpperCase() + tok.slice(1);
+  }).join('');
+}
+
+// Découpe en fenêtres { offset, text } couvrant tout le texte, coupées de
+// préférence sur un séparateur, avec recouvrement entre fenêtres.
+export function chunkText(text) {
+  if (text.length <= CHUNK_SIZE) return [{ offset: 0, text }];
+  const chunks = [];
+  let pos = 0;
+  while (pos < text.length) {
+    let end = Math.min(pos + CHUNK_SIZE, text.length);
+    if (end < text.length) {
+      const window = text.slice(pos, end);
+      const lastBreak = Math.max(
+        window.lastIndexOf('\n'),
+        window.lastIndexOf('. '),
+        window.lastIndexOf(' ')
+      );
+      if (lastBreak > CHUNK_SIZE * 0.5) end = pos + lastBreak + 1;
+    }
+    chunks.push({ offset: pos, text: text.slice(pos, end) });
+    if (end >= text.length) break;
+    pos = end - CHUNK_OVERLAP;
+  }
+  return chunks;
+}
+
+// Regroupe les sous-tokens WordPiece en entités selon le schéma B-/I-.
+export function groupTokens(raw) {
+  const groups = [];
+  let current = null;
+  for (const tok of raw) {
+    if (!tok.entity || tok.entity === 'O') { current = null; continue; }
+    const type = tok.entity.replace(/^[BI]-/, '');
+    const isSubword = tok.word.startsWith('##');
+    const piece = isSubword ? tok.word.slice(2) : tok.word;
+    const isNewEntity = tok.entity.startsWith('B-') || !current;
+    if (isNewEntity) {
+      if (current) groups.push(current);
+      current = { type, text: piece, minScore: tok.score };
+    } else {
+      current.text += isSubword ? piece : ' ' + piece;
+      current.minScore = Math.min(current.minScore, tok.score);
+    }
+  }
+  if (current) groups.push(current);
+  return groups;
+}
+
+// Relocalise chaque entité reconstruite dans le texte d'origine (curseur
+// avançant, gère les répétitions).
+export function locateGroups(text, groups) {
+  let cursor = 0;
+  const entities = [];
+  for (const g of groups) {
+    // Filtre anti-bruit : une entité d'un seul caractère est toujours un
+    // fragment (ex. "R" de "Référent") ; un masque d'une lettre ne protège
+    // rien — on écarte. Validé sur les fixtures.
+    if (g.text.length < 2) continue;
+    const idx = text.indexOf(g.text, cursor);
+    if (idx === -1) continue; // reconstruction imparfaite : ignorer plutôt que mal positionner
+    entities.push({
+      type: g.type,
+      value: g.text,
+      start: idx,
+      end: idx + g.text.length,
+      source: 'ner',
+      score: g.minScore,
+      validated: 'n/a'
+    });
+    cursor = idx + g.text.length;
+  }
+  return entities;
+}
+
+// Sous ce seuil, trop de bruit : la casse boostée (boostCase) fait parfois
+// dériver un mot-outil vers un B-PER isolé et peu sûr (ex. "habite" → "Ha" à
+// 52%), très en dessous de la confiance des vraies entités (>95% en pratique).
+const MIN_SCORE = 0.6;
+
+// Le pipeline est injecté (bundlé dans l'extension, simulé dans les tests).
+//
+// Double passe par fenêtre : texte naturel (comportement historique, intact)
+// ET texte boosté (boostCase, pour les noms écrits sans majuscule). Aucune
+// des deux passes n'est prioritaire a priori sur l'autre — on a vérifié
+// empiriquement les deux sens de défaillance :
+//  - booster un texte déjà bien casé peut noyer le signal et faire perdre
+//    une entité que le modèle trouvait très bien tout seul (ex. "Lefèvre
+//    Consulting"/"Lyon" disparus une fois tout le paragraphe capitalisé) ;
+//  - à l'inverse, sur un nom à l'orthographe inhabituelle, la passe
+//    naturelle peut ne capturer qu'un fragment tronqué avec une confiance
+//    décente (ex. "lefev" à 92% sur "jean lefevbre") alors que la passe
+//    boostée reconstruit l'entité complète à 100% ("Jean Lefevbre").
+// Sur un chevauchement entre les deux passes, on garde donc le span le plus
+// long (le plus complet), la confiance ne départageant qu'à égalité de
+// longueur — même logique que resolveOverlaps dans merge.js pour le regex.
+export async function detectNER(text, nerPipeline) {
+  if (!nerPipeline) return [];
+  const all = [];
+  for (const { offset, text: chunk } of chunkText(text)) {
+    // Le filtre de confiance s'applique AVANT le calcul des chevauchements :
+    // un fragment bruité (score très faible) ne doit pas pouvoir bloquer une
+    // détection solide de l'autre passe puis disparaître lui-même au filtre
+    // final — sinon la position ne récupère plus AUCUNE entité.
+    const natural = locateGroups(chunk, groupTokens(await nerPipeline(chunk)))
+      .filter(e => e.score >= MIN_SCORE);
+
+    const boosted = boostCase(chunk);
+    const boostedEntities = locateGroups(boosted, groupTokens(await nerPipeline(boosted)))
+      .map(e => ({ ...e, value: chunk.slice(e.start, e.end) }))
+      .filter(e => e.score >= MIN_SCORE);
+
+    const combined = [...natural, ...boostedEntities].sort((a, b) =>
+      a.start - b.start ||
+      (b.end - b.start) - (a.end - a.start) ||
+      b.score - a.score
+    );
+    const kept = [];
+    for (const e of combined) {
+      if (kept.some(k => e.start < k.end && e.end > k.start)) continue;
+      kept.push(e);
+    }
+
+    for (const e of kept) {
+      all.push({ ...e, start: e.start + offset, end: e.end + offset });
+    }
+  }
+  // Recalage des entités PER sur les frontières de mot. Le modèle cased produit
+  // deux défauts qui laissent fuir une partie du nom :
+  //  - reconstruction tronquée EN PLEIN MOT ("mandine" pour "Amandine" →
+  //    "A[PERSONNE]") : on étend vers la gauche jusqu'au début du mot ;
+  //  - arrêt au 1er élément d'un composé à trait d'union ("Antoine" dans
+  //    "Marc-Antoine", "ROUSSEAU" sans "-LEFEBVRE") : on étend des deux côtés à
+  //    travers les traits d'union vers les mots capitalisés adjacents.
+  // Déterministe et sûr : n'étend qu'une détection PER existante (jamais de
+  // franchissement d'espace), et on rogne les tirets aux extrémités.
+  const nameChar = /[A-Za-zÀ-ÿ'’-]/;
+  for (const e of all) {
+    if (e.type !== 'PER') continue;
+    let { start, end } = e;
+    while (start > 0 && nameChar.test(text[start - 1])) start--;
+    while (end < text.length && nameChar.test(text[end])) end++;
+    while (start < end && text[start] === '-') start++;
+    while (end > start && text[end - 1] === '-') end--;
+    if (start !== e.start || end !== e.end) {
+      e.start = start; e.end = end; e.value = text.slice(start, end);
+    }
+  }
+
+  // Pontage de noms à particules / patronymes ratés — le NER cased échoue sur
+  // les noms nobiliaires ("Sébastien De La Villardière" : "Villardière" pris
+  // pour un LIEU, le prénom + particules laissés en clair) et sur les patronymes
+  // en majuscules séparés du prénom ("Amandine" + "ROUSSEAU-LEFEBVRE"). On
+  // recolle de façon déterministe, TOUJOURS ancré sur une détection existante
+  // (jamais de nom créé de zéro). Tradeoff assumé (priorité zéro-fuite) : peut
+  // sur-masquer un lieu précédé d'un mot capitalisé + particule ("Voyage De La
+  // Rochelle"), cas rare et sans gravité (sur-masquage, pas fuite).
+  const PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['’]|[Ll]['’]|von|van|[Dd]a|[Dd]i)";
+  const CAPWORD = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*";
+  const ALLCAPS = "[A-ZÀ-Ü]{2,}(?:[-'’][A-ZÀ-Ü]+)*";
+  const fwdParticle = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
+  const fwdAllCaps = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-zÀ-ÿ])`);
+  const backParticle = new RegExp(`(${CAPWORD}(?:\\s+${PARTICLE})+\\s+)$`);
+  for (const e of all) {
+    // (a) extension AVANT depuis un PER : " De La Rochefoucauld", " ROUSSEAU".
+    if (e.type === 'PER') {
+      let m;
+      while ((m = fwdParticle.exec(text.slice(e.end))) || (m = fwdAllCaps.exec(text.slice(e.end)))) {
+        e.end += m[0].length;
+        e.value = text.slice(e.start, e.end);
+      }
+    }
+    // (b) un LIEU/MISC précédé de "Prénom + particules" est en fait un
+    // patronyme : on l'absorbe en arrière et on le re-type en PER.
+    if (e.type === 'LOC' || e.type === 'MISC') {
+      const m = backParticle.exec(text.slice(0, e.start));
+      if (m) {
+        e.start -= m[1].length;
+        e.value = text.slice(e.start, e.end);
+        e.type = 'PER';
+      }
+    }
+  }
+  // Dédoublonnage des zones de recouvrement (mêmes bornes, même type).
+  const seen = new Set();
+  return all
+    .filter(e => {
+      const k = `${e.start}:${e.end}:${e.type}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .sort((a, b) => a.start - b.start);
+}

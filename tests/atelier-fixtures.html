@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clarence — Fixtures de référence</title>
+<style>
+  :root {
+    --paper: #EDE6D3; --paper-dim: #E2D8BF; --ink: #2B2621; --ink-soft: #5A4F42;
+    --seal: #7B2D26; --moss: #4B5A45; --gold: #B08D57; --line: rgba(43,38,33,0.14);
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:system-ui,sans-serif; line-height:1.5; }
+  .wrap { max-width:880px; margin:0 auto; padding:40px 24px 96px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  .lede { color:var(--ink-soft); font-size:14px; margin:0 0 28px; }
+  .fixture-btns { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  button { font-weight:600; font-size:14px; border:none; border-radius:5px; padding:10px 18px; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-primary { background:var(--seal); color:var(--paper); }
+  .btn-ghost { background:transparent; border:1px solid var(--line); color:var(--ink); }
+  textarea { width:100%; min-height:140px; background:var(--paper-dim); border:1px solid var(--line); border-radius:6px; padding:14px; font:15px/1.5 system-ui; color:var(--ink); resize:vertical; }
+  .controls { display:flex; align-items:center; gap:14px; margin:14px 0 28px; flex-wrap:wrap; }
+  .status { font-size:13px; color:var(--ink-soft); font-family:monospace; }
+  .status.active { color:var(--moss); } .status.error { color:var(--seal); }
+  .panel { background:var(--paper-dim); border:1px solid var(--line); border-radius:6px; padding:18px; font-size:15px; white-space:pre-wrap; word-wrap:break-word; margin-bottom:8px; }
+  mark { padding:1px 3px; border-radius:3px; cursor:help; }
+  mark.type-regex { background:rgba(123,45,38,.16); box-shadow:inset 0 -1.5px 0 var(--seal); }
+  mark.type-ner { background:rgba(75,90,69,.16); box-shadow:inset 0 -1.5px 0 var(--moss); }
+  table { width:100%; border-collapse:collapse; margin:10px 0 30px; }
+  th { text-align:left; font-size:11px; text-transform:uppercase; color:var(--ink-soft); padding:7px 10px; border-bottom:1px solid var(--line); }
+  td { padding:8px 10px; border-bottom:1px solid var(--line); font-size:14px; }
+  td.mono { font-family:monospace; font-size:13px; }
+  .ok { color:var(--moss); font-weight:600; } .ko { color:var(--seal); font-weight:600; } .warn { color:#8a6a35; font-weight:600; }
+  h2 { font-size:16px; margin:32px 0 8px; }
+  .note { font-size:13px; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Clarence — fixtures de référence</h1>
+  <p class="lede">Harnais de validation : charge une fixture, lance l'analyse, le verdict se calcule tout seul. Charge le NER pour les vérifications de noms/lieux (~30 Mo au premier lancement, mis en cache ensuite).</p>
+
+  <div class="fixture-btns" id="fixtureBtns"></div>
+  <textarea id="input"></textarea>
+  <div class="controls">
+    <button class="btn-primary" id="analyzeBtn">Analyser</button>
+    <button class="btn-ghost" id="nerBtn">Charger le NER</button>
+    <span class="status" id="status"></span>
+  </div>
+
+  <h2>Texte annoté</h2>
+  <div class="panel" id="resultPanel">(lance une analyse)</div>
+
+  <h2>Texte masqué (copie propre)</h2>
+  <div class="panel" id="maskedPanel">(lance une analyse)</div>
+
+  <h2>Verdict automatique</h2>
+  <div id="verdict"><p class="note">Charge une fixture puis clique Analyser. Les attentes NER ne sont évaluées que si le NER est chargé.</p></div>
+
+  <h2>Entités détectées</h2>
+  <div id="tableWrap"></div>
+</div>
+
+<script type="module">
+// ===== Moteur : importé directement depuis src/engine (source de vérité). =====
+// Plus de duplication : ce fichier ne peut plus dériver de src/engine.
+import { detectRegex } from '../src/engine/regex-detect.js';
+import { detectNER, NER_MODEL } from '../src/engine/ner.js';
+import { mergeEntities } from '../src/engine/merge.js';
+import { maskText } from '../src/engine/masking.js';
+
+let nerPipeline=null,nerLoading=false;
+async function loadNER(){const st=document.getElementById('status'),btn=document.getElementById('nerBtn');if(nerPipeline||nerLoading)return;nerLoading=true;btn.disabled=true;st.textContent='Chargement du modèle NER…';st.className='status';
+ try{const{pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');env.allowLocalModels=false;nerPipeline=await pipeline('token-classification',NER_MODEL);st.textContent='NER chargé.';st.className='status active';btn.textContent='NER actif';}
+ catch(e){console.error(e);st.textContent='Échec chargement NER (voir console).';st.className='status error';btn.disabled=false;}finally{nerLoading=false;}}
+
+// ===== Fixtures + attentes =====
+const FIXTURES=[
+ {name:'Texte 1 — cas complet',
+  text:`Bonjour,\n\nJe m'appelle Julien Marchand, je vous contacte au sujet de mon dossier client n°48213. Vous pouvez me joindre au 06 12 34 56 78 ou par email à julien.marchand@monentreprise.fr.\n\nMon IBAN pour le remboursement est FR76 3000 6000 0112 3456 7890 189. La carte utilisée pour le paiement était la 4242 4242 4242 4242, et mon numéro de sécurité sociale est le 1 85 05 78 006 084 91.\n\nJe travaille pour la société Lefèvre Consulting, SIRET 732 829 320 00074, domiciliée au 14 rue des Tilleuls, 69003 Lyon.\n\nLe montant en litige s'élève à 1 240,50 €.\n\nMerci de traiter ma demande rapidement.\n\nCordialement,\nJulien Marchand`,
+  expect:[
+   {label:'Téléphone 06 12 34 56 78',find:'06 12 34 56 78',src:'regex'},
+   {label:'Email julien.marchand@…',find:'julien.marchand@monentreprise.fr',src:'regex'},
+   {label:'IBAN FR76…',find:'FR76 3000 6000 0112 3456 7890 189',src:'regex'},
+   {label:'Carte 4242…',find:'4242 4242 4242 4242',src:'regex'},
+   {label:'NIR 1 85 05…',find:'1 85 05 78 006 084 91',src:'regex'},
+   {label:'SIRET 732 829 320 00074',find:'732 829 320 00074',src:'regex'},
+   {label:'Référence dossier "48213"',find:'48213',src:'regex'},
+   {label:'Adresse "14 rue des Tilleuls"',find:'14 rue des Tilleuls',src:'regex'},
+   {label:'Code postal 69003',find:'69003',src:'regex'},
+   {label:'Montant 1 240,50 €',find:'1 240,50 €',src:'regex'},
+   {label:'Nom "Julien Marchand" (signature ET en-tête)',find:'Julien Marchand',src:'ner',count:2},
+   {label:'Organisation "Lefèvre Consulting"',find:'Lefèvre Consulting',src:'ner'},
+   {label:'Lieu "Lyon"',find:'Lyon',src:'ner'}
+  ]},
+ {name:'Texte 2 — noms difficiles + pièges',
+  text:`Rapport d'entretien - candidat: Wojciech Kowalski, contact: w.kowalski83@gmail.com, tel +33 7 89 12 34 56.\n\nRéférent RH: Rose Fontaine (Rose a appelé Pierre Dubois hier pour confirmer le rendez-vous).\n\nAdresse de facturation: 8 bis avenue Foch, 75116 Paris.\n\nRéférence interne du poste: 483 921 657 (ne pas communiquer au candidat).`,
+  expect:[
+   {label:'Email w.kowalski83@…',find:'w.kowalski83@gmail.com',src:'regex'},
+   {label:'Téléphone +33 7 89 12 34 56',find:'+33 7 89 12 34 56',src:'regex'},
+   {label:'Adresse "8 bis avenue Foch"',find:'8 bis avenue Foch',src:'regex'},
+   {label:'Code postal 75116',find:'75116',src:'regex'},
+   {label:'PIÈGE : "483 921 657" (Luhn invalide) NE doit PAS sortir',find:'483 921 657',src:'regex',absent:true},
+   {label:'Nom non-français "Wojciech Kowalski"',find:'Wojciech Kowalski',src:'ner'},
+   {label:'Nom "Rose Fontaine"',find:'Rose Fontaine',src:'ner'},
+   {label:'PIÈGE : "Rose" seul (prénom = nom commun)',find:'Rose',src:'ner'},
+   {label:'Nom "Pierre Dubois"',find:'Pierre Dubois',src:'ner'},
+   {label:'Lieu "Paris"',find:'Paris',src:'ner'}
+  ]},
+ {name:'Texte 3 — zéro faux positif',
+  text:`La réunion portera sur la stratégie produit du prochain trimestre. Nous aborderons la roadmap technique, les priorités marketing, et le budget prévisionnel. Merci de préparer vos slides avant vendredi 17 h. Le point durera 45 minutes environ.`,
+  expect:[{label:'AUCUNE détection (tout ce qui sort ici est un faux positif)',nothing:true}]}
+];
+
+// ===== UI =====
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const btnWrap=document.getElementById('fixtureBtns');
+FIXTURES.forEach((f,i)=>{const b=document.createElement('button');b.className='btn-ghost';b.textContent=f.name;b.onclick=()=>{document.getElementById('input').value=f.text;window.__fixture=f;};btnWrap.appendChild(b);});
+document.getElementById('nerBtn').onclick=loadNER;
+
+function renderHighlighted(text,entities){if(!entities.length)return esc(text);let out='',cur=0;for(const e of entities){out+=esc(text.slice(cur,e.start));out+=`<mark class="type-${e.source==='regex'?'regex':'ner'}" title="${e.type}">${esc(e.value)}</mark>`;cur=e.end;}return out+esc(text.slice(cur));}
+
+function renderVerdict(f,entities,text){
+ const wrap=document.getElementById('verdict');
+ if(!f){wrap.innerHTML='<p class="note">(texte libre — pas de verdict, charge une fixture pour la comparaison automatique)</p>';return;}
+ let rows='';
+ for(const ex of f.expect){
+  let status,detail='';
+  if(ex.nothing){
+   status=entities.length===0?'<span class="ok">✓ vide</span>':`<span class="ko">✗ ${entities.length} faux positif(s)</span>`;
+  } else {
+   const matches=entities.filter(e=>e.value.includes(ex.find)||ex.find.includes(e.value));
+   const srcOk=matches.filter(e=>!ex.src||e.source===ex.src);
+   if(ex.absent){status=srcOk.length===0?'<span class="ok">✓ bien rejeté</span>':'<span class="ko">✗ détecté à tort</span>';}
+   else if(ex.src==='ner'&&!nerPipeline){status='<span class="warn">— NER non chargé</span>';}
+   else if(srcOk.length===0){status='<span class="ko">✗ raté</span>';}
+   else if(ex.count&&srcOk.length<ex.count){status=`<span class="warn">~ ${srcOk.length}/${ex.count} occurrence(s)</span>`;}
+   else{status='<span class="ok">✓</span>';detail=srcOk.map(e=>`${e.type}${e.score?` ${(e.score*100).toFixed(0)}%`:''}`).join(', ');}
+  }
+  rows+=`<tr><td>${ex.label}</td><td>${status}</td><td class="mono">${detail}</td></tr>`;
+ }
+ wrap.innerHTML=`<table><thead><tr><th>Attendu</th><th>Verdict</th><th>Détail</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderTable(entities){
+ const wrap=document.getElementById('tableWrap');
+ if(!entities.length){wrap.innerHTML='<p class="note">Aucune entité.</p>';return;}
+ wrap.innerHTML=`<table><thead><tr><th>Type</th><th>Valeur</th><th>Source</th><th>Contrôle</th></tr></thead><tbody>${entities.map(e=>`<tr><td>${e.type}</td><td class="mono">${esc(e.value)}</td><td>${e.source}</td><td>${e.validated===true?'validé':(e.score?`conf. ${(e.score*100).toFixed(0)}%`:'n/a')}</td></tr>`).join('')}</tbody></table>`;
+}
+
+document.getElementById('analyzeBtn').onclick=async()=>{
+ const text=document.getElementById('input').value;if(!text.trim())return;
+ const f=(window.__fixture&&window.__fixture.text===text)?window.__fixture:null;
+ const rx=detectRegex(text);
+ const ner=nerPipeline?await detectNER(text,nerPipeline):[];
+ const merged=mergeEntities(rx,ner);
+ document.getElementById('resultPanel').innerHTML=renderHighlighted(text,merged);
+ document.getElementById('maskedPanel').textContent=maskText(text,merged).masked;
+ renderVerdict(f,merged,text);
+ renderTable(merged);
+};
+</script>
+</body>
+</html>

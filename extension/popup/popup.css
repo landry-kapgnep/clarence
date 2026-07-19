@@ -1,0 +1,527 @@
+:root {
+  --paper: #EDE6D3;
+  --paper-dim: #E2D8BF;
+  --ink: #2B2621;
+  --ink-soft: #5A4F42;
+  --seal: #252a41;
+  --moss: #4B5A45;
+  --line: rgba(43, 38, 33, 0.14);
+  --control-weight: 400;
+  --control-size: 13px;
+  --control-bg: var(--seal);
+  --control-fg: var(--paper);
+  --control-border: rgba(43, 38, 33, 0.08);
+  --control-ghost-bg: rgba(255,255,255,0.7);
+  --control-ghost-hover-bg: rgba(255,255,255,0.9);
+  --control-hover-bg: rgba(0,0,0,0.06);
+}
+
+@font-face {
+  font-family: 'Benne';
+  src: local('Benne'), url('fonts/Syne_Mono/SyneMono-Regular.ttf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: transparent;
+}
+
+body {
+  width: 520px;
+  min-width: 320px;
+  /* Le défilement vit sur .popup-shell (div interne), PAS sur body : l'overflow
+     du body se propage au viewport et sa max-height est ignorée → aucune barre.
+     Un conteneur interne, lui, défile de façon fiable. */
+  overflow: visible;
+  position: relative;
+  border-radius: 24px;
+  color: var(--ink);
+  font-family: 'Benne', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  background: transparent;
+}
+
+.popup-shell {
+  padding: 12px;
+  /* Conteneur de défilement du popup de barre d'outils. Valeur FIXE (pas 100vh :
+     circulaire dans une popup qui s'auto-dimensionne → ne plafonne jamais).
+     Chrome plafonne la fenêtre à 600px ; on cape juste en-dessous pour que la
+     barre apparaisse dès que le contenu dépasse (menus dépliés, longs résultats),
+     sinon la fenêtre se réduit au contenu. Barre fine, discrète, on-brand. */
+  max-height: 584px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(43, 38, 33, 0.32) transparent;
+  background: linear-gradient(180deg, #252a41, rgba(255, 255, 255, 0));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3), 0 18px 50px rgba(43,38,33,0.16);
+}
+.popup-shell::-webkit-scrollbar { width: 8px; }
+.popup-shell::-webkit-scrollbar-track { background: transparent; }
+.popup-shell::-webkit-scrollbar-thumb {
+  background: rgba(43, 38, 33, 0.28);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.popup-shell::-webkit-scrollbar-thumb:hover { background: rgba(43, 38, 33, 0.45); }
+/*couleur sympa 252a41 btw*/
+.wrap {
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 250, 242, 0.96);
+  backdrop-filter: blur(6px);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 250, 242, 0.96);
+}
+
+h1 {
+  font-size: 17px;
+  margin: 0;
+}
+
+.tagline {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+h2 {
+  font-size: 13px;
+  margin: 14px 0 6px;
+}
+
+.hint {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 110px;
+  max-height: 260px;
+  background: rgba(255, 250, 242, 0.96);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  font: var(--control-size)/1.45 'Benne', system-ui;
+  color: var(--ink);
+  resize: vertical;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+textarea::-webkit-scrollbar { display: none; }
+
+textarea:focus {
+  outline: none;
+  border-color: var(--seal);
+  box-shadow: 0 0 0 3px #ffffff;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+button {
+  font-weight: var(--control-weight);
+  font-size: var(--control-size);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  background: var(--control-bg);
+  color: var(--control-fg);
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--control-bg);
+  color: var(--control-fg);
+  box-shadow: 0 6px 14px rgba(43,38,33,0.12);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.btn-ghost {
+  background: var(--control-ghost-bg);
+  border: 1px solid var(--control-border);
+  color: var(--ink);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--control-ghost-hover-bg);
+}
+
+.status {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  min-height: 15px;
+}
+
+.status.active {
+  color: var(--moss);
+}
+
+.status.error {
+  color: var(--seal);
+}
+
+.panel {
+  background: rgba(255, 250, 242, 0.96);
+  border-radius: 12px;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  /* Le contenu est déjà tronqué en JS (PREVIEW_LIMIT) ; max-height + hidden
+     n'est qu'un filet de sécurité, jamais une vraie barre de défilement. */
+  max-height: 200px;
+  overflow: hidden;
+  font-family: 'Benne', system-ui;
+  font-size: var(--control-size);
+  font-weight: var(--control-weight);
+}
+
+.overlay-trigger {
+  display: block;
+  margin: 6px 0 0;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+/* Harmonisation: utiliser Benne pour les contrôles */
+input, textarea, select, button, .panel, .status, .hint {
+  font-family: 'Benne', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: var(--control-weight);
+  font-size: var(--control-size);
+}
+
+mark {
+  padding: 1px 3px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+mark.src-regex {
+  background: rgba(123, 45, 38, 0.16);
+  box-shadow: inset 0 -1.5px 0 var(--seal);
+}
+
+mark.src-ner {
+  background: rgba(75, 90, 69, 0.16);
+  box-shadow: inset 0 -1.5px 0 var(--moss);
+}
+
+mark.src-manuel {
+  background: rgba(176, 141, 87, 0.25);
+  box-shadow: inset 0 -1.5px 0 #B08D57;
+}
+
+mark:hover {
+  outline: 2px solid var(--seal);
+}
+
+details {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+
+td {
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+td.mono {
+  font-family: monospace;
+}
+
+footer {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.logo {
+  width: 200px;
+  height: auto;
+  flex-shrink: 0;
+  border-radius: 18px;
+}
+
+.dlbtn {
+  width: 20px;
+  height: auto;
+  flex-shrink: 0;
+  border-radius: 18px;
+}
+
+/* ===== Mode panneau (iframe injectée dans les sites IA, ?panel=1) =====
+   Chrome peint un canvas blanc opaque derrière l'iframe : tout doit être
+   couvert par un fond opaque, et le contenu doit pouvoir défiler. Les coins
+   arrondis sont déjà découpés par l'iframe côté content script. */
+/* NB : la classe est "panel-mode" (et pas "panel") pour ne pas entrer en
+   collision avec la classe composant .panel ci-dessus. */
+html.panel-mode {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* le défilement (s'il faut) vit sur body, pas ici */
+}
+body.panel-mode {
+  width: 100%;
+  /* 100vh À L'INTÉRIEUR D'UNE IFRAME = la hauteur réellement rendue de CETTE
+     iframe, déjà plafonnée côté page hôte par .panel { max-height: calc(100vh
+     - 110px) } (content.js). Tant que le contenu tient sous ce plafond, le
+     postMessage a fait grandir l'iframe pour l'égaler exactement → rien ne
+     déborde de ces 100vh, aucune barre. Si le contenu dépasse VRAIMENT le
+     plafond (menus dépliés, mode Fichier + résultats), il déborde de ces
+     100vh et défile — au lieu d'être invisible comme avant (overflow: hidden
+     sans aucun repli). C'est le même principe « grandit jusqu'à la limite,
+     puis scrollbar » que le popup de barre d'outils, adapté au panneau. */
+  height: 100vh;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(43, 38, 33, 0.32) transparent;
+  background: #FFFAF2;
+  border-radius: 0;
+}
+body.panel-mode::-webkit-scrollbar { width: 8px; }
+body.panel-mode::-webkit-scrollbar-track { background: transparent; }
+body.panel-mode::-webkit-scrollbar-thumb {
+  background: rgba(43, 38, 33, 0.28);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+body.panel-mode .popup-shell {
+  /* Chrome peint un canvas blanc opaque derrière l'iframe : rien ne doit
+     rester transparent. Le dégradé se fond dans le papier, sans démarcation. */
+  background: linear-gradient(180deg, #252a41 0%, #FFFAF2 55%);
+  /* En panneau, l'iframe se redimensionne au contenu : pas de plafond ni de
+     défilement interne (sinon double barre / hauteur figée). */
+  max-height: none;
+  overflow: visible;
+}
+
+/* ===== Animations (boutons + apparition des sections) ===== */
+@keyframes clarence-reveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+button {
+  transition: transform .16s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .2s ease, filter .15s ease, background .2s ease,
+              border-color .2s ease;
+}
+button:active:not(:disabled) { transform: translateY(0) scale(.96); }
+button:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
+
+#results:not([hidden]),
+#reinjectZone:not([hidden]),
+#reinjected:not([hidden]) {
+  animation: clarence-reveal .28s cubic-bezier(.2,.9,.3,1) both;
+}
+
+mark { transition: outline-color .12s ease, background .12s ease; }
+
+/* ===== Fenêtre flottante « Voir tout » =====
+   Seul endroit du popup où un contenu peut réellement défiler : c'est un
+   choix explicite de l'utilisateur (clic sur "Voir tout"), pas un débordement
+   subi. La barre reste masquée pour rester cohérent avec le reste de l'UI. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(43, 38, 33, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.overlay[hidden] { display: none; }
+
+.overlay-card {
+  width: 100%;
+  max-width: min(460px, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 250, 242, 0.98);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  overflow: hidden;
+}
+
+.overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.overlay-head strong {
+  font-size: 13px;
+}
+
+.overlay-body {
+  padding: 14px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Benne', system-ui;
+  font-size: var(--control-size);
+  line-height: 1.45;
+}
+
+.overlay-body::-webkit-scrollbar { display: none; }
+
+/* ===== Bascule Texte / Fichier ===== */
+.mode-switch {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(43, 38, 33, 0.06);
+}
+.mode-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.mode-btn:hover:not(:disabled) { transform: none; background: rgba(255,255,255,0.5); }
+.mode-btn.active {
+  background: rgba(255, 250, 242, 0.98);
+  color: var(--ink);
+  box-shadow: 0 2px 6px rgba(43,38,33,0.12);
+}
+
+/* ===== Mode Fichier : dropzone ===== */
+.dropzone {
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  padding: 22px 14px;
+  text-align: center;
+  background: rgba(255, 250, 242, 0.6);
+  transition: border-color .18s ease, background .18s ease;
+}
+.dropzone.dragover {
+  border-color: var(--seal);
+  background: rgba(255, 250, 242, 0.98);
+}
+.dropzone-main { margin: 0 0 6px; font-size: var(--control-size); }
+.dropzone .hint { margin: 0; }
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--seal);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+}
+.link-btn:hover:not(:disabled) { transform: none; filter: brightness(1.2); }
+
+.file-chosen-line { margin: 12px 0 0; word-break: break-all; }
+.file-chosen-line strong { font-size: var(--control-size); }
+
+#fileResults:not([hidden]) {
+  animation: clarence-reveal .28s cubic-bezier(.2,.9,.3,1) both;
+}
+
+/* ===== Masquage personnalisé ===== */
+#customRules { margin-top: 10px; }
+.custom-body { margin-top: 8px; }
+.type-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(43, 38, 33, 0.06);
+  cursor: pointer;
+  font-size: 11px;
+  user-select: none;
+}
+.type-chip input { margin: 0; }
+.type-chip.off {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+textarea.mini {
+  min-height: 46px;
+  max-height: 120px;
+  margin-bottom: 8px;
+}

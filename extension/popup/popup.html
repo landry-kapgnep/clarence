@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+  
+<head>
+<meta charset="UTF-8">
+<title>Clarence</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-shell">
+    <div class="wrap">
+      <header>
+        <img class="logo" src="img/ClarenceLogo.png" alt="Clarence">
+        <div>
+          <h1>- Clear your data</h1>
+        </div>
+      </header>
+
+      <div class="mode-switch">
+        <button class="mode-btn active" id="modeTextBtn" data-mode="text">Texte</button>
+        <button class="mode-btn" id="modeFileBtn" data-mode="file">Fichier</button>
+      </div>
+
+      <div id="textMode">
+      <label class="field-label" for="input"></label> Anonymiser texte
+      <textarea id="input" placeholder="Contenu à anonymiser…"></textarea>
+
+      <div class="controls">
+        <button class="btn-primary" id="analyzeBtn">Analyser</button>
+        <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage dans la zone de texte puis clique ici">Masquer la sélection</button>
+      </div>
+      <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
+        <input type="checkbox" id="realisticToggle">
+        Pseudonymes (lieux, noms, contacts)
+      </label>
+
+      <details id="customRules">
+        <summary>Personnaliser le masquage</summary>
+        <div class="custom-body">
+          <div class="field-label">Types à masquer <span class="hint">(décoche pour garder visible)</span></div>
+          <div id="typeToggles" class="type-toggles"><span class="hint">Lance une analyse pour voir les types détectés.</span></div>
+          <label class="field-label" for="alwaysMask">Toujours masquer <span class="hint">(un terme par ligne)</span></label>
+          <textarea id="alwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
+          <label class="field-label" for="alwaysKeep">Ne jamais masquer</label>
+          <textarea id="alwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
+        </div>
+      </details>
+
+      <div class="status" id="status"></div>
+
+      <section id="results" hidden>
+        <h2>Détections</h2>
+        <div class="panel" id="annotated"></div>
+        <button class="btn-ghost overlay-trigger" id="annotatedMoreBtn" hidden>Voir tout</button>
+
+        <h2>Texte propre</h2>
+        <div class="panel" id="masked"></div>
+        <button class="btn-ghost overlay-trigger" id="maskedMoreBtn" hidden>Voir tout</button>
+        <div class="controls">
+          <button class="btn-primary" id="copyBtn">Copier le texte propre</button>
+          <span class="status" id="copyStatus"></span>
+        </div>
+
+        <details>
+          <summary>Table de correspondance (reste en local, effacée à la fermeture du navigateur)</summary>
+          <div id="mappingWrap"></div>
+        </details>
+      </section>
+      </div>
+
+      <div id="fileMode" hidden>
+        <label class="field-label">Anonymiser un fichier</label>
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.docx" hidden>
+          <p class="dropzone-main">Glisse ou <button class="link-btn" id="filePickBtn">parcours tes fichiers</button></p>
+          <p class="hint">CSV, .xlsx, .docx — Traitement local</p>
+        </div>
+
+        <div id="fileChosen" hidden>
+          <p class="file-chosen-line"><strong id="fileName"></strong> <span class="hint" id="fileSize"></span></p>
+          <div class="controls">
+            <button class="btn-primary" id="fileAnalyzeBtn">Anonymiser le fichier</button>
+            <button class="btn-ghost" id="fileResetBtn">Choisir un autre fichier</button>
+          </div>
+        </div>
+
+        <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
+          <input type="checkbox" id="fileRealisticToggle">
+          Pseudonymes réalistes pour noms, lieux et contacts (les données bancaires, NIR et références restent en [TYPE])
+        </label>
+        <div class="status" id="fileStatus"></div>
+
+        <section id="fileResults" hidden>
+          <h2>Fichier anonymisé</h2>
+          <div class="controls">
+            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png">Télécharger le fichier propre</button>
+          </div>
+          <p class="status" id="fileSummary"></p>
+          <details>
+            <summary>Ce qui a été masqué (reste en local, effacé à la fermeture du navigateur)</summary>
+            <div id="fileMappingWrap"></div>
+          </details>
+          <p class="hint">⚠ Relisez le fichier téléchargé avant de l'utiliser : la détection n'est pas infaillible, surtout sur les noms peu courants.</p>
+        </section>
+      </div>
+
+      <section class="reinject">
+        <div class="controls">
+          <button class="btn-ghost" id="toggleReinjectBtn">Désanonymiser une réponse…</button>
+        </div>
+        <div id="reinjectZone" hidden>
+          <h2>Désanonymiser <span class="hint">— colle la réponse du LLM : les vrais noms et valeurs sont restitués</span></h2>
+          <textarea id="reinjectInput" placeholder="Colle ici la réponse contenant [PERSONNE_1], [EMAIL_1]…"></textarea>
+          <div class="controls">
+            <button class="btn-primary" id="reinjectBtn">Désanonymiser</button>
+            <button class="btn-ghost" id="copyReinjectBtn" hidden>Copier le résultat</button>
+            <span class="status" id="reinjectStatus"></span>
+          </div>
+          <div class="panel" id="reinjected" hidden></div>
+          <button class="btn-ghost overlay-trigger" id="reinjectedMoreBtn" hidden>Voir tout</button>
+        </div>
+      </section>
+
+      <footer>
+        ⚠ Vérifiez toujours le rendu anonymisé avant de l'utiliser. La détection n'est pas infaillible.
+        Vous pouvez ajouter un masque manuellement en sélectionnant un passage du texte.
+      </footer>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="overlay-card">
+      <div class="overlay-head">
+        <strong id="overlayTitle"></strong>
+        <div class="controls">
+          <button class="btn-ghost" id="overlayCopyBtn" hidden>Copier</button>
+          <button class="btn-ghost" id="overlayCloseBtn">Fermer</button>
+        </div>
+      </div>
+      <div class="overlay-body" id="overlayBody"></div>
+    </div>
+  </div>
+<script type="module" src="popup.js"></script>
+</body>
+</html>
