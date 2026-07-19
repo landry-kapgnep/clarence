@@ -29217,6 +29217,8 @@ function refreshOverlayIfOpen() {
 function render() {
   const entities = activeEntities();
   $("results").hidden = false;
+  $("textOptions").hidden = false;
+  $("reinjectSection").hidden = false;
   renderTypeChips("typeToggles", disabledTypes);
   const annPreview = clipToLimit(currentText, entities, PREVIEW_LIMIT);
   $("annotated").innerHTML = annotateHTML(annPreview.text, annPreview.entities) + (annPreview.truncated ? "\u2026" : "");
@@ -29439,6 +29441,7 @@ function setChosenFile(file) {
   $("fileName").textContent = file.name;
   $("fileSize").textContent = humanSize(file.size);
   $("fileChosen").hidden = false;
+  $("fileOptions").hidden = false;
   $("fileResults").hidden = true;
   fileSetStatus("");
 }
@@ -29493,6 +29496,7 @@ async function processFile() {
     $("fileSummary").textContent = mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.";
     $("fileSummary").className = "status active";
     $("fileResults").hidden = false;
+    $("reinjectSection").hidden = false;
     $("dragCard").hidden = !document.body.classList.contains("panel-mode");
     if (!nerPipe) {
       fileSetStatus("D\xE9tection des noms indisponible (connexion requise au premier usage) \u2014 seules les donn\xE9es structur\xE9es ont \xE9t\xE9 rep\xE9r\xE9es. Relis attentivement le fichier.", "error");
@@ -29526,6 +29530,8 @@ for (const btn of document.querySelectorAll(".mode-btn")) {
     for (const b of document.querySelectorAll(".mode-btn")) b.classList.toggle("active", b === btn);
     $("textMode").hidden = mode !== "text";
     $("fileMode").hidden = mode !== "file";
+    $("reinjectZone").hidden = true;
+    $("toggleReinjectBtn").textContent = "D\xE9sanonymiser une r\xE9ponse\u2026";
   });
 }
 $("filePickBtn").addEventListener("click", () => $("fileInput").click());
@@ -29535,20 +29541,34 @@ $("fileResetBtn").addEventListener("click", () => {
   fileOutBlob = null;
   $("fileInput").value = "";
   $("fileChosen").hidden = true;
+  $("fileOptions").hidden = true;
   $("fileResults").hidden = true;
   $("dragCard").hidden = true;
   fileSetStatus("");
 });
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
+var dragUrl = null;
 $("dragCard").addEventListener("dragstart", (ev) => {
   if (!fileOutBlob) {
     ev.preventDefault();
     return;
   }
-  const file = new File([fileOutBlob], fileOutName, { type: fileOutBlob.type });
-  ev.dataTransfer.items.add(file);
+  if (dragUrl) URL.revokeObjectURL(dragUrl);
+  dragUrl = URL.createObjectURL(fileOutBlob);
+  const mime = fileOutBlob.type || "application/octet-stream";
+  ev.dataTransfer.setData("DownloadURL", `${mime}:${fileOutName}:${dragUrl}`);
+  try {
+    ev.dataTransfer.items.add(new File([fileOutBlob], fileOutName, { type: mime }));
+  } catch {
+  }
   ev.dataTransfer.effectAllowed = "copy";
+});
+$("dragCard").addEventListener("dragend", () => {
+  if (dragUrl) {
+    URL.revokeObjectURL(dragUrl);
+    dragUrl = null;
+  }
 });
 var dropzone = $("dropzone");
 for (const evName of ["dragenter", "dragover"]) {

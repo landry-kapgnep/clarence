@@ -174,6 +174,10 @@ function refreshOverlayIfOpen() {
 function render() {
   const entities = activeEntities();
   $('results').hidden = false;
+  // Options avancées + désanonymisation : révélées seulement après une analyse
+  // (UI initiale épurée). render() n'est appelé que post-analyse en mode texte.
+  $('textOptions').hidden = false;
+  $('reinjectSection').hidden = false;
   renderTypeChips('typeToggles', disabledTypes);
 
   const annPreview = clipToLimit(currentText, entities, PREVIEW_LIMIT);
@@ -431,6 +435,10 @@ function setChosenFile(file) {
   $('fileName').textContent = file.name;
   $('fileSize').textContent = humanSize(file.size);
   $('fileChosen').hidden = false;
+  // Options (pseudonymes/personnaliser) : révélées dès qu'un fichier est
+  // choisi — elles doivent être réglées AVANT le traitement (flux en un clic),
+  // contrairement au mode texte où elles se règlent après l'analyse.
+  $('fileOptions').hidden = false;
   $('fileResults').hidden = true;
   fileSetStatus('');
 }
@@ -507,6 +515,7 @@ async function processFile() {
       : 'Aucune donnée sensible détectée — métadonnées nettoyées.';
     $('fileSummary').className = 'status active';
     $('fileResults').hidden = false;
+    $('reinjectSection').hidden = false; // désanonymisation dispo après traitement
     // Glisser-déposer direct vers la page : n'a de sens qu'en mode panneau
     // (coexiste avec la zone d'upload du site) — le popup de barre d'outils
     // est une fenêtre séparée, on ne peut rien glisser vers la page depuis là.
@@ -547,6 +556,11 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
     for (const b of document.querySelectorAll('.mode-btn')) b.classList.toggle('active', b === btn);
     $('textMode').hidden = mode !== 'text';
     $('fileMode').hidden = mode !== 'file';
+    // Replie la zone de désanonymisation en changeant de mode : un résultat
+    // affiché dans un mode ne doit pas persister visuellement dans l'autre
+    // (la table de correspondance reste partagée, c'est juste l'affichage).
+    $('reinjectZone').hidden = true;
+    $('toggleReinjectBtn').textContent = 'Désanonymiser une réponse…';
   });
 }
 
@@ -558,6 +572,7 @@ $('fileResetBtn').addEventListener('click', () => {
   fileOutBlob = null;
   $('fileInput').value = '';
   $('fileChosen').hidden = true;
+  $('fileOptions').hidden = true;
   $('fileResults').hidden = true;
   $('dragCard').hidden = true;
   fileSetStatus('');
@@ -565,16 +580,27 @@ $('fileResetBtn').addEventListener('click', () => {
 $('fileAnalyzeBtn').addEventListener('click', processFile);
 $('fileDownloadBtn').addEventListener('click', downloadFile);
 
-// Glisser le fichier anonymisé directement dans la zone d'upload du site (ex.
-// ChatGPT/Claude) : un vrai objet File posé sur dataTransfer, capté nativement
-// par la cible comme un dépôt depuis le disque. Doit être un vrai geste
-// souris de l'utilisateur sur cet élément (impossible à déclencher par clic
-// ailleurs) — d'où la carte dédiée plutôt qu'un bouton.
+// Glisser le fichier anonymisé vers l'extérieur (zone d'upload du site).
+// Deux mécanismes posés ensemble pour maximiser la compatibilité :
+//  - DownloadURL (spécifique Chromium) : la façon standard de faire glisser un
+//    fichier GÉNÉRÉ hors de la page — Chrome matérialise le blob à la volée.
+//    C'est ce qui a la meilleure chance de traverser la frontière iframe → page
+//    hôte (le curseur « interdit » venait de items.add seul, souvent rejeté).
+//  - items.add(File) en repli, pour les cibles qui lisent dataTransfer.files.
+// NB : reste tributaire de la cible (certaines zones d'upload n'acceptent que
+// les fichiers issus du disque) — limite navigateur, pas contournable côté nous.
+let dragUrl = null;
 $('dragCard').addEventListener('dragstart', ev => {
   if (!fileOutBlob) { ev.preventDefault(); return; }
-  const file = new File([fileOutBlob], fileOutName, { type: fileOutBlob.type });
-  ev.dataTransfer.items.add(file);
+  if (dragUrl) URL.revokeObjectURL(dragUrl);
+  dragUrl = URL.createObjectURL(fileOutBlob);
+  const mime = fileOutBlob.type || 'application/octet-stream';
+  ev.dataTransfer.setData('DownloadURL', `${mime}:${fileOutName}:${dragUrl}`);
+  try { ev.dataTransfer.items.add(new File([fileOutBlob], fileOutName, { type: mime })); } catch {}
   ev.dataTransfer.effectAllowed = 'copy';
+});
+$('dragCard').addEventListener('dragend', () => {
+  if (dragUrl) { URL.revokeObjectURL(dragUrl); dragUrl = null; }
 });
 
 const dropzone = $('dropzone');

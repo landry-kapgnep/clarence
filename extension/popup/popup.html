@@ -29,6 +29,7 @@
         <button class="btn-primary" id="analyzeBtn">Analyser</button>
         <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage dans la zone de texte puis clique ici">Masquer la sélection</button>
       </div>
+      <div id="textOptions" hidden>
       <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
         <input type="checkbox" id="realisticToggle">
         Pseudonymes (lieux, noms, contacts)
@@ -38,13 +39,14 @@
         <summary>Personnaliser le masquage</summary>
         <div class="custom-body">
           <div class="field-label">Types à masquer <span class="hint">(décoche pour garder visible)</span></div>
-          <div id="typeToggles" class="type-toggles"><span class="hint">Lance une analyse pour voir les types détectés.</span></div>
+          <div id="typeToggles" class="type-toggles"></div>
           <label class="field-label" for="alwaysMask">Toujours masquer <span class="hint">(un terme par ligne)</span></label>
           <textarea id="alwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
           <label class="field-label" for="alwaysKeep">Ne jamais masquer</label>
           <textarea id="alwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
         </div>
       </details>
+      </div>
 
       <div class="status" id="status"></div>
 
@@ -84,6 +86,7 @@
           </div>
         </div>
 
+        <div id="fileOptions" hidden>
         <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
           <input type="checkbox" id="fileRealisticToggle">
           Pseudonymes (lieux, noms, contacts)
@@ -100,6 +103,7 @@
             <textarea id="fileAlwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
           </div>
         </details>
+        </div>
 
         <div class="status" id="fileStatus"></div>
 
@@ -121,7 +125,7 @@
         </section>
       </div>
 
-      <section class="reinject">
+      <section class="reinject" id="reinjectSection" hidden>
         <div class="controls">
           <button class="btn-ghost" id="toggleReinjectBtn">Désanonymiser une réponse…</button>
         </div>
