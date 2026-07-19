@@ -29148,10 +29148,9 @@ function activeEntities() {
   const sel = selectActive(autoEntities, [...manualEntities, ...forced], removedKeys);
   return filterByRules(sel, { disabledTypes, keepValues: parseLines($("alwaysKeep")?.value) });
 }
-function renderTypeToggles() {
+function renderTypeToggles(types) {
   const box = $("typeToggles");
   if (!box) return;
-  const types = [...new Set(autoEntities.map((e) => e.type))];
   if (!types.length) {
     box.innerHTML = '<span class="hint">Lance une analyse pour voir les types d\xE9tect\xE9s.</span>';
     return;
@@ -29217,7 +29216,7 @@ function refreshOverlayIfOpen() {
 function render() {
   const entities = activeEntities();
   $("results").hidden = false;
-  renderTypeToggles();
+  renderTypeToggles([...new Set(autoEntities.map((e) => e.type))]);
   const annPreview = clipToLimit(currentText, entities, PREVIEW_LIMIT);
   $("annotated").innerHTML = annotateHTML(annPreview.text, annPreview.entities) + (annPreview.truncated ? "\u2026" : "");
   $("annotatedMoreBtn").hidden = !annPreview.truncated;
@@ -29396,6 +29395,23 @@ var FILE_TYPES = {
 var chosenFile = null;
 var fileOutBlob = null;
 var fileOutName = "";
+var fileDisabledTypes = /* @__PURE__ */ new Set();
+function renderFileTypeToggles() {
+  const box = $("fileTypeToggles");
+  if (!box) return;
+  box.innerHTML = Object.entries(TYPE_DISPLAY).filter(([t]) => t !== "PERSONNALISE").map(([t, label]) => {
+    const off = fileDisabledTypes.has(t);
+    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t}" ${off ? "" : "checked"}>${esc(label)}</label>`;
+  }).join("");
+}
+renderFileTypeToggles();
+$("fileTypeToggles")?.addEventListener("change", (ev) => {
+  const cb = ev.target.closest("input[data-type]");
+  if (!cb) return;
+  if (cb.checked) fileDisabledTypes.delete(cb.dataset.type);
+  else fileDisabledTypes.add(cb.dataset.type);
+  renderFileTypeToggles();
+});
 function fileSetStatus(msg, cls = "") {
   $("fileStatus").textContent = msg;
   $("fileStatus").className = "status " + cls;
@@ -29447,7 +29463,7 @@ async function processFile() {
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
-    const { anonymizeUnits } = await import("./anonymize-units-WAGIYB3A.js");
+    const { anonymizeUnits } = await import("./anonymize-units-765UZJXW.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = adapter.extractTextUnits(input);
     if (!units.length) {
@@ -29458,7 +29474,12 @@ async function processFile() {
     await ensureNER();
     const { results, mapping } = await anonymizeUnits(units, {
       nerPipeline: nerPipe,
-      maskOpts: fileMaskOptions(units)
+      maskOpts: fileMaskOptions(units),
+      // Règles personnalisées : mêmes primitives que le mode texte
+      // (selection.js), appliquées au document combiné entier.
+      forceTerms: parseLines($("fileAlwaysMask")?.value),
+      disabledTypes: fileDisabledTypes,
+      keepValues: parseLines($("fileAlwaysKeep")?.value)
     });
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     const masked = adapter.applyMask(input, byId);

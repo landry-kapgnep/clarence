@@ -91,11 +91,12 @@ function activeEntities() {
   return filterByRules(sel, { disabledTypes, keepValues: parseLines($('alwaysKeep')?.value) });
 }
 
-// Puces de types détectés : décocher un type le laisse visible (non masqué).
-function renderTypeToggles() {
+// Puces de types : décocher un type le laisse visible (non masqué).
+// `types` vient de l'analyse texte OU du dernier traitement de fichier —
+// le panneau « Personnaliser » est partagé entre les deux modes.
+function renderTypeToggles(types) {
   const box = $('typeToggles');
   if (!box) return;
-  const types = [...new Set(autoEntities.map(e => e.type))];
   if (!types.length) {
     box.innerHTML = '<span class="hint">Lance une analyse pour voir les types détectés.</span>';
     return;
@@ -172,7 +173,7 @@ function refreshOverlayIfOpen() {
 function render() {
   const entities = activeEntities();
   $('results').hidden = false;
-  renderTypeToggles();
+  renderTypeToggles([...new Set(autoEntities.map(e => e.type))]);
 
   const annPreview = clipToLimit(currentText, entities, PREVIEW_LIMIT);
   $('annotated').innerHTML = annotateHTML(annPreview.text, annPreview.entities) + (annPreview.truncated ? '…' : '');
@@ -376,6 +377,30 @@ const FILE_TYPES = {
 let chosenFile = null;
 let fileOutBlob = null;
 let fileOutName = '';
+let fileDisabledTypes = new Set(); // types que l'utilisateur exclut du masquage fichier
+
+// Contrairement au mode texte (puces générées après analyse), le flux fichier
+// est en un seul clic : on affiche donc TOUS les types connus statiquement,
+// cochés par défaut, pour régler AVANT de traiter. Re-traiter = re-cliquer.
+function renderFileTypeToggles() {
+  const box = $('fileTypeToggles');
+  if (!box) return;
+  box.innerHTML = Object.entries(TYPE_DISPLAY)
+    .filter(([t]) => t !== 'PERSONNALISE') // les masques manuels/forcés sont intouchables
+    .map(([t, label]) => {
+      const off = fileDisabledTypes.has(t);
+      return `<label class="type-chip ${off ? 'off' : ''}"><input type="checkbox" data-type="${t}" ${off ? '' : 'checked'}>${esc(label)}</label>`;
+    }).join('');
+}
+renderFileTypeToggles();
+
+$('fileTypeToggles')?.addEventListener('change', ev => {
+  const cb = ev.target.closest('input[data-type]');
+  if (!cb) return;
+  if (cb.checked) fileDisabledTypes.delete(cb.dataset.type);
+  else fileDisabledTypes.add(cb.dataset.type);
+  renderFileTypeToggles();
+});
 
 function fileSetStatus(msg, cls = '') {
   $('fileStatus').textContent = msg;
@@ -450,7 +475,12 @@ async function processFile() {
     await ensureNER();
     const { results, mapping } = await anonymizeUnits(units, {
       nerPipeline: nerPipe,
-      maskOpts: fileMaskOptions(units)
+      maskOpts: fileMaskOptions(units),
+      // Règles personnalisées : mêmes primitives que le mode texte
+      // (selection.js), appliquées au document combiné entier.
+      forceTerms: parseLines($('fileAlwaysMask')?.value),
+      disabledTypes: fileDisabledTypes,
+      keepValues: parseLines($('fileAlwaysKeep')?.value)
     });
 
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).

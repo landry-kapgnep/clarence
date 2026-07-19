@@ -1,6 +1,8 @@
 import {
   detectNER,
   detectRegex,
+  filterByRules,
+  forcedMasks,
   maskText,
   mergeEntities,
   selectActive
@@ -23,12 +25,17 @@ function joinWithSentinel(units) {
   }
   return { combined, ranges };
 }
-async function anonymizeUnits(units, { nerPipeline, maskOpts } = {}) {
+async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues } = {}) {
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
   const regexEntities = detectRegex(combined);
   const nerEntities = nerPipeline ? await detectNER(combined, nerPipeline) : [];
-  const active = selectActive(mergeEntities(regexEntities, nerEntities), [], /* @__PURE__ */ new Set());
+  const forced = forcedMasks(combined, forceTerms || []);
+  const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, /* @__PURE__ */ new Set());
+  const active = filterByRules(selected, {
+    disabledTypes: disabledTypes || /* @__PURE__ */ new Set(),
+    keepValues: keepValues || []
+  });
   const { masked, mapping } = maskText(combined, active, maskOpts);
   const placeholderByEntity = new Map(mapping.map((m) => [`${m.type}|${m.value}`, m.placeholder]));
   const entitiesByUnitId = new Map(ranges.map((r) => [r.id, []]));

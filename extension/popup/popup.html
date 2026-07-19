@@ -12,7 +12,7 @@
       <header>
         <img class="logo" src="img/ClarenceLogo.png" alt="Clarence">
         <div>
-          <h1>- Clear your data</h1>
+          <h1></h1>
         </div>
       </header>
 
@@ -57,23 +57,23 @@
         <div class="panel" id="masked"></div>
         <button class="btn-ghost overlay-trigger" id="maskedMoreBtn" hidden>Voir tout</button>
         <div class="controls">
-          <button class="btn-primary" id="copyBtn">Copier le texte propre</button>
+          <button class="btn-primary" id="copyBtn"><img src="img/ClarenceCpButtonW.png" class ="cpbtn"></button>
           <span class="status" id="copyStatus"></span>
         </div>
 
         <details>
-          <summary>Table de correspondance (reste en local, effacée à la fermeture du navigateur)</summary>
+          <summary>Table de correspondance</summary>
           <div id="mappingWrap"></div>
         </details>
       </section>
       </div>
 
       <div id="fileMode" hidden>
-        <label class="field-label">Anonymiser un fichier</label>
+        <label class="field-label" for="input"></label> Anonymiser fichier
         <div class="dropzone" id="dropzone">
           <input type="file" id="fileInput" accept=".csv,.xlsx,.docx" hidden>
           <p class="dropzone-main">Glisse ou <button class="link-btn" id="filePickBtn">parcours tes fichiers</button></p>
-          <p class="hint">CSV, .xlsx, .docx — Traitement local</p>
+          <p class="hint">CSV, .xlsx, .docx</p>
         </div>
 
         <div id="fileChosen" hidden>
@@ -86,8 +86,21 @@
 
         <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
           <input type="checkbox" id="fileRealisticToggle">
-          Pseudonymes réalistes pour noms, lieux et contacts (les données bancaires, NIR et références restent en [TYPE])
+          Pseudonymes (lieux, noms, contacts)
         </label>
+
+        <details id="fileCustomRules">
+          <summary>Personnaliser le masquage</summary>
+          <div class="custom-body">
+            <div class="field-label">Types à masquer <span class="hint">(décoche pour garder visible)</span></div>
+            <div id="fileTypeToggles" class="type-toggles"></div>
+            <label class="field-label" for="fileAlwaysMask">Toujours masquer <span class="hint">(un terme par ligne)</span></label>
+            <textarea id="fileAlwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
+            <label class="field-label" for="fileAlwaysKeep">Ne jamais masquer</label>
+            <textarea id="fileAlwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
+          </div>
+        </details>
+
         <div class="status" id="fileStatus"></div>
 
         <section id="fileResults" hidden>

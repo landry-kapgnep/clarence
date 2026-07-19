@@ -84,12 +84,15 @@ body {
   border-radius: 22px;
   background: rgba(255, 250, 242, 0.96);
   backdrop-filter: blur(6px);
+  background-image: url("img/PrintGridTransparent.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  
 }
 
 header {
   display: flex;
   align-items: center;
-  background: rgba(255, 250, 242, 0.96);
 }
 
 h1 {
@@ -301,9 +304,17 @@ footer {
   height: auto;
   flex-shrink: 0;
   border-radius: 18px;
+  margin: auto;
 }
 
 .dlbtn {
+  width: 20px;
+  height: auto;
+  flex-shrink: 0;
+  border-radius: 18px;
+}
+
+.cpbtn {
   width: 20px;
   height: auto;
   flex-shrink: 0;
