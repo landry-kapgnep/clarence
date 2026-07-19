@@ -31692,6 +31692,31 @@ function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   return s[Math.floor(s.length / 2)] || 11;
 }
+function splitIntoColumns(items) {
+  const withGeom = items.filter((i) => i.str && i.str.trim()).map((i) => ({
+    item: i,
+    x: i.transform[4],
+    w: i.width || 0
+  }));
+  if (withGeom.length < 8) return [items];
+  const pageMinX = Math.min(...withGeom.map((g) => g.x));
+  const pageMaxX = Math.max(...withGeom.map((g) => g.x + g.w));
+  const pageWidth = pageMaxX - pageMinX;
+  if (pageWidth <= 0) return [items];
+  const gutter = pageMinX + pageWidth / 2;
+  const fullWidth = withGeom.filter((g) => g.w >= pageWidth * 0.55);
+  const columnItems = withGeom.filter((g) => g.w < pageWidth * 0.55);
+  const crossing = columnItems.filter((g) => g.x < gutter && g.x + g.w > gutter);
+  const left = columnItems.filter((g) => g.x + g.w / 2 < gutter);
+  const right = columnItems.filter((g) => g.x + g.w / 2 >= gutter);
+  const isTwoColumn = columnItems.length >= 8 && crossing.length / columnItems.length < 0.1 && left.length >= 4 && right.length >= 4;
+  if (!isTwoColumn) return [items];
+  return [
+    fullWidth.map((g) => g.item),
+    left.map((g) => g.item),
+    right.map((g) => g.item)
+  ].filter((group) => group.length > 0);
+}
 async function parseStructure(buffer) {
   const pdf = await getDocument({
     data: new Uint8Array(buffer.slice(0)),
@@ -31703,13 +31728,17 @@ async function parseStructure(buffer) {
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
     const textContent = await page.getTextContent();
-    const lines = groupIntoLines(textContent.items);
-    if (!lines.length) continue;
-    const dominantSize = median(lines.map((l) => l.size));
-    const paragraphs = groupIntoParagraphs(lines, dominantSize);
-    paragraphs.forEach((p, i) => {
-      units.push({ id: `page${pageNum}#para${i}`, text: p.text, isHeading: p.isHeading });
-    });
+    const allLines = groupIntoLines(textContent.items);
+    if (!allLines.length) continue;
+    const dominantSize = median(allLines.map((l) => l.size));
+    let paraIndex = 0;
+    for (const columnItems of splitIntoColumns(textContent.items)) {
+      const lines = groupIntoLines(columnItems);
+      if (!lines.length) continue;
+      for (const p of groupIntoParagraphs(lines, dominantSize)) {
+        units.push({ id: `page${pageNum}#para${paraIndex++}`, text: p.text, isHeading: p.isHeading });
+      }
+    }
   }
   return units;
 }

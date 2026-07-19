@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { extractTextUnits, applyMask, stripMetadata } from '../../src/files/pdf-adapter.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
 
@@ -72,6 +72,40 @@ test("applyMask sur une unité absente de resultsById retombe sur le texte d'ori
   const md = await applyMask(buf, new Map()); // aucun résultat fourni
   assert.ok(md.includes('RAPPORT CLIENT — CONFIDENTIEL'));
   assert.ok(md.includes('Amandine Rousseau'));
+});
+
+// Génère une page à 2 colonnes (titre pleine largeur + colonne gauche à x=50,
+// colonne droite à x=320) pour tester la détection de colonnes.
+async function twoColumnBuffer() {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const page = doc.addPage([595, 842]);
+  const T = (t, x, y) => page.drawText(t, { x, y, size: 11, font });
+  page.drawText('RAPPORT DEUX COLONNES', { x: 50, y: 790, size: 18, font });
+  // colonne gauche (x=50) — plusieurs lignes pour dépasser le seuil de détection
+  const leftLines = ['Competences', 'Python et FastAPI', 'Docker et CI/CD',
+    'SQL et PostgreSQL', 'Bases MongoDB', 'Contact : gauche@ex.fr'];
+  const rightLines = ['Experiences', 'Data Engineer Semantik', 'Responsable Twini',
+    'Benevole terrain MSF', 'Projets R&D divers', 'Tel : 06 12 34 56 78'];
+  // les DEUX colonnes partagent les mêmes Y (côte à côte) — sans détection de
+  // colonnes, chaque ligne gauche+droite fusionnerait.
+  leftLines.forEach((t, i) => T(t, 50, 750 - i * 16));
+  rightLines.forEach((t, i) => T(t, 320, 750 - i * 16));
+  return (await doc.save()).buffer;
+}
+
+test('mise en page 2 colonnes : gauche et droite ne fusionnent pas sur la même ligne', async () => {
+  const { units } = await extractTextUnits(await twoColumnBuffer());
+  const joined = units.map(u => u.text).join(' | ');
+  // l'email (gauche) et le téléphone (droite) étaient sur la même ligne Y :
+  // sans détection de colonnes ils se retrouvaient collés. Ici, séparés.
+  const emailUnit = units.find(u => u.text.includes('gauche@ex.fr'));
+  const phoneUnit = units.find(u => u.text.includes('06 12 34 56 78'));
+  assert.ok(emailUnit && phoneUnit);
+  assert.notEqual(emailUnit.id, phoneUnit.id, 'email et téléphone dans des unités distinctes');
+  assert.equal(emailUnit.text.includes('06 12 34 56 78'), false, 'la ligne gauche ne contient pas le texte de droite');
+  // le titre pleine largeur reste en tête
+  assert.match(units[0].text, /RAPPORT DEUX COLONNES/);
 });
 
 test("le buffer d'entrée reste réutilisable après extractTextUnits (pas de détachement)", async () => {

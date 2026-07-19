@@ -96,6 +96,49 @@ function median(nums) {
   return s[Math.floor(s.length / 2)] || 11;
 }
 
+// Détection de mise en page à 2 colonnes (fréquent sur les CV/rapports). Sans
+// elle, le regroupement par Y fusionne la colonne gauche et droite sur la même
+// ligne → charabia illisible ET contexte incohérent qui sabote le NER.
+// Heuristique GÉOMÉTRIQUE (donc testable sans le modèle) : on cherche une
+// gouttière verticale au centre que peu d'items franchissent.
+// Retourne un tableau ORDONNÉ de groupes d'items en ordre de lecture :
+//  - mono-colonne → [tousLesItems] ;
+//  - bi-colonne   → [bandePleineLargeur (titre), colonneGauche, colonneDroite].
+// Limite assumée : ne gère que 1 ou 2 colonnes (3+ colonnes très rares).
+function splitIntoColumns(items) {
+  const withGeom = items.filter(i => i.str && i.str.trim()).map(i => ({
+    item: i, x: i.transform[4], w: i.width || 0
+  }));
+  if (withGeom.length < 8) return [items]; // trop peu pour trancher : mono-colonne
+
+  const pageMinX = Math.min(...withGeom.map(g => g.x));
+  const pageMaxX = Math.max(...withGeom.map(g => g.x + g.w));
+  const pageWidth = pageMaxX - pageMinX;
+  if (pageWidth <= 0) return [items];
+  const gutter = pageMinX + pageWidth / 2;
+
+  // Un item "pleine largeur" (titre, bandeau) traverse largement la gouttière :
+  // on le sort des colonnes pour le garder en tête, à sa place verticale.
+  const fullWidth = withGeom.filter(g => g.w >= pageWidth * 0.55);
+  const columnItems = withGeom.filter(g => g.w < pageWidth * 0.55);
+  const crossing = columnItems.filter(g => g.x < gutter && g.x + g.w > gutter);
+  const left = columnItems.filter(g => g.x + g.w / 2 < gutter);
+  const right = columnItems.filter(g => g.x + g.w / 2 >= gutter);
+
+  // 2 colonnes seulement si la gouttière est nette (peu de franchissements) et
+  // les deux côtés substantiels — sinon c'est du mono-colonne mal aligné.
+  const isTwoColumn = columnItems.length >= 8 &&
+    crossing.length / columnItems.length < 0.1 &&
+    left.length >= 4 && right.length >= 4;
+
+  if (!isTwoColumn) return [items];
+  return [
+    fullWidth.map(g => g.item),
+    left.map(g => g.item),
+    right.map(g => g.item)
+  ].filter(group => group.length > 0);
+}
+
 // Ré-extrait tout depuis les octets bruts à chaque appel (aucun état partagé
 // entre extractTextUnits et applyMask — même convention que les 3 autres
 // adaptateurs). Retourne une structure ordonnée par page puis paragraphe.
@@ -116,13 +159,24 @@ async function parseStructure(buffer) {
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
     const textContent = await page.getTextContent();
-    const lines = groupIntoLines(textContent.items);
-    if (!lines.length) continue;
-    const dominantSize = median(lines.map(l => l.size));
-    const paragraphs = groupIntoParagraphs(lines, dominantSize);
-    paragraphs.forEach((p, i) => {
-      units.push({ id: `page${pageNum}#para${i}`, text: p.text, isHeading: p.isHeading });
-    });
+
+    // Taille dominante calculée sur TOUTE la page (référence stable pour la
+    // détection de titre), avant le découpage en colonnes.
+    const allLines = groupIntoLines(textContent.items);
+    if (!allLines.length) continue;
+    const dominantSize = median(allLines.map(l => l.size));
+
+    // Chaque groupe de colonnes est regroupé en lignes PUIS paragraphes
+    // séparément, et concaténé dans l'ordre de lecture (bande titre, gauche,
+    // droite) — jamais de fusion d'une colonne à l'autre.
+    let paraIndex = 0;
+    for (const columnItems of splitIntoColumns(textContent.items)) {
+      const lines = groupIntoLines(columnItems);
+      if (!lines.length) continue;
+      for (const p of groupIntoParagraphs(lines, dominantSize)) {
+        units.push({ id: `page${pageNum}#para${paraIndex++}`, text: p.text, isHeading: p.isHeading });
+      }
+    }
   }
   return units;
 }
