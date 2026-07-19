@@ -9,7 +9,7 @@ import {
   mergeEntities,
   reinject,
   selectActive
-} from "./chunk-QCLJTVGM.js";
+} from "./chunk-KNKQTNVF.js";
 import {
   __commonJS,
   __toESM
@@ -29102,6 +29102,9 @@ var TYPE_DISPLAY = {
   ADRESSE: "Adresses",
   DATE_NAISSANCE: "Dates naiss.",
   REFERENCE: "R\xE9f\xE9rences",
+  IP: "IP",
+  MAC: "MAC",
+  BIC: "BIC",
   MISC: "Divers",
   PERSONNALISE: "Perso"
 };
@@ -29463,7 +29466,7 @@ async function processFile() {
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
-    const { anonymizeUnits } = await import("./anonymize-units-765UZJXW.js");
+    const { anonymizeUnits } = await import("./anonymize-units-EG67AGYP.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = adapter.extractTextUnits(input);
     if (!units.length) {

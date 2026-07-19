@@ -29,7 +29,8 @@ const TYPE_DISPLAY = {
   TELEPHONE: 'Téléphones', IBAN: 'IBAN', CARTE_BANCAIRE: 'Cartes',
   NIR: 'NIR', SIRET_SIREN: 'SIRET/SIREN', CODE_POSTAL_VILLE: 'Code postal',
   MONTANT: 'Montants', ADRESSE: 'Adresses', DATE_NAISSANCE: 'Dates naiss.',
-  REFERENCE: 'Références', MISC: 'Divers', PERSONNALISE: 'Perso'
+  REFERENCE: 'Références', IP: 'IP', MAC: 'MAC', BIC: 'BIC',
+  MISC: 'Divers', PERSONNALISE: 'Perso'
 };
 const parseLines = v => (v || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
 let nerPipe = null;

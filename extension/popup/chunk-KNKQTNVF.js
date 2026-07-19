@@ -47,11 +47,19 @@ var STOP_NOMS_CIVILITE = /* @__PURE__ */ new Set([
 ]);
 var REGEX_PATTERNS = [
   { type: "EMAIL", re: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, validate: null },
-  // maskIfStructureMatches : la structure IBAN (FR + 25 car. groupés) est si
-  // distinctive qu'on masque même si le mod-97 échoue — numéro fabriqué OU vrai
-  // IBAN mal recopié restent sensibles (priorité au zéro-fuite ; sans ça les
-  // détecteurs plus faibles déchiquettent le numéro et en laissent fuir une partie).
-  { type: "IBAN", re: /\bFR\d{2}[\s]?(?:\d{4}[\s]?){5}\d{3}\b/g, validate: (m) => ibanCheck(m), maskIfStructureMatches: true },
+  // maskIfStructureMatches : la structure IBAN (pays connu + 2 chiffres + corps
+  // groupé) est si distinctive qu'on masque même si le mod-97 échoue — numéro
+  // fabriqué OU vrai IBAN mal recopié restent sensibles (priorité au zéro-fuite ;
+  // sans ça les détecteurs plus faibles déchiquettent le numéro et en laissent
+  // fuir une partie). Liste blanche de pays (SEPA + voisins usuels) : évite
+  // qu'un code alphanum quelconque commençant par 2 lettres soit pris pour un
+  // IBAN. Longueur minimale garantie par {3,7} groupes de 4 (≥ 16 caractères).
+  {
+    type: "IBAN",
+    re: /\b(?:FR|MC|BE|CH|DE|ES|IT|PT|LU|NL|GB|IE|AT|DK|SE|NO|FI|PL|CZ|RO|GR|HR|HU|SK|SI|BG|LT|LV|EE|MT|CY|AD|SM)\d{2}(?:\s?[A-Z0-9]{4}){3,7}(?:\s?[A-Z0-9]{1,3})?\b/g,
+    validate: (m) => ibanCheck(m),
+    maskIfStructureMatches: true
+  },
   {
     type: "CARTE_BANCAIRE",
     // Commence et finit sur un chiffre (sinon le séparateur final est avalé
@@ -85,6 +93,37 @@ var REGEX_PATTERNS = [
   // fuir une partie.
   { type: "TELEPHONE", re: /(?<!\d)(?:(?:\+33|0033)[\s.-]?|0)[1-9](?:[\s.-]?\d{2}){4}(?!\d)/g, validate: null },
   { type: "CODE_POSTAL_VILLE", re: /\b\d{5}\b(?=\s+[A-ZÀ-Ü][a-zà-ÿ]+)/g, validate: null },
+  {
+    // IPv4 : structure très reconnaissable, octets bornés à 255. Peut matcher
+    // un numéro de version logicielle exotique (1.2.3.4) — sur-masquage rare
+    // et bénin, préférable à laisser fuir une adresse réseau (zéro-fuite).
+    type: "IP",
+    re: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+    validate: (m) => m.split(".").every((o) => Number(o) <= 255)
+  },
+  {
+    // Adresse MAC : 6 octets hexadécimaux séparés par ':' ou '-'.
+    type: "MAC",
+    re: /\b[0-9A-F]{2}(?:[:-][0-9A-F]{2}){5}\b/gi,
+    validate: null
+  },
+  {
+    // BIC/SWIFT : 4 lettres banque + pays (même liste blanche que l'IBAN —
+    // sans elle, tout mot de 8 lettres MAJUSCULES matcherait, ex. PASSWORD)
+    // + 2 alphanum + branche optionnelle.
+    type: "BIC",
+    re: /\b[A-Z]{4}(?:FR|MC|BE|CH|DE|ES|IT|PT|LU|NL|GB|IE|AT|DK|SE|NO|FI|PL|CZ|RO|GR|HR|HU|SK|SI|BG|LT|LV|EE|MT|CY|AD|SM)[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b/g,
+    validate: null
+  },
+  {
+    // BIC avec contexte explicite (« BIC: », « SWIFT: ») : le libellé lève
+    // l'ambiguïté, donc pas de liste blanche de pays — rattrape les BIC à
+    // pays exotique ou mal recopié (cf. cartes/SIREN par contexte, zéro-fuite).
+    type: "BIC",
+    re: /(?:BIC|SWIFT)\s*:?\s*([A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)\b/g,
+    extract: 1,
+    validate: null
+  },
   // Montant + devise. Deux styles de décimale : virgule FR (1 240,50) ET point
   // international (6540.00). Partie entière soit groupée par séparateurs, soit
   // suite brute de chiffres (6540). Sans le point décimal, "6540.00 EUR" laissait
@@ -496,6 +535,9 @@ var TYPE_PRIORITY = [
   "CARTE_BANCAIRE",
   "EMAIL",
   "TELEPHONE",
+  "BIC",
+  "IP",
+  "MAC",
   "DATE_NAISSANCE",
   "ADRESSE",
   "CODE_POSTAL_VILLE",
@@ -571,7 +613,10 @@ var TYPE_LABELS = {
   MONTANT: "MONTANT",
   ADRESSE: "ADRESSE",
   DATE_NAISSANCE: "DATE_NAISSANCE",
-  REFERENCE: "REFERENCE"
+  REFERENCE: "REFERENCE",
+  IP: "IP",
+  MAC: "MAC",
+  BIC: "BIC"
 };
 var escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function maskText(text, entities, opts = {}) {

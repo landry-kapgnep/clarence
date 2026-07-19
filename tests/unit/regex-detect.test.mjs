@@ -82,3 +82,45 @@ test('MONTANT garde la virgule FR et les milliers (1 240,50 €)', () => {
 test('le téléphone ne matche pas un fragment de 10 chiffres au milieu d\'une carte', () => {
   assert.equal(find('4970123456789012', 'TELEPHONE').length, 0);
 });
+
+// --- IBAN international (liste blanche de pays).
+test('IBAN suisse à structure correcte : détecté même si mod-97 échoue', () => {
+  const [e] = find('Coordonnées : CH76 0023 4000 W123 4567 8 (UBS)', 'IBAN');
+  assert.ok(e);
+  assert.equal(e.value, 'CH76 0023 4000 W123 4567 8');
+});
+
+test('IBAN belge valide (mod-97) détecté, forme sans espaces', () => {
+  const [e] = find('IBAN BE71096123456769 pour le virement', 'IBAN');
+  assert.ok(e);
+  assert.equal(e.validated, true);
+});
+
+test('code pays inconnu : pas un IBAN (XX76… ignoré)', () => {
+  assert.equal(find('Réf XX76 0023 4000 1234 5678 90', 'IBAN').length, 0);
+});
+
+// --- IP v4.
+test('IP valide détectée, IP à octet impossible rejetée', () => {
+  assert.equal(find('depuis 192.168.1.104 hier', 'IP').length, 1);
+  assert.equal(find('depuis 999.168.1.104 hier', 'IP').length, 0);
+});
+
+// --- MAC.
+test('adresse MAC détectée (les deux séparateurs)', () => {
+  assert.equal(find('MAC: 00:1A:2B:3C:4D:5E', 'MAC').length, 1);
+  assert.equal(find('MAC: 00-1a-2b-3c-4d-5e', 'MAC').length, 1);
+});
+
+test('un hexa isolé de 2 caractères n\'est pas une MAC', () => {
+  assert.equal(find('code AB tout seul', 'MAC').length, 0);
+});
+
+// --- BIC. findMerged : le motif nu (liste blanche) et le motif contextuel
+// (« BIC: ») peuvent matcher le même span — une seule entité après fusion.
+test('BIC détecté (8 et 11 caractères), mot en majuscules rejeté', () => {
+  assert.equal(findMerged('BIC: BNPAPRRPXXX', 'BIC').length, 1, 'pays hors liste mais libellé BIC explicite');
+  assert.equal(findMerged('BIC: SOGEFRPP', 'BIC').length, 1);
+  assert.equal(findMerged('virement via SOGEFRPP hier', 'BIC').length, 1, 'BIC nu à pays connu, sans libellé');
+  assert.equal(findMerged('MOT PASSWORD ici', 'BIC').length, 0, 'PASSWORD ne doit pas matcher (pays "WO" inconnu, pas de libellé)');
+});
