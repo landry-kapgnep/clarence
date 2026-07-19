@@ -497,6 +497,10 @@ async function processFile() {
       : 'Aucune donnée sensible détectée — métadonnées nettoyées.';
     $('fileSummary').className = 'status active';
     $('fileResults').hidden = false;
+    // Glisser-déposer direct vers la page : n'a de sens qu'en mode panneau
+    // (coexiste avec la zone d'upload du site) — le popup de barre d'outils
+    // est une fenêtre séparée, on ne peut rien glisser vers la page depuis là.
+    $('dragCard').hidden = !document.body.classList.contains('panel-mode');
 
     if (!nerPipe) {
       fileSetStatus('Détection des noms indisponible (connexion requise au premier usage) — seules les données structurées ont été repérées. Relis attentivement le fichier.', 'error');
@@ -507,6 +511,7 @@ async function processFile() {
     console.error(err);
     fileOutBlob = null;
     $('fileResults').hidden = true;
+    $('dragCard').hidden = true;
     fileSetStatus('Le traitement a échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
   } finally {
     btn.disabled = false;
@@ -544,10 +549,23 @@ $('fileResetBtn').addEventListener('click', () => {
   $('fileInput').value = '';
   $('fileChosen').hidden = true;
   $('fileResults').hidden = true;
+  $('dragCard').hidden = true;
   fileSetStatus('');
 });
 $('fileAnalyzeBtn').addEventListener('click', processFile);
 $('fileDownloadBtn').addEventListener('click', downloadFile);
+
+// Glisser le fichier anonymisé directement dans la zone d'upload du site (ex.
+// ChatGPT/Claude) : un vrai objet File posé sur dataTransfer, capté nativement
+// par la cible comme un dépôt depuis le disque. Doit être un vrai geste
+// souris de l'utilisateur sur cet élément (impossible à déclencher par clic
+// ailleurs) — d'où la carte dédiée plutôt qu'un bouton.
+$('dragCard').addEventListener('dragstart', ev => {
+  if (!fileOutBlob) { ev.preventDefault(); return; }
+  const file = new File([fileOutBlob], fileOutName, { type: fileOutBlob.type });
+  ev.dataTransfer.items.add(file);
+  ev.dataTransfer.effectAllowed = 'copy';
+});
 
 const dropzone = $('dropzone');
 for (const evName of ['dragenter', 'dragover']) {

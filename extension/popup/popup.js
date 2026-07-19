@@ -29489,6 +29489,7 @@ async function processFile() {
     $("fileSummary").textContent = mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.";
     $("fileSummary").className = "status active";
     $("fileResults").hidden = false;
+    $("dragCard").hidden = !document.body.classList.contains("panel-mode");
     if (!nerPipe) {
       fileSetStatus("D\xE9tection des noms indisponible (connexion requise au premier usage) \u2014 seules les donn\xE9es structur\xE9es ont \xE9t\xE9 rep\xE9r\xE9es. Relis attentivement le fichier.", "error");
     } else {
@@ -29498,6 +29499,7 @@ async function processFile() {
     console.error(err);
     fileOutBlob = null;
     $("fileResults").hidden = true;
+    $("dragCard").hidden = true;
     fileSetStatus("Le traitement a \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
   } finally {
     btn.disabled = false;
@@ -29530,10 +29532,20 @@ $("fileResetBtn").addEventListener("click", () => {
   $("fileInput").value = "";
   $("fileChosen").hidden = true;
   $("fileResults").hidden = true;
+  $("dragCard").hidden = true;
   fileSetStatus("");
 });
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
+$("dragCard").addEventListener("dragstart", (ev) => {
+  if (!fileOutBlob) {
+    ev.preventDefault();
+    return;
+  }
+  const file = new File([fileOutBlob], fileOutName, { type: fileOutBlob.type });
+  ev.dataTransfer.items.add(file);
+  ev.dataTransfer.effectAllowed = "copy";
+});
 var dropzone = $("dropzone");
 for (const evName of ["dragenter", "dragover"]) {
   dropzone.addEventListener(evName, (ev) => {
