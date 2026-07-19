@@ -57,13 +57,13 @@ function parseCSV(text, delimiter) {
 
 const BOM = String.fromCharCode(0xFEFF);
 
-function serializeCSV(rows, { delimiter, eol, hasBOM }) {
+function serializeCSV(rows, { delimiter, eol, hasBOM, trailingEOL }) {
   const lines = rows.map(row => row.map(field => {
     const needsQuote = field.includes(delimiter) || field.includes('"') ||
       field.includes('\n') || field.includes('\r');
     return needsQuote ? '"' + field.replace(/"/g, '""') + '"' : field;
   }).join(delimiter));
-  return (hasBOM ? BOM : '') + lines.join(eol);
+  return (hasBOM ? BOM : '') + lines.join(eol) + (trailingEOL ? eol : '');
 }
 
 function parseMeta(csvText) {
@@ -72,7 +72,10 @@ function parseMeta(csvText) {
   const delimiter = sniffDelimiter(body);
   const eol = sniffEOL(body);
   const rows = parseCSV(body, delimiter);
-  return { rows, delimiter, eol, hasBOM };
+  // Fin de ligne terminale (usuelle dans les exports Unix) : préservée à
+  // l'identique, sinon le round-trip modifie le fichier hors des cellules.
+  const trailingEOL = /\r\n$|\n$|\r$/.test(body);
+  return { rows, delimiter, eol, hasBOM, trailingEOL };
 }
 
 // { units: [{ id: 'r{row}c{col}', text }], meta } — cellules vides ignorées.
@@ -88,14 +91,14 @@ export function extractTextUnits(csvText) {
 // resultsById : Map<id, { maskedText }> — ré-analyse le CSV depuis zéro
 // (fonction pure, aucun état réutilisé entre extractTextUnits et applyMask).
 export function applyMask(csvText, resultsById) {
-  const { rows, delimiter, eol, hasBOM } = parseMeta(csvText);
+  const { rows, delimiter, eol, hasBOM, trailingEOL } = parseMeta(csvText);
   for (const [id, { maskedText }] of resultsById) {
     const m = /^r(\d+)c(\d+)$/.exec(id);
     if (!m) continue;
     const [, r, c] = m;
     if (rows[r] && rows[r][c] !== undefined) rows[r][c] = maskedText;
   }
-  return serializeCSV(rows, { delimiter, eol, hasBOM });
+  return serializeCSV(rows, { delimiter, eol, hasBOM, trailingEOL });
 }
 
 export function stripMetadata(csvText) {

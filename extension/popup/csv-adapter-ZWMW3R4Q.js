@@ -66,12 +66,12 @@ function parseCSV(text, delimiter) {
   return rows;
 }
 var BOM = String.fromCharCode(65279);
-function serializeCSV(rows, { delimiter, eol, hasBOM }) {
+function serializeCSV(rows, { delimiter, eol, hasBOM, trailingEOL }) {
   const lines = rows.map((row) => row.map((field) => {
     const needsQuote = field.includes(delimiter) || field.includes('"') || field.includes("\n") || field.includes("\r");
     return needsQuote ? '"' + field.replace(/"/g, '""') + '"' : field;
   }).join(delimiter));
-  return (hasBOM ? BOM : "") + lines.join(eol);
+  return (hasBOM ? BOM : "") + lines.join(eol) + (trailingEOL ? eol : "");
 }
 function parseMeta(csvText) {
   const hasBOM = csvText.charCodeAt(0) === 65279;
@@ -79,7 +79,8 @@ function parseMeta(csvText) {
   const delimiter = sniffDelimiter(body);
   const eol = sniffEOL(body);
   const rows = parseCSV(body, delimiter);
-  return { rows, delimiter, eol, hasBOM };
+  const trailingEOL = /\r\n$|\n$|\r$/.test(body);
+  return { rows, delimiter, eol, hasBOM, trailingEOL };
 }
 function extractTextUnits(csvText) {
   const meta = parseMeta(csvText);
@@ -90,14 +91,14 @@ function extractTextUnits(csvText) {
   return { units, meta };
 }
 function applyMask(csvText, resultsById) {
-  const { rows, delimiter, eol, hasBOM } = parseMeta(csvText);
+  const { rows, delimiter, eol, hasBOM, trailingEOL } = parseMeta(csvText);
   for (const [id, { maskedText }] of resultsById) {
     const m = /^r(\d+)c(\d+)$/.exec(id);
     if (!m) continue;
     const [, r, c] = m;
     if (rows[r] && rows[r][c] !== void 0) rows[r][c] = maskedText;
   }
-  return serializeCSV(rows, { delimiter, eol, hasBOM });
+  return serializeCSV(rows, { delimiter, eol, hasBOM, trailingEOL });
 }
 function stripMetadata(csvText) {
   return csvText;

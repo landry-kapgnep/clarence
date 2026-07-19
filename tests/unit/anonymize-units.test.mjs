@@ -42,3 +42,42 @@ test('refuse un texte contenant déjà le séparateur interne', async () => {
   const units = [{ id: 'a', text: `piégé ${UNIT_SEP} dedans` }];
   await assert.rejects(() => anonymizeUnits(units), /séparateur interne/);
 });
+
+// ===== Règles personnalisées (mêmes primitives que le mode texte) =====
+
+test('forceTerms : le terme est masqué dans TOUTES les unités où il apparaît', async () => {
+  const units = [
+    { id: 'a', text: 'Projet Hermes lancé.' },
+    { id: 'b', text: 'Budget Hermes validé.' }
+  ];
+  const { results, mapping } = await anonymizeUnits(units, { forceTerms: ['Hermes'] });
+  assert.equal(results[0].maskedText.includes('Hermes'), false, 'fuite unité a');
+  assert.equal(results[1].maskedText.includes('Hermes'), false, 'fuite unité b');
+  // même placeholder partout (cohérence inter-unités)
+  const ph = mapping.find(m => m.value === 'Hermes').placeholder;
+  assert.ok(results[0].maskedText.includes(ph) && results[1].maskedText.includes(ph));
+});
+
+test('disabledTypes : un type désactivé n\'est plus masqué', async () => {
+  const units = [{ id: 'a', text: 'Contact: jean@acme.fr' }];
+  const { results } = await anonymizeUnits(units, { disabledTypes: new Set(['EMAIL']) });
+  assert.equal(results[0].maskedText, 'Contact: jean@acme.fr');
+});
+
+test('keepValues : une valeur épargnée reste en clair, les autres restent masquées', async () => {
+  const units = [{ id: 'a', text: 'De jean@acme.fr à paul@acme.fr' }];
+  const { results } = await anonymizeUnits(units, { keepValues: ['jean@acme.fr'] });
+  assert.equal(results[0].maskedText.includes('jean@acme.fr'), true, 'valeur épargnée disparue');
+  assert.equal(results[0].maskedText.includes('paul@acme.fr'), false, 'fuite de la non-épargnée');
+});
+
+test('un masque forcé reste intouchable même si son "type" serait filtré', async () => {
+  // forcedMasks produit des entités PERSONNALISE/manuel : filterByRules ne
+  // doit jamais les retirer (l'utilisateur a le dernier mot).
+  const units = [{ id: 'a', text: 'Nom de code: Hermes' }];
+  const { results } = await anonymizeUnits(units, {
+    forceTerms: ['Hermes'],
+    disabledTypes: new Set(['PERSONNALISE'])
+  });
+  assert.equal(results[0].maskedText.includes('Hermes'), false);
+});

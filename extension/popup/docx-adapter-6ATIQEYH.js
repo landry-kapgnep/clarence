@@ -49,7 +49,7 @@ function distributeEntitiesOverRuns(runs, entities) {
 
 // src/files/docx-adapter.js
 var W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-var PART_RE = /^word\/(document|header\d*|footer\d*)\.xml$/;
+var PART_RE = /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/;
 function stripTrackedChanges(doc) {
   for (const del of Array.from(doc.getElementsByTagNameNS(W_NS, "del"))) {
     del.parentNode.removeChild(del);

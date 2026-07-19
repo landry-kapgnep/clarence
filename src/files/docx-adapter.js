@@ -22,7 +22,10 @@ import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { stripCoreProps, stripAppProps, stripCommentParts } from './ooxml-metadata.js';
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
-const PART_RE = /^word\/(document|header\d*|footer\d*)\.xml$/;
+// footnotes/endnotes inclus : leurs <w:p> sont des paragraphes normaux (même
+// traitement), et les exclure serait une fuite SILENCIEUSE — une PII en note
+// de bas de page ressortirait en clair sans que rien ne le signale.
+const PART_RE = /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/;
 
 function stripTrackedChanges(doc) {
   for (const del of Array.from(doc.getElementsByTagNameNS(W_NS, 'del'))) {

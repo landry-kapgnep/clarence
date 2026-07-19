@@ -6,7 +6,7 @@
 import { detectRegex } from '../engine/regex-detect.js';
 import { detectNER } from '../engine/ner.js';
 import { mergeEntities } from '../engine/merge.js';
-import { selectActive } from '../engine/selection.js';
+import { selectActive, forcedMasks, filterByRules } from '../engine/selection.js';
 import { maskText } from '../engine/masking.js';
 
 // Séparateur entre unités : caractère de la zone d'usage privé Unicode,
@@ -45,13 +45,23 @@ function joinWithSentinel(units) {
 // bien incluse dans `maskedText`). Sans impact pour CSV/XLSX ; pour DOCX,
 // une répétition non détectée dans SON PROPRE paragraphe pourrait ne pas
 // être masquée dans le fichier réécrit — limite documentée, pas cachée.
-export async function anonymizeUnits(units, { nerPipeline, maskOpts } = {}) {
+// Options de règles personnalisées (mêmes primitives que le mode texte,
+// voir selection.js — logique zéro tolérance partagée, jamais dupliquée) :
+// - forceTerms    : termes « toujours masquer » (recherche littérale, toutes occurrences) ;
+// - disabledTypes : Set de types que l'utilisateur choisit de NE PAS masquer ;
+// - keepValues    : valeurs « ne jamais masquer » (les masques forcés restent intouchables).
+export async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
   const regexEntities = detectRegex(combined);
   const nerEntities = nerPipeline ? await detectNER(combined, nerPipeline) : [];
-  const active = selectActive(mergeEntities(regexEntities, nerEntities), [], new Set());
+  const forced = forcedMasks(combined, forceTerms || []);
+  const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, new Set());
+  const active = filterByRules(selected, {
+    disabledTypes: disabledTypes || new Set(),
+    keepValues: keepValues || []
+  });
   const { masked, mapping } = maskText(combined, active, maskOpts);
 
   const placeholderByEntity = new Map(mapping.map(m => [`${m.type}|${m.value}`, m.placeholder]));
