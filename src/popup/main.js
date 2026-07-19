@@ -375,7 +375,11 @@ const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 Mo : garde le NER et l'UI fluides (
 const FILE_TYPES = {
   csv:  { mime: 'text/csv;charset=utf-8', text: true, load: () => import('../files/csv-adapter.js') },
   xlsx: { mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', text: false, load: () => import('../files/xlsx-adapter.js') },
-  docx: { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', text: false, load: () => import('../files/docx-adapter.js') }
+  docx: { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', text: false, load: () => import('../files/docx-adapter.js') },
+  // PDF : seul format dont la sortie n'est pas une réécriture du fichier
+  // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
+  // dans processFile() (nom de fichier ET extension de sortie changent).
+  pdf:  { mime: 'text/markdown;charset=utf-8', text: false, load: () => import('../files/pdf-adapter.js'), outExt: '.md' }
 };
 
 let chosenFile = null;
@@ -415,7 +419,7 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus('Format non pris en charge. Formats acceptés : CSV, Excel (.xlsx), Word (.docx).', 'error');
+    fileSetStatus('Format non pris en charge. Formats acceptés : CSV, Excel (.xlsx), Word (.docx), PDF (converti en .md).', 'error');
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -458,7 +462,9 @@ async function processFile() {
       ? new TextDecoder('utf-8', { ignoreBOM: true }).decode(await chosenFile.arrayBuffer())
       : await chosenFile.arrayBuffer();
 
-    const { units } = adapter.extractTextUnits(input);
+    // await : sans effet sur les 3 adaptateurs synchrones (CSV/XLSX/DOCX),
+    // indispensable pour PDF (pdfjs-dist est intrinsèquement asynchrone).
+    const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
       fileSetStatus('Aucun texte à analyser dans ce fichier.', 'error');
       return;
@@ -478,10 +484,14 @@ async function processFile() {
 
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
     const byId = new Map(results.map(r => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
-    const masked = adapter.applyMask(input, byId);
-    const cleaned = adapter.stripMetadata(masked);
+    const masked = await adapter.applyMask(input, byId);
+    const cleaned = await adapter.stripMetadata(masked);
     fileOutBlob = new Blob([cleaned], { type: kind.mime });
-    fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, '-anonymise$1');
+    // outExt (PDF uniquement) : la sortie est un nouveau document (.md), pas
+    // une réécriture — remplace l'extension entière, pas juste le nom.
+    fileOutName = kind.outExt
+      ? chosenFile.name.replace(/\.[^.]+$/, '-anonymise' + kind.outExt)
+      : chosenFile.name.replace(/(\.[^.]+)$/, '-anonymise$1');
 
     // Table de correspondance partagée avec la désanonymisation (mode texte).
     lastMapping = mapping;

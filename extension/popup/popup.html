@@ -17,13 +17,13 @@
       </header>
 
       <div class="mode-switch">
-        <button class="mode-btn active" id="modeTextBtn" data-mode="text">Texte</button>
-        <button class="mode-btn" id="modeFileBtn" data-mode="file">Fichier</button>
+        <button class="mode-btn txtmode active" id="modeTextBtn" data-mode="text"><img src="img/ClarenceTxt.png"></button>
+        <button class="mode-btn filemode" id="modeFileBtn" data-mode="file"><img src="img/ClarenceFl.png"></button>
       </div>
 
       <div id="textMode">
       <label class="field-label" for="input"></label> Anonymiser texte
-      <textarea id="input" placeholder="Contenu à anonymiser…"></textarea>
+      <textarea id="input" placeholder="..."></textarea>
 
       <div class="controls">
         <button class="btn-primary" id="analyzeBtn">Analyser</button>
@@ -71,9 +71,9 @@
       <div id="fileMode" hidden>
         <label class="field-label" for="input"></label> Anonymiser fichier
         <div class="dropzone" id="dropzone">
-          <input type="file" id="fileInput" accept=".csv,.xlsx,.docx" hidden>
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf" hidden>
           <p class="dropzone-main">Glisse ou <button class="link-btn" id="filePickBtn">parcours tes fichiers</button></p>
-          <p class="hint">CSV, .xlsx, .docx</p>
+          <p class="hint">CSV, .xlsx, .docx, .pdf (converti en .md)</p>
         </div>
 
         <div id="fileChosen" hidden>
@@ -110,14 +110,14 @@
           </div>
           <div id="dragCard" class="drag-card" draggable="true" hidden>
             <span class="drag-card-icon">⇢</span>
-            <span>Glisse ce fichier directement dans la zone d'envoi du site</span>
+            <span>Glissez et déposer le fichier</span>
           </div>
           <p class="status" id="fileSummary"></p>
           <details>
-            <summary>Ce qui a été masqué (reste en local, effacé à la fermeture du navigateur)</summary>
+            <summary>Données masquées</summary>
             <div id="fileMappingWrap"></div>
           </details>
-          <p class="hint">⚠ Relisez le fichier téléchargé avant de l'utiliser : la détection n'est pas infaillible, surtout sur les noms peu courants.</p>
+          <p class="hint">⚠ Relisez le fichier téléchargé avant de l'utiliser</p>
         </section>
       </div>
 
@@ -126,7 +126,7 @@
           <button class="btn-ghost" id="toggleReinjectBtn">Désanonymiser une réponse…</button>
         </div>
         <div id="reinjectZone" hidden>
-          <h2>Désanonymiser <span class="hint">— colle la réponse du LLM : les vrais noms et valeurs sont restitués</span></h2>
+          <h2>Désanonymiser <span class="hint">- Les vrais noms et valeurs sont restitués</span></h2>
           <textarea id="reinjectInput" placeholder="Colle ici la réponse contenant [PERSONNE_1], [EMAIL_1]…"></textarea>
           <div class="controls">
             <button class="btn-primary" id="reinjectBtn">Désanonymiser</button>

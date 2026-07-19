@@ -29392,7 +29392,11 @@ var MAX_FILE_BYTES = 5 * 1024 * 1024;
 var FILE_TYPES = {
   csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-FFK2G2H4.js") },
   xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-BBLAZWMQ.js") },
-  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-V4WQ4SPL.js") }
+  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-V4WQ4SPL.js") },
+  // PDF : seul format dont la sortie n'est pas une réécriture du fichier
+  // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
+  // dans processFile() (nom de fichier ET extension de sortie changent).
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-3USI3OQ3.js"), outExt: ".md" }
 };
 var chosenFile = null;
 var fileOutBlob = null;
@@ -29423,7 +29427,7 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus("Format non pris en charge. Formats accept\xE9s : CSV, Excel (.xlsx), Word (.docx).", "error");
+    fileSetStatus("Format non pris en charge. Formats accept\xE9s : CSV, Excel (.xlsx), Word (.docx), PDF (converti en .md).", "error");
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -29459,7 +29463,7 @@ async function processFile() {
     const adapter = await kind.load();
     const { anonymizeUnits } = await import("./anonymize-units-7FUVSLRA.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
-    const { units } = adapter.extractTextUnits(input);
+    const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
       fileSetStatus("Aucun texte \xE0 analyser dans ce fichier.", "error");
       return;
@@ -29476,10 +29480,10 @@ async function processFile() {
       keepValues: parseLines($("fileAlwaysKeep")?.value)
     });
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
-    const masked = adapter.applyMask(input, byId);
-    const cleaned = adapter.stripMetadata(masked);
+    const masked = await adapter.applyMask(input, byId);
+    const cleaned = await adapter.stripMetadata(masked);
     fileOutBlob = new Blob([cleaned], { type: kind.mime });
-    fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, "-anonymise$1");
+    fileOutName = kind.outExt ? chosenFile.name.replace(/\.[^.]+$/, "-anonymise" + kind.outExt) : chosenFile.name.replace(/(\.[^.]+)$/, "-anonymise$1");
     lastMapping = mapping;
     chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {
     });
