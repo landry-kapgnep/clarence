@@ -6,8 +6,8 @@ import {
   stripCoreProps,
   unzipSync,
   zipSync
-} from "./chunk-NLZWTY3O.js";
-import "./chunk-JSBRDJBE.js";
+} from "./chunk-S5HPOW2S.js";
+import "./chunk-TRTQSARU.js";
 
 // node_modules/xlsx/xlsx.mjs
 var XLSX = {};
@@ -202,10 +202,10 @@ function Base64_decode(input) {
   }
   return o;
 }
-var has_buf = /* @__PURE__ */ function() {
+var has_buf = /* @__PURE__ */ (function() {
   return typeof Buffer !== "undefined" && typeof process !== "undefined" && typeof process.versions !== "undefined" && !!process.versions.node;
-}();
-var Buffer_from = /* @__PURE__ */ function() {
+})();
+var Buffer_from = /* @__PURE__ */ (function() {
   if (typeof Buffer !== "undefined") {
     var nbfs = !Buffer.from;
     if (!nbfs) try {
@@ -219,14 +219,14 @@ var Buffer_from = /* @__PURE__ */ function() {
   }
   return function() {
   };
-}();
-var buf_utf16le = /* @__PURE__ */ function() {
+})();
+var buf_utf16le = /* @__PURE__ */ (function() {
   if (typeof Buffer === "undefined") return false;
   var x = Buffer_from([65, 0]);
   if (!x) return false;
   var o = x.toString("utf16le");
   return o.length == 1;
-}();
+})();
 function new_raw_buf(len) {
   if (has_buf) return Buffer.alloc ? Buffer.alloc(len) : new Buffer(len);
   return typeof Uint8Array != "undefined" ? new Uint8Array(len) : new Array(len);
@@ -657,6 +657,7 @@ function SSF_write_date(type, fmt, val2, ss0) {
   switch (type) {
     case 98:
       y = val2.y + 543;
+    /* falls through */
     case 121:
       switch (fmt.length) {
         case 1:
@@ -1166,12 +1167,14 @@ function fmt_is_date(fmt) {
       case "B":
       case "b":
         if (fmt.charAt(i + 1) === "1" || fmt.charAt(i + 1) === "2") return true;
+      /* falls through */
       case "M":
       case "D":
       case "Y":
       case "H":
       case "S":
       case "E":
+      /* falls through */
       case "m":
       case "d":
       case "y":
@@ -1194,6 +1197,7 @@ function fmt_is_date(fmt) {
         if (o.match(SSF_abstime)) return true;
         break;
       case ".":
+      /* falls through */
       case "0":
       case "#":
         while (i < fmt.length && ("0#?.,E+-%".indexOf(c = fmt.charAt(++i)) > -1 || c == "\\" && fmt.charAt(i + 1) == "-" && "0#".indexOf(fmt.charAt(i + 2)) > -1)) {
@@ -1273,6 +1277,7 @@ function eval_fmt(fmt, v, opts, flen) {
           i += 2;
           break;
         }
+      /* falls through */
       case "M":
       case "D":
       case "Y":
@@ -1280,6 +1285,7 @@ function eval_fmt(fmt, v, opts, flen) {
       case "S":
       case "E":
         c = c.toLowerCase();
+      /* falls through */
       case "m":
       case "d":
       case "y":
@@ -1343,6 +1349,7 @@ function eval_fmt(fmt, v, opts, flen) {
           if (!fmt_is_date(fmt)) out[out.length] = { t: "t", v: o };
         }
         break;
+      /* Numbers */
       case ".":
         if (dt != null) {
           o = c;
@@ -1350,6 +1357,7 @@ function eval_fmt(fmt, v, opts, flen) {
           out[out.length] = { t: "s", v: o };
           break;
         }
+      /* falls through */
       case "0":
       case "#":
         o = c;
@@ -1366,6 +1374,7 @@ function eval_fmt(fmt, v, opts, flen) {
         ++i;
         if (fmt.charAt(i) == " " || fmt.charAt(i) == "*") ++i;
         break;
+      // **
       case "(":
       case ")":
         out[out.length] = { t: flen === 1 ? "t" : c, v: c };
@@ -1414,6 +1423,7 @@ function eval_fmt(fmt, v, opts, flen) {
           bt = 4;
         }
         if (bt < 3) bt = 3;
+      /* falls through */
       case "d":
       case "y":
       case "e":
@@ -1829,7 +1839,7 @@ var bad_formats = {
 function SSF__load(fmt, idx) {
   return SSF_load(bad_formats[fmt] || fmt, idx);
 }
-var CRC32 = /* @__PURE__ */ function() {
+var CRC32 = /* @__PURE__ */ (function() {
   var CRC322 = {};
   CRC322.version = "1.2.0";
   function signed_crc_table() {
@@ -1905,8 +1915,8 @@ var CRC32 = /* @__PURE__ */ function() {
   CRC322.buf = crc32_buf;
   CRC322.str = crc32_str;
   return CRC322;
-}();
-var CFB = /* @__PURE__ */ function _CFB() {
+})();
+var CFB = /* @__PURE__ */ (function _CFB() {
   var exports = (
     /*::(*/
     {}
@@ -1974,6 +1984,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
       var sz = blob.read_shift(2), tgt = blob.l + sz;
       var p = {};
       switch (type) {
+        /* UNIX-style Timestamps */
         case 21589:
           {
             flags = blob.read_shift(1);
@@ -1985,6 +1996,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
             if (p.mtime) p.mt = new Date(p.mtime * 1e3);
           }
           break;
+        /* ZIP64 Extended Information Field */
         case 1:
           {
             var sz1 = blob.read_shift(4), sz2 = blob.read_shift(4);
@@ -2032,6 +2044,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
         break;
       case 0:
         if (mv[1] == 0) return parse_zip2(file, options);
+      /* falls through */
       default:
         throw new Error("Major Version: Expected 3 or 4 saw " + mver);
     }
@@ -2421,7 +2434,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
       case "zip":
         return write_zip2(cfb, _opts);
     }
-    var L = function(cfb2) {
+    var L = (function(cfb2) {
       var mini_size = 0, fat_size = 0;
       for (var i3 = 0; i3 < cfb2.FileIndex.length; ++i3) {
         var file2 = cfb2.FileIndex[i3];
@@ -2443,7 +2456,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
       cfb2.FileIndex[0].size = mini_size << 6;
       L2[7] = (cfb2.FileIndex[0].start = L2[0] + L2[1] + L2[2] + L2[3] + L2[4] + L2[5]) + (L2[6] + 7 >> 3);
       return L2;
-    }(cfb);
+    })(cfb);
     var o = new_buf(L[7] << 9);
     var i2 = 0, T = 0;
     {
@@ -2641,6 +2654,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
         return Base64_encode(typeof o == "string" ? o : a2s2(o));
       case "buffer":
         if (has_buf) return Buffer.isBuffer(o) ? o : Buffer_from(o);
+      /* falls through */
       case "array":
         return typeof o == "string" ? s2a(o) : o;
     }
@@ -2820,7 +2834,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
     for (; i2 <= 287; i2++) clens.push(8);
     build_tree(clens, fix_lmap, 288);
   })();
-  var _deflateRaw = /* @__PURE__ */ function _deflateRawIIFE() {
+  var _deflateRaw = /* @__PURE__ */ (function _deflateRawIIFE() {
     var DST_LN_RE = use_typed_arrays ? new Uint8Array(32768) : [];
     var j = 0, k = 0;
     for (; j < DST_LN.length - 1; ++j) {
@@ -2918,7 +2932,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
       if (data.length < 8) return write_stored(data, out);
       return write_huff_fixed(data, out);
     };
-  }();
+  })();
   function _deflate(data) {
     var buf = new_buf(50 + Math.floor(data.length * 1.1));
     var off = _deflateRaw(data, buf);
@@ -3169,6 +3183,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
       case 0:
         blob.l += _csz;
         break;
+      // TODO: scan for magic number
       default:
         throw new Error("Unsupported ZIP Compression method " + meth);
     }
@@ -3533,7 +3548,7 @@ var CFB = /* @__PURE__ */ function _CFB() {
     consts
   };
   return exports;
-}();
+})();
 var _fs;
 function blobify(data) {
   if (typeof data === "string") return s2ab(data);
@@ -3550,6 +3565,7 @@ function write_dl(fname, payload, enc) {
       case "binary":
         payload = s2ab(payload);
         break;
+      /* TODO: binary equivalent */
       default:
         throw new Error("Unsupported encoding " + enc);
     }
@@ -3673,11 +3689,14 @@ function parse_isodur(s) {
         throw new Error("Unsupported ISO Duration Field: " + m[i].slice(m[i].length - 1));
       case "D":
         mt *= 24;
+      /* falls through */
       case "H":
         mt *= 60;
+      /* falls through */
       case "M":
         if (!time) throw new Error("Unsupported ISO Duration Field: M");
         else mt *= 60;
+      /* falls through */
       case "S":
         break;
     }
@@ -3832,7 +3851,7 @@ function fuzzydate(s) {
   if (y < 0 || y > 8099 || s.match(/[^-0-9:,\/\\\ ]/)) return n;
   return o;
 }
-var split_regex = /* @__PURE__ */ function() {
+var split_regex = /* @__PURE__ */ (function() {
   var safe_split_regex = "abacaba".split(/(:?b)/i).length == 5;
   return function split_regex2(str, re, def) {
     if (safe_split_regex || typeof re == "string") return str.split(re);
@@ -3843,7 +3862,7 @@ var split_regex = /* @__PURE__ */ function() {
     }
     return o;
   };
-}();
+})();
 function utc_to_local(utc) {
   return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate(), utc.getUTCHours(), utc.getUTCMinutes(), utc.getUTCSeconds(), utc.getUTCMilliseconds());
 }
@@ -3893,7 +3912,7 @@ function str_match_xml(str, tag) {
   if (ei == -1) return null;
   return [str.slice(si, ei + et.length), str.slice(sf + 1, ei)];
 }
-var str_match_xml_ns = /* @__PURE__ */ function() {
+var str_match_xml_ns = /* @__PURE__ */ (function() {
   var str_match_xml_ns_cache = {};
   return function str_match_xml_ns2(str, tag) {
     var res = str_match_xml_ns_cache[tag];
@@ -3913,8 +3932,8 @@ var str_match_xml_ns = /* @__PURE__ */ function() {
     var ef = res[1].lastIndex;
     return [str.slice(si, ef), str.slice(sf, ei)];
   };
-}();
-var str_match_xml_ns_g = /* @__PURE__ */ function() {
+})();
+var str_match_xml_ns_g = /* @__PURE__ */ (function() {
   var str_match_xml_ns_cache = {};
   return function str_match_xml_ns2(str, tag) {
     var out = [];
@@ -3936,8 +3955,8 @@ var str_match_xml_ns_g = /* @__PURE__ */ function() {
     }
     return out.length == 0 ? null : out;
   };
-}();
-var str_remove_xml_ns_g = /* @__PURE__ */ function() {
+})();
+var str_remove_xml_ns_g = /* @__PURE__ */ (function() {
   var str_remove_xml_ns_cache = {};
   return function str_remove_xml_ns_g2(str, tag) {
     var out = [];
@@ -3962,8 +3981,8 @@ var str_remove_xml_ns_g = /* @__PURE__ */ function() {
     out.push(str.slice(ef));
     return out.length == 0 ? "" : out.join("");
   };
-}();
-var str_match_xml_ig = /* @__PURE__ */ function() {
+})();
+var str_match_xml_ig = /* @__PURE__ */ (function() {
   var str_match_xml_ns_cache = {};
   return function str_match_xml_ns2(str, tag) {
     var out = [];
@@ -3985,7 +4004,7 @@ var str_match_xml_ig = /* @__PURE__ */ function() {
     }
     return out.length == 0 ? null : out;
   };
-}();
+})();
 function getdatastr(data) {
   if (!data) return null;
   if (data.content && data.type) return cc2str(data.content, true);
@@ -4163,7 +4182,7 @@ var encodings = {
   "&amp;": "&"
 };
 var rencoding = /* @__PURE__ */ evert(encodings);
-var unescapexml = /* @__PURE__ */ function() {
+var unescapexml = /* @__PURE__ */ (function() {
   var encregex = /&(?:quot|apos|gt|lt|amp|#x?([\da-fA-F]+));/ig, coderegex = /_x([\da-fA-F]{4})_/ig;
   function raw_unescapexml(text) {
     var s = text + "", i = s.indexOf("<![CDATA[");
@@ -4179,7 +4198,7 @@ var unescapexml = /* @__PURE__ */ function() {
     var out = raw_unescapexml(text);
     return xlsx ? out.replace(/\r\n/g, "\n") : out;
   };
-}();
+})();
 var decregex = /[&<>'"]/g;
 var charegex = /[\u0000-\u0008\u000b-\u001f\uFFFE-\uFFFF]/g;
 function escapexml(text) {
@@ -4210,7 +4229,7 @@ function escapexlml(text) {
     return "&#x" + s2.charCodeAt(0).toString(16).toUpperCase() + ";";
   });
 }
-var xlml_fixstr = /* @__PURE__ */ function() {
+var xlml_fixstr = /* @__PURE__ */ (function() {
   var entregex = /&#(\d+);/g;
   function entrepl($$, $1) {
     return String.fromCharCode(parseInt($1, 10));
@@ -4218,7 +4237,7 @@ var xlml_fixstr = /* @__PURE__ */ function() {
   return function xlml_fixstr2(str) {
     return str.replace(entregex, entrepl);
   };
-}();
+})();
 function xlml_unfixstr(str) {
   return str.replace(/(\r\n|[\r\n])/g, "&#10;");
 }
@@ -4327,7 +4346,7 @@ var utf8write = has_buf ? function(data) {
   }
   return out.join("");
 };
-var htmldecode = /* @__PURE__ */ function() {
+var htmldecode = /* @__PURE__ */ (function() {
   var entities = [
     ["nbsp", " "],
     ["middot", "\xB7"],
@@ -4344,7 +4363,7 @@ var htmldecode = /* @__PURE__ */ function() {
     for (var i = 0; i < entities.length; ++i) o = o.replace(entities[i][0], entities[i][1]);
     return o;
   };
-}();
+})();
 var vtvregex = /<\/?(?:vt:)?variant>/g;
 var vtmregex = /<(?:vt:)([^<"'>]*)>([\s\S]*)</;
 function parseVector(data, opts) {
@@ -4642,6 +4661,7 @@ function ReadShift(size, t) {
       else return ReadShift.call(this, size, "dbcs");
       size = 2 * size;
       break;
+    /* [MS-OLEDS] 2.1.4 LengthPrefixedAnsiString */
     case "lpstr-ansi":
       o = __lpstr(this, this.l);
       size = 4 + __readUInt32LE(this, this.l);
@@ -4650,15 +4670,18 @@ function ReadShift(size, t) {
       o = __cpstr(this, this.l);
       size = 4 + __readUInt32LE(this, this.l);
       break;
+    /* [MS-OLEDS] 2.1.5 LengthPrefixedUnicodeString */
     case "lpwstr":
       o = __lpwstr(this, this.l);
       size = 4 + 2 * __readUInt32LE(this, this.l);
       break;
+    /* [MS-OFFCRYPTO] 2.1.2 Length-Prefixed Padded Unicode String (UNICODE-LP-P4) */
     case "lpp4":
       size = 4 + __readUInt32LE(this, this.l);
       o = __lpp4(this, this.l);
       if (size & 2) size += 2;
       break;
+    /* [MS-OFFCRYPTO] 2.1.3 Length-Prefixed UTF-8 String (UTF-8-LP-P4) */
     case "8lpp4":
       size = 4 + __readUInt32LE(this, this.l);
       o = __8lpp4(this, this.l);
@@ -4680,6 +4703,7 @@ function ReadShift(size, t) {
       size += 2;
       o = oo.join("");
       break;
+    /* sbcs and dbcs support continue records in the SST way TODO codepages */
     case "dbcs-cont":
       o = "";
       loc = this.l;
@@ -4701,6 +4725,7 @@ function ReadShift(size, t) {
         o = $cptable.utils.decode(current_codepage, this.slice(this.l, this.l + size));
         break;
       }
+    /* falls through */
     case "sbcs-cont":
       o = "";
       loc = this.l;
@@ -4745,6 +4770,7 @@ function ReadShift(size, t) {
             this.l += 8;
             return oR;
           } else size = 8;
+        /* falls through */
         case 16:
           o = __hexlify(this, this.l, size);
           break;
@@ -4839,6 +4865,7 @@ function WriteShift(t, val2, f) {
         write_double_le(this, val2, this.l);
         break;
       }
+    /* falls through */
     case 16:
       break;
     case -4:
@@ -6901,6 +6928,7 @@ function parse_PropertySet(blob, PIDSI) {
       if (piddsi.n == "CodePage") switch (PropH[piddsi.n]) {
         case 0:
           PropH[piddsi.n] = 1252;
+        /* falls through */
         case 874:
         case 932:
         case 936:
@@ -7558,10 +7586,15 @@ function parse_BOF(blob, length) {
   }
   switch (o.BIFFVer) {
     case 1536:
+    /* BIFF8 */
     case 1280:
+    /* BIFF5 */
     case 1024:
+    /* BIFF4 */
     case 768:
+    /* BIFF3 */
     case 512:
+    /* BIFF2 */
     case 2:
     case 7:
       break;
@@ -8521,7 +8554,7 @@ function parse_BIFF4SheetInfo(blob) {
   return { flags, name };
 }
 var DBF_SUPPORTED_VERSIONS = [2, 3, 48, 49, 131, 139, 140, 245];
-var DBF = /* @__PURE__ */ function() {
+var DBF = /* @__PURE__ */ (function() {
   var dbf_codepage_map = {
     /* Code Pages Supported by Visual FoxPro */
     1: 437,
@@ -8646,25 +8679,37 @@ var DBF = /* @__PURE__ */ function() {
     switch (ft) {
       case 2:
         break;
+      // dBASE II
       case 3:
         break;
+      // dBASE III
       case 48:
         vfp = true;
         memo = true;
         break;
+      // VFP
       case 49:
         vfp = true;
         memo = true;
         break;
+      // VFP with autoincrement
+      // 0x43 dBASE IV SQL table files
+      // 0x63 dBASE IV SQL system files
       case 131:
         break;
+      // dBASE III with memo
       case 139:
         break;
+      // dBASE IV with memo
       case 140:
         l7 = true;
         break;
+      // dBASE Level 7 with memo
+      // case 0xCB dBASE IV SQL table files with memo
       case 245:
         break;
+      // FoxPro 2.x with memo
+      // case 0xFB FoxBASE
       default:
         throw new Error("DBF Unsupported Version: " + ft.toString(16));
     }
@@ -8703,21 +8748,34 @@ var DBF = /* @__PURE__ */ function() {
           if ((!vfp || field.len != 8) && opts.WTF) console.log("Skipping " + field.name + ":" + field.type);
           break;
         case "G":
+        // General (FoxPro and dBASE L7)
         case "P":
           if (opts.WTF) console.log("Skipping " + field.name + ":" + field.type);
           break;
         case "+":
+        // Autoincrement (dBASE L7 only)
         case "0":
+        // _NullFlags (VFP only)
         case "@":
+        // Timestamp (dBASE L7 only)
         case "C":
+        // Character (dBASE II)
         case "D":
+        // Date (dBASE III)
         case "F":
+        // Float (dBASE IV)
         case "I":
+        // Long (VFP and dBASE L7)
         case "L":
+        // Logical (dBASE II)
         case "M":
+        // Memo (dBASE III)
         case "N":
+        // Number (dBASE II)
         case "O":
+        // Double (dBASE L7 only)
         case "T":
+        // Datetime (VFP only)
         case "Y":
           break;
         default:
@@ -8810,12 +8868,14 @@ var DBF = /* @__PURE__ */ function() {
               out[R][C] = dd.read_shift(8, "f");
               break;
             }
+          /* falls through */
           case "G":
           case "P":
             dd.l += fields[C].len;
             break;
           case "0":
             if (fields[C].name === "_NullFlags") break;
+          /* falls through */
           default:
             throw new Error("DBF Unsupported data type " + fields[C].type);
         }
@@ -8896,6 +8956,7 @@ var DBF = /* @__PURE__ */ function() {
       }
       for (j = 0; j < col.length; ++j) {
         switch (typeof col[j]) {
+          /* TODO: check if L2 compat is desired */
           case "number":
             _guess = "B";
             break;
@@ -9009,8 +9070,8 @@ var DBF = /* @__PURE__ */ function() {
     to_sheet: dbf_to_sheet,
     from_sheet: sheet_to_dbf
   };
-}();
-var SYLK = /* @__PURE__ */ function() {
+})();
+var SYLK = /* @__PURE__ */ (function() {
   var sylk_escapes = {
     AA: "\xC0",
     BA: "\xC1",
@@ -9148,10 +9209,13 @@ var SYLK = /* @__PURE__ */ function() {
       if (rstr.length > 0) switch (RT) {
         case "ID":
           break;
+        /* header */
         case "E":
           break;
+        /* EOF */
         case "B":
           break;
+        /* dimensions */
         case "O":
           for (rj = 1; rj < record.length; ++rj) switch (record[rj].charAt(0)) {
             case "V":
@@ -9164,6 +9228,7 @@ var SYLK = /* @__PURE__ */ function() {
           break;
         case "W":
           break;
+        /* window */
         case "P":
           switch (record[1].charAt(0)) {
             case "P":
@@ -9185,6 +9250,8 @@ var SYLK = /* @__PURE__ */ function() {
             wb.Workbook.Names.push(nn);
           }
           break;
+        // case 'NE': // ??
+        // case 'NU': // ??
         case "C":
           var C_seen_K = false, C_seen_X = false, C_seen_S = false, C_seen_E = false, _R = -1, _C = -1, formula = "", cell_t = "z";
           var cmnt = "";
@@ -9192,6 +9259,7 @@ var SYLK = /* @__PURE__ */ function() {
             case "A":
               cmnt = record[rj].slice(1);
               break;
+            // TODO: comment
             case "X":
               C = parseInt(record[rj].slice(1), 10) - 1;
               C_seen_X = true;
@@ -9232,12 +9300,15 @@ var SYLK = /* @__PURE__ */ function() {
               break;
             case "G":
               break;
+            // unknown
             case "R":
               _R = parseInt(record[rj].slice(1), 10) - 1;
               break;
             case "C":
               _C = parseInt(record[rj].slice(1), 10) - 1;
               break;
+            // case 'P': // ??
+            // case 'D': // ??
             default:
               if (opts && opts.WTF) throw new Error("SYLK bad record " + rstr);
           }
@@ -9282,17 +9353,22 @@ var SYLK = /* @__PURE__ */ function() {
               break;
             case "F":
               break;
+            /* ??? */
             case "G":
               break;
+            /* hide grid */
             case "P":
               next_cell_format = formats[parseInt(record[rj].slice(1), 10)];
               break;
             case "S":
               break;
+            /* cell style */
             case "D":
               break;
+            /* column */
             case "N":
               break;
+            /* font */
             case "W":
               cw = record[rj].slice(1).split(" ");
               for (j = parseInt(cw[0], 10); j <= parseInt(cw[1], 10); ++j) {
@@ -9312,6 +9388,8 @@ var SYLK = /* @__PURE__ */ function() {
                 rowinfo[R].hpx = pt2px(Mval);
               } else if (Mval === 0) rowinfo[R].hidden = true;
               break;
+            // case 'K': // ??
+            // case 'E': // ??
             default:
               if (opts && opts.WTF) throw new Error("SYLK bad record " + rstr);
           }
@@ -9447,8 +9525,8 @@ var SYLK = /* @__PURE__ */ function() {
     to_workbook: sylk_to_workbook,
     from_sheet: sheet_to_sylk
   };
-}();
-var DIF = /* @__PURE__ */ function() {
+})();
+var DIF = /* @__PURE__ */ (function() {
   function dif_to_aoa(d, opts) {
     switch (opts.type) {
       case "base64":
@@ -9580,8 +9658,8 @@ var DIF = /* @__PURE__ */ function() {
     to_sheet: dif_to_sheet,
     from_sheet: sheet_to_dif
   };
-}();
-var ETH = /* @__PURE__ */ function() {
+})();
+var ETH = /* @__PURE__ */ (function() {
   function decode(s) {
     return s.replace(/\\b/g, "\\").replace(/\\c/g, ":").replace(/\\n/g, "\n");
   }
@@ -9608,6 +9686,7 @@ var ETH = /* @__PURE__ */ function() {
           break;
         case "vtf":
           var _f = record[record.length - 1];
+        /* falls through */
         case "vtc":
           switch (record[3]) {
             case "nl":
@@ -9709,8 +9788,8 @@ var ETH = /* @__PURE__ */ function() {
     to_sheet: eth_to_sheet,
     from_sheet: sheet_to_eth
   };
-}();
-var PRN = /* @__PURE__ */ function() {
+})();
+var PRN = /* @__PURE__ */ (function() {
   function set_text_arr(data, arr, R, C, o) {
     if (o.raw) arr[R][C] = data;
     else if (data === "") {
@@ -9880,6 +9959,7 @@ var PRN = /* @__PURE__ */ function() {
       case 13:
         if (instr) break;
         if (str.charCodeAt(end + 1) == 10) ++end;
+      /* falls through */
       case sepcc:
       case 10:
         if (!instr && finish_cell()) break outer;
@@ -9957,7 +10037,7 @@ var PRN = /* @__PURE__ */ function() {
     to_sheet: prn_to_sheet,
     from_sheet: sheet_to_prn
   };
-}();
+})();
 function read_wb_ID(d, opts) {
   var o = opts || {}, OLD_WTF = !!o.WTF;
   o.WTF = true;
@@ -9971,7 +10051,7 @@ function read_wb_ID(d, opts) {
     return PRN.to_workbook(d, opts);
   }
 }
-var WK_ = /* @__PURE__ */ function() {
+var WK_ = /* @__PURE__ */ (function() {
   function lotushopper(data, cb, opts) {
     if (!data) return;
     prep_blob(data, data.l || 0);
@@ -10046,18 +10126,25 @@ var WK_ = /* @__PURE__ */ function() {
           case 6:
             refguess = val2;
             break;
+          /* RANGE */
           case 204:
             if (val2) next_n = val2;
             break;
+          /* SHEETNAMECS */
           case 222:
             next_n = val2;
             break;
+          /* SHEETNAMELP */
           case 15:
+          /* LABEL */
           case 51:
             if ((!o.qpro && !o.works || RT == 51) && val2[1].v.charCodeAt(0) < 48) val2[1].v = val2[1].v.slice(1);
             if (o.works || o.works2) val2[1].v = val2[1].v.replace(/\r\n/g, "\n");
+          /* falls through */
           case 13:
+          /* INTEGER */
           case 14:
+          /* NUMBER */
           case 16:
             if ((val2[2] & 112) == 112 && (val2[2] & 15) > 1 && (val2[2] & 15) < 15) {
               val2[1].z = o.dateNF || LOTUS_DATE_FMTS[(val2[2] & 15) - 1] || table_fmt[14];
@@ -10121,16 +10208,23 @@ var WK_ = /* @__PURE__ */ function() {
           case 204:
             n = val2;
             break;
+          /* SHEETNAMECS */
           case 22:
             if (val2[1].v.charCodeAt(0) < 48) val2[1].v = val2[1].v.slice(1);
             val2[1].v = val2[1].v.replace(/\x0F./g, function($$) {
               return String.fromCharCode($$.charCodeAt(1) - 32);
             }).replace(/\r\n/g, "\n");
+          /* falls through */
           case 23:
+          /* NUMBER17 */
           case 24:
+          /* NUMBER18 */
           case 25:
+          /* FORMULA19 */
           case 37:
+          /* NUMBER25 */
           case 39:
+          /* NUMBER27 */
           case 40:
             if (val2[3] > sidx) {
               s["!ref"] = encode_range(refguess);
@@ -11059,6 +11153,7 @@ var WK_ = /* @__PURE__ */ function() {
           break outer;
         case 8:
           break;
+        // TODO: this is tied to custom number formats
         case 10:
           {
             var fcnt = p.read_shift(4);
@@ -11074,6 +11169,7 @@ var WK_ = /* @__PURE__ */ function() {
             }
           }
           break;
+        /* TODO: The behavior here should be consistent with Numbers: QP Notebook ~ .TN.SheetArchive, QP Sheet ~ .TST.TableModelArchive */
         case 1025:
           break;
         case 1026:
@@ -11262,51 +11358,66 @@ var WK_ = /* @__PURE__ */ function() {
     book_to_wk3,
     to_workbook: lotus_to_workbook
   };
-}();
+})();
 function parse_rpr(rpr) {
   var font = {}, m = rpr.match(tagregex), i = 0;
   var pass = false;
   if (m) for (; i != m.length; ++i) {
     var y = parsexmltag(m[i]);
     switch (y[0].replace(/<\w*:/g, "<")) {
+      /* 18.8.12 condense CT_BooleanProperty */
+      /* ** not required . */
       case "<condense":
         break;
+      /* 18.8.17 extend CT_BooleanProperty */
+      /* ** not required . */
       case "<extend":
         break;
+      /* 18.8.36 shadow CT_BooleanProperty */
+      /* ** not required . */
       case "<shadow":
         if (!y.val) break;
+      /* falls through */
       case "<shadow>":
       case "<shadow/>":
         font.shadow = 1;
         break;
       case "</shadow>":
         break;
+      /* 18.4.1 charset CT_IntProperty TODO */
       case "<charset":
         if (y.val == "1") break;
         font.cp = CS2CP[parseInt(y.val, 10)];
         break;
+      /* 18.4.2 outline CT_BooleanProperty TODO */
       case "<outline":
         if (!y.val) break;
+      /* falls through */
       case "<outline>":
       case "<outline/>":
         font.outline = 1;
         break;
       case "</outline>":
         break;
+      /* 18.4.5 rFont CT_FontName */
       case "<rFont":
         font.name = y.val;
         break;
+      /* 18.4.11 sz CT_FontSize */
       case "<sz":
         font.sz = y.val;
         break;
+      /* 18.4.10 strike CT_BooleanProperty */
       case "<strike":
         if (!y.val) break;
+      /* falls through */
       case "<strike>":
       case "<strike/>":
         font.strike = 1;
         break;
       case "</strike>":
         break;
+      /* 18.4.13 u CT_UnderlineProperty */
       case "<u":
         if (!y.val) break;
         switch (y.val) {
@@ -11320,28 +11431,34 @@ function parse_rpr(rpr) {
             font.uval = "double-accounting";
             break;
         }
+      /* falls through */
       case "<u>":
       case "<u/>":
         font.u = 1;
         break;
       case "</u>":
         break;
+      /* 18.8.2 b */
       case "<b":
         if (y.val == "0") break;
+      /* falls through */
       case "<b>":
       case "<b/>":
         font.b = 1;
         break;
       case "</b>":
         break;
+      /* 18.8.26 i */
       case "<i":
         if (y.val == "0") break;
+      /* falls through */
       case "<i>":
       case "<i/>":
         font.i = 1;
         break;
       case "</i>":
         break;
+      /* 18.3.1.15 color CT_Color TODO: tint, theme, auto, indexed */
       case "<color":
         if (y.rgb) font.color = y.rgb.slice(2, 8);
         break;
@@ -11349,6 +11466,7 @@ function parse_rpr(rpr) {
       case "<color/>":
       case "</color>":
         break;
+      /* 18.8.18 family ST_FontFamily */
       case "<family":
         font.family = y.val;
         break;
@@ -11356,6 +11474,7 @@ function parse_rpr(rpr) {
       case "<family/>":
       case "</family>":
         break;
+      /* 18.4.14 vertAlign CT_VerticalAlignFontProperty TODO */
       case "<vertAlign":
         font.valign = y.val;
         break;
@@ -11363,12 +11482,14 @@ function parse_rpr(rpr) {
       case "<vertAlign/>":
       case "</vertAlign>":
         break;
+      /* 18.8.35 scheme CT_FontScheme TODO */
       case "<scheme":
         break;
       case "<scheme>":
       case "<scheme/>":
       case "</scheme>":
         break;
+      /* 18.2.10 extLst CT_ExtensionList ? */
       case "<extLst":
       case "<extLst>":
       case "</extLst>":
@@ -11385,7 +11506,7 @@ function parse_rpr(rpr) {
   }
   return font;
 }
-var parse_rs = /* @__PURE__ */ function() {
+var parse_rs = /* @__PURE__ */ (function() {
   function parse_r(r) {
     var t = str_match_xml_ns(r, "t");
     if (!t) return { t: "s", v: "" };
@@ -11400,8 +11521,8 @@ var parse_rs = /* @__PURE__ */ function() {
       return r.v;
     });
   };
-}();
-var rs_to_html = /* @__PURE__ */ function parse_rs_factory() {
+})();
+var rs_to_html = /* @__PURE__ */ (function parse_rs_factory() {
   var nlregex = /(\r\n|\n)/g;
   function parse_rpr2(font, intro, outro) {
     var style = [];
@@ -11442,7 +11563,7 @@ var rs_to_html = /* @__PURE__ */ function parse_rs_factory() {
   return function parse_rs2(rs) {
     return rs.map(r_to_html).join("");
   };
-}();
+})();
 var sitregex = /<(?:\w+:)?t\b[^<>]*>([^<]*)<\/(?:\w+:)?t>/g;
 var sirregex = /<(?:\w+:)?r\b[^<>]*>/;
 function parse_si(x, opts) {
@@ -11775,7 +11896,7 @@ function crypto_CreatePasswordVerifier_Method1(Password) {
   }
   return Verifier ^ 52811;
 }
-var crypto_CreateXorArray_Method1 = /* @__PURE__ */ function() {
+var crypto_CreateXorArray_Method1 = /* @__PURE__ */ (function() {
   var PadArray = [187, 255, 255, 186, 255, 255, 185, 128, 0, 190, 15, 0, 191, 15, 0];
   var InitialCode = [57840, 7439, 52380, 33984, 4364, 3600, 61902, 12606, 6258, 57657, 54287, 34041, 10252, 43370, 20163];
   var XorMatrix = [44796, 19929, 39858, 10053, 20106, 40212, 10761, 31585, 63170, 64933, 60267, 50935, 40399, 11199, 17763, 35526, 1453, 2906, 5812, 11624, 23248, 885, 1770, 3540, 7080, 14160, 28320, 56640, 55369, 41139, 20807, 41614, 21821, 43642, 17621, 28485, 56970, 44341, 19019, 38038, 14605, 29210, 60195, 50791, 40175, 10751, 21502, 43004, 24537, 18387, 36774, 3949, 7898, 15796, 31592, 63184, 47201, 24803, 49606, 37805, 14203, 28406, 56812, 17824, 35648, 1697, 3394, 6788, 13576, 27152, 43601, 17539, 35078, 557, 1114, 2228, 4456, 30388, 60776, 51953, 34243, 7079, 14158, 28316, 14128, 28256, 56512, 43425, 17251, 34502, 7597, 13105, 26210, 52420, 35241, 883, 1766, 3532, 4129, 8258, 16516, 33032, 4657, 9314, 18628];
@@ -11835,7 +11956,7 @@ var crypto_CreateXorArray_Method1 = /* @__PURE__ */ function() {
     }
     return ObfuscationArray;
   };
-}();
+})();
 var crypto_DecryptData_Method1 = function(password, Data, XorArrayIndex, XorArray, O) {
   if (!O) O = Data;
   if (!XorArray) XorArray = crypto_CreateXorArray_Method1(password);
@@ -12138,6 +12259,7 @@ function parse_borders(t, styles, themes, opts) {
       case "<borders>":
       case "</borders>":
         break;
+      /* 18.8.4 border CT_Border */
       case "<border":
       case "<border>":
       case "<border/>":
@@ -12149,6 +12271,7 @@ function parse_borders(t, styles, themes, opts) {
         break;
       case "</border>":
         break;
+      /* note: not in spec, appears to be CT_BorderPr */
       case "<left/>":
         break;
       case "<left":
@@ -12156,6 +12279,7 @@ function parse_borders(t, styles, themes, opts) {
         break;
       case "</left>":
         break;
+      /* note: not in spec, appears to be CT_BorderPr */
       case "<right/>":
         break;
       case "<right":
@@ -12163,6 +12287,7 @@ function parse_borders(t, styles, themes, opts) {
         break;
       case "</right>":
         break;
+      /* 18.8.43 top CT_BorderPr */
       case "<top/>":
         break;
       case "<top":
@@ -12170,6 +12295,7 @@ function parse_borders(t, styles, themes, opts) {
         break;
       case "</top>":
         break;
+      /* 18.8.6 bottom CT_BorderPr */
       case "<bottom/>":
         break;
       case "<bottom":
@@ -12177,42 +12303,49 @@ function parse_borders(t, styles, themes, opts) {
         break;
       case "</bottom>":
         break;
+      /* 18.8.13 diagonal CT_BorderPr */
       case "<diagonal":
       case "<diagonal>":
       case "<diagonal/>":
         break;
       case "</diagonal>":
         break;
+      /* 18.8.25 horizontal CT_BorderPr */
       case "<horizontal":
       case "<horizontal>":
       case "<horizontal/>":
         break;
       case "</horizontal>":
         break;
+      /* 18.8.44 vertical CT_BorderPr */
       case "<vertical":
       case "<vertical>":
       case "<vertical/>":
         break;
       case "</vertical>":
         break;
+      /* 18.8.37 start CT_BorderPr */
       case "<start":
       case "<start>":
       case "<start/>":
         break;
       case "</start>":
         break;
+      /* 18.8.16 end CT_BorderPr */
       case "<end":
       case "<end>":
       case "<end/>":
         break;
       case "</end>":
         break;
+      /* 18.8.? color CT_Color */
       case "<color":
       case "<color>":
         break;
       case "<color/>":
       case "</color>":
         break;
+      /* 18.2.10 extLst CT_ExtensionList ? */
       case "<extLst":
       case "<extLst>":
       case "</extLst>":
@@ -12241,6 +12374,7 @@ function parse_fills(t, styles, themes, opts) {
       case "<fills>":
       case "</fills>":
         break;
+      /* 18.8.20 fill CT_Fill */
       case "<fill>":
       case "<fill":
       case "<fill/>":
@@ -12249,6 +12383,7 @@ function parse_fills(t, styles, themes, opts) {
         break;
       case "</fill>":
         break;
+      /* 18.8.24 gradientFill CT_GradientFill */
       case "<gradientFill>":
         break;
       case "<gradientFill":
@@ -12256,6 +12391,7 @@ function parse_fills(t, styles, themes, opts) {
         styles.Fills.push(fill2);
         fill2 = {};
         break;
+      /* 18.8.32 patternFill CT_PatternFill */
       case "<patternFill":
       case "<patternFill>":
         if (y.patternType) fill2.patternType = y.patternType;
@@ -12263,6 +12399,7 @@ function parse_fills(t, styles, themes, opts) {
       case "<patternFill/>":
       case "</patternFill>":
         break;
+      /* 18.8.3 bgColor CT_Color */
       case "<bgColor":
         if (!fill2.bgColor) fill2.bgColor = {};
         if (y.indexed) fill2.bgColor.indexed = parseInt(y.indexed, 10);
@@ -12273,6 +12410,7 @@ function parse_fills(t, styles, themes, opts) {
       case "<bgColor/>":
       case "</bgColor>":
         break;
+      /* 18.8.19 fgColor CT_Color */
       case "<fgColor":
         if (!fill2.fgColor) fill2.fgColor = {};
         if (y.theme) fill2.fgColor.theme = parseInt(y.theme, 10);
@@ -12282,16 +12420,19 @@ function parse_fills(t, styles, themes, opts) {
       case "<fgColor/>":
       case "</fgColor>":
         break;
+      /* 18.8.38 stop CT_GradientStop */
       case "<stop":
       case "<stop/>":
         break;
       case "</stop>":
         break;
+      /* 18.8.? color CT_Color */
       case "<color":
       case "<color/>":
         break;
       case "</color>":
         break;
+      /* 18.2.10 extLst CT_ExtensionList ? */
       case "<extLst":
       case "<extLst>":
       case "</extLst>":
@@ -12320,6 +12461,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "<fonts>":
       case "</fonts>":
         break;
+      /* 18.8.22 font CT_Font */
       case "<font":
       case "<font>":
         break;
@@ -12328,12 +12470,14 @@ function parse_fonts(t, styles, themes, opts) {
         styles.Fonts.push(font);
         font = {};
         break;
+      /* 18.8.29 name CT_FontName */
       case "<name":
         if (y.val) font.name = utf8read(y.val);
         break;
       case "<name/>":
       case "</name>":
         break;
+      /* 18.8.2  b CT_BooleanProperty */
       case "<b":
         font.bold = y.val ? parsexmlbool(y.val) : 1;
         break;
@@ -12343,6 +12487,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</b>":
       case "</b":
         break;
+      /* 18.8.26 i CT_BooleanProperty */
       case "<i":
         font.italic = y.val ? parsexmlbool(y.val) : 1;
         break;
@@ -12352,6 +12497,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</i>":
       case "</i":
         break;
+      /* 18.4.13 u CT_UnderlineProperty */
       case "<u":
         switch (y.val) {
           case "none":
@@ -12377,6 +12523,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</u>":
       case "</u":
         break;
+      /* 18.4.10 strike CT_BooleanProperty */
       case "<strike":
         font.strike = y.val ? parsexmlbool(y.val) : 1;
         break;
@@ -12386,6 +12533,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</strike>":
       case "</strike":
         break;
+      /* 18.4.2  outline CT_BooleanProperty */
       case "<outline":
         font.outline = y.val ? parsexmlbool(y.val) : 1;
         break;
@@ -12395,6 +12543,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</outline>":
       case "</outline":
         break;
+      /* 18.8.36 shadow CT_BooleanProperty */
       case "<shadow":
         font.shadow = y.val ? parsexmlbool(y.val) : 1;
         break;
@@ -12404,6 +12553,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</shadow>":
       case "</shadow":
         break;
+      /* 18.8.12 condense CT_BooleanProperty */
       case "<condense":
         font.condense = y.val ? parsexmlbool(y.val) : 1;
         break;
@@ -12413,6 +12563,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</condense>":
       case "</condense":
         break;
+      /* 18.8.17 extend CT_BooleanProperty */
       case "<extend":
         font.extend = y.val ? parsexmlbool(y.val) : 1;
         break;
@@ -12422,6 +12573,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</extend>":
       case "</extend":
         break;
+      /* 18.4.11 sz CT_FontSize */
       case "<sz":
         if (y.val) font.sz = +y.val;
         break;
@@ -12429,6 +12581,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</sz>":
       case "</sz":
         break;
+      /* 18.4.14 vertAlign CT_VerticalAlignFontProperty */
       case "<vertAlign":
         if (y.val) font.vertAlign = y.val;
         break;
@@ -12436,6 +12589,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</vertAlign>":
       case "</vertAlign":
         break;
+      /* 18.8.18 family CT_FontFamily */
       case "<family":
         if (y.val) font.family = parseInt(y.val, 10);
         break;
@@ -12443,6 +12597,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</family>":
       case "</family":
         break;
+      /* 18.8.35 scheme CT_FontScheme */
       case "<scheme":
         if (y.val) font.scheme = y.val;
         break;
@@ -12450,6 +12605,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</scheme>":
       case "</scheme":
         break;
+      /* 18.4.1 charset CT_IntProperty */
       case "<charset":
         if (y.val == "1") break;
         y.codepage = CS2CP[parseInt(y.val, 10)];
@@ -12458,6 +12614,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</charset>":
       case "</charset":
         break;
+      /* 18.?.? color CT_Color */
       case "<color":
         if (!font.color) font.color = {};
         if (y.auto) font.color.auto = parsexmlbool(y.auto);
@@ -12480,6 +12637,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</color>":
       case "</color":
         break;
+      /* note: sometimes mc:AlternateContent appears bare */
       case "<AlternateContent":
         pass = true;
         break;
@@ -12487,6 +12645,7 @@ function parse_fonts(t, styles, themes, opts) {
       case "</AlternateContent":
         pass = false;
         break;
+      /* 18.2.10 extLst CT_ExtensionList ? */
       case "<extLst":
       case "<extLst>":
       case "</extLst>":
@@ -12567,6 +12726,7 @@ function parse_cellXfs(t, styles, opts) {
       case "<cellXfs/>":
       case "</cellXfs>":
         break;
+      /* 18.8.45 xf CT_Xf */
       case "<xf":
       case "<xf/>":
       case "<xf>":
@@ -12586,6 +12746,7 @@ function parse_cellXfs(t, styles, opts) {
         break;
       case "</xf>":
         break;
+      /* 18.8.1 alignment CT_CellAlignment */
       case "<alignment":
       case "<alignment/>":
       case "<alignment>":
@@ -12599,12 +12760,14 @@ function parse_cellXfs(t, styles, opts) {
         break;
       case "</alignment>":
         break;
+      /* 18.8.33 protection CT_CellProtection */
       case "<protection":
       case "<protection>":
         break;
       case "</protection>":
       case "<protection/>":
         break;
+      /* note: sometimes mc:AlternateContent appears bare */
       case "<AlternateContent":
       case "<AlternateContent>":
         pass = true;
@@ -12612,6 +12775,7 @@ function parse_cellXfs(t, styles, opts) {
       case "</AlternateContent>":
         pass = false;
         break;
+      /* 18.2.10 extLst CT_ExtensionList ? */
       case "<extLst":
       case "<extLst>":
       case "</extLst>":
@@ -12640,7 +12804,7 @@ function write_cellXfs(cellXfs) {
   o[0] = writextag("cellXfs", null, { count: o.length - 2 }).replace("/>", ">");
   return o.join("");
 }
-var parse_sty_xml = /* @__PURE__ */ function make_pstyx() {
+var parse_sty_xml = /* @__PURE__ */ (function make_pstyx() {
   return function parse_sty_xml2(data, themes, opts) {
     var styles = {};
     if (!data) return styles;
@@ -12653,7 +12817,7 @@ var parse_sty_xml = /* @__PURE__ */ function make_pstyx() {
     if (t = str_match_xml_ns(data, "cellXfs")) parse_cellXfs(t[0], styles, opts);
     return styles;
   };
-}();
+})();
 function write_sty_xml(wb, opts) {
   var o = [XML_HEADER, writextag("styleSheet", null, {
     "xmlns": XMLNS_main[0],
@@ -12700,6 +12864,7 @@ function parse_BrtFont(data, length, opts) {
   var bls = data.read_shift(2);
   if (bls === 700) out.bold = 1;
   switch (data.read_shift(2)) {
+    /* case 0: out.vertAlign = "baseline"; break; */
     case 1:
       out.vertAlign = "superscript";
       break;
@@ -12716,6 +12881,7 @@ function parse_BrtFont(data, length, opts) {
   data.l++;
   out.color = parse_BrtColor(data, 8);
   switch (data.read_shift(1)) {
+    /* case 0: out.scheme = "none": break; */
     case 1:
       out.scheme = "major";
       break;
@@ -12877,15 +13043,23 @@ function parse_sty_bin(data, themes, opts) {
         }
         break;
       case 48:
+      /* BrtStyle */
       case 507:
+      /* BrtDXF */
       case 572:
+      /* BrtMRUColor */
       case 475:
         break;
       case 1171:
+      /* BrtDXF14 */
       case 2102:
+      /* BrtDXF15 */
       case 1130:
+      /* BrtSlicerStyleElement */
       case 512:
+      /* BrtTableStyleElement */
       case 2095:
+      /* BrtTimelineStyleElement */
       case 3072:
         break;
       case 35:
@@ -13082,19 +13256,34 @@ function parse_clrScheme(t, themes, opts) {
   (t[0].match(tagregex) || []).forEach(function(x) {
     var y = parsexmltag(x);
     switch (y[0]) {
+      /* 20.1.6.2 clrScheme (Color Scheme) CT_ColorScheme */
       case "<a:clrScheme":
       case "</a:clrScheme>":
         break;
+      /* 20.1.2.3.32 srgbClr CT_SRgbColor */
       case "<a:srgbClr":
         color.rgb = y.val;
         break;
       case "</a:srgbClr>":
         break;
+      /* 20.1.2.3.33 sysClr CT_SystemColor */
       case "<a:sysClr":
         color.rgb = y.lastClr;
         break;
       case "</a:sysClr>":
         break;
+      /* 20.1.4.1.1 accent1 (Accent 1) */
+      /* 20.1.4.1.2 accent2 (Accent 2) */
+      /* 20.1.4.1.3 accent3 (Accent 3) */
+      /* 20.1.4.1.4 accent4 (Accent 4) */
+      /* 20.1.4.1.5 accent5 (Accent 5) */
+      /* 20.1.4.1.6 accent6 (Accent 6) */
+      /* 20.1.4.1.9 dk1 (Dark 1) */
+      /* 20.1.4.1.10 dk2 (Dark 2) */
+      /* 20.1.4.1.15 folHlink (Followed Hyperlink) */
+      /* 20.1.4.1.19 hlink (Hyperlink) */
+      /* 20.1.4.1.22 lt1 (Light 1) */
+      /* 20.1.4.1.23 lt2 (Light 2) */
       case "</a:dk1>":
       case "</a:lt1>":
       case "<a:dk1>":
@@ -13414,26 +13603,36 @@ function parse_XFExt(blob, length) {
 function update_xfext(xf, xfext) {
   xfext.forEach(function(xfe) {
     switch (xfe[0]) {
+      /* 2.5.108 extPropData */
       case 4:
         break;
+      /* foreground color */
       case 5:
         break;
+      /* background color */
       case 6:
         break;
+      /* gradient fill */
       case 7:
         break;
+      /* top cell border color */
       case 8:
         break;
+      /* bottom cell border color */
       case 9:
         break;
+      /* left cell border color */
       case 10:
         break;
+      /* right cell border color */
       case 11:
         break;
+      /* diagonal cell border color */
       case 13:
         break;
       case 14:
         break;
+      /* font scheme */
       case 15:
         break;
     }
@@ -13644,10 +13843,12 @@ function parse_cc_xml(data) {
     switch (y[0]) {
       case "<?xml":
         break;
+      /* 18.6.2  calcChain CT_CalcChain 1 */
       case "<calcChain":
       case "<calcChain>":
       case "</calcChain>":
         break;
+      /* 18.6.1  c CT_CalcCell 1 */
       case "<c":
         delete y[0];
         if (y.i) i = y.i;
@@ -13695,25 +13896,45 @@ function parse_xlink_bin(data, rel, name, _opts) {
     if (end) return;
     switch (RT) {
       case 359:
+      /* 'BrtSupTabs' */
       case 363:
+      /* 'BrtExternTableStart' */
       case 364:
+      /* 'BrtExternTableEnd' */
       case 366:
+      /* 'BrtExternRowHdr' */
       case 367:
+      /* 'BrtExternCellBlank' */
       case 368:
+      /* 'BrtExternCellReal' */
       case 369:
+      /* 'BrtExternCellBool' */
       case 370:
+      /* 'BrtExternCellError' */
       case 371:
+      /* 'BrtExternCellString' */
       case 472:
+      /* 'BrtExternValueMeta' */
       case 577:
+      /* 'BrtSupNameStart' */
       case 578:
+      /* 'BrtSupNameValueStart' */
       case 579:
+      /* 'BrtSupNameValueEnd' */
       case 580:
+      /* 'BrtSupNameNum' */
       case 581:
+      /* 'BrtSupNameErr' */
       case 582:
+      /* 'BrtSupNameSt' */
       case 583:
+      /* 'BrtSupNameNil' */
       case 584:
+      /* 'BrtSupNameBool' */
       case 585:
+      /* 'BrtSupNameFmla' */
       case 586:
+      /* 'BrtSupNameBits' */
       case 587:
         break;
       case 35:
@@ -13961,10 +14182,12 @@ function parse_tcmnt_xml(data, opts) {
     switch (strip_ns(y[0])) {
       case "<?xml":
         break;
+      /* 2.6.207 ThreadedComments CT_ThreadedComments */
       case "<ThreadedComments":
         break;
       case "</ThreadedComments>":
         break;
+      /* 2.6.205 threadedComment CT_ThreadedComment */
       case "<threadedComment":
         comment = { author: y.personId, guid: y.id, ref: y.ref, T: 1 };
         break;
@@ -13978,6 +14201,7 @@ function parse_tcmnt_xml(data, opts) {
       case "</text>":
         comment.t = data.slice(tidx, idx).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
         break;
+      /* 2.6.206 mentions CT_ThreadedCommentMentions TODO */
       case "<mentions":
       case "<mentions>":
         pass = true;
@@ -13985,11 +14209,14 @@ function parse_tcmnt_xml(data, opts) {
       case "</mentions>":
         pass = false;
         break;
+      /* 2.6.202 mention CT_Mention TODO */
+      /* 18.2.10 extLst CT_ExtensionList ? */
       case "<extLst":
       case "<extLst>":
       case "</extLst>":
       case "<extLst/>":
         break;
+      /* 18.2.7  ext CT_Extension + */
       case "<ext":
         pass = true;
         break;
@@ -14035,20 +14262,24 @@ function parse_people_xml(data, opts) {
     switch (strip_ns(y[0])) {
       case "<?xml":
         break;
+      /* 2.4.85 personList CT_PersonList */
       case "<personList":
         break;
       case "</personList>":
         break;
+      /* 2.6.203 person CT_Person TODO: providers */
       case "<person":
         out.push({ name: y.displayname, id: y.id });
         break;
       case "</person>":
         break;
+      /* 18.2.10 extLst CT_ExtensionList ? */
       case "<extLst":
       case "<extLst>":
       case "</extLst>":
       case "<extLst/>":
         break;
+      /* 18.2.7  ext CT_Extension + */
       case "<ext":
         pass = true;
         break;
@@ -14243,7 +14474,7 @@ function parse_ms_bin() {
 function parse_ms_xml() {
   return { "!type": "macro" };
 }
-var rc_to_a1 = /* @__PURE__ */ function() {
+var rc_to_a1 = /* @__PURE__ */ (function() {
   var rcregex = /(^|[^A-Za-z_])R(\[?-?\d+\]|[1-9]\d*|)C(\[?-?\d+\]|[1-9]\d*|)(?![A-Za-z0-9_])/g;
   var rcbase = { r: 0, c: 0 };
   function rcfunc($$, $1, $2, $3) {
@@ -14269,13 +14500,13 @@ var rc_to_a1 = /* @__PURE__ */ function() {
     rcbase = base;
     return fstr.replace(rcregex, rcfunc);
   };
-}();
+})();
 var crefregex = /(^|[^._A-Z0-9])(\$?)([A-Z]{1,2}|[A-W][A-Z]{2}|X[A-E][A-Z]|XF[A-D])(\$?)(\d{1,7})(?![_.\(A-Za-z0-9])/g;
 try {
   crefregex = /(^|[^._A-Z0-9])([$]?)([A-Z]{1,2}|[A-W][A-Z]{2}|X[A-E][A-Z]|XF[A-D])([$]?)(10[0-3]\d{4}|104[0-7]\d{3}|1048[0-4]\d{2}|10485[0-6]\d|104857[0-6]|[1-9]\d{0,5})(?![_.\(A-Za-z0-9])/g;
 } catch (e) {
 }
-var a1_to_rc = /* @__PURE__ */ function() {
+var a1_to_rc = /* @__PURE__ */ (function() {
   return function a1_to_rc2(fstr, base) {
     return fstr.replace(crefregex, function($0, $1, $2, $3, $4, $5) {
       var c = decode_col($3) - ($2 ? 0 : base.c);
@@ -14285,7 +14516,7 @@ var a1_to_rc = /* @__PURE__ */ function() {
       return $1 + "R" + R + "C" + C;
     });
   };
-}();
+})();
 function shift_formula_str(f, delta) {
   return f.replace(crefregex, function($0, $1, $2, $3, $4, $5) {
     return $1 + ($2 == "$" ? $2 + $3 : encode_col(decode_col($3) + delta.c)) + ($4 == "$" ? $4 + $5 : encode_row(decode_row($5) + delta.r));
@@ -14539,12 +14770,15 @@ function parse_SerAr(blob, biff) {
     case 2:
       val2[0] = 4;
       break;
+    /* SerBool */
     case 4:
       val2[0] = 16;
       break;
+    /* SerErr */
     case 0:
       val2[0] = 1;
       break;
+    /* SerNum */
     case 1:
       val2[0] = 2;
       break;
@@ -14555,6 +14789,7 @@ function parse_SerAr(blob, biff) {
       if (biff != 12) blob.l += 7;
       break;
     case 37:
+    /* appears to be an alias */
     case 16:
       val2[1] = BErr[blob[blob.l]];
       blob.l += biff == 12 ? 4 : 8;
@@ -14892,8 +15127,11 @@ function parse_RgbExtra(blob, length, rgce, opts) {
         }
         break;
       case "PtgList":
+      /* TODO: PtgList -> PtgExtraList */
       case "PtgElfRadicalS":
+      /* TODO: PtgElfRadicalS -> PtgExtraElf */
       case "PtgElfColS":
+      /* TODO: PtgElfColS -> PtgExtraElf */
       case "PtgElfColSV":
         throw "Unsupported " + rgce[i][0];
       default:
@@ -14927,6 +15165,7 @@ function stringify_array(f) {
     for (var j = 0; j < x.length; ++j) {
       var y = x[j];
       if (y) switch (y[0]) {
+        // TODO: handle embedded quotes
         case 2:
           r.push('"' + y[1].replace(/"/g, '""') + '"');
           break;
@@ -14980,6 +15219,8 @@ function get_ixti_raw(supbooks, ixti, opts) {
       if (opts.SID != null) return supbooks.SheetNames[opts.SID];
       return "SH33TJSSAME" + supbooks[XTI[0]][0];
     case 355:
+    /* 'BrtSupBookSrc' */
+    /* falls through */
     default:
       return "SH33TJSSRC" + supbooks[XTI[0]][0];
   }
@@ -14991,6 +15232,7 @@ function get_ixti_raw(supbooks, ixti, opts) {
       return supbooks[XTI[0]].slice(1).map(function(name) {
         return name.Name;
       }).join(";;");
+    //return "SH33TJSERR8";
     default:
       if (!supbooks[XTI[0]][0][3]) return "SH33TJSERR2";
       o = XTI[1] == -1 ? "#REF" : supbooks[XTI[0]][0][3][XTI[1]] || "SH33TJSERR4";
@@ -15023,16 +15265,27 @@ function stringify_formula(formula, range, cell, supbooks, opts) {
         stack.push(stack.pop() + "%");
         break;
       case "PtgAdd":
+      /* [MS-XLS] 2.5.198.26 */
       case "PtgConcat":
+      /* [MS-XLS] 2.5.198.43 */
       case "PtgDiv":
+      /* [MS-XLS] 2.5.198.45 */
       case "PtgEq":
+      /* [MS-XLS] 2.5.198.56 */
       case "PtgGe":
+      /* [MS-XLS] 2.5.198.64 */
       case "PtgGt":
+      /* [MS-XLS] 2.5.198.65 */
       case "PtgLe":
+      /* [MS-XLS] 2.5.198.68 */
       case "PtgLt":
+      /* [MS-XLS] 2.5.198.69 */
       case "PtgMul":
+      /* [MS-XLS] 2.5.198.75 */
       case "PtgNe":
+      /* [MS-XLS] 2.5.198.78 */
       case "PtgPower":
+      /* [MS-XLS] 2.5.198.82 */
       case "PtgSub":
         e1 = stack.pop();
         e2 = stack.pop();
@@ -15093,6 +15346,7 @@ function stringify_formula(formula, range, cell, supbooks, opts) {
         stack.push(sname + "!" + encode_cell_xls(c, biff));
         break;
       case "PtgFunc":
+      /* [MS-XLS] 2.5.198.62 */
       case "PtgFuncVar":
         var argc = f[1][0], func = f[1][1];
         if (!argc) argc = 0;
@@ -15144,6 +15398,7 @@ function stringify_formula(formula, range, cell, supbooks, opts) {
         stack.push("SUM(" + stack.pop() + ")");
         break;
       case "PtgAttrBaxcel":
+      /* [MS-XLS] 2.5.198.33 */
       case "PtgAttrSemi":
         break;
       case "PtgName":
@@ -15186,15 +15441,19 @@ function stringify_formula(formula, range, cell, supbooks, opts) {
         if (last_sp >= 0) {
           sp = "";
           switch (formula[0][last_sp][1][0]) {
+            // $FlowIgnore
             case 2:
               lp = fill(" ", formula[0][last_sp][1][1]) + lp;
               break;
+            // $FlowIgnore
             case 3:
               lp = fill("\r", formula[0][last_sp][1][1]) + lp;
               break;
+            // $FlowIgnore
             case 4:
               rp = fill(" ", formula[0][last_sp][1][1]) + rp;
               break;
+            // $FlowIgnore
             case 5:
               rp = fill("\r", formula[0][last_sp][1][1]) + rp;
               break;
@@ -15244,6 +15503,7 @@ function stringify_formula(formula, range, cell, supbooks, opts) {
       case "PtgMemArea":
         break;
       case "PtgAttrSpace":
+      /* [MS-XLS] 2.5.198.38 */
       case "PtgAttrSpaceSemi":
         last_sp = ff;
         break;
@@ -15274,14 +15534,23 @@ function stringify_formula(formula, range, cell, supbooks, opts) {
       case "PtgMemNoMem":
         break;
       case "PtgElfCol":
+      /* [MS-XLS] 2.5.198.46 */
       case "PtgElfColS":
+      /* [MS-XLS] 2.5.198.47 */
       case "PtgElfColSV":
+      /* [MS-XLS] 2.5.198.48 */
       case "PtgElfColV":
+      /* [MS-XLS] 2.5.198.49 */
       case "PtgElfLel":
+      /* [MS-XLS] 2.5.198.50 */
       case "PtgElfRadical":
+      /* [MS-XLS] 2.5.198.51 */
       case "PtgElfRadicalLel":
+      /* [MS-XLS] 2.5.198.52 */
       case "PtgElfRadicalS":
+      /* [MS-XLS] 2.5.198.53 */
       case "PtgElfRw":
+      /* [MS-XLS] 2.5.198.54 */
       case "PtgElfRwV":
         throw new Error("Unsupported ELFs");
       case "PtgSxName":
@@ -15295,13 +15564,16 @@ function stringify_formula(formula, range, cell, supbooks, opts) {
         f = formula[0][last_sp];
         var _left = true;
         switch (f[1][0]) {
+          /* note: some bad XLSB files omit the PtgParen */
           case 4:
             _left = false;
+          /* falls through */
           case 0:
             sp = fill(" ", f[1][1]);
             break;
           case 5:
             _left = false;
+          /* falls through */
           case 1:
             sp = fill("\r", f[1][1]);
             break;
@@ -17213,7 +17485,7 @@ function write_ws_xml_cell(cell, ref, ws, opts, idx, wb, date1904) {
   if (cell.D) o.cm = 1;
   return writextag("c", v, o);
 }
-var parse_ws_xml_data = /* @__PURE__ */ function() {
+var parse_ws_xml_data = /* @__PURE__ */ (function() {
   var cellregex = /<(?:\w+:)?c[ \/>]/, rowregex = /<\/(?:\w+:)?row>/;
   var rregex = /r=["']([^"']*)["']/;
   var refregex = /ref=["']([^"']*)["']/;
@@ -17419,6 +17691,7 @@ var parse_ws_xml_data = /* @__PURE__ */ function() {
               p.t = "n";
             }
             break;
+          /* error string in .w, number in .v */
           case "e":
             if (!opts || opts.cellText !== false) p.w = p.v;
             p.v = RBErr[p.v];
@@ -17459,7 +17732,7 @@ var parse_ws_xml_data = /* @__PURE__ */ function() {
     }
     if (rows.length > 0) s["!rows"] = rows;
   };
-}();
+})();
 function write_ws_xml_data(ws, opts, idx, wb) {
   var o = [], r = [], range = safe_decode_range(ws["!ref"]), cell = "", ref, rr = "", cols = [], R = 0, C = 0, rows = ws["!rows"];
   var dense = ws["!data"] != null, data = dense ? ws["!data"] : [];
@@ -18108,21 +18381,37 @@ function parse_ws_bin(data, _opts, idx, rels, wb, themes, styles) {
         }
         break;
       case 2:
+      /* 'BrtCellRk' */
       case 3:
+      /* 'BrtCellError' */
       case 4:
+      /* 'BrtCellBool' */
       case 5:
+      /* 'BrtCellReal' */
       case 6:
+      /* 'BrtCellSt' */
       case 7:
+      /* 'BrtCellIsst' */
       case 8:
+      /* 'BrtFmlaString' */
       case 9:
+      /* 'BrtFmlaNum' */
       case 10:
+      /* 'BrtFmlaBool' */
       case 11:
+      /* 'BrtFmlaError' */
       case 13:
+      /* 'BrtShortRk' */
       case 14:
+      /* 'BrtShortError' */
       case 15:
+      /* 'BrtShortBool' */
       case 16:
+      /* 'BrtShortReal' */
       case 17:
+      /* 'BrtShortSt' */
       case 18:
+      /* 'BrtShortIsst' */
       case 62:
         p = { t: val2[2] };
         switch (val2[2]) {
@@ -18187,6 +18476,7 @@ function parse_ws_bin(data, _opts, idx, rels, wb, themes, styles) {
         if (vm) vm = void 0;
         break;
       case 1:
+      /* 'BrtCellBlank' */
       case 12:
         if (!opts.sheetStubs || pass) break;
         p = { t: "z", v: void 0 };
@@ -18247,6 +18537,7 @@ function parse_ws_bin(data, _opts, idx, rels, wb, themes, styles) {
         cell = opts.dense ? s["!data"][R][C] : s[encode_col(C) + rr];
         cell.f = stringify_formula(val2[1], refguess, { r: row.r, c: C }, supbooks, opts);
         break;
+      /* identical to 'ColInfo' in XLS */
       case 60:
         if (!opts.cellStyles) break;
         while (val2.e >= val2.s) {
@@ -18280,58 +18571,107 @@ function parse_ws_bin(data, _opts, idx, rels, wb, themes, styles) {
       case 485:
         break;
       case 64:
+      /* 'BrtDVal' */
       case 1053:
         break;
       case 151:
         break;
       case 152:
+      /* 'BrtSel' */
       case 175:
+      /* 'BrtAFilterDateGroupItem' */
       case 644:
+      /* 'BrtActiveX' */
       case 625:
+      /* 'BrtBigName' */
       case 562:
+      /* 'BrtBkHim' */
       case 396:
+      /* 'BrtBrk' */
       case 1112:
+      /* 'BrtCFIcon' */
       case 1146:
+      /* 'BrtCFRuleExt' */
       case 471:
+      /* 'BrtCFVO' */
       case 1050:
+      /* 'BrtCFVO14' */
       case 649:
+      /* 'BrtCellIgnoreEC' */
       case 1105:
+      /* 'BrtCellIgnoreEC14' */
       case 589:
+      /* 'BrtCellSmartTagProperty' */
       case 607:
+      /* 'BrtCellWatch' */
       case 564:
+      /* 'BrtColor' */
       case 1055:
+      /* 'BrtColor14' */
       case 168:
+      /* 'BrtColorFilter' */
       case 174:
+      /* 'BrtCustomFilter' */
       case 1180:
+      /* 'BrtCustomFilter14' */
       case 499:
+      /* 'BrtDRef' */
       case 507:
+      /* 'BrtDXF' */
       case 550:
+      /* 'BrtDrawing' */
       case 171:
+      /* 'BrtDynamicFilter' */
       case 167:
+      /* 'BrtFilter' */
       case 1177:
+      /* 'BrtFilter14' */
       case 169:
+      /* 'BrtIconFilter' */
       case 1181:
+      /* 'BrtIconFilter14' */
       case 552:
+      /* 'BrtLegacyDrawingHF' */
       case 661:
+      /* 'BrtListPart' */
       case 639:
+      /* 'BrtOleObject' */
       case 478:
+      /* 'BrtPageSetup' */
       case 537:
+      /* 'BrtPhoneticInfo' */
       case 477:
+      /* 'BrtPrintOptions' */
       case 536:
+      /* 'BrtRangeProtection' */
       case 1103:
+      /* 'BrtRangeProtection14' */
       case 680:
+      /* 'BrtRangeProtectionIso' */
       case 1104:
+      /* 'BrtRangeProtectionIso14' */
       case 1024:
+      /* 'BrtRwDescent' */
       case 663:
+      /* 'BrtSheetCalcProp' */
       case 535:
+      /* 'BrtSheetProtection' */
       case 678:
+      /* 'BrtSheetProtectionIso' */
       case 504:
+      /* 'BrtSlc' */
       case 1043:
+      /* 'BrtSparkline' */
       case 428:
+      /* 'BrtTable' */
       case 170:
+      /* 'BrtTop10Filter' */
       case 3072:
+      /* 'BrtUid' */
       case 50:
+      /* 'BrtValueMeta' */
       case 2070:
+      /* 'BrtWebExtension' */
       case 1045:
         break;
       case 35:
@@ -18389,6 +18729,7 @@ function write_ws_bin_cell(ba, cell, R, C, opts, ws, last_seen, date1904) {
       cell.v = datenum(parseDate(cell.v, date1904), date1904);
       cell.t = "n";
       break;
+    /* falls through */
     case "n":
     case "e":
       vv = "" + cell.v;
@@ -18701,12 +19042,19 @@ function parse_cs_bin(data, opts, idx, rels, wb) {
         if (val2.name) wb.Sheets[idx].CodeName = val2.name;
         break;
       case 562:
+      /* 'BrtBkHim' */
       case 652:
+      /* 'BrtCsPageSetup' */
       case 669:
+      /* 'BrtCsProtection' */
       case 679:
+      /* 'BrtCsProtectionIso' */
       case 551:
+      /* 'BrtLegacyDrawing' */
       case 552:
+      /* 'BrtLegacyDrawingHF' */
       case 476:
+      /* 'BrtMargins' */
       case 3072:
         break;
       case 35:
@@ -18881,12 +19229,14 @@ function parse_wb_xml(data, opts) {
     switch (strip_ns(y[0])) {
       case "<?xml":
         break;
+      /* 18.2.27 workbook CT_Workbook 1 */
       case "<workbook":
         if (x.match(wbnsregex)) xmlns = "xmlns" + x.match(/<(\w+):/)[1];
         wb.xmlns = y[xmlns];
         break;
       case "</workbook>":
         break;
+      /* 18.2.13 fileVersion CT_FileVersion ? */
       case "<fileVersion":
         delete y[0];
         wb.AppVersion = y;
@@ -18894,10 +19244,12 @@ function parse_wb_xml(data, opts) {
       case "<fileVersion/>":
       case "</fileVersion>":
         break;
+      /* 18.2.12 fileSharing CT_FileSharing ? */
       case "<fileSharing":
         break;
       case "<fileSharing/>":
         break;
+      /* 18.2.28 workbookPr CT_WorkbookPr ? */
       case "<workbookPr":
       case "<workbookPr/>":
         WBPropsDef.forEach(function(w) {
@@ -18917,14 +19269,17 @@ function parse_wb_xml(data, opts) {
         break;
       case "</workbookPr>":
         break;
+      /* 18.2.29 workbookProtection CT_WorkbookProtection ? */
       case "<workbookProtection":
         break;
       case "<workbookProtection/>":
         break;
+      /* 18.2.1  bookViews CT_BookViews ? */
       case "<bookViews":
       case "<bookViews>":
       case "</bookViews>":
         break;
+      /* 18.2.30   workbookView CT_BookView + */
       case "<workbookView":
       case "<workbookView/>":
         delete y[0];
@@ -18932,10 +19287,13 @@ function parse_wb_xml(data, opts) {
         break;
       case "</workbookView>":
         break;
+      /* 18.2.20 sheets CT_Sheets 1 */
       case "<sheets":
       case "<sheets>":
       case "</sheets>":
         break;
+      // aggregate sheet
+      /* 18.2.19   sheet CT_Sheet + */
       case "<sheet":
         switch (y.state) {
           case "hidden":
@@ -18954,17 +19312,22 @@ function parse_wb_xml(data, opts) {
         break;
       case "</sheet>":
         break;
+      /* 18.2.15 functionGroups CT_FunctionGroups ? */
       case "<functionGroups":
       case "<functionGroups/>":
         break;
+      /* 18.2.14   functionGroup CT_FunctionGroup + */
       case "<functionGroup":
         break;
+      /* 18.2.9  externalReferences CT_ExternalReferences ? */
       case "<externalReferences":
       case "</externalReferences>":
       case "<externalReferences>":
         break;
+      /* 18.2.8    externalReference CT_ExternalReference + */
       case "<externalReference":
         break;
+      /* 18.2.6  definedNames CT_DefinedNames ? */
       case "<definedNames/>":
         break;
       case "<definedNames>":
@@ -18974,6 +19337,7 @@ function parse_wb_xml(data, opts) {
       case "</definedNames>":
         pass = false;
         break;
+      /* 18.2.5    definedName CT_DefinedName + */
       case "<definedName":
         {
           dname = {};
@@ -18992,6 +19356,7 @@ function parse_wb_xml(data, opts) {
         break;
       case "<definedName/>":
         break;
+      /* 18.2.2  calcPr CT_CalcPr ? */
       case "<calcPr":
         delete y[0];
         wb.CalcPr = y;
@@ -19002,53 +19367,69 @@ function parse_wb_xml(data, opts) {
         break;
       case "</calcPr>":
         break;
+      /* 18.2.16 oleSize CT_OleSize ? (ref required) */
       case "<oleSize":
         break;
+      /* 18.2.4  customWorkbookViews CT_CustomWorkbookViews ? */
       case "<customWorkbookViews>":
       case "</customWorkbookViews>":
       case "<customWorkbookViews":
         break;
+      /* 18.2.3  customWorkbookView CT_CustomWorkbookView + */
       case "<customWorkbookView":
       case "</customWorkbookView>":
         break;
+      /* 18.2.18 pivotCaches CT_PivotCaches ? */
       case "<pivotCaches>":
       case "</pivotCaches>":
       case "<pivotCaches":
         break;
+      /* 18.2.17 pivotCache CT_PivotCache ? */
       case "<pivotCache":
         break;
+      /* 18.2.21 smartTagPr CT_SmartTagPr ? */
       case "<smartTagPr":
       case "<smartTagPr/>":
         break;
+      /* 18.2.23 smartTagTypes CT_SmartTagTypes ? */
       case "<smartTagTypes":
       case "<smartTagTypes>":
       case "</smartTagTypes>":
         break;
+      /* 18.2.22 smartTagType CT_SmartTagType ? */
       case "<smartTagType":
         break;
+      /* 18.2.24 webPublishing CT_WebPublishing ? */
       case "<webPublishing":
       case "<webPublishing/>":
         break;
+      /* 18.2.11 fileRecoveryPr CT_FileRecoveryPr ? */
       case "<fileRecoveryPr":
       case "<fileRecoveryPr/>":
         break;
+      /* 18.2.26 webPublishObjects CT_WebPublishObjects ? */
       case "<webPublishObjects>":
       case "<webPublishObjects":
       case "</webPublishObjects>":
         break;
+      /* 18.2.25 webPublishObject CT_WebPublishObject ? */
       case "<webPublishObject":
         break;
+      /* 18.2.10 extLst CT_ExtensionList ? */
       case "<extLst":
       case "<extLst>":
       case "</extLst>":
       case "<extLst/>":
         break;
+      /* 18.2.7  ext CT_Extension + */
       case "<ext":
         pass = true;
         break;
+      //TODO: check with versions of excel
       case "</ext>":
         pass = false;
         break;
+      /* Others */
       case "<ArchID":
         break;
       case "<AlternateContent":
@@ -19058,6 +19439,7 @@ function parse_wb_xml(data, opts) {
       case "</AlternateContent>":
         pass = false;
         break;
+      /* TODO */
       case "<revisionPtr":
         break;
       default:
@@ -19273,8 +19655,11 @@ function parse_wb_bin(data, opts) {
       case 1036:
         break;
       case 357:
+      /* 'BrtSupSelf' */
       case 358:
+      /* 'BrtSupSame' */
       case 355:
+      /* 'BrtSupBookSrc' */
       case 667:
         if (!supbooks[0].length) supbooks[0] = [RT, val2];
         else supbooks.push([RT, val2]);
@@ -19291,35 +19676,64 @@ function parse_wb_bin(data, opts) {
       case 361:
         break;
       case 2071:
+      /* 'BrtAbsPath15' */
       case 158:
+      /* 'BrtBookView' */
       case 143:
+      /* 'BrtBeginBundleShs' */
       case 664:
+      /* 'BrtBeginFnGroup' */
       case 353:
         break;
+      /* case 'BrtModelTimeGroupingCalcCol' */
       case 3072:
+      /* 'BrtUid' */
       case 3073:
+      /* 'BrtRevisionPtr' */
       case 534:
+      /* 'BrtBookProtection' */
       case 677:
+      /* 'BrtBookProtectionIso' */
       case 157:
+      /* 'BrtCalcProp' */
       case 610:
+      /* 'BrtCrashRecErr' */
       case 2050:
+      /* 'BrtDecoupledPivotCacheID' */
       case 155:
+      /* 'BrtFileRecover' */
       case 548:
+      /* 'BrtFileSharing' */
       case 676:
+      /* 'BrtFileSharingIso' */
       case 128:
+      /* 'BrtFileVersion' */
       case 665:
+      /* 'BrtFnGroup' */
       case 2128:
+      /* 'BrtModelRelationship' */
       case 2125:
+      /* 'BrtModelTable' */
       case 549:
+      /* 'BrtOleSize' */
       case 2053:
+      /* 'BrtPivotTableRef' */
       case 596:
+      /* 'BrtSmartTagType' */
       case 2076:
+      /* 'BrtTableSlicerCacheID' */
       case 2075:
+      /* 'BrtTableSlicerCacheIDs' */
       case 2082:
+      /* 'BrtTimelineCachePivotCacheID' */
       case 397:
+      /* 'BrtUserBookView' */
       case 154:
+      /* 'BrtWbFactoid' */
       case 1117:
+      /* 'BrtWbProp14' */
       case 553:
+      /* 'BrtWebOpt' */
       case 2091:
         break;
       case 35:
@@ -19656,6 +20070,7 @@ function parse_xlml_data(xml, ss, data, cell, base, styles, csty, row, arrayf, o
       cell.v = datenum(parseDate(xml, date1904), date1904);
       if (cell.v !== cell.v) cell.v = unescapexml(xml);
       if (!nf || nf == "General") nf = "yyyy-mm-dd";
+    /* falls through */
     case "Number":
       if (cell.v === void 0) cell.v = +xml;
       if (!cell.t) cell.t = "n";
@@ -20056,6 +20471,7 @@ function parse_xlml_xml(d, _opts) {
     case "querytable":
     case "sorting":
     case "schema":
+    //case 'data' /*case 'data'*/:
     case "conditionalformatting":
     case "smarttagtype":
     case "smarttags":
@@ -20073,6 +20489,7 @@ function parse_xlml_xml(d, _opts) {
       if (state.length == 0 && Rn[3] == "uof") return parse_fods(str, opts);
       var seen = true;
       switch (state[state.length - 1][0]) {
+        /* OfficeDocumentSettings */
         case "officedocumentsettings":
           switch (Rn[3]) {
             case "allowpng":
@@ -20099,6 +20516,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* ComponentOptions */
         case "componentoptions":
           switch (Rn[3]) {
             case "toolbar":
@@ -20121,6 +20539,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* ExcelWorkbook */
         case "excelworkbook":
           switch (Rn[3]) {
             case "date1904":
@@ -20226,6 +20645,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* WorkbookOptions */
         case "workbookoptions":
           switch (Rn[3]) {
             case "owcversion":
@@ -20238,6 +20658,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* WorksheetOptions */
         case "worksheetoptions":
           switch (Rn[3]) {
             case "visible":
@@ -20414,6 +20835,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* PivotTable */
         case "pivottable":
         case "pivotcache":
           switch (Rn[3]) {
@@ -20511,6 +20933,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* PageBreaks */
         case "pagebreaks":
           switch (Rn[3]) {
             case "colbreaks":
@@ -20531,6 +20954,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* AutoFilter */
         case "autofilter":
           switch (Rn[3]) {
             case "autofiltercolumn":
@@ -20545,6 +20969,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* QueryTable */
         case "querytable":
           switch (Rn[3]) {
             case "id":
@@ -20718,6 +21143,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* MapInfo (schema) */
         case "mapinfo":
         case "schema":
         case "data":
@@ -20742,6 +21168,7 @@ function parse_xlml_xml(d, _opts) {
               break;
             case "attributetype":
               break;
+            /* These are from xsd (XML Schema Definition) */
             case "schema":
             case "element":
             case "complextype":
@@ -20756,6 +21183,7 @@ function parse_xlml_xml(d, _opts) {
               seen = false;
           }
           break;
+        /* SmartTags (can be anything) */
         case "smarttags":
           break;
         default:
@@ -21366,6 +21794,7 @@ function parse_workbook(blob, options) {
         case 15:
           opts.CalcRefMode = val2;
           break;
+        // TODO: implement R1C1
         case 2211:
           wb.opts.FullCalc = val2;
           break;
@@ -21374,9 +21803,13 @@ function parse_workbook(blob, options) {
           if (!val2.fBelow) (out["!outline"] || (out["!outline"] = {})).above = true;
           if (!val2.fRight) (out["!outline"] || (out["!outline"] = {})).left = true;
           break;
+        // TODO
         case 67:
+        /* BIFF2XF */
         case 579:
+        /* BIFF3XF */
         case 1091:
+        /* BIFF4XF */
         case 224:
           XFs.push(val2);
           break;
@@ -21424,6 +21857,7 @@ function parse_workbook(blob, options) {
         case 18:
           out["!protect"] = val2;
           break;
+        /* for sheet or book */
         case 19:
           if (val2 !== 0 && opts.WTF) console.error("Password verifier: " + val2);
           break;
@@ -21941,8 +22375,10 @@ function write_xlscfb(wb, opts) {
   switch (o.bookType || "xls") {
     case "xls":
       o.bookType = "biff8";
+    /* falls through */
     case "xla":
       if (!o.bookType) o.bookType = "xla";
+    /* falls through */
     case "biff8":
       wbpath = "/Workbook";
       o.biff = 8;
@@ -26773,6 +27209,7 @@ function write_ws_biff2_cell(ba, cell, R, C, opts, date1904) {
     case "e":
       write_biff_rec(ba, 5, write_BIFF2BERR(R, C, cell.v, cell.t));
       return;
+    /* TODO: codepage, sst */
     case "s":
     case "str":
       write_biff_rec(ba, 4, write_BIFF2LABEL(R, C, cell.v == null ? "" : String(cell.v).slice(0, 255)));
@@ -27161,6 +27598,7 @@ function write_ws_biff8_cell(ba, cell, R, C, opts, date1904) {
     case "e":
       write_biff_rec(ba, 517, write_BoolErr(R, C, cell.v, os, opts, cell.t));
       break;
+    /* TODO: codepage, sst */
     case "s":
     case "str":
       if (opts.bookSST) {
@@ -27554,11 +27992,17 @@ function parse_ods_styles(d, _opts, _nfm) {
   var Rn, NFtag, NF = "", tNF = "", y, etpos = 0, tidx = -1, infmt = false, payload = "";
   while (Rn = xlmlregex.exec(str)) {
     switch (Rn[3] = Rn[3].replace(/_[\s\S]*$/, "")) {
+      /* Number Format Definitions */
       case "number-style":
+      // <number:number-style> 16.29.2
       case "currency-style":
+      // <number:currency-style> 16.29.8
       case "percentage-style":
+      // <number:percentage-style> 16.29.10
       case "date-style":
+      // <number:date-style> 16.29.11
       case "time-style":
+      // <number:time-style> 16.29.19
       case "text-style":
         if (Rn[1] === "/") {
           infmt = false;
@@ -27575,6 +28019,7 @@ function parse_ods_styles(d, _opts, _nfm) {
           NFtag = parsexmltag(Rn[0], false);
         }
         break;
+      // LibreOffice bug https://bugs.documentfoundation.org/show_bug.cgi?id=149484
       case "boolean-style":
         if (Rn[1] === "/") {
           infmt = false;
@@ -27586,6 +28031,7 @@ function parse_ods_styles(d, _opts, _nfm) {
           NFtag = parsexmltag(Rn[0], false);
         }
         break;
+      /* Number Format Elements */
       case "boolean":
         NF += "General";
         break;
@@ -27732,6 +28178,7 @@ function parse_ods_styles(d, _opts, _nfm) {
         NF += "AM/PM";
         break;
       case "week-of-year":
+      // <number:week-of-year> 16.29.17
       case "quarter":
         console.error("Excel does not support ODS format token " + Rn[3]);
         break;
@@ -27905,6 +28352,7 @@ function parse_content_xml(d, _opts, _nfm) {
       textp = "";
       textR = [];
       break;
+    /* stub */
     case "table-cell":
     case "\u6570\u636E":
       if (Rn[0].charAt(Rn[0].length - 2) === "/") {
@@ -28006,6 +28454,7 @@ function parse_content_xml(d, _opts, _nfm) {
             }
             if (!q.z) q.z = "m/d/yy";
             break;
+          /* NOTE: for `time`, Excel ODS export incorrectly uses durations relative to 1900 epoch even if 1904 is specified */
           case "time":
             q.t = "n";
             q.v = parse_isodur(ctag["time-value"]) / 86400;
@@ -28077,14 +28526,22 @@ function parse_content_xml(d, _opts, _nfm) {
       }
       atag = {};
       break;
+    // 9.1.4 <table:table-cell>
+    /* pure state */
     case "document":
+    // TODO: <office:document> is the root for FODS
     case "document-content":
     case "\u7535\u5B50\u8868\u683C\u6587\u6863":
+    // 3.1.3.2 <office:document-content>
     case "spreadsheet":
     case "\u4E3B\u4F53":
+    // 3.7 <office:spreadsheet>
     case "scripts":
+    // 3.12 <office:scripts>
     case "styles":
+    // TODO <office:styles>
     case "font-face-decls":
+    // 3.14 <office:font-face-decls>
     case "master-styles":
       if (Rn[1] === "/") {
         if ((tmp = state.pop())[0] !== Rn[3]) throw "Bad state: " + tmp;
@@ -28119,22 +28576,38 @@ function parse_content_xml(d, _opts, _nfm) {
         creator = str.slice(creatoridx, Rn.index);
       } else creatoridx = Rn.index + Rn[0].length;
       break;
+    /* ignore state */
     case "meta":
     case "\u5143\u6570\u636E":
+    // TODO: <office:meta> <uof:元数据> FODS/UOF
     case "settings":
+    // TODO: <office:settings>
     case "config-item-set":
+    // TODO: <office:config-item-set>
     case "config-item-map-indexed":
+    // TODO: <office:config-item-map-indexed>
     case "config-item-map-entry":
+    // TODO: <office:config-item-map-entry>
     case "config-item-map-named":
+    // TODO: <office:config-item-map-entry>
     case "shapes":
+    // 9.2.8 <table:shapes>
     case "frame":
+    // 10.4.2 <draw:frame>
     case "text-box":
+    // 10.4.3 <draw:text-box>
     case "image":
+    // 10.4.4 <draw:image>
     case "data-pilot-tables":
+    // 9.6.2 <table:data-pilot-tables>
     case "list-style":
+    // 16.30 <text:list-style>
     case "form":
+    // 13.13 <form:form>
     case "dde-links":
+    // 9.8 <table:dde-links>
     case "event-listeners":
+    // TODO
     case "chart":
       if (Rn[1] === "/") {
         if ((tmp = state.pop())[0] !== Rn[3]) throw "Bad state: " + tmp;
@@ -28144,15 +28617,23 @@ function parse_content_xml(d, _opts, _nfm) {
       textR = [];
       break;
     case "scientific-number":
+    // <number:scientific-number>
     case "currency-symbol":
+    // <number:currency-symbol>
     case "fill-character":
       break;
     case "text-style":
+    // 16.27.25 <number:text-style>
     case "boolean-style":
+    // 16.27.23 <number:boolean-style>
     case "number-style":
+    // 16.27.2 <number:number-style>
     case "currency-style":
+    // 16.29.8 <number:currency-style>
     case "percentage-style":
+    // 16.27.9 <number:percentage-style>
     case "date-style":
+    // 16.27.10 <number:date-style>
     case "time-style":
       if (Rn[1] === "/") {
         var xlmlidx = xlmlregex.lastIndex;
@@ -28164,13 +28645,18 @@ function parse_content_xml(d, _opts, _nfm) {
       break;
     case "script":
       break;
+    // 3.13 <office:script>
     case "libraries":
       break;
+    // TODO: <ooo:libraries>
     case "automatic-styles":
       break;
+    // 3.15.3 <office:automatic-styles>
     case "default-style":
+    // TODO: <style:default-style>
     case "page-layout":
       break;
+    // TODO: <style:page-layout>
     case "style":
       {
         var styletag = parsexmltag(Rn[0], false);
@@ -28179,36 +28665,55 @@ function parse_content_xml(d, _opts, _nfm) {
       break;
     case "map":
       break;
+    // 16.3 <style:map>
     case "font-face":
       break;
+    // 16.21 <style:font-face>
     case "paragraph-properties":
       break;
+    // 17.6 <style:paragraph-properties>
     case "table-properties":
       break;
+    // 17.15 <style:table-properties>
     case "table-column-properties":
       break;
+    // 17.16 <style:table-column-properties>
     case "table-row-properties":
       break;
+    // 17.17 <style:table-row-properties>
     case "table-cell-properties":
       break;
+    // 17.18 <style:table-cell-properties>
     case "number":
       break;
     case "fraction":
       break;
+    // TODO 16.27.6 <number:fraction>
     case "day":
+    // 16.27.11 <number:day>
     case "month":
+    // 16.27.12 <number:month>
     case "year":
+    // 16.27.13 <number:year>
     case "era":
+    // 16.27.14 <number:era>
     case "day-of-week":
+    // 16.27.15 <number:day-of-week>
     case "week-of-year":
+    // 16.27.16 <number:week-of-year>
     case "quarter":
+    // 16.27.17 <number:quarter>
     case "hours":
+    // 16.27.19 <number:hours>
     case "minutes":
+    // 16.27.20 <number:minutes>
     case "seconds":
+    // 16.27.21 <number:seconds>
     case "am-pm":
       break;
     case "boolean":
       break;
+    // 16.27.24 <number:boolean>
     case "text":
       if (Rn[0].slice(-2) === "/>") break;
       else if (Rn[1] === "/") switch (state[state.length - 1][0]) {
@@ -28229,27 +28734,39 @@ function parse_content_xml(d, _opts, _nfm) {
       break;
     case "text-content":
       break;
+    // 16.27.27 <number:text-content>
     case "text-properties":
       break;
+    // 16.27.27 <style:text-properties>
     case "embedded-text":
       break;
+    // 16.27.4 <number:embedded-text>
     case "body":
     case "\u7535\u5B50\u8868\u683C":
       break;
+    // 3.3 16.9.6 19.726.3
     case "forms":
       break;
+    // 12.25.2 13.2
     case "table-column":
       break;
+    // 9.1.6 <table:table-column>
     case "table-header-rows":
       break;
+    // 9.1.7 <table:table-header-rows>
     case "table-rows":
       break;
+    // 9.1.12 <table:table-rows>
+    /* TODO: outline levels */
     case "table-column-group":
       break;
+    // 9.1.10 <table:table-column-group>
     case "table-header-columns":
       break;
+    // 9.1.11 <table:table-header-columns>
     case "table-columns":
       break;
+    // 9.1.12 <table:table-columns>
     case "null-date":
       tag = parsexmltag(Rn[0], false);
       switch (tag["date-value"]) {
@@ -28260,28 +28777,40 @@ function parse_content_xml(d, _opts, _nfm) {
       break;
     case "graphic-properties":
       break;
+    // 17.21 <style:graphic-properties>
     case "calculation-settings":
       break;
+    // 9.4.1 <table:calculation-settings>
     case "named-expressions":
       break;
+    // 9.4.11 <table:named-expressions>
     case "label-range":
       break;
+    // 9.4.9 <table:label-range>
     case "label-ranges":
       break;
+    // 9.4.10 <table:label-ranges>
     case "named-expression":
       break;
+    // 9.4.13 <table:named-expression>
     case "sort":
       break;
+    // 9.4.19 <table:sort>
     case "sort-by":
       break;
+    // 9.4.20 <table:sort-by>
     case "sort-groups":
       break;
+    // 9.4.22 <table:sort-groups>
     case "tab":
       break;
+    // 6.1.4 <text:tab>
     case "line-break":
       break;
+    // 6.1.5 <text:line-break>
     case "span":
       break;
+    // 6.1.7 <text:span>
     case "p":
     case "\u6587\u672C\u4E32":
       if (["master-styles"].indexOf(state[state.length - 1][0]) > -1) break;
@@ -28295,8 +28824,10 @@ function parse_content_xml(d, _opts, _nfm) {
         textpidx = Rn.index + Rn[0].length;
       }
       break;
+    // <text:p>
     case "s":
       break;
+    // <text:s>
     case "database-range":
       if (Rn[1] === "/") break;
       try {
@@ -28307,71 +28838,116 @@ function parse_content_xml(d, _opts, _nfm) {
       break;
     case "date":
       break;
+    // <*:date>
     case "object":
       break;
+    // 10.4.6.2 <draw:object>
     case "title":
     case "\u6807\u9898":
       break;
+    // <*:title> OR <uof:标题>
     case "desc":
       break;
+    // <*:desc>
     case "binary-data":
       break;
+    // 10.4.5 TODO: b64 blob
+    /* 9.2 Advanced Tables */
     case "table-source":
       break;
+    // 9.2.6
     case "scenario":
       break;
+    // 9.2.6
     case "iteration":
       break;
+    // 9.4.3 <table:iteration>
     case "content-validations":
       break;
+    // 9.4.4 <table:
     case "content-validation":
       break;
+    // 9.4.5 <table:
     case "help-message":
       break;
+    // 9.4.6 <table:
     case "error-message":
       break;
+    // 9.4.7 <table:
     case "database-ranges":
       break;
+    // 9.4.14 <table:database-ranges>
+    /* 9.5 Filters */
     case "filter":
       break;
+    // 9.5.2 <table:filter>
     case "filter-and":
       break;
+    // 9.5.3 <table:filter-and>
     case "filter-or":
       break;
+    // 9.5.4 <table:filter-or>
     case "filter-condition":
       break;
+    // 9.5.5 <table:filter-condition>
     case "filter-set-item":
       break;
+    // 9.5.6 <table:filter-condition>
     case "list-level-style-bullet":
       break;
+    // 16.31 <text:
     case "list-level-style-number":
       break;
+    // 16.32 <text:
     case "list-level-properties":
       break;
+    // 17.19 <style:
+    /* 7.3 Document Fields */
     case "sender-firstname":
+    // 7.3.6.2
     case "sender-lastname":
+    // 7.3.6.3
     case "sender-initials":
+    // 7.3.6.4
     case "sender-title":
+    // 7.3.6.5
     case "sender-position":
+    // 7.3.6.6
     case "sender-email":
+    // 7.3.6.7
     case "sender-phone-private":
+    // 7.3.6.8
     case "sender-fax":
+    // 7.3.6.9
     case "sender-company":
+    // 7.3.6.10
     case "sender-phone-work":
+    // 7.3.6.11
     case "sender-street":
+    // 7.3.6.12
     case "sender-city":
+    // 7.3.6.13
     case "sender-postal-code":
+    // 7.3.6.14
     case "sender-country":
+    // 7.3.6.15
     case "sender-state-or-province":
+    // 7.3.6.16
     case "author-name":
+    // 7.3.7.1
     case "author-initials":
+    // 7.3.7.2
     case "chapter":
+    // 7.3.8
     case "file-name":
+    // 7.3.9
     case "template-name":
+    // 7.3.9
     case "sheet-name":
       break;
     case "event-listener":
       break;
+    /* TODO: FODS Properties */
     case "initial-creator":
     case "creation-date":
     case "print-date":
@@ -28381,50 +28957,83 @@ function parse_content_xml(d, _opts, _nfm) {
     case "editing-duration":
     case "editing-cycles":
       break;
+    /* TODO: FODS Config */
     case "config-item":
       break;
+    /* TODO: style tokens */
     case "page-number":
       break;
+    // TODO <text:page-number>
     case "page-count":
       break;
+    // TODO <text:page-count>
     case "time":
       break;
+    // TODO <text:time>
+    /* 9.3 Advanced Table Cells */
     case "cell-range-source":
       break;
+    // 9.3.1 <table:
     case "detective":
       break;
+    // 9.3.2 <table:
     case "operation":
       break;
+    // 9.3.3 <table:
     case "highlighted-range":
       break;
+    // 9.3.4 <table:
+    /* 9.6 Data Pilot Tables <table: */
     case "data-pilot-table":
+    // 9.6.3
     case "source-cell-range":
+    // 9.6.5
     case "source-service":
+    // 9.6.6
     case "data-pilot-field":
+    // 9.6.7
     case "data-pilot-level":
+    // 9.6.8
     case "data-pilot-subtotals":
+    // 9.6.9
     case "data-pilot-subtotal":
+    // 9.6.10
     case "data-pilot-members":
+    // 9.6.11
     case "data-pilot-member":
+    // 9.6.12
     case "data-pilot-display-info":
+    // 9.6.13
     case "data-pilot-sort-info":
+    // 9.6.14
     case "data-pilot-layout-info":
+    // 9.6.15
     case "data-pilot-field-reference":
+    // 9.6.16
     case "data-pilot-groups":
+    // 9.6.17
     case "data-pilot-group":
+    // 9.6.18
     case "data-pilot-group-member":
       break;
+    /* 10.3 Drawing Shapes */
     case "rect":
       break;
+    /* 14.6 DDE Connections */
     case "dde-connection-decls":
+    // 14.6.2 <text:
     case "dde-connection-decl":
+    // 14.6.3 <text:
     case "dde-link":
+    // 14.6.4 <table:
     case "dde-source":
       break;
     case "properties":
       break;
+    // 13.7 <form:properties>
     case "property":
       break;
+    // 13.8 <form:property>
     case "a":
       if (Rn[1] !== "/") {
         atag = parsexmltag(Rn[0], false);
@@ -28437,25 +29046,39 @@ function parse_content_xml(d, _opts, _nfm) {
         } else if (atag.Target.match(/^\.\.[\\\/]/)) atag.Target = atag.Target.slice(3);
       }
       break;
+    /* non-standard */
     case "table-protection":
       break;
     case "data-pilot-grand-total":
       break;
+    // <table:
     case "office-document-common-attrs":
       break;
+    // bare
     default:
       switch (Rn[2]) {
         case "dc:":
+        // TODO: properties
         case "calcext:":
+        // ignore undocumented extensions
         case "loext:":
+        // ignore undocumented extensions
         case "ooo:":
+        // ignore undocumented extensions
         case "chartooo:":
+        // ignore undocumented extensions
         case "draw:":
+        // TODO: drawing
         case "style:":
+        // TODO: styles
         case "chart:":
+        // TODO: charts
         case "form:":
+        // TODO: forms
         case "uof:":
+        // TODO: uof
         case "\u8868:":
+        // TODO: uof
         case "\u5B57:":
           break;
         default:
@@ -28488,7 +29111,7 @@ function parse_fods(data, opts) {
   wb.bookType = "fods";
   return wb;
 }
-var write_styles_ods = /* @__PURE__ */ function() {
+var write_styles_ods = /* @__PURE__ */ (function() {
   var master_styles = [
     "<office:master-styles>",
     '<style:master-page style:name="mp1" style:page-layout-name="mp1">',
@@ -28516,7 +29139,7 @@ var write_styles_ods = /* @__PURE__ */ function() {
   return function wso() {
     return XML_HEADER + payload;
   };
-}();
+})();
 function write_number_format_ods(nf, nfidx) {
   var type = "number", payload = "", nopts = { "style:name": nfidx }, c = "", i = 0;
   nf = nf.replace(/"[$]"/g, "$");
@@ -28580,6 +29203,7 @@ function write_number_format_ods(nf, nfidx) {
               --i;
               break k;
           }
+        /* falls through */
         case "y":
         case "d":
           while ((nf[++i] || "").toLowerCase() == c[0]) c += c[0];
@@ -28595,6 +29219,7 @@ function write_number_format_ods(nf, nfidx) {
               break;
             case "mmmmm":
               console.error("ODS has no equivalent of format |mmmmm|");
+            /* falls through */
             case "m":
             case "mm":
             case "mmm":
@@ -28682,6 +29307,7 @@ function write_number_format_ods(nf, nfidx) {
             i += 4;
             break;
           }
+        /* falls through */
         default:
           console.error("unrecognized character " + c + " in ODF format " + nf);
       }
@@ -28745,7 +29371,7 @@ function write_names_ods(Names, SheetNames, idx) {
     });
   }).join("\n") + "\n      </table:named-expressions>\n";
 }
-var write_content_ods = /* @__PURE__ */ function() {
+var write_content_ods = /* @__PURE__ */ (function() {
   var write_text_p = function(text, span) {
     return escapexml(text).replace(/  +/g, function($$) {
       return '<text:s text:c="' + $$.length + '"/>';
@@ -28836,6 +29462,7 @@ var write_content_ods = /* @__PURE__ */ function() {
             ct["office:date-value"] = parseDate(cell.v, date1904).toISOString();
             ct["table:style-name"] = "ce1";
             break;
+          //case 'e': // TODO: translate to ODS errors
           default:
             o.push(null_cell_xml);
             continue;
@@ -29003,7 +29630,7 @@ var write_content_ods = /* @__PURE__ */ function() {
     else o.push("</office:document-content>");
     return o.join("");
   };
-}();
+})();
 function write_ods(wb, opts) {
   if (opts.bookType == "fods") return write_content_ods(wb, opts);
   var zip = zip_new();
@@ -29039,7 +29666,7 @@ function write_ods(wb, opts) {
   ));
   return zip;
 }
-var subarray = function() {
+var subarray = (function() {
   try {
     if (typeof Uint8Array == "undefined")
       return "slice";
@@ -29056,7 +29683,7 @@ var subarray = function() {
   } catch (e) {
     return "slice";
   }
-}();
+})();
 function u8_to_dataview(array) {
   return new DataView(array.buffer, array.byteOffset, array.byteLength);
 }
@@ -30965,14 +31592,14 @@ function write_numbers_tma(cfb, deps, ws, tmaroot, tmafile, tmaref) {
         var tstride = 256;
         tilestore[2] = [{ type: 0, data: write_varint49(tstride) }];
         var tileref = parse_TSP_Reference(parse_shallow(tilestore[1][0].data)[2][0].data);
-        var save_token = function() {
+        var save_token = (function() {
           var metadata = numbers_iwa_find(cfb, deps, 2);
           var mlist = parse_shallow(metadata.messages[0].data);
           var mlst = mlist[3].filter(function(m) {
             return varint_to_i32(parse_shallow(m.data)[1][0].data) == tileref;
           });
           return (mlst == null ? void 0 : mlst.length) ? varint_to_i32(parse_shallow(mlst[0].data)[12][0].data) : 0;
-        }();
+        })();
         {
           CFB.utils.cfb_del(cfb, deps[tileref].location);
           numbers_iwa_doit(cfb, deps, 2, function(ai) {
@@ -31722,6 +32349,7 @@ function write_zip_xlsb(wb, opts) {
     var _type = (ws || {})["!type"] || "sheet";
     switch (_type) {
       case "chart":
+      /* falls through */
       default:
         f = "xl/worksheets/sheet" + rId + "." + wbext;
         zip_add_file(zip, f, write_ws_bin(rId - 1, opts, wb, wsrels));
@@ -31864,6 +32492,7 @@ function write_zip_xlsx(wb, opts) {
     var _type = (ws || {})["!type"] || "sheet";
     switch (_type) {
       case "chart":
+      /* falls through */
       default:
         f = "xl/worksheets/sheet" + rId + "." + wbext;
         zip_add_file(zip, f, write_ws_xml(rId - 1, opts, wb, wsrels));
@@ -32227,6 +32856,7 @@ function write_stxt_type(out, opts) {
       return out;
     case "string":
       return out;
+    /* override in sheet_to_txt */
     case "file":
       return write_dl(opts.file, out, "binary");
     case "buffer": {
@@ -32306,13 +32936,16 @@ function writeSync(wb, opts) {
       return write_binary_type(WK_.book_to_wk3(wb, o), o);
     case "biff2":
       if (!o.biff) o.biff = 2;
+    /* falls through */
     case "biff3":
       if (!o.biff) o.biff = 3;
+    /* falls through */
     case "biff4":
       if (!o.biff) o.biff = 4;
       return write_binary_type(write_biff_buf(wb, o), o);
     case "biff5":
       if (!o.biff) o.biff = 5;
+    /* falls through */
     case "biff8":
     case "xla":
     case "xls":
@@ -32365,6 +32998,7 @@ function make_json_row(sheet, r, R, cols, header, hdr, o) {
         if (!val2.z || !fmt_is_date(val2.z)) break;
         v = numdate(v);
         if (typeof v == "number") break;
+      /* falls through */
       case "d":
         if (!(o && (o.UTC || o.raw === false))) v = utc_to_local(new Date(v));
         break;

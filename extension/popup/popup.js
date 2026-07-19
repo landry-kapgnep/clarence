@@ -13,7 +13,7 @@ import {
 import {
   __commonJS,
   __toESM
-} from "./chunk-JSBRDJBE.js";
+} from "./chunk-TRTQSARU.js";
 
 // (disabled):fs
 var require_fs = __commonJS({
@@ -169,7 +169,7 @@ var require_ort_common_node = __commonJS({
                 }
                 throw new Error("Can not access image data");
               }
-              if (i2) return new Promise((r3, n3) => {
+              if (i2) return new Promise(((r3, n3) => {
                 const o3 = document.createElement("canvas"), i3 = o3.getContext("2d");
                 if (!e2 || !i3) return n3();
                 const a3 = new Image();
@@ -183,7 +183,7 @@ var require_ort_common_node = __commonJS({
                   } else s2.height = o3.height, s2.width = o3.width;
                   r3(h.bufferToTensor(e3.data, s2));
                 };
-              });
+              }));
               throw new Error("Input data provided is not supported - aborted tensor creation");
             }
             {
@@ -297,7 +297,7 @@ var require_ort_common_node = __commonJS({
               a2 = new Uint8Array(r2, n2, d3);
             }
           }
-          const d2 = (s2.executionProviders || []).map((e3) => "string" == typeof e3 ? e3 : e3.name), f2 = await (async (e3) => {
+          const d2 = (s2.executionProviders || []).map(((e3) => "string" == typeof e3 ? e3 : e3.name)), f2 = await (async (e3) => {
             const t3 = 0 === e3.length ? n : e3, o3 = [];
             for (const e4 of t3) {
               const t4 = r[e4];
@@ -314,7 +314,7 @@ var require_ort_common_node = __commonJS({
                 }
               }
             }
-            throw new Error(`no available backend found. ERR: ${o3.map((e4) => `[${e4.name}] ${e4.err}`).join(", ")}`);
+            throw new Error(`no available backend found. ERR: ${o3.map(((e4) => `[${e4.name}] ${e4.err}`)).join(", ")}`);
           })(d2), h2 = await f2.createSessionHandler(a2, s2);
           return new m(h2);
         }
@@ -342,14 +342,14 @@ var require_ort_common_node = __commonJS({
 // node_modules/onnxruntime-web/dist/ort-web.min.js
 var require_ort_web_min = __commonJS({
   "node_modules/onnxruntime-web/dist/ort-web.min.js"(exports, module) {
-    !function(t, e) {
+    !(function(t, e) {
       if ("object" == typeof exports && "object" == typeof module) module.exports = e(require_ort_common_node());
       else if ("function" == typeof define && define.amd) define([], e);
       else {
         var n = "object" == typeof exports ? e(require_ort_common_node()) : e(t.ort);
         for (var r in n) ("object" == typeof exports ? exports : t)[r] = n[r];
       }
-    }(self, (__WEBPACK_EXTERNAL_MODULE__1670__) => (() => {
+    })(self, ((__WEBPACK_EXTERNAL_MODULE__1670__) => (() => {
       var __webpack_modules__ = { 3474: (t, e, n) => {
         var _scriptDir, r = (_scriptDir = (_scriptDir = "undefined" != typeof document && document.currentScript ? document.currentScript.src : void 0) || "/index.js", function(t2) {
           function e2() {
@@ -368,9 +368,9 @@ var require_ort_web_min = __commonJS({
             return $2.buffer != C && H($2.buffer), j;
           }
           var s, u, c;
-          t2 = t2 || {}, s || (s = void 0 !== t2 ? t2 : {}), s.ready = new Promise(function(t3, e3) {
+          t2 = t2 || {}, s || (s = void 0 !== t2 ? t2 : {}), s.ready = new Promise((function(t3, e3) {
             u = t3, c = e3;
-          });
+          }));
           var l, p, f, d, h, g, b = Object.assign({}, s), m = "./this.program", y = (t3, e3) => {
             throw e3;
           }, _ = "object" == typeof window, v = "function" == typeof importScripts, w = "object" == typeof process && "object" == typeof process.versions && "string" == typeof process.versions.node, x = s.ENVIRONMENT_IS_PTHREAD || false, T = "";
@@ -384,14 +384,14 @@ var require_ort_web_min = __commonJS({
             }, l = function(t3, e4) {
               return g(), t3 = h.normalize(t3), d.readFileSync(t3, e4 ? void 0 : "utf8");
             }, f = (t3) => ((t3 = l(t3, true)).buffer || (t3 = new Uint8Array(t3)), t3), p = (t3, e4, n2) => {
-              g(), t3 = h.normalize(t3), d.readFile(t3, function(t4, r3) {
+              g(), t3 = h.normalize(t3), d.readFile(t3, (function(t4, r3) {
                 t4 ? n2(t4) : e4(r3.buffer);
-              });
-            }, 1 < process.argv.length && (m = process.argv[1].replace(/\\/g, "/")), process.argv.slice(2), process.on("uncaughtException", function(t3) {
+              }));
+            }, 1 < process.argv.length && (m = process.argv[1].replace(/\\/g, "/")), process.argv.slice(2), process.on("uncaughtException", (function(t3) {
               if (!(t3 instanceof ut)) throw t3;
-            }), process.on("unhandledRejection", function(t3) {
+            })), process.on("unhandledRejection", (function(t3) {
               throw t3;
-            }), y = (t3, e4) => {
+            })), y = (t3, e4) => {
               if (J()) throw process.exitCode = t3, e4;
               e4 instanceof ut || P("exiting due to exception: " + e4), process.exit(t3);
             }, s.inspect = function() {
@@ -552,7 +552,7 @@ var require_ort_web_min = __commonJS({
             delete dt.Vb[e3], dt.Yb.push(t3), dt.ac.splice(dt.ac.indexOf(t3), 1), t3.Ub = 0, xe(e3);
           }, Gc: function() {
           }, pc: function() {
-            dt.qc.forEach((t3) => t3());
+            dt.qc.forEach(((t3) => t3()));
           }, Fc: function(t3, e3) {
             t3.onmessage = (n2) => {
               var r3 = (n2 = n2.data).cmd;
@@ -563,12 +563,12 @@ var require_ort_web_min = __commonJS({
               dt.Bc = void 0;
             }, t3.onerror = (t4) => {
               throw P("worker sent an error! " + t4.filename + ":" + t4.lineno + ": " + t4.message), t4;
-            }, w && (t3.on("message", function(e4) {
+            }, w && (t3.on("message", (function(e4) {
               t3.onmessage({ data: e4 });
-            }), t3.on("error", function(e4) {
+            })), t3.on("error", (function(e4) {
               t3.onerror(e4);
-            }), t3.on("detachedExit", function() {
-            })), t3.postMessage({ cmd: "load", urlOrBlob: s.mainScriptUrlOrBlob || _scriptDir, wasmMemory: $2, wasmModule: k });
+            })), t3.on("detachedExit", (function() {
+            }))), t3.postMessage({ cmd: "load", urlOrBlob: s.mainScriptUrlOrBlob || _scriptDir, wasmMemory: $2, wasmModule: k });
           }, yc: function() {
             var t3 = S("ort-wasm-threaded.worker.js");
             dt.Yb.push(new Worker(t3));
@@ -716,13 +716,13 @@ var require_ort_web_min = __commonJS({
           }
           function qt(t3, e3) {
             var n2 = arguments.length - 2, r3 = arguments;
-            return gt(() => {
+            return gt((() => {
               for (var i2 = Ie(8 * n2), o2 = i2 >> 3, s2 = 0; s2 < n2; s2++) {
                 var u2 = r3[2 + s2];
                 a()[o2 + s2 >>> 0] = u2;
               }
               return ve(t3, n2, i2, e3);
-            });
+            }));
           }
           s.executeNotifiedProxyingQueue = Vt, vt = w ? () => {
             var t3 = process.hrtime();
@@ -742,20 +742,20 @@ var require_ort_web_min = __commonJS({
           function Jt(t3, n2) {
             if (x) return qt(20, 1, t3, n2);
             var r3 = 0;
-            return Zt().forEach(function(i2, a2) {
+            return Zt().forEach((function(i2, a2) {
               var s2 = n2 + r3;
               for (a2 = o()[t3 + 4 * a2 >> 2 >>> 0] = s2, s2 = 0; s2 < i2.length; ++s2) e2()[a2++ >> 0 >>> 0] = i2.charCodeAt(s2);
               e2()[a2 >> 0 >>> 0] = 0, r3 += i2.length + 1;
-            }), 0;
+            })), 0;
           }
           function Qt(t3, e3) {
             if (x) return qt(21, 1, t3, e3);
             var n2 = Zt();
             o()[t3 >> 2 >>> 0] = n2.length;
             var r3 = 0;
-            return n2.forEach(function(t4) {
+            return n2.forEach((function(t4) {
               r3 += t4.length + 1;
-            }), o()[e3 >> 2 >>> 0] = r3, 0;
+            })), o()[e3 >> 2 >>> 0] = r3, 0;
           }
           function te(t3) {
             return x ? qt(22, 1, t3) : 52;
@@ -900,12 +900,12 @@ var require_ort_web_min = __commonJS({
             }, "%%": function() {
               return "%";
             } }, r3 = r3.replace(/%%/g, "\0\0"), p2) r3.includes(f2) && (r3 = r3.replace(new RegExp(f2, "g"), p2[f2](o2)));
-            return f2 = function(t4) {
+            return f2 = (function(t4) {
               var e3 = Array(G(t4) + 1);
               return z(t4, e3, 0, e3.length), e3;
-            }(r3 = r3.replace(/\0\0/g, "%")), f2.length > n2 ? 0 : (function(t4, n3) {
+            })(r3 = r3.replace(/\0\0/g, "%")), f2.length > n2 ? 0 : ((function(t4, n3) {
               e2().set(t4, n3 >>> 0);
-            }(f2, t3), f2.length - 1);
+            })(f2, t3), f2.length - 1);
           }
           dt.fc();
           var pe = [null, pt, bt, At, It, Pt, Dt, $t, kt, Ct, Ft, Nt, Lt, Rt, jt, Mt, Ut, zt, Gt, Wt, Jt, Qt, te, ee, ne, oe], fe = { b: function(t3) {
@@ -988,7 +988,7 @@ var require_ort_web_min = __commonJS({
           }, Oa: function() {
             return true;
           }, za: function(t3, e3, n2, r3) {
-            if (t3 == e3) setTimeout(() => Vt(r3));
+            if (t3 == e3) setTimeout((() => Vt(r3)));
             else if (x) postMessage({ targetThread: t3, cmd: "processProxyingQueue", queue: r3 });
             else {
               if (!(t3 = dt.Vb[t3])) return;
@@ -1050,21 +1050,21 @@ var require_ort_web_min = __commonJS({
           }, Ga: Jt, Ha: Qt, J: ft, I: te, S: ee, ga: ne, R: oe, d: function() {
             return ae;
           }, na: function t3(r3, i2) {
-            t3.lc || (t3.lc = function() {
+            t3.lc || (t3.lc = (function() {
               if ("object" == typeof crypto && "function" == typeof crypto.getRandomValues) {
                 var t4 = new Uint8Array(1);
                 return () => (crypto.getRandomValues(t4), t4[0]);
               }
               if (w) try {
-                var e3 = n(Object(function() {
+                var e3 = n(Object((function() {
                   var t5 = new Error("Cannot find module 'crypto'");
                   throw t5.code = "MODULE_NOT_FOUND", t5;
-                }()));
+                })()));
                 return () => e3.randomBytes(1)[0];
               } catch (t5) {
               }
               return () => it("randomDevice");
-            }());
+            })());
             for (var o2 = 0; o2 < i2; o2++) e2()[r3 + o2 >> 0 >>> 0] = t3.lc();
             return 0;
           }, ia: function(t3, e3, n2) {
@@ -1362,7 +1362,7 @@ var require_ort_web_min = __commonJS({
           }, la: le, z: function(t3, e3, n2, r3) {
             return le(t3, e3, n2, r3);
           } };
-          !function() {
+          !(function() {
             function t3(t4, e4) {
               s.asm = t4.exports, dt.qc.push(s.asm.sb), q = s.asm.ub, Y.unshift(s.asm.Va), k = e4, x || (et--, s.monitorRunDependencies && s.monitorRunDependencies(et), 0 == et && (null !== nt && (clearInterval(nt), nt = null), rt && (t4 = rt, rt = null, t4())));
             }
@@ -1370,30 +1370,30 @@ var require_ort_web_min = __commonJS({
               t3(e4.instance, e4.module);
             }
             function n2(t4) {
-              return function() {
+              return (function() {
                 if (!E && (_ || v)) {
-                  if ("function" == typeof fetch && !tt.startsWith("file://")) return fetch(tt, { credentials: "same-origin" }).then(function(t5) {
+                  if ("function" == typeof fetch && !tt.startsWith("file://")) return fetch(tt, { credentials: "same-origin" }).then((function(t5) {
                     if (!t5.ok) throw "failed to load wasm binary file at '" + tt + "'";
                     return t5.arrayBuffer();
-                  }).catch(function() {
+                  })).catch((function() {
                     return at();
-                  });
-                  if (p) return new Promise(function(t5, e4) {
-                    p(tt, function(e5) {
+                  }));
+                  if (p) return new Promise((function(t5, e4) {
+                    p(tt, (function(e5) {
                       t5(new Uint8Array(e5));
-                    }, e4);
-                  });
+                    }), e4);
+                  }));
                 }
-                return Promise.resolve().then(function() {
+                return Promise.resolve().then((function() {
                   return at();
-                });
-              }().then(function(t5) {
+                }));
+              })().then((function(t5) {
                 return WebAssembly.instantiate(t5, r3);
-              }).then(function(t5) {
+              })).then((function(t5) {
                 return t5;
-              }).then(t4, function(t5) {
+              })).then(t4, (function(t5) {
                 P("failed to asynchronously prepare wasm: " + t5), it(t5);
-              });
+              }));
             }
             var r3 = { a: fe };
             if (x || (et++, s.monitorRunDependencies && s.monitorRunDependencies(et)), s.instantiateWasm) try {
@@ -1401,12 +1401,12 @@ var require_ort_web_min = __commonJS({
             } catch (t4) {
               return P("Module.instantiateWasm callback failed with error: " + t4), false;
             }
-            (E || "function" != typeof WebAssembly.instantiateStreaming || ot() || tt.startsWith("file://") || w || "function" != typeof fetch ? n2(e3) : fetch(tt, { credentials: "same-origin" }).then(function(t4) {
-              return WebAssembly.instantiateStreaming(t4, r3).then(e3, function(t5) {
+            (E || "function" != typeof WebAssembly.instantiateStreaming || ot() || tt.startsWith("file://") || w || "function" != typeof fetch ? n2(e3) : fetch(tt, { credentials: "same-origin" }).then((function(t4) {
+              return WebAssembly.instantiateStreaming(t4, r3).then(e3, (function(t5) {
                 return P("wasm streaming compile failed: " + t5), P("falling back to ArrayBuffer instantiation"), n2(e3);
-              });
-            })).catch(c);
-          }(), s.___wasm_call_ctors = function() {
+              }));
+            }))).catch(c);
+          })(), s.___wasm_call_ctors = function() {
             return (s.___wasm_call_ctors = s.asm.Va).apply(null, arguments);
           }, s._OrtInit = function() {
             return (s._OrtInit = s.asm.Wa).apply(null, arguments);
@@ -1525,11 +1525,11 @@ var require_ort_web_min = __commonJS({
             if (!(0 < et)) if (x) u(s), x || ht(Y), postMessage({ cmd: "loaded" });
             else {
               if (s.preRun) for ("function" == typeof s.preRun && (s.preRun = [s.preRun]); s.preRun.length; ) Q();
-              ht(X), 0 < et || (s.setStatus ? (s.setStatus("Running..."), setTimeout(function() {
-                setTimeout(function() {
+              ht(X), 0 < et || (s.setStatus ? (s.setStatus("Running..."), setTimeout((function() {
+                setTimeout((function() {
                   s.setStatus("");
-                }, 1), t3();
-              }, 1)) : t3());
+                }), 1), t3();
+              }), 1)) : t3());
             }
           }
           if (s.UTF8ToString = B, s.stringToUTF8 = function(t3, e3, n2) {
@@ -1543,9 +1543,9 @@ var require_ort_web_min = __commonJS({
       }, 932: (t, e, n) => {
         var _scriptDir, r = (_scriptDir = (_scriptDir = "undefined" != typeof document && document.currentScript ? document.currentScript.src : void 0) || "/index.js", function(t2) {
           var e2, r2, i;
-          t2 = t2 || {}, e2 || (e2 = void 0 !== t2 ? t2 : {}), e2.ready = new Promise(function(t3, e3) {
+          t2 = t2 || {}, e2 || (e2 = void 0 !== t2 ? t2 : {}), e2.ready = new Promise((function(t3, e3) {
             r2 = t3, i = e3;
-          });
+          }));
           var o, a, s, u, c, l, p = Object.assign({}, e2), f = "./this.program", d = (t3, e3) => {
             throw e3;
           }, h = "object" == typeof window, g = "function" == typeof importScripts, b = "object" == typeof process && "object" == typeof process.versions && "string" == typeof process.versions.node, m = "";
@@ -1554,14 +1554,14 @@ var require_ort_web_min = __commonJS({
           }, o = function(t3, e3) {
             return l(), t3 = c.normalize(t3), u.readFileSync(t3, e3 ? void 0 : "utf8");
           }, s = (t3) => ((t3 = o(t3, true)).buffer || (t3 = new Uint8Array(t3)), t3), a = (t3, e3, n2) => {
-            l(), t3 = c.normalize(t3), u.readFile(t3, function(t4, r3) {
+            l(), t3 = c.normalize(t3), u.readFile(t3, (function(t4, r3) {
               t4 ? n2(t4) : e3(r3.buffer);
-            });
-          }, 1 < process.argv.length && (f = process.argv[1].replace(/\\/g, "/")), process.argv.slice(2), process.on("uncaughtException", function(t3) {
+            }));
+          }, 1 < process.argv.length && (f = process.argv[1].replace(/\\/g, "/")), process.argv.slice(2), process.on("uncaughtException", (function(t3) {
             if (!(t3 instanceof K)) throw t3;
-          }), process.on("unhandledRejection", function(t3) {
+          })), process.on("unhandledRejection", (function(t3) {
             throw t3;
-          }), d = (t3, e3) => {
+          })), d = (t3, e3) => {
             if (w || 0 < U) throw process.exitCode = t3, e3;
             e3 instanceof K || v("exiting due to exception: " + e3), process.exit(t3);
           }, e2.inspect = function() {
@@ -1858,10 +1858,10 @@ var require_ort_web_min = __commonJS({
             }, "%%": function() {
               return "%";
             } }, n2 = n2.replace(/%%/g, "\0\0"), c2) n2.includes(l2) && (n2 = n2.replace(new RegExp(l2, "g"), c2[l2](r3)));
-            return l2 = function(t4) {
+            return l2 = (function(t4) {
               var e4 = Array(C(t4) + 1);
               return k(t4, e4, 0, e4.length), e4;
-            }(n2 = n2.replace(/\0\0/g, "%")), l2.length > e3 ? 0 : (S.set(l2, t3 >>> 0), l2.length - 1);
+            })(n2 = n2.replace(/\0\0/g, "%")), l2.length > e3 ? 0 : (S.set(l2, t3 >>> 0), l2.length - 1);
           }
           var bt = { a: function(t3) {
             return yt(t3 + 24) + 24;
@@ -1966,7 +1966,7 @@ var require_ort_web_min = __commonJS({
             return -52;
           }, ta: function() {
           }, Ga: function t3(e3, n2, r3) {
-            t3.Vb || (t3.Vb = true, function(t4, e4, n3) {
+            t3.Vb || (t3.Vb = true, (function(t4, e4, n3) {
               function r4(t5) {
                 return (t5 = t5.toTimeString().match(/\(([A-Za-z ]+)\)$/)) ? t5[1] : "GMT";
               }
@@ -1974,7 +1974,7 @@ var require_ort_web_min = __commonJS({
               i2 = o2.getTimezoneOffset();
               var s2 = a2.getTimezoneOffset();
               A[t4 >> 2 >>> 0] = 60 * Math.max(i2, s2), A[e4 >> 2 >>> 0] = Number(i2 != s2), t4 = r4(o2), e4 = r4(a2), t4 = ot(t4), e4 = ot(e4), s2 < i2 ? (E[n3 >> 2 >>> 0] = t4, E[n3 + 4 >> 2 >>> 0] = e4) : (E[n3 >> 2 >>> 0] = e4, E[n3 + 4 >> 2 >>> 0] = t4);
-            }(e3, n2, r3));
+            })(e3, n2, r3));
           }, B: function() {
             W("");
           }, ma: function() {
@@ -2006,18 +2006,18 @@ var require_ort_web_min = __commonJS({
             return false;
           }, va: function(t3, e3) {
             var n2 = 0;
-            return st().forEach(function(r3, i2) {
+            return st().forEach((function(r3, i2) {
               var o2 = e3 + n2;
               for (i2 = E[t3 + 4 * i2 >> 2 >>> 0] = o2, o2 = 0; o2 < r3.length; ++o2) S[i2++ >> 0 >>> 0] = r3.charCodeAt(o2);
               S[i2 >> 0 >>> 0] = 0, n2 += r3.length + 1;
-            }), 0;
+            })), 0;
           }, wa: function(t3, e3) {
             var n2 = st();
             E[t3 >> 2 >>> 0] = n2.length;
             var r3 = 0;
-            return n2.forEach(function(t4) {
+            return n2.forEach((function(t4) {
               r3 += t4.length + 1;
-            }), E[e3 >> 2 >>> 0] = r3, 0;
+            })), E[e3 >> 2 >>> 0] = r3, 0;
           }, ba: function(t3) {
             w || 0 < U || (wt(), Z(j), vt(0), ct[1].length && lt(1, 10), ct[2].length && lt(2, 10)), w || 0 < U || (e2.onExit && e2.onExit(t3), I = true), d(t3, new K(t3));
           }, E: function() {
@@ -2037,21 +2037,21 @@ var require_ort_web_min = __commonJS({
           }, c: function() {
             return pt;
           }, ja: function t3(e3, r3) {
-            t3.Mb || (t3.Mb = function() {
+            t3.Mb || (t3.Mb = (function() {
               if ("object" == typeof crypto && "function" == typeof crypto.getRandomValues) {
                 var t4 = new Uint8Array(1);
                 return () => (crypto.getRandomValues(t4), t4[0]);
               }
               if (b) try {
-                var e4 = n(Object(function() {
+                var e4 = n(Object((function() {
                   var t5 = new Error("Cannot find module 'crypto'");
                   throw t5.code = "MODULE_NOT_FOUND", t5;
-                }()));
+                })()));
                 return () => e4.randomBytes(1)[0];
               } catch (t5) {
               }
               return () => W("randomDevice");
-            }());
+            })());
             for (var i2 = 0; i2 < r3; i2++) S[e3 + i2 >> 0 >>> 0] = t3.Mb();
             return 0;
           }, ea: function(t3, e3, n2) {
@@ -2349,7 +2349,7 @@ var require_ort_web_min = __commonJS({
           }, ha: gt, y: function(t3, e3, n2, r3) {
             return gt(t3, e3, n2, r3);
           } };
-          !function() {
+          !(function() {
             function t3(t4) {
               e2.asm = t4.exports, x = e2.asm.Ka, F(), N = e2.asm.ib, R.unshift(e2.asm.La), z--, e2.monitorRunDependencies && e2.monitorRunDependencies(z), 0 == z && (null !== G && (clearInterval(G), G = null), H && (t4 = H, H = null, t4()));
             }
@@ -2357,30 +2357,30 @@ var require_ort_web_min = __commonJS({
               t3(e3.instance);
             }
             function r3(t4) {
-              return function() {
+              return (function() {
                 if (!y && (h || g)) {
-                  if ("function" == typeof fetch && !B.startsWith("file://")) return fetch(B, { credentials: "same-origin" }).then(function(t5) {
+                  if ("function" == typeof fetch && !B.startsWith("file://")) return fetch(B, { credentials: "same-origin" }).then((function(t5) {
                     if (!t5.ok) throw "failed to load wasm binary file at '" + B + "'";
                     return t5.arrayBuffer();
-                  }).catch(function() {
+                  })).catch((function() {
                     return Y();
-                  });
-                  if (a) return new Promise(function(t5, e3) {
-                    a(B, function(e4) {
+                  }));
+                  if (a) return new Promise((function(t5, e3) {
+                    a(B, (function(e4) {
                       t5(new Uint8Array(e4));
-                    }, e3);
-                  });
+                    }), e3);
+                  }));
                 }
-                return Promise.resolve().then(function() {
+                return Promise.resolve().then((function() {
                   return Y();
-                });
-              }().then(function(t5) {
+                }));
+              })().then((function(t5) {
                 return WebAssembly.instantiate(t5, o2);
-              }).then(function(t5) {
+              })).then((function(t5) {
                 return t5;
-              }).then(t4, function(t5) {
+              })).then(t4, (function(t5) {
                 v("failed to asynchronously prepare wasm: " + t5), W(t5);
-              });
+              }));
             }
             var o2 = { a: bt };
             if (z++, e2.monitorRunDependencies && e2.monitorRunDependencies(z), e2.instantiateWasm) try {
@@ -2388,12 +2388,12 @@ var require_ort_web_min = __commonJS({
             } catch (t4) {
               return v("Module.instantiateWasm callback failed with error: " + t4), false;
             }
-            (y || "function" != typeof WebAssembly.instantiateStreaming || q() || B.startsWith("file://") || b || "function" != typeof fetch ? r3(n2) : fetch(B, { credentials: "same-origin" }).then(function(t4) {
-              return WebAssembly.instantiateStreaming(t4, o2).then(n2, function(t5) {
+            (y || "function" != typeof WebAssembly.instantiateStreaming || q() || B.startsWith("file://") || b || "function" != typeof fetch ? r3(n2) : fetch(B, { credentials: "same-origin" }).then((function(t4) {
+              return WebAssembly.instantiateStreaming(t4, o2).then(n2, (function(t5) {
                 return v("wasm streaming compile failed: " + t5), v("falling back to ArrayBuffer instantiation"), r3(n2);
-              });
-            })).catch(i);
-          }(), e2.___wasm_call_ctors = function() {
+              }));
+            }))).catch(i);
+          })(), e2.___wasm_call_ctors = function() {
             return (e2.___wasm_call_ctors = e2.asm.La).apply(null, arguments);
           }, e2._OrtInit = function() {
             return (e2._OrtInit = e2.asm.Ma).apply(null, arguments);
@@ -2489,11 +2489,11 @@ var require_ort_web_min = __commonJS({
             }
             if (!(0 < z)) {
               if (e2.preRun) for ("function" == typeof e2.preRun && (e2.preRun = [e2.preRun]); e2.preRun.length; ) V();
-              Z(L), 0 < z || (e2.setStatus ? (e2.setStatus("Running..."), setTimeout(function() {
-                setTimeout(function() {
+              Z(L), 0 < z || (e2.setStatus ? (e2.setStatus("Running..."), setTimeout((function() {
+                setTimeout((function() {
                   e2.setStatus("");
-                }, 1), t3();
-              }, 1)) : t3());
+                }), 1), t3();
+              }), 1)) : t3());
             }
           }
           if (e2.UTF8ToString = $2, e2.stringToUTF8 = function(t3, e3, n2) {
@@ -2508,7 +2508,7 @@ var require_ort_web_min = __commonJS({
         "use strict";
         t.exports = function(t2, e) {
           for (var n = new Array(arguments.length - 1), r = 0, i = 2, o = true; i < arguments.length; ) n[r++] = arguments[i++];
-          return new Promise(function(i2, a) {
+          return new Promise((function(i2, a) {
             n[r] = function(t3) {
               if (o) if (o = false, t3) a(t3);
               else {
@@ -2521,7 +2521,7 @@ var require_ort_web_min = __commonJS({
             } catch (t3) {
               o && (o = false, a(t3));
             }
-          });
+          }));
         };
       }, 7419: (t, e) => {
         "use strict";
@@ -2598,7 +2598,7 @@ var require_ort_web_min = __commonJS({
       }, 945: (t) => {
         "use strict";
         function e(t2) {
-          return "undefined" != typeof Float32Array ? function() {
+          return "undefined" != typeof Float32Array ? (function() {
             var e2 = new Float32Array([-0]), n2 = new Uint8Array(e2.buffer), r2 = 128 === n2[3];
             function i2(t3, r3, i3) {
               e2[0] = t3, r3[i3] = n2[0], r3[i3 + 1] = n2[1], r3[i3 + 2] = n2[2], r3[i3 + 3] = n2[3];
@@ -2613,7 +2613,7 @@ var require_ort_web_min = __commonJS({
               return n2[3] = t3[r3], n2[2] = t3[r3 + 1], n2[1] = t3[r3 + 2], n2[0] = t3[r3 + 3], e2[0];
             }
             t2.writeFloatLE = r2 ? i2 : o2, t2.writeFloatBE = r2 ? o2 : i2, t2.readFloatLE = r2 ? a : s, t2.readFloatBE = r2 ? s : a;
-          }() : function() {
+          })() : (function() {
             function e2(t3, e3, n2, r2) {
               var i2 = e3 < 0 ? 1 : 0;
               if (i2 && (e3 = -e3), 0 === e3) t3(1 / e3 > 0 ? 0 : 2147483648, n2, r2);
@@ -2630,7 +2630,7 @@ var require_ort_web_min = __commonJS({
               return 255 === o2 ? a2 ? NaN : i2 * (1 / 0) : 0 === o2 ? 1401298464324817e-60 * i2 * a2 : i2 * Math.pow(2, o2 - 150) * (a2 + 8388608);
             }
             t2.writeFloatLE = e2.bind(null, n), t2.writeFloatBE = e2.bind(null, r), t2.readFloatLE = a.bind(null, i), t2.readFloatBE = a.bind(null, o);
-          }(), "undefined" != typeof Float64Array ? function() {
+          })(), "undefined" != typeof Float64Array ? (function() {
             var e2 = new Float64Array([-0]), n2 = new Uint8Array(e2.buffer), r2 = 128 === n2[7];
             function i2(t3, r3, i3) {
               e2[0] = t3, r3[i3] = n2[0], r3[i3 + 1] = n2[1], r3[i3 + 2] = n2[2], r3[i3 + 3] = n2[3], r3[i3 + 4] = n2[4], r3[i3 + 5] = n2[5], r3[i3 + 6] = n2[6], r3[i3 + 7] = n2[7];
@@ -2645,7 +2645,7 @@ var require_ort_web_min = __commonJS({
               return n2[7] = t3[r3], n2[6] = t3[r3 + 1], n2[5] = t3[r3 + 2], n2[4] = t3[r3 + 3], n2[3] = t3[r3 + 4], n2[2] = t3[r3 + 5], n2[1] = t3[r3 + 6], n2[0] = t3[r3 + 7], e2[0];
             }
             t2.writeDoubleLE = r2 ? i2 : o2, t2.writeDoubleBE = r2 ? o2 : i2, t2.readDoubleLE = r2 ? a : s, t2.readDoubleBE = r2 ? s : a;
-          }() : function() {
+          })() : (function() {
             function e2(t3, e3, n2, r2, i2, o2) {
               var a2 = r2 < 0 ? 1 : 0;
               if (a2 && (r2 = -r2), 0 === r2) t3(0, i2, o2 + e3), t3(1 / r2 > 0 ? 0 : 2147483648, i2, o2 + n2);
@@ -2665,7 +2665,7 @@ var require_ort_web_min = __commonJS({
               return 2047 === u ? c ? NaN : s * (1 / 0) : 0 === u ? 5e-324 * s * c : s * Math.pow(2, u - 1075) * (c + 4503599627370496);
             }
             t2.writeDoubleLE = e2.bind(null, n, 0, 4), t2.writeDoubleBE = e2.bind(null, r, 4, 0), t2.readDoubleLE = a.bind(null, i, 0, 4), t2.readDoubleBE = a.bind(null, o, 4, 0);
-          }(), t2;
+          })(), t2;
         }
         function n(t2, e2, n2) {
           e2[n2] = 255 & t2, e2[n2 + 1] = t2 >>> 8 & 255, e2[n2 + 2] = t2 >>> 16 & 255, e2[n2 + 3] = t2 >>> 24;
@@ -2719,7 +2719,7 @@ var require_ort_web_min = __commonJS({
       }, 3442: (t, e) => {
         "use strict";
         e.__esModule = true;
-        var n = function() {
+        var n = (function() {
           function t2(e2) {
             if (!e2) throw new TypeError("Invalid argument; `value` has no value.");
             this.value = t2.EMPTY, e2 && t2.isGuid(e2) && (this.value = e2);
@@ -2747,7 +2747,7 @@ var require_ort_web_min = __commonJS({
           }, t2.prototype.toJSON = function() {
             return { value: this.value };
           }, t2.validator = new RegExp("^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$", "i"), t2.EMPTY = "00000000-0000-0000-0000-000000000000", t2;
-        }();
+        })();
         e.Guid = n;
       }, 3720: (t) => {
         t.exports = n;
@@ -2960,7 +2960,7 @@ var require_ort_web_min = __commonJS({
       }, 1446: (t, e, n) => {
         "use strict";
         var r, i, o, a = n(2100), s = a.Reader, u = a.Writer, c = a.util, l = a.roots.default || (a.roots.default = {});
-        l.onnx = ((o = {}).Version = (r = {}, (i = Object.create(r))[r[0] = "_START_VERSION"] = 0, i[r[1] = "IR_VERSION_2017_10_10"] = 1, i[r[2] = "IR_VERSION_2017_10_30"] = 2, i[r[3] = "IR_VERSION_2017_11_3"] = 3, i[r[4] = "IR_VERSION_2019_1_22"] = 4, i[r[5] = "IR_VERSION"] = 5, i), o.AttributeProto = function() {
+        l.onnx = ((o = {}).Version = (r = {}, (i = Object.create(r))[r[0] = "_START_VERSION"] = 0, i[r[1] = "IR_VERSION_2017_10_10"] = 1, i[r[2] = "IR_VERSION_2017_10_30"] = 2, i[r[3] = "IR_VERSION_2017_11_3"] = 3, i[r[4] = "IR_VERSION_2019_1_22"] = 4, i[r[5] = "IR_VERSION"] = 5, i), o.AttributeProto = (function() {
           function t2(t3) {
             if (this.floats = [], this.ints = [], this.strings = [], this.tensors = [], this.graphs = [], t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -3192,11 +3192,11 @@ var require_ort_web_min = __commonJS({
             return null != t3.docString && t3.hasOwnProperty("docString") && (n2.docString = t3.docString), null != t3.type && t3.hasOwnProperty("type") && (n2.type = e2.enums === String ? l.onnx.AttributeProto.AttributeType[t3.type] : t3.type), null != t3.refAttrName && t3.hasOwnProperty("refAttrName") && (n2.refAttrName = t3.refAttrName), n2;
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
-          }, t2.AttributeType = function() {
+          }, t2.AttributeType = (function() {
             var t3 = {}, e2 = Object.create(t3);
             return e2[t3[0] = "UNDEFINED"] = 0, e2[t3[1] = "FLOAT"] = 1, e2[t3[2] = "INT"] = 2, e2[t3[3] = "STRING"] = 3, e2[t3[4] = "TENSOR"] = 4, e2[t3[5] = "GRAPH"] = 5, e2[t3[6] = "FLOATS"] = 6, e2[t3[7] = "INTS"] = 7, e2[t3[8] = "STRINGS"] = 8, e2[t3[9] = "TENSORS"] = 9, e2[t3[10] = "GRAPHS"] = 10, e2;
-          }(), t2;
-        }(), o.ValueInfoProto = function() {
+          })(), t2;
+        })(), o.ValueInfoProto = (function() {
           function t2(t3) {
             if (t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -3250,7 +3250,7 @@ var require_ort_web_min = __commonJS({
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
           }, t2;
-        }(), o.NodeProto = function() {
+        })(), o.NodeProto = (function() {
           function t2(t3) {
             if (this.input = [], this.output = [], this.attribute = [], t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -3350,7 +3350,7 @@ var require_ort_web_min = __commonJS({
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
           }, t2;
-        }(), o.ModelProto = function() {
+        })(), o.ModelProto = (function() {
           function t2(t3) {
             if (this.opsetImport = [], this.metadataProps = [], t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -3464,7 +3464,7 @@ var require_ort_web_min = __commonJS({
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
           }, t2;
-        }(), o.StringStringEntryProto = function() {
+        })(), o.StringStringEntryProto = (function() {
           function t2(t3) {
             if (t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -3505,7 +3505,7 @@ var require_ort_web_min = __commonJS({
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
           }, t2;
-        }(), o.TensorAnnotation = function() {
+        })(), o.TensorAnnotation = (function() {
           function t2(t3) {
             if (this.quantParameterTensorNames = [], t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -3568,7 +3568,7 @@ var require_ort_web_min = __commonJS({
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
           }, t2;
-        }(), o.GraphProto = function() {
+        })(), o.GraphProto = (function() {
           function t2(t3) {
             if (this.node = [], this.initializer = [], this.input = [], this.output = [], this.valueInfo = [], this.quantizationAnnotation = [], t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -3715,7 +3715,7 @@ var require_ort_web_min = __commonJS({
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
           }, t2;
-        }(), o.TensorProto = function() {
+        })(), o.TensorProto = (function() {
           function t2(t3) {
             if (this.dims = [], this.floatData = [], this.int32Data = [], this.stringData = [], this.int64Data = [], this.externalData = [], this.doubleData = [], this.uint64Data = [], t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -3931,10 +3931,10 @@ var require_ort_web_min = __commonJS({
             return null != t3.dataLocation && t3.hasOwnProperty("dataLocation") && (n2.dataLocation = e2.enums === String ? l.onnx.TensorProto.DataLocation[t3.dataLocation] : t3.dataLocation), n2;
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
-          }, t2.DataType = function() {
+          }, t2.DataType = (function() {
             var t3 = {}, e2 = Object.create(t3);
             return e2[t3[0] = "UNDEFINED"] = 0, e2[t3[1] = "FLOAT"] = 1, e2[t3[2] = "UINT8"] = 2, e2[t3[3] = "INT8"] = 3, e2[t3[4] = "UINT16"] = 4, e2[t3[5] = "INT16"] = 5, e2[t3[6] = "INT32"] = 6, e2[t3[7] = "INT64"] = 7, e2[t3[8] = "STRING"] = 8, e2[t3[9] = "BOOL"] = 9, e2[t3[10] = "FLOAT16"] = 10, e2[t3[11] = "DOUBLE"] = 11, e2[t3[12] = "UINT32"] = 12, e2[t3[13] = "UINT64"] = 13, e2[t3[14] = "COMPLEX64"] = 14, e2[t3[15] = "COMPLEX128"] = 15, e2[t3[16] = "BFLOAT16"] = 16, e2;
-          }(), t2.Segment = function() {
+          })(), t2.Segment = (function() {
             function t3(t4) {
               if (t4) for (var e2 = Object.keys(t4), n2 = 0; n2 < e2.length; ++n2) null != t4[e2[n2]] && (this[e2[n2]] = t4[e2[n2]]);
             }
@@ -3982,11 +3982,11 @@ var require_ort_web_min = __commonJS({
             }, t3.prototype.toJSON = function() {
               return this.constructor.toObject(this, a.util.toJSONOptions);
             }, t3;
-          }(), t2.DataLocation = function() {
+          })(), t2.DataLocation = (function() {
             var t3 = {}, e2 = Object.create(t3);
             return e2[t3[0] = "DEFAULT"] = 0, e2[t3[1] = "EXTERNAL"] = 1, e2;
-          }(), t2;
-        }(), o.TensorShapeProto = function() {
+          })(), t2;
+        })(), o.TensorShapeProto = (function() {
           function t2(t3) {
             if (this.dim = [], t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -4038,7 +4038,7 @@ var require_ort_web_min = __commonJS({
             return n2;
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
-          }, t2.Dimension = function() {
+          }, t2.Dimension = (function() {
             function t3(t4) {
               if (t4) for (var e3 = Object.keys(t4), n2 = 0; n2 < e3.length; ++n2) null != t4[e3[n2]] && (this[e3[n2]] = t4[e3[n2]]);
             }
@@ -4090,8 +4090,8 @@ var require_ort_web_min = __commonJS({
             }, t3.prototype.toJSON = function() {
               return this.constructor.toObject(this, a.util.toJSONOptions);
             }, t3;
-          }(), t2;
-        }(), o.TypeProto = function() {
+          })(), t2;
+        })(), o.TypeProto = (function() {
           function t2(t3) {
             if (t3) for (var e3 = Object.keys(t3), n2 = 0; n2 < e3.length; ++n2) null != t3[e3[n2]] && (this[e3[n2]] = t3[e3[n2]]);
           }
@@ -4141,7 +4141,7 @@ var require_ort_web_min = __commonJS({
             return e3.defaults && (n2.denotation = ""), null != t3.tensorType && t3.hasOwnProperty("tensorType") && (n2.tensorType = l.onnx.TypeProto.Tensor.toObject(t3.tensorType, e3), e3.oneofs && (n2.value = "tensorType")), null != t3.denotation && t3.hasOwnProperty("denotation") && (n2.denotation = t3.denotation), n2;
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
-          }, t2.Tensor = function() {
+          }, t2.Tensor = (function() {
             function t3(t4) {
               if (t4) for (var e3 = Object.keys(t4), n2 = 0; n2 < e3.length; ++n2) null != t4[e3[n2]] && (this[e3[n2]] = t4[e3[n2]]);
             }
@@ -4192,8 +4192,8 @@ var require_ort_web_min = __commonJS({
             }, t3.prototype.toJSON = function() {
               return this.constructor.toObject(this, a.util.toJSONOptions);
             }, t3;
-          }(), t2;
-        }(), o.OperatorSetIdProto = function() {
+          })(), t2;
+        })(), o.OperatorSetIdProto = (function() {
           function t2(t3) {
             if (t3) for (var e2 = Object.keys(t3), n2 = 0; n2 < e2.length; ++n2) null != t3[e2[n2]] && (this[e2[n2]] = t3[e2[n2]]);
           }
@@ -4238,7 +4238,7 @@ var require_ort_web_min = __commonJS({
           }, t2.prototype.toJSON = function() {
             return this.constructor.toObject(this, a.util.toJSONOptions);
           }, t2;
-        }(), o), t.exports = l;
+        })(), o), t.exports = l;
       }, 2100: (t, e, n) => {
         "use strict";
         t.exports = n(9482);
@@ -4412,7 +4412,7 @@ var require_ort_web_min = __commonJS({
           var s = this;
           if (!a) return r.asPromise(t2, s, e2, n2, i2, o);
           if (s.rpcImpl) try {
-            return s.rpcImpl(e2, n2[s.requestDelimited ? "encodeDelimited" : "encode"](o).finish(), function(t3, n3) {
+            return s.rpcImpl(e2, n2[s.requestDelimited ? "encodeDelimited" : "encode"](o).finish(), (function(t3, n3) {
               if (t3) return s.emit("error", t3, e2), a(t3);
               if (null !== n3) {
                 if (!(n3 instanceof i2)) try {
@@ -4423,15 +4423,15 @@ var require_ort_web_min = __commonJS({
                 return s.emit("data", n3, e2), a(null, n3);
               }
               s.end(true);
-            });
+            }));
           } catch (t3) {
-            return s.emit("error", t3, e2), void setTimeout(function() {
+            return s.emit("error", t3, e2), void setTimeout((function() {
               a(t3);
-            }, 0);
+            }), 0);
           }
-          else setTimeout(function() {
+          else setTimeout((function() {
             a(Error("already ended"));
-          }, 0);
+          }), 0);
         }, i.prototype.end = function(t2) {
           return this.rpcImpl && (t2 || this.rpcImpl(null, null, null), this.rpcImpl = null, this.emit("end").off()), this;
         };
@@ -4517,14 +4517,14 @@ var require_ort_web_min = __commonJS({
         }, r.isset = r.isSet = function(t2, e2) {
           var n2 = t2[e2];
           return !(null == n2 || !t2.hasOwnProperty(e2)) && ("object" != typeof n2 || (Array.isArray(n2) ? n2.length : Object.keys(n2).length) > 0);
-        }, r.Buffer = function() {
+        }, r.Buffer = (function() {
           try {
             var t2 = r.inquire("buffer").Buffer;
             return t2.prototype.utf8Write ? t2 : null;
           } catch (t3) {
             return null;
           }
-        }(), r._Buffer_from = null, r._Buffer_allocUnsafe = null, r.newBuffer = function(t2) {
+        })(), r._Buffer_from = null, r._Buffer_allocUnsafe = null, r.newBuffer = function(t2) {
           return "number" == typeof t2 ? r.Buffer ? r._Buffer_allocUnsafe(t2) : new r.Array(t2) : r.Buffer ? r._Buffer_from(t2) : "undefined" == typeof Uint8Array ? t2 : new Uint8Array(t2);
         }, r.Array = "undefined" != typeof Uint8Array ? Uint8Array : Array, r.Long = r.global.dcodeIO && r.global.dcodeIO.Long || r.global.Long || r.inquire("long"), r.key2Re = /^true|false|0|1$/, r.key32Re = /^-?(?:0|[1-9][0-9]*)$/, r.key64Re = /^(?:[\\x00-\\xff]{8}|-?(?:0|[1-9][0-9]*))$/, r.longToHash = function(t2) {
           return t2 ? r.LongBits.from(t2).toHash() : r.LongBits.zeroHash;
@@ -4736,7 +4736,7 @@ var require_ort_web_min = __commonJS({
             Object.assign(this, t2);
           }
           get cacheKey() {
-            return this._cacheKey || (this._cacheKey = Object.getOwnPropertyNames(this).sort().map((t2) => `${this[t2]}`).join(";")), this._cacheKey;
+            return this._cacheKey || (this._cacheKey = Object.getOwnPropertyNames(this).sort().map(((t2) => `${this[t2]}`)).join(";")), this._cacheKey;
           }
         }
         e.createAttributeWithCacheKey = (t2) => new n(t2);
@@ -4829,8 +4829,8 @@ var require_ort_web_min = __commonJS({
             }
             if (e2 === r.onnx.AttributeProto.AttributeType.TENSOR) return t2 instanceof r.onnx.AttributeProto ? o.Tensor.fromProto(n2) : o.Tensor.fromOrtTensor(n2);
             if (e2 === r.onnx.AttributeProto.AttributeType.TENSORS) {
-              if (t2 instanceof r.onnx.AttributeProto) return n2.map((t3) => o.Tensor.fromProto(t3));
-              if (t2 instanceof s.Attribute) return n2.map((t3) => o.Tensor.fromOrtTensor(t3));
+              if (t2 instanceof r.onnx.AttributeProto) return n2.map(((t3) => o.Tensor.fromProto(t3)));
+              if (t2 instanceof s.Attribute) return n2.map(((t3) => o.Tensor.fromOrtTensor(t3)));
             }
             if (e2 === r.onnx.AttributeProto.AttributeType.STRING && t2 instanceof r.onnx.AttributeProto) {
               const t3 = n2;
@@ -4908,10 +4908,10 @@ var require_ort_web_min = __commonJS({
         const r = n(5038), i = /* @__PURE__ */ new Map();
         async function o(t2) {
           const n2 = e.backend;
-          if (void 0 !== n2[t2] && function(t3) {
+          if (void 0 !== n2[t2] && (function(t3) {
             const e2 = t3;
             return "initialize" in e2 && "function" == typeof e2.initialize && "createSessionHandler" in e2 && "function" == typeof e2.createSessionHandler && "dispose" in e2 && "function" == typeof e2.dispose;
-          }(n2[t2])) {
+          })(n2[t2])) {
             const e2 = n2[t2];
             let r2 = e2.initialize();
             if ("object" == typeof r2 && "then" in r2 && (r2 = await r2), r2) return i.set(t2, e2), e2;
@@ -5182,7 +5182,7 @@ var require_ort_web_min = __commonJS({
             let o2 = null;
             r2 < 2 && (o2 = []), o2 = new Array(r2 - 1), o2[r2 - 2] = t2[r2 - 1];
             for (let e3 = r2 - 3; e3 >= 0; --e3) o2[e3] = o2[e3 + 1] * t2[e3 + 1];
-            const a2 = ["r", "c", "d"], s2 = o2.map((t3, e3) => `int ${a2[e3]} = index / ${t3}; ${e3 === o2.length - 1 ? `int ${a2[e3 + 1]} = index - ${a2[e3]} * ${t3}` : `index -= ${a2[e3]} * ${t3}`};`).join("");
+            const a2 = ["r", "c", "d"], s2 = o2.map(((t3, e3) => `int ${a2[e3]} = index / ${t3}; ${e3 === o2.length - 1 ? `int ${a2[e3 + 1]} = index - ${a2[e3]} * ${t3}` : `index -= ${a2[e3]} * ${t3}`};`)).join("");
             return n2 = `
         ivec3 getOutputCoords() {
           ivec2 resTexRC = ivec2(TexCoords.xy *
@@ -5199,7 +5199,7 @@ var require_ort_web_min = __commonJS({
             let o2 = null;
             r2 < 2 && (o2 = []), o2 = new Array(r2 - 1), o2[r2 - 2] = t2[r2 - 1];
             for (let e3 = r2 - 3; e3 >= 0; --e3) o2[e3] = o2[e3 + 1] * t2[e3 + 1];
-            const a2 = ["r", "c", "d", "d2"], s2 = o2.map((t3, e3) => `int ${a2[e3]} = index / ${t3}; ${e3 === o2.length - 1 ? `int ${a2[e3 + 1]} = index - ${a2[e3]} * ${t3}` : `index -= ${a2[e3]} * ${t3}`};`).join("");
+            const a2 = ["r", "c", "d", "d2"], s2 = o2.map(((t3, e3) => `int ${a2[e3]} = index / ${t3}; ${e3 === o2.length - 1 ? `int ${a2[e3 + 1]} = index - ${a2[e3]} * ${t3}` : `index -= ${a2[e3]} * ${t3}`};`)).join("");
             return n2 = `
       ivec4 getOutputCoords() {
           ivec2 resTexRC = ivec2(TexCoords.xy *
@@ -5216,7 +5216,7 @@ var require_ort_web_min = __commonJS({
             let o2 = null;
             r2 < 2 && (o2 = []), o2 = new Array(r2 - 1), o2[r2 - 2] = t2[r2 - 1];
             for (let e3 = r2 - 3; e3 >= 0; --e3) o2[e3] = o2[e3 + 1] * t2[e3 + 1];
-            const a2 = ["r", "c", "d", "d2", "d3"], s2 = o2.map((t3, e3) => `int ${a2[e3]} = index / ${t3}; ${e3 === o2.length - 1 ? `int ${a2[e3 + 1]} = index - ${a2[e3]} * ${t3}` : `index -= ${a2[e3]} * ${t3}`};`).join("");
+            const a2 = ["r", "c", "d", "d2", "d3"], s2 = o2.map(((t3, e3) => `int ${a2[e3]} = index / ${t3}; ${e3 === o2.length - 1 ? `int ${a2[e3 + 1]} = index - ${a2[e3]} * ${t3}` : `index -= ${a2[e3]} * ${t3}`};`)).join("");
             return n2 = `
       ivec5 getOutputCoords() {
           ivec2 resTexRC = ivec2(TexCoords.xy *
@@ -5233,7 +5233,7 @@ var require_ort_web_min = __commonJS({
             let o2 = null;
             r2 < 2 && (o2 = []), o2 = new Array(r2 - 1), o2[r2 - 2] = t2[r2 - 1];
             for (let e3 = r2 - 3; e3 >= 0; --e3) o2[e3] = o2[e3 + 1] * t2[e3 + 1];
-            const a2 = ["r", "c", "d", "d2", "d3", "d4"], s2 = o2.map((t3, e3) => `int ${a2[e3]} = index / ${t3}; ${e3 === o2.length - 1 ? `int ${a2[e3 + 1]} = index - ${a2[e3]} * ${t3}` : `index -= ${a2[e3]} * ${t3}`};`).join("");
+            const a2 = ["r", "c", "d", "d2", "d3", "d4"], s2 = o2.map(((t3, e3) => `int ${a2[e3]} = index / ${t3}; ${e3 === o2.length - 1 ? `int ${a2[e3 + 1]} = index - ${a2[e3]} * ${t3}` : `index -= ${a2[e3]} * ${t3}`};`)).join("");
             return n2 = `
      ivec6 getOutputCoords() {
          ivec2 resTexRC = ivec2(TexCoords.xy *
@@ -5256,20 +5256,20 @@ var require_ort_web_min = __commonJS({
           }
           getInputsSamplingSnippets() {
             const t2 = {}, e2 = this.context.outputTextureLayout;
-            return this.context.programInfo.inputNames.forEach((n2, r2) => {
+            return this.context.programInfo.inputNames.forEach(((n2, r2) => {
               const i2 = this.context.inputTextureLayouts[r2], o2 = (0, s.generateShaderFuncNameFromInputSamplerName)(n2);
               i2.isPacked ? t2[o2] = this.getPackedSamplerFromInput(o2, n2, i2) : t2[o2] = this.getUnpackedSamplerFromInput(o2, n2, i2);
               const a2 = (0, s.generateShaderFuncNameFromInputSamplerNameAtOutCoords)(n2);
               i2.unpackedShape.length <= e2.unpackedShape.length && (i2.isPacked ? t2[a2] = this.getPackedSamplerAtOutputCoords(a2, i2, e2, n2) : t2[a2] = this.getUnpackedSamplerAtOutputCoords(a2, i2, e2, n2));
-            }), t2;
+            })), t2;
           }
           getPackedSamplerAtOutputCoords(t2, e2, n2, o2) {
             const a2 = e2.unpackedShape, u2 = n2.unpackedShape, c = o2, l = (0, s.generateShaderFuncNameFromInputSamplerName)(c), p = a2.length, f = u2.length, d = r.BroadcastUtil.getBroadcastDims(a2, u2), h = (0, s.getCoordsDataType)(f), g = f - p;
             let b;
             const m = (0, s.getGlChannels)();
-            b = 0 === p ? "" : f < 2 && d.length >= 1 ? "coords = 0;" : d.map((t3) => `coords.${m[t3 + g]} = 0;`).join("\n");
+            b = 0 === p ? "" : f < 2 && d.length >= 1 ? "coords = 0;" : d.map(((t3) => `coords.${m[t3 + g]} = 0;`)).join("\n");
             let y = "";
-            y = f < 2 && p > 0 ? "coords" : a2.map((t3, e3) => `coords.${m[e3 + g]}`).join(", ");
+            y = f < 2 && p > 0 ? "coords" : a2.map(((t3, e3) => `coords.${m[e3 + g]}`)).join(", ");
             let _ = "return outputValue;";
             const v = 1 === r.ShapeUtil.size(a2), w = 1 === r.ShapeUtil.size(u2);
             if (1 !== p || v || w) {
@@ -5307,9 +5307,9 @@ var require_ort_web_min = __commonJS({
             const h = (0, s.getCoordsDataType)(l), g = r.BroadcastUtil.getBroadcastDims(p, f), b = l - c;
             let m;
             const y = (0, s.getGlChannels)();
-            m = 0 === c ? "" : l < 2 && g.length >= 1 ? "coords = 0;" : g.map((t3) => `coords.${y[t3 + b]} = 0;`).join("\n");
+            m = 0 === c ? "" : l < 2 && g.length >= 1 ? "coords = 0;" : g.map(((t3) => `coords.${y[t3 + b]} = 0;`)).join("\n");
             let _ = "";
-            _ = l < 2 && c > 0 ? "coords" : e2.unpackedShape.map((t3, e3) => `coords.${y[e3 + b]}`).join(", ");
+            _ = l < 2 && c > 0 ? "coords" : e2.unpackedShape.map(((t3, e3) => `coords.${y[e3 + b]}`)).join(", ");
             const v = `
         float ${t2}() {
           ${h} coords = getOutputCoords();
@@ -5627,11 +5627,11 @@ var require_ort_web_min = __commonJS({
           }
           valueFrom() {
             const t2 = {};
-            return this.context.programInfo.inputNames.forEach((e2, n2) => {
+            return this.context.programInfo.inputNames.forEach(((e2, n2) => {
               const r2 = this.context.inputTextureLayouts[n2], o2 = (r2.unpackedShape.length > 0 ? r2.unpackedShape : r2.shape).length;
               let a2 = `_${e2}`;
               t2[a2] = new i.GlslLibRoutine(this.getValueFromSingle(e2, o2, r2.width, r2.height, false), [`shapeUtils.indicesToOffset${a2}`, "coordinates.offsetToCoords", "fragcolor.getColorAsFloat"]), a2 += "_T", t2[a2] = new i.GlslLibRoutine(this.getValueFromSingle(e2, o2, r2.width, r2.height, true), [`shapeUtils.indicesToOffset${a2}`, "coordinates.offsetToCoords", "fragcolor.getColorAsFloat"]);
-            }), t2;
+            })), t2;
           }
           getValueFromSingle(t2, e2, n2, r2, i2) {
             let a2 = `_${t2}`;
@@ -5794,10 +5794,10 @@ var require_ort_web_min = __commonJS({
           const e2 = {};
           let r;
           for (; null !== (r = n.exec(t2)); ) {
-            const t3 = r[3].split(",").map((t4) => {
+            const t3 = r[3].split(",").map(((t4) => {
               const e3 = t4.trim().split(" ");
               return e3 && 2 === e3.length ? { type: e3[0], name: e3[1] } : null;
-            }).filter((t4) => null !== t4);
+            })).filter(((t4) => null !== t4));
             e2[r[2]] = { params: t3, body: r[4] };
           }
           for (const n2 in e2) {
@@ -5805,10 +5805,10 @@ var require_ort_web_min = __commonJS({
             for (; null !== (r = o.exec(t2)); ) {
               const i2 = r[1], o2 = r[2], a = r[3].split(","), s = i2 ? `${i2} ${o2};` : "";
               let u = e2[n2].body, c = "";
-              e2[n2].params.forEach((t3, e3) => {
+              e2[n2].params.forEach(((t3, e3) => {
                 t3 && (c += `${t3.type} ${t3.name} = ${a[e3]};
 `);
-              }), u = `${c}
+              })), u = `${c}
  ${u}`, u = u.replace("return", `${o2} = `);
               const l = `
       ${s}
@@ -5827,10 +5827,10 @@ var require_ort_web_min = __commonJS({
         const r = n(8520), i = n(2848), o = n(5483), a = n(5060);
         e.GlslPreprocessor = class {
           constructor(t2, e2, n2, i2) {
-            this.libs = {}, this.glslLibRoutineDependencyGraph = {}, this.context = new r.GlslContext(t2, e2, n2, i2), Object.keys(o.glslRegistry).forEach((t3) => {
+            this.libs = {}, this.glslLibRoutineDependencyGraph = {}, this.context = new r.GlslContext(t2, e2, n2, i2), Object.keys(o.glslRegistry).forEach(((t3) => {
               const e3 = new o.glslRegistry[t3](this.context);
               this.libs[t3] = e3;
-            });
+            }));
             const a2 = this.glslLibRoutineDependencyGraph;
             for (const t3 in this.libs) {
               const e3 = this.libs[t3].getFunctions();
@@ -5868,10 +5868,10 @@ var require_ort_web_min = __commonJS({
           }
           selectGlslLibRoutinesToBeIncluded(t2) {
             const e2 = [];
-            return Object.keys(this.glslLibRoutineDependencyGraph).forEach((n2) => {
+            return Object.keys(this.glslLibRoutineDependencyGraph).forEach(((n2) => {
               const r2 = n2.split(".")[1];
               -1 !== t2.indexOf(r2) && e2.push(this.glslLibRoutineDependencyGraph[n2]);
-            }), r.TopologicalSortGlslRoutines.returnOrderedNodes(e2);
+            })), r.TopologicalSortGlslRoutines.returnOrderedNodes(e2);
           }
           getUniforms(t2, e2) {
             const n2 = [];
@@ -5901,7 +5901,7 @@ var require_ort_web_min = __commonJS({
           }
           bcastIndex() {
             const t2 = this.context.outputTextureLayout.shape.length, e2 = {};
-            return this.context.programInfo.inputNames.forEach((n2, i2) => {
+            return this.context.programInfo.inputNames.forEach(((n2, i2) => {
               const o = this.context.inputTextureLayouts[i2].unpackedShape;
               if (o.length <= t2) {
                 const i3 = o.length, a = t2 - i3, s = `bcastIndices_${n2}`;
@@ -5916,11 +5916,11 @@ var require_ort_web_min = __commonJS({
         `;
                 e2[s] = new r.GlslLibRoutine(c);
               }
-            }), e2;
+            })), e2;
           }
           bcastMatmulIndex() {
             const t2 = this.context.outputTextureLayout.shape.length, e2 = {};
-            return this.context.programInfo.inputNames.forEach((n2, i2) => {
+            return this.context.programInfo.inputNames.forEach(((n2, i2) => {
               const o = this.context.inputTextureLayouts[i2].shape;
               if (!(o.length < 2 || o.length > t2)) {
                 const i3 = o.length, a = t2 - i3, s = `bcastMatmulIndices_${n2}`;
@@ -5937,15 +5937,15 @@ var require_ort_web_min = __commonJS({
         `;
                 e2[s] = new r.GlslLibRoutine(c);
               }
-            }), e2;
+            })), e2;
           }
           indicesToOffset() {
             const t2 = {};
-            return this.context.programInfo.inputNames.forEach((e2, n2) => {
+            return this.context.programInfo.inputNames.forEach(((e2, n2) => {
               const o = this.context.inputTextureLayouts[n2].shape, a = this.context.inputTextureLayouts[n2].strides, s = o.length;
               let u = `indicesToOffset_${e2}`;
               t2[u] = new r.GlslLibRoutine(i.indexToOffsetSingle(u, s, a)), u = `indicesToOffset_${e2}_T`, t2[u] = new r.GlslLibRoutine(i.indexToOffsetSingle(u, s, a.slice().reverse()));
-            }), t2;
+            })), t2;
           }
           static indexToOffsetSingle(t2, e2, n2) {
             let r2 = "";
@@ -5962,11 +5962,11 @@ var require_ort_web_min = __commonJS({
           }
           offsetToIndices() {
             const t2 = {};
-            return this.context.programInfo.inputNames.forEach((e2, n2) => {
+            return this.context.programInfo.inputNames.forEach(((e2, n2) => {
               const o = this.context.inputTextureLayouts[n2].shape, a = this.context.inputTextureLayouts[n2].strides, s = o.length;
               let u = `offsetToIndices_${e2}`;
               t2[u] = new r.GlslLibRoutine(i.offsetToIndicesSingle(u, s, a)), u = `offsetToIndices_${e2}_T`, t2[u] = new r.GlslLibRoutine(i.offsetToIndicesSingle(u, s, a.slice().reverse()));
-            }), t2;
+            })), t2;
           }
           static offsetToIndicesSingle(t2, e2, n2) {
             const r2 = [];
@@ -5982,7 +5982,7 @@ var require_ort_web_min = __commonJS({
           }
           incrementIndices() {
             const t2 = {};
-            return this.context.programInfo.inputNames.forEach((e2, n2) => {
+            return this.context.programInfo.inputNames.forEach(((e2, n2) => {
               const i2 = this.context.inputTextureLayouts[n2].shape, o = i2.length, a = `incrementIndices_${e2}`;
               let s = "";
               for (let t3 = 0; t3 < o; ++t3) s += `
@@ -6002,7 +6002,7 @@ var require_ort_web_min = __commonJS({
         }
         `;
               t2[a] = new r.GlslLibRoutine(u);
-            }), t2;
+            })), t2;
           }
         }
         e.ShapeUtilsGlslLib = i;
@@ -6181,7 +6181,7 @@ var require_ort_web_min = __commonJS({
             const n2 = [];
             for (let r3 = 0; r3 < t2.inputNames.length; ++r3) n2[r3] = this.getOrCreateTextureData(e2[r3], t2.inputTypes[r3]);
             const r2 = ((t3, e3) => {
-              const n3 = e3.map((t4) => `${t4.unpackedShape.join(",")};${t4.width}x${t4.height}`).join("_");
+              const n3 = e3.map(((t4) => `${t4.unpackedShape.join(",")};${t4.width}x${t4.height}`)).join("_");
               let r3 = t3.name;
               return t3.cacheHint && (r3 += "[" + t3.cacheHint + "]"), r3 += ":" + n3, r3;
             })(t2, n2);
@@ -6251,7 +6251,7 @@ var require_ort_web_min = __commonJS({
             return this.createTextureDataFromTexture(n2, e2, n2.texture).tensor;
           }
           createTextureDataFromTexture(t2, e2, n2, r2, o2) {
-            const a2 = Object.assign(Object.assign({}, t2), { tensor: r2 || new i.Tensor(t2.unpackedShape, e2, (t3) => this.readTexture(a2), async (t3) => this.readTextureAsync(a2), void 0, o2), texture: n2 });
+            const a2 = Object.assign(Object.assign({}, t2), { tensor: r2 || new i.Tensor(t2.unpackedShape, e2, ((t3) => this.readTexture(a2)), (async (t3) => this.readTextureAsync(a2)), void 0, o2), texture: n2 });
             return this.setTextureData(a2.tensor.dataId, a2, t2.isPacked), a2;
           }
           getTextureData(t2, e2 = false) {
@@ -6264,7 +6264,7 @@ var require_ort_web_min = __commonJS({
             return !!this.getTextureData(t2.dataId, e2);
           }
           dispose() {
-            this.session.textureManager.clearActiveTextures(), this.packedTextureDataCache.forEach((t2) => this.session.textureManager.releaseTexture(t2)), this.packedTextureDataCache = /* @__PURE__ */ new Map(), this.unpackedTextureDataCache.forEach((t2) => this.session.textureManager.releaseTexture(t2)), this.unpackedTextureDataCache = /* @__PURE__ */ new Map();
+            this.session.textureManager.clearActiveTextures(), this.packedTextureDataCache.forEach(((t2) => this.session.textureManager.releaseTexture(t2))), this.packedTextureDataCache = /* @__PURE__ */ new Map(), this.unpackedTextureDataCache.forEach(((t2) => this.session.textureManager.releaseTexture(t2))), this.unpackedTextureDataCache = /* @__PURE__ */ new Map();
           }
           readTexture(t2) {
             return t2.isPacked ? this.readTexture(this.unpack(t2)) : this.session.backend.glContext.isFloat32DownloadSupported ? this.session.textureManager.readTexture(t2, t2.tensor.type, t2.channels) : this.session.textureManager.readUint8TextureAsFloat((0, u.encodeAsUint8)(this, t2));
@@ -6465,7 +6465,7 @@ var require_ort_web_min = __commonJS({
   `, name: t2, type: i.FunctionType.ValueBased };
         }
         function m() {
-          return function(t2) {
+          return (function(t2) {
             const e2 = `${t2}_`;
             return { body: `
   float ${e2}(float a, float b) {
@@ -6475,7 +6475,7 @@ var require_ort_web_min = __commonJS({
     return ${t2}(v1, v2);
   }
   `, name: e2, type: i.FunctionType.ValueBased };
-          }("pow");
+          })("pow");
         }
         function y() {
           const t2 = "prelu_";
@@ -6549,7 +6549,7 @@ var require_ort_web_min = __commonJS({
         Object.defineProperty(e, "__esModule", { value: true }), e.createPackedConcatProgramInfoLoader = void 0;
         const r = n(5060), i = n(2039), o = n(9390), a = n(2827);
         e.createPackedConcatProgramInfoLoader = (t2, e2, n2) => {
-          const u = (c = e2.length, l = n2.cacheKey, { name: "Concat (packed)", inputNames: Array.from({ length: c }, (t3, e3) => `X${e3}`), inputTypes: Array(c).fill(i.TextureType.packed), cacheHint: l });
+          const u = (c = e2.length, l = n2.cacheKey, { name: "Concat (packed)", inputNames: Array.from({ length: c }, ((t3, e3) => `X${e3}`)), inputTypes: Array(c).fill(i.TextureType.packed), cacheHint: l });
           var c, l;
           return Object.assign(Object.assign({}, u), { get: () => ((t3, e3, n3, u2) => {
             const c2 = n3[0].dims.slice();
@@ -6561,7 +6561,7 @@ var require_ort_web_min = __commonJS({
               for (let t5 = 0; t5 < c2.length; t5++) if (t5 === u2) l2[u2] += e4[t5];
               else if (c2[t5] !== e4[t5]) throw new Error("non concat dimensions must match");
             }
-            const p = l2.length, f = (0, a.getChannels)("coords", p), d = (0, o.getCoordsDataType)(p), h = (0, a.unpackFromChannel)(), g = n3.map((t4) => t4.dims), b = (0, o.getGlChannels)(p), m = new Array(g.length - 1);
+            const p = l2.length, f = (0, a.getChannels)("coords", p), d = (0, o.getCoordsDataType)(p), h = (0, a.unpackFromChannel)(), g = n3.map(((t4) => t4.dims)), b = (0, o.getGlChannels)(p), m = new Array(g.length - 1);
             m[0] = g[0][u2];
             for (let t4 = 1; t4 < m.length; t4++) m[t4] = m[t4 - 1] + g[t4][u2];
             const y = b[u2], _ = b.slice(-2), v = b.join();
@@ -6585,7 +6585,7 @@ var require_ort_web_min = __commonJS({
               vec2(${s(_, y, T)}));`;
             const S = (0, r.getGlsl)(t3.session.backend.glContext.version), O = `
           ${h}
-          float getValue(${b.map((t4) => "int " + t4)}) {
+          float getValue(${b.map(((t4) => "int " + t4))}) {
             ${w}
           }
 
@@ -6620,7 +6620,7 @@ var require_ort_web_min = __commonJS({
         };
         const s = (t2, e2, n2) => {
           const r2 = t2.indexOf(e2);
-          return t2.map((t3, e3) => e3 === r2 ? `${t3} - ${n2}` : t3).join();
+          return t2.map(((t3, e3) => e3 === r2 ? `${t3} - ${n2}` : t3)).join();
         };
       }, 2069: (t, e, n) => {
         "use strict";
@@ -6628,7 +6628,7 @@ var require_ort_web_min = __commonJS({
         const r = n(246), i = n(2039), o = n(1163);
         e.concat = (t2, e2, n2) => (p(e2), t2.session.pack && e2[0].dims.length > 1 ? [t2.run((0, o.createPackedConcatProgramInfoLoader)(t2, e2, n2), e2)] : [t2.run(a(t2, e2, n2), e2)]);
         const a = (t2, e2, n2) => {
-          const r2 = (o2 = e2.length, a2 = n2.cacheKey, { name: "Concat", inputNames: Array.from({ length: o2 }, (t3, e3) => `X${e3}`), inputTypes: Array(o2).fill(i.TextureType.unpacked), cacheHint: a2 });
+          const r2 = (o2 = e2.length, a2 = n2.cacheKey, { name: "Concat", inputNames: Array.from({ length: o2 }, ((t3, e3) => `X${e3}`)), inputTypes: Array(o2).fill(i.TextureType.unpacked), cacheHint: a2 });
           var o2, a2;
           return Object.assign(Object.assign({}, r2), { get: () => ((t3, e3, n3, r3) => {
             const o3 = n3[0].dims.slice();
@@ -6661,8 +6661,8 @@ var require_ort_web_min = __commonJS({
             return Object.assign(Object.assign({}, e3), { output: { dims: a3, type: n3[0].type, textureType: i.TextureType.unpacked }, shaderSource: g });
           })(0, r2, e2, n2.axis) });
         }, s = (t2) => `int getTextureWhereDataResides(int index) {
-      ${t2.map((t3, e2) => `if(index<${t3}) {return ${e2};}
-`).join("")}
+      ${t2.map(((t3, e2) => `if(index<${t3}) {return ${e2};}
+`)).join("")}
     }`, u = (t2) => s(t2), c = (t2, e2) => {
           const n2 = [`float fetchDataFromCorrectTexture(int textureIndex, int indices[${e2}]) {`];
           for (let e3 = 0; e3 < t2; ++e3) 0 === e3 ? n2.push(`	if (textureIndex == ${e3}) { return _X${e3}(indices); }`) : e3 === t2 - 1 ? n2.push(`	else { return _X${e3}(indices); }`) : n2.push(`	else if (textureIndex == ${e3}) { return _X${e3}(indices); }`);
@@ -6838,7 +6838,7 @@ var require_ort_web_min = __commonJS({
         Object.defineProperty(e, "__esModule", { value: true }), e.parseConvAttributes = e.conv = e.calculateOutputShape = void 0;
         const r = n(246), i = n(2517), o = n(4770), a = n(1386), s = n(9828), u = n(2823), c = n(3248), l = n(5623);
         e.calculateOutputShape = (t2, e2, n2, r2, i2) => {
-          const o2 = t2[0], a2 = t2.slice(2), s2 = a2.length, u2 = e2[0], c2 = e2.slice(2).map((t3, e3) => t3 + (t3 - 1) * (n2[e3] - 1)), l2 = a2.map((t3, e3) => t3 + r2[e3] + r2[e3 + s2]).map((t3, e3) => Math.floor((t3 - c2[e3] + i2[e3]) / i2[e3]));
+          const o2 = t2[0], a2 = t2.slice(2), s2 = a2.length, u2 = e2[0], c2 = e2.slice(2).map(((t3, e3) => t3 + (t3 - 1) * (n2[e3] - 1))), l2 = a2.map(((t3, e3) => t3 + r2[e3] + r2[e3 + s2])).map(((t3, e3) => Math.floor((t3 - c2[e3] + i2[e3]) / i2[e3])));
           return [o2, u2].concat(...l2);
         }, e.conv = (t2, e2, n2) => (g(e2, n2), p(t2, e2, n2));
         const p = (t2, e2, n2) => {
@@ -7271,11 +7271,11 @@ float process(int indices[${_}]) {
           return Object.assign(Object.assign({}, c), { get: () => ((t3, e3, n3, c2) => {
             const l2 = n3.length > 2, p2 = l2 ? "value += getBiasForMatmul();" : "", f = n3[0].dims, d = n3[1].dims, h = r.BroadcastUtil.calcShape(f, d, true), g = !r.ShapeUtil.areEqual(n3[0].dims, n3[1].dims);
             if (!h) throw new Error("Can't use matmul on the given tensors");
-            const b = f[f.length - 1], m = Math.ceil(b / 2), y = f.length, _ = d.length, v = (0, i.getGlsl)(t3.session.backend.glContext.version), w = (0, a.getCoordsDataType)(h.length), x = h.length, T = (0, a.getGlChannels)(), { activationFunction: S, applyActivation: O } = (0, s.getActivationSnippet)(c2), A = l2 ? `${(0, u.getBiasForMatmul)(w, T, n3[2].dims, h, true)}` : "", E = g ? `${function(t4, e4, n4, i2) {
+            const b = f[f.length - 1], m = Math.ceil(b / 2), y = f.length, _ = d.length, v = (0, i.getGlsl)(t3.session.backend.glContext.version), w = (0, a.getCoordsDataType)(h.length), x = h.length, T = (0, a.getGlChannels)(), { activationFunction: S, applyActivation: O } = (0, s.getActivationSnippet)(c2), A = l2 ? `${(0, u.getBiasForMatmul)(w, T, n3[2].dims, h, true)}` : "", E = g ? `${(function(t4, e4, n4, i2) {
               let o2 = [], a2 = [];
               const s2 = n4[0].dims, u2 = n4[1].dims, c3 = s2.length, l3 = u2.length, p3 = i2.length, f2 = p3 - c3, d2 = p3 - l3;
-              o2 = s2.map((t5, n5) => `coords.${e4[n5 + f2]}`), o2[c3 - 1] = "i*2", o2.join(", "), a2 = u2.map((t5, n5) => `coords.${e4[n5 + d2]}`), a2[l3 - 2] = "i*2", a2.join(", ");
-              const h2 = r.BroadcastUtil.getBroadcastDims(s2, i2), g2 = r.BroadcastUtil.getBroadcastDims(u2, i2), b2 = h2.map((t5) => `coords.${e4[t5 + f2]} = 0;`).join("\n"), m2 = g2.map((t5) => `coords.${e4[t5 + d2]} = 0;`).join("\n"), y2 = `int lastDim = coords.${e4[p3 - 1]};
+              o2 = s2.map(((t5, n5) => `coords.${e4[n5 + f2]}`)), o2[c3 - 1] = "i*2", o2.join(", "), a2 = u2.map(((t5, n5) => `coords.${e4[n5 + d2]}`)), a2[l3 - 2] = "i*2", a2.join(", ");
+              const h2 = r.BroadcastUtil.getBroadcastDims(s2, i2), g2 = r.BroadcastUtil.getBroadcastDims(u2, i2), b2 = h2.map(((t5) => `coords.${e4[t5 + f2]} = 0;`)).join("\n"), m2 = g2.map(((t5) => `coords.${e4[t5 + d2]} = 0;`)).join("\n"), y2 = `int lastDim = coords.${e4[p3 - 1]};
   coords.${e4[p3 - 1]} = coords.${e4[p3 - 2]};
   coords.${e4[p3 - 2]} = lastDim;`;
               return `
@@ -7294,15 +7294,15 @@ vec4 getBAtOutCoordsMatmul(int i) {
   vec4 outputValue = getB(${a2});
   return outputValue;
 }`;
-            }(w, T, n3, h)}` : "", I = g ? "getAAtOutCoordsMatmul(i)" : `getA(${function(t4, e4) {
+            })(w, T, n3, h)}` : "", I = g ? "getAAtOutCoordsMatmul(i)" : `getA(${(function(t4, e4) {
               let n4 = "";
               for (let r2 = 0; r2 < e4 - 2; r2++) n4 += `rc.${t4[r2]}, `;
               return n4 += `rc.${t4[e4 - 2]}, i*2`, n4;
-            }(T, y)})`, P = g ? "getBAtOutCoordsMatmul(i)" : `getB(${function(t4, e4) {
+            })(T, y)})`, P = g ? "getBAtOutCoordsMatmul(i)" : `getB(${(function(t4, e4) {
               let n4 = "";
               for (let r2 = 0; r2 < e4 - 2; r2++) n4 += `rc.${t4[r2]}, `;
               return n4 += `i*2, rc.${t4[e4 - 1]}`, n4;
-            }(T, _)})`, D = `
+            })(T, _)})`, D = `
             ${E}
             ${A}
             ${S}
@@ -7334,7 +7334,7 @@ vec4 getBAtOutCoordsMatmul(int i) {
         function u(t2, e2) {
           const n2 = (s2 = t2.length > 2, u2 = e2.activationCacheKey, { name: "MatMul", inputNames: s2 ? ["A", "B", "Bias"] : ["A", "B"], inputTypes: s2 ? [i.TextureType.unpacked, i.TextureType.unpacked, i.TextureType.unpacked] : [i.TextureType.unpacked, i.TextureType.unpacked], cacheHint: u2 });
           var s2, u2;
-          return Object.assign(Object.assign({}, n2), { get: () => function(t3, e3, n3) {
+          return Object.assign(Object.assign({}, n2), { get: () => (function(t3, e3, n3) {
             const s3 = e3[0].dims, u3 = e3[1].dims, c2 = r.BroadcastUtil.calcShape(s3, u3, true);
             if (!c2) throw new Error("Can't use matmul on the given tensors");
             const p = (0, o.getCoordsDataType)(c2.length), f = (0, o.getGlChannels)(), { activationFunction: d, applyActivation: h } = (0, a.getActivationSnippet)(n3), g = e3.length > 2, b = g ? "value += getBiasForMatmul();" : "", m = g ? `${l(p, f, e3[2].dims, c2, false)}` : "", y = c2.length, _ = s3.length, v = u3.length, w = `
@@ -7357,7 +7357,7 @@ vec4 getBAtOutCoordsMatmul(int i) {
         return value;
     }`;
             return Object.assign(Object.assign({}, t3), { output: { dims: c2, type: e3[0].type, textureType: i.TextureType.unpacked }, shaderSource: w });
-          }(n2, t2, e2) });
+          })(n2, t2, e2) });
         }
         e.matMul = (t2, e2, n2) => (c(e2), t2.session.pack ? [t2.run((0, s.createPackedMatmulProgramInfoLoader)(t2, e2, n2), e2)] : [t2.run(u(e2, n2), e2)]), e.parseMatMulAttributes = (t2) => (0, a.parseInternalActivationAttributes)(t2.attributes), e.createMatmulProgramInfoLoader = u;
         const c = (t2) => {
@@ -7369,8 +7369,8 @@ vec4 getBAtOutCoordsMatmul(int i) {
         function l(t2, e2, n2, i2, o2) {
           let a2 = "";
           const s2 = n2.length, u2 = i2.length, c2 = u2 - s2;
-          a2 = u2 < 2 && s2 > 0 ? "coords" : n2.map((t3, n3) => `coords.${e2[n3 + c2]}`).join(", ");
-          const l2 = r.BroadcastUtil.getBroadcastDims(n2, i2).map((t3) => `coords.${e2[t3 + c2]} = 0;`).join("\n");
+          a2 = u2 < 2 && s2 > 0 ? "coords" : n2.map(((t3, n3) => `coords.${e2[n3 + c2]}`)).join(", ");
+          const l2 = r.BroadcastUtil.getBroadcastDims(n2, i2).map(((t3) => `coords.${e2[t3 + c2]} = 0;`)).join("\n");
           let p = "vec4(outputValue.xx, outputValue.yy)";
           return 1 === r.ShapeUtil.size(n2) && (p = "vec4(outputValue.x)"), o2 ? `
 vec4 getBiasForMatmul() {
@@ -7402,13 +7402,13 @@ float getBiasForMatmul() {
           var h, g, b, m;
           let y;
           y = 0 === c ? [1, 1] : 1 === c ? [u[0], 1] : [u[l - 1], u[l - 2]];
-          const _ = function(t4, e4, n3) {
+          const _ = (function(t4, e4, n3) {
             if (0 === t4) return "false";
             if (1 === t4) return `rc > ${e4[0]}`;
             let r2 = "";
             for (let i2 = t4 - 2; i2 < t4; i2++) r2 += `${n3[i2]} >= ${e4[i2 - t4 + 2]}`, i2 < t4 - 1 && (r2 += "||");
             return r2;
-          }(l, y, f), v = function(t4, e4) {
+          })(l, y, f), v = (function(t4, e4) {
             const n3 = t4.length;
             if (0 === n3) return "getA(), 0, 0, 0";
             if (1 === n3) return `getA(rc),
@@ -7420,7 +7420,7 @@ float getBiasForMatmul() {
           rEdge ? 0. : getA(${r2}rp1, c),
           cEdge ? 0. : getA(${r2}r, cp1),
           rEdge || cEdge ? 0. : getA(${r2}rp1, cp1)`;
-          }(u, f), w = `
+          })(u, f), w = `
         void main() {
           ${p} rc = getOutputCoords();
 
@@ -7440,7 +7440,7 @@ float getBiasForMatmul() {
         Object.defineProperty(e, "__esModule", { value: true }), e.unpackFromChannel = e.getChannels = e.getVecChannels = void 0;
         const r = n(9390);
         function i(t2, e2) {
-          return (0, r.getGlChannels)(e2).map((e3) => `${t2}.${e3}`);
+          return (0, r.getGlChannels)(e2).map(((e3) => `${t2}.${e3}`));
         }
         e.getVecChannels = i, e.getChannels = function(t2, e2) {
           return 1 === e2 ? [t2] : i(t2, e2);
@@ -7655,7 +7655,7 @@ float getBiasForMatmul() {
           {
             const s2 = i.ShapeUtil.size(e2.kernelShape), u2 = i.ShapeUtil.computeStrides(e2.kernelShape), c2 = u2.length, l2 = e2.pads.length, p2 = h(c2), f2 = d(t2, "inputDims"), g = d(e2.pads, "pads"), b = d(u2, "kernelStrides"), m = d(e2.strides, "strides");
             let y = "";
-            return y = e2.pads.reduce((t3, e3) => t3 + e3) ? `
+            return y = e2.pads.reduce(((t3, e3) => t3 + e3)) ? `
             if (x[j] >= inputDims[j] || x[j] < 0) {
               pad++;
               isPad = true;
@@ -7751,21 +7751,21 @@ float getBiasForMatmul() {
           if (!t2 || 1 !== t2.length) throw new Error("Reduce op requires 1 input.");
           if (-1 === i.NUMBER_TYPES.indexOf(t2[0].type)) throw new Error("Invalid input type.");
         };
-        e.reduceSum = (t2, e2, n2) => s(t2, e2, n2, "ReduceSum", () => ["value = 0.0;", "value += _A(inputIdx);", ""]), e.reduceMean = (t2, e2, n2) => s(t2, e2, n2, "ReduceMean", (t3, e3) => {
+        e.reduceSum = (t2, e2, n2) => s(t2, e2, n2, "ReduceSum", (() => ["value = 0.0;", "value += _A(inputIdx);", ""])), e.reduceMean = (t2, e2, n2) => s(t2, e2, n2, "ReduceMean", ((t3, e3) => {
           let n3 = 1;
           for (let r2 = 0; r2 < t3[0].dims.length; r2++) (e3.indexOf(r2) >= 0 || 0 === e3.length) && (n3 *= t3[0].dims[r2]);
           return ["value = 0.0;", "value += _A(inputIdx);", `value /= ${n3}.;`];
-        }), e.reduceMax = (t2, e2, n2) => s(t2, e2, n2, "ReduceMax", (t3, e3) => {
+        })), e.reduceMax = (t2, e2, n2) => s(t2, e2, n2, "ReduceMax", ((t3, e3) => {
           const n3 = [];
           for (let r2 = 0; r2 < t3[0].dims.length; r2++) (e3.indexOf(r2) >= 0 || 0 === e3.length) && n3.push(`inputIdx[${r2}] = 0;`);
           return [`${n3.join("\n")}
 value = _A(inputIdx);`, "value = max(value, _A(inputIdx));", ""];
-        }), e.reduceMin = (t2, e2, n2) => s(t2, e2, n2, "ReduceMin", (t3, e3) => {
+        })), e.reduceMin = (t2, e2, n2) => s(t2, e2, n2, "ReduceMin", ((t3, e3) => {
           const n3 = [];
           for (let r2 = 0; r2 < t3[0].dims.length; r2++) (e3.indexOf(r2) >= 0 || 0 === e3.length) && n3.push(`inputIdx[${r2}] = 0;`);
           return [`${n3.join("\n")}
 value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
-        }), e.reduceProd = (t2, e2, n2) => s(t2, e2, n2, "ReduceProd", () => ["value = 1.0;", "value *= _A(inputIdx);", ""]), e.reduceLogSum = (t2, e2, n2) => s(t2, e2, n2, "ReduceLogSum", () => ["value = 0.0;", "value += _A(inputIdx);", "value = log(value);"]), e.reduceLogSumSquare = (t2, e2, n2) => s(t2, e2, n2, "ReduceLogSumSquare", () => ["float t; value = 0.0;", "t = _A(inputIdx); value += t * t;", ""]);
+        })), e.reduceProd = (t2, e2, n2) => s(t2, e2, n2, "ReduceProd", (() => ["value = 1.0;", "value *= _A(inputIdx);", ""])), e.reduceLogSum = (t2, e2, n2) => s(t2, e2, n2, "ReduceLogSum", (() => ["value = 0.0;", "value += _A(inputIdx);", "value = log(value);"])), e.reduceLogSumSquare = (t2, e2, n2) => s(t2, e2, n2, "ReduceLogSumSquare", (() => ["float t; value = 0.0;", "t = _A(inputIdx); value += t * t;", ""]));
       }, 7019: (t, e, n) => {
         "use strict";
         Object.defineProperty(e, "__esModule", { value: true }), e.isReshapeCheap = e.processDims3D = e.createPackedReshape3DProgramInfoLoader = void 0;
@@ -7807,16 +7807,16 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
       `;
             }
             const p = (0, i.getGlsl)(t3.session.backend.glContext.version), f = `
-      ${function(t4) {
+      ${(function(t4) {
               const e4 = r.ShapeUtil.computeStrides(t4), n4 = ["b", "r", "c"], i2 = "index";
               return `
     ivec3 inputCoordsFromReshapedOutCoords(int index) {
-      ${e4.map((t5, r2) => `int ${n4[r2]} = ${i2} / ${t5}; ${r2 === e4.length - 1 ? `int ${n4[r2 + 1]} = ${i2} - ${n4[r2]} * ${t5}` : `index -= ${n4[r2]} * ${t5}`};`).join("")}
+      ${e4.map(((t5, r2) => `int ${n4[r2]} = ${i2} / ${t5}; ${r2 === e4.length - 1 ? `int ${n4[r2 + 1]} = ${i2} - ${n4[r2]} * ${t5}` : `index -= ${n4[r2]} * ${t5}`};`)).join("")}
       return ivec3(b, r, c);
     }
   `;
-            }(u)}
-      ${function(t4) {
+            })(u)}
+      ${(function(t4) {
               const e4 = r.ShapeUtil.computeStrides(t4);
               return `
   int getFlattenedIndex(ivec3 coords) {
@@ -7824,7 +7824,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
     return coords.x * ${e4[0]} + coords.z * ${e4[1]} + coords.y;
   }
 `;
-            }(c)}
+            })(c)}
       ${(0, a.unpackFromChannel)()}
 
       void main() {
@@ -7866,7 +7866,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
         e.resize = (t2, e2, n2) => ((0, s.validateInputs)(e2, n2), [t2.run(Object.assign(Object.assign({}, u), { cacheHint: n2.cacheKey, get: () => c(t2, e2, n2) }), e2)]), e.parseResizeAttributesV10 = (t2) => (0, s.parseUpsampleAttributes)(t2, 10), e.parseResizeAttributesV11 = (t2) => (0, s.parseUpsampleAttributes)(t2, 11);
         const c = (t2, e2, n2) => {
           const s2 = (0, r.getGlsl)(t2.session.backend.glContext.version), [c2, p2] = l(e2, n2);
-          if (c2.every((t3) => 1 === t3) && "tf_crop_and_resize" !== n2.coordinateTransformMode) return Object.assign(Object.assign({}, u), { output: { dims: p2, type: e2[0].type, textureType: i.TextureType.packed }, hasMain: true, shaderSource: `void main() {
+          if (c2.every(((t3) => 1 === t3)) && "tf_crop_and_resize" !== n2.coordinateTransformMode) return Object.assign(Object.assign({}, u), { output: { dims: p2, type: e2[0].type, textureType: i.TextureType.packed }, hasMain: true, shaderSource: `void main() {
                     vec4 v = ${s2.texture2D}(X, TexCoords);
                     ${s2.output} = v;
                 }` });
@@ -7995,7 +7995,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
               r2 = Array.from(o4.integerData), i2 = f(r2, n2, e2.mode, e2.isResize);
             }
           } else if (t2[e2.sizesInputIdx]) throw new Error("Only one of scales or sizes must be provided as input.");
-          const o2 = r2 || n2.map((t3, e3) => Math.floor(t3 * i2[e3]));
+          const o2 = r2 || n2.map(((t3, e3) => Math.floor(t3 * i2[e3])));
           return [i2, o2];
         }, p = (t2, e2, n2) => {
           const r2 = Array.from(t2.floatData);
@@ -8025,7 +8025,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
           return (0, r.createAttributeWithCacheKey)({ starts: e2, ends: n2, axes: i2 });
         };
         const u = (t2, e2, n2) => {
-          const r2 = 0 === n2.axes.length ? e2.dims.slice(0).map((t3, e3) => e3) : n2.axes, i2 = o.ShapeUtil.normalizeAxes(r2, e2.dims.length), u2 = n2.starts.map((t3, n3) => t3 > e2.dims[i2[n3]] - 1 ? e2.dims[i2[n3]] : o.ShapeUtil.normalizeAxis(t3, e2.dims[i2[n3]])), c2 = n2.ends.map((t3, n3) => t3 > e2.dims[i2[n3]] - 1 ? e2.dims[i2[n3]] : o.ShapeUtil.normalizeAxis(t3, e2.dims[i2[n3]])), l2 = e2.dims.slice(), p2 = [];
+          const r2 = 0 === n2.axes.length ? e2.dims.slice(0).map(((t3, e3) => e3)) : n2.axes, i2 = o.ShapeUtil.normalizeAxes(r2, e2.dims.length), u2 = n2.starts.map(((t3, n3) => t3 > e2.dims[i2[n3]] - 1 ? e2.dims[i2[n3]] : o.ShapeUtil.normalizeAxis(t3, e2.dims[i2[n3]]))), c2 = n2.ends.map(((t3, n3) => t3 > e2.dims[i2[n3]] - 1 ? e2.dims[i2[n3]] : o.ShapeUtil.normalizeAxis(t3, e2.dims[i2[n3]]))), l2 = e2.dims.slice(), p2 = [];
           for (let t3 = 0; t3 < i2.length; t3++) l2[i2[t3]] = c2[t3] - u2[t3], u2[t3] > 0 && p2.push(`outputIdx[${i2[t3]}] += ${u2[t3]};`);
           const f = `
       float process(int outputIdx[${l2.length}]) {
@@ -8044,7 +8044,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
         };
         const l = (t2, e2) => {
           if (!t2.session.isInitializer(e2[1].dataId) || !t2.session.isInitializer(e2[2].dataId) || e2.length >= 4 && !t2.session.isInitializer(e2[3].dataId) || e2.length >= 5 && !t2.session.isInitializer(e2[4].dataId)) throw new Error("dynamic slice attributes are not allowed");
-          if (e2.length >= 5 && e2[4].integerData.some((t3) => 1 !== t3)) throw new Error("currently non-1 steps is not supported for Slice");
+          if (e2.length >= 5 && e2[4].integerData.some(((t3) => 1 !== t3))) throw new Error("currently non-1 steps is not supported for Slice");
           const n2 = Array.from(e2[1].integerData), r2 = Array.from(e2[2].integerData), i2 = e2.length >= 4 ? Array.from(e2[3].integerData) : [];
           return { starts: n2, ends: r2, axes: i2, cacheKey: `${i2};${n2};${r2}` };
         }, p = (t2) => {
@@ -8066,7 +8066,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
           g(e2);
           const o2 = e2[0].dims.slice(), a2 = i.ShapeUtil.normalizeAxis(n2.axis, o2.length), u2 = o2.length, c2 = a2 !== u2 - 1, l2 = [];
           let f2, d2 = [], h2 = [];
-          c2 && (d2 = Array.from({ length: u2 }).map((t3, e3) => e3), d2[a2] = u2 - 1, d2[u2 - 1] = a2, d2.map((t3) => l2.push(o2[t3])), f2 = (0, r.createAttributeWithCacheKey)({ perm: d2 }), h2 = (0, s.transpose)(t2, e2, f2));
+          c2 && (d2 = Array.from({ length: u2 }).map(((t3, e3) => e3)), d2[a2] = u2 - 1, d2[u2 - 1] = a2, d2.map(((t3) => l2.push(o2[t3]))), f2 = (0, r.createAttributeWithCacheKey)({ perm: d2 }), h2 = (0, s.transpose)(t2, e2, f2));
           const b = c2 ? i.ShapeUtil.sizeToDimension(l2, u2 - 1) : i.ShapeUtil.sizeToDimension(o2, u2 - 1), m = c2 ? i.ShapeUtil.sizeFromDimension(l2, u2 - 1) : i.ShapeUtil.sizeFromDimension(o2, u2 - 1), y = p(t2, c2 ? h2 : e2, n2, b, m);
           return c2 ? (0, s.transpose)(t2, y, f2) : y;
         };
@@ -8197,13 +8197,13 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
         const r = n(5060), i = n(2039);
         e.sum = (t2, e2) => {
           a(e2);
-          const n2 = { name: "Sum", inputNames: e2.map((t3, e3) => `X${e3}`), inputTypes: new Array(e2.length).fill(i.TextureType.unpacked) };
+          const n2 = { name: "Sum", inputNames: e2.map(((t3, e3) => `X${e3}`)), inputTypes: new Array(e2.length).fill(i.TextureType.unpacked) };
           return [t2.run(Object.assign(Object.assign({}, n2), { get: () => o(t2, e2, n2) }), e2)];
         };
         const o = (t2, e2, n2) => {
           const o2 = (0, r.getGlsl)(t2.session.backend.glContext.version), a2 = e2[0].dims.slice(), s = `
       void main() {
-        vec4 result = ${e2.map((t3, e3) => `${o2.texture2D}(X${e3},TexCoords)`).join(" + ")};
+        vec4 result = ${e2.map(((t3, e3) => `${o2.texture2D}(X${e3},TexCoords)`)).join(" + ")};
         ${o2.output} = result;
       }
     `;
@@ -8521,12 +8521,12 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
         Object.defineProperty(e, "__esModule", { value: true }), e.createUnpackProgramInfoLoader = e.createUnpackProgramInfo = void 0;
         const r = n(5060), i = n(2039), o = n(9390), a = n(2827), s = { name: "unpack", inputNames: ["A"], inputTypes: [i.TextureType.packed] };
         e.createUnpackProgramInfo = (t2, e2) => {
-          const n2 = e2.dims.length, u = (0, a.getChannels)("rc", n2), c = u.slice(-2), l = (0, o.getCoordsDataType)(n2), p = (0, a.unpackFromChannel)(), f = 0 === e2.dims.length ? "" : function(t3, e3) {
+          const n2 = e2.dims.length, u = (0, a.getChannels)("rc", n2), c = u.slice(-2), l = (0, o.getCoordsDataType)(n2), p = (0, a.unpackFromChannel)(), f = 0 === e2.dims.length ? "" : (function(t3, e3) {
             if (1 === t3) return "rc";
             let n3 = "";
             for (let r2 = 0; r2 < t3; r2++) n3 += e3[r2], r2 < t3 - 1 && (n3 += ",");
             return n3;
-          }(n2, u), d = n2 <= 1 ? "rc" : `vec2(${c.join(",")})`, h = `
+          })(n2, u), d = n2 <= 1 ? "rc" : `vec2(${c.join(",")})`, h = `
     ${p}
     void main() {
       ${l} rc = getOutputCoords();
@@ -8575,7 +8575,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
           return n2 > 10 ? t2.inputs.length > 2 ? (g = 1, b = 2, m = 3) : (b = 1, m = 2) : 9 === n2 && (b = 1), (0, r.createAttributeWithCacheKey)({ opset: n2, isResize: i2, mode: o2, scales: a2, extrapolationValue: s2, coordinateTransformMode: u, useExtrapolation: l, needRoiInput: c, nearestMode: p, cubicCoefficientA: f, excludeOutside: d, useNearest2xOptimization: h, roiInputIdx: g, scalesInputIdx: b, sizesInputIdx: m });
         };
         const s = (t2, e2, n2) => {
-          const r2 = (0, i.getGlsl)(t2.session.backend.glContext.version), [s2, u] = t2.calculateTextureWidthAndHeight(e2[0].dims, o.TextureType.unpacked), c = e2[0].dims.map((t3, e3) => Math.floor(t3 * n2.scales[e3])), [l, p] = t2.calculateTextureWidthAndHeight(c, o.TextureType.unpacked), f = c.length, d = new Array(f), h = new Array(f);
+          const r2 = (0, i.getGlsl)(t2.session.backend.glContext.version), [s2, u] = t2.calculateTextureWidthAndHeight(e2[0].dims, o.TextureType.unpacked), c = e2[0].dims.map(((t3, e3) => Math.floor(t3 * n2.scales[e3]))), [l, p] = t2.calculateTextureWidthAndHeight(c, o.TextureType.unpacked), f = c.length, d = new Array(f), h = new Array(f);
           let g = `
       int output_pitches[${f}];
       int input_pitches[${f}];
@@ -8715,7 +8715,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
       float y1 = x10 + float(y_offset) * (x11 - x10) / float(scales[0]);
       return y0 + float(x_offset) * (y1 - y0) / float(scales[1]);
     }`;
-          return Object.assign(Object.assign({}, a), { output: { dims: c, type: e2[0].type, textureType: o.TextureType.unpacked }, shaderSource: m, variables: [{ name: "scales", type: "int", arrayLength: n2.scales.length, data: n2.scales.map((t3) => Math.ceil(t3)) }] });
+          return Object.assign(Object.assign({}, a), { output: { dims: c, type: e2[0].type, textureType: o.TextureType.unpacked }, shaderSource: m, variables: [{ name: "scales", type: "int", arrayLength: n2.scales.length, data: n2.scales.map(((t3) => Math.ceil(t3))) }] });
         };
         e.validateInputs = (t2, e2) => {
           if (!t2 || e2.opset < 9 && 1 !== t2.length || e2.opset >= 9 && e2.opset < 11 && 2 !== t2.length || e2.opset >= 11 && t2.length < 2) throw new Error("invalid inputs.");
@@ -8743,7 +8743,7 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
           }
           run(t2, e2, n2) {
             var r2;
-            this.profiler.event("op", `ProgramManager.run ${null !== (r2 = t2.programInfo.name) && void 0 !== r2 ? r2 : "unknown kernel"}`, () => {
+            this.profiler.event("op", `ProgramManager.run ${null !== (r2 = t2.programInfo.name) && void 0 !== r2 ? r2 : "unknown kernel"}`, (() => {
               var r3;
               const o2 = this.glContext.gl, a2 = t2.program;
               o2.useProgram(a2);
@@ -8752,19 +8752,19 @@ value = _A(inputIdx);`, "value = min(value, _A(inputIdx));", ""];
               } catch (e3) {
                 throw i.Logger.error("ProgramManager", t2.programInfo.shaderSource), e3;
               }
-              this.profiler.event("backend", "GlContext.draw()", () => {
+              this.profiler.event("backend", "GlContext.draw()", (() => {
                 this.glContext.draw();
-              });
-            }, this.glContext);
+              }));
+            }), this.glContext);
           }
           dispose() {
-            this.vertexShader && this.glContext.deleteShader(this.vertexShader), this.repo.forEach((t2) => this.glContext.deleteProgram(t2.program));
+            this.vertexShader && this.glContext.deleteShader(this.vertexShader), this.repo.forEach(((t2) => this.glContext.deleteProgram(t2.program)));
           }
           build(t2, e2, n2) {
-            return this.profiler.event("backend", "ProgramManager.build", () => {
+            return this.profiler.event("backend", "ProgramManager.build", (() => {
               const r2 = new o.GlslPreprocessor(this.glContext, t2, e2, n2), i2 = r2.preprocess(), a2 = this.compile(i2);
               return { programInfo: t2, program: a2, uniformLocations: this.getUniformLocations(a2, r2.context.programInfo.inputNames, r2.context.programInfo.variables), attribLocations: this.getAttribLocations(a2) };
-            });
+            }));
           }
           compile(t2) {
             if (!this.vertexShader) {
@@ -8791,7 +8791,7 @@ ${t2}
             const i2 = this.glContext.gl;
             let o2 = 0;
             for (const { name: a2, type: s, location: u, arrayLength: c } of t2) {
-              const t3 = null === (r2 = e2.find((t4) => t4.name === a2)) || void 0 === r2 ? void 0 : r2.data;
+              const t3 = null === (r2 = e2.find(((t4) => t4.name === a2))) || void 0 === r2 ? void 0 : r2.data;
               if ("sampler2D" !== s && !t3) throw new Error(`variable '${a2}' does not have data defined in program info`);
               switch (s) {
                 case "sampler2D":
@@ -8841,7 +8841,7 @@ ${t2}
             return new o.WebGLInferenceHandler(this);
           }
           onGraphInitialized(t2) {
-            const e2 = t2.getValues().filter((t3) => -1 === t3.from && t3.tensor).map((t3) => t3.tensor.dataId);
+            const e2 = t2.getValues().filter(((t3) => -1 === t3.from && t3.tensor)).map(((t3) => t3.tensor.dataId));
             this.initializers = new Set(e2);
           }
           isInitializer(t2) {
@@ -8857,7 +8857,7 @@ ${t2}
             r.Logger.verbose("WebGLSessionHandler", "Storing Texture data in cache"), n2 ? this.packedTextureDataCache.set(t2, e2) : this.unpackedTextureDataCache.set(t2, e2);
           }
           dispose() {
-            this.programManager.dispose(), this.textureManager.clearActiveTextures(), this.packedTextureDataCache.forEach((t2) => this.textureManager.releaseTexture(t2, true)), this.packedTextureDataCache = /* @__PURE__ */ new Map(), this.unpackedTextureDataCache.forEach((t2) => this.textureManager.releaseTexture(t2, true)), this.unpackedTextureDataCache = /* @__PURE__ */ new Map();
+            this.programManager.dispose(), this.textureManager.clearActiveTextures(), this.packedTextureDataCache.forEach(((t2) => this.textureManager.releaseTexture(t2, true))), this.packedTextureDataCache = /* @__PURE__ */ new Map(), this.unpackedTextureDataCache.forEach(((t2) => this.textureManager.releaseTexture(t2, true))), this.unpackedTextureDataCache = /* @__PURE__ */ new Map();
           }
           resolve(t2, e2, n2) {
             const r2 = (0, i.resolveOperator)(t2, e2, a.WEBGL_OP_RESOLVE_RULES);
@@ -8878,13 +8878,13 @@ ${t2}
           }
           encode(t2, e2) {
             let n2, i;
-            return t2.constructor !== Float32Array && (r.Logger.warning("Encoder", "data was not of type Float32; creating new Float32Array"), i = new Float32Array(t2)), e2 * this.channelSize > t2.length ? (r.Logger.warning("Encoder", "Source data too small. Allocating larger array"), i = t2, n2 = this.allocate(e2 * this.channelSize), i.forEach((t3, e3) => n2[e3] = t3)) : (i = t2, n2 = i), n2;
+            return t2.constructor !== Float32Array && (r.Logger.warning("Encoder", "data was not of type Float32; creating new Float32Array"), i = new Float32Array(t2)), e2 * this.channelSize > t2.length ? (r.Logger.warning("Encoder", "Source data too small. Allocating larger array"), i = t2, n2 = this.allocate(e2 * this.channelSize), i.forEach(((t3, e3) => n2[e3] = t3))) : (i = t2, n2 = i), n2;
           }
           allocate(t2) {
             return new Float32Array(4 * t2);
           }
           decode(t2, e2) {
-            return 1 === this.channelSize ? t2.filter((t3, e3) => e3 % 4 == 0).subarray(0, e2) : t2.subarray(0, e2);
+            return 1 === this.channelSize ? t2.filter(((t3, e3) => e3 % 4 == 0)).subarray(0, e2) : t2.subarray(0, e2);
           }
         }, e.RGBAFloatDataEncoder = class {
           constructor(t2, e2 = 1, n2) {
@@ -8893,13 +8893,13 @@ ${t2}
           }
           encode(t2, e2) {
             let n2 = t2;
-            return 1 === this.channelSize && (r.Logger.verbose("Encoder", "Exploding into a larger array"), n2 = this.allocate(e2), t2.forEach((t3, e3) => n2[4 * e3] = t3)), n2;
+            return 1 === this.channelSize && (r.Logger.verbose("Encoder", "Exploding into a larger array"), n2 = this.allocate(e2), t2.forEach(((t3, e3) => n2[4 * e3] = t3))), n2;
           }
           allocate(t2) {
             return new Float32Array(4 * t2);
           }
           decode(t2, e2) {
-            return 1 === this.channelSize ? t2.filter((t3, e3) => e3 % 4 == 0).subarray(0, e2) : t2.subarray(0, e2);
+            return 1 === this.channelSize ? t2.filter(((t3, e3) => e3 % 4 == 0)).subarray(0, e2) : t2.subarray(0, e2);
           }
         }, e.Uint8DataEncoder = class {
           constructor(t2, e2 = 1) {
@@ -8938,7 +8938,7 @@ ${t2}
         }
         function a(t2, e2) {
           const n2 = e2.length;
-          return t2 = null == t2 ? e2.map((t3, e3) => e3) : [].concat(t2), (0, i.assert)(t2.every((t3) => t3 >= -n2 && t3 < n2), () => `All values in axis param must be in range [-${n2}, ${n2}) but got axis ${t2}`), (0, i.assert)(t2.every(s), () => `All values in axis param must be integers but got axis ${t2}`), t2.map((t3) => t3 < 0 ? n2 + t3 : t3);
+          return t2 = null == t2 ? e2.map(((t3, e3) => e3)) : [].concat(t2), (0, i.assert)(t2.every(((t3) => t3 >= -n2 && t3 < n2)), (() => `All values in axis param must be in range [-${n2}, ${n2}) but got axis ${t2}`)), (0, i.assert)(t2.every(s), (() => `All values in axis param must be integers but got axis ${t2}`)), t2.map(((t3) => t3 < 0 ? n2 + t3 : t3));
         }
         function s(t2) {
           return t2 % 1 == 0;
@@ -8961,11 +8961,11 @@ ${t2}
             if (0 === t2.length) return [1, 1];
             const n2 = this.maxTextureSize;
             if (e2 && void 0 !== e2.breakAxis) {
-              const i3 = e2.breakAxis >= t2.length ? 1 : t2.slice(e2.breakAxis).reduce((t3, e3) => t3 * e3), o3 = e2.breakAxis <= 0 ? 1 : t2.slice(0, e2.breakAxis).reduce((t3, e3) => t3 * e3);
+              const i3 = e2.breakAxis >= t2.length ? 1 : t2.slice(e2.breakAxis).reduce(((t3, e3) => t3 * e3)), o3 = e2.breakAxis <= 0 ? 1 : t2.slice(0, e2.breakAxis).reduce(((t3, e3) => t3 * e3));
               if (!(i3 > n2 || o3 > n2)) return [i3, o3];
               r.Logger.verbose("TextureLayout", `Given width/height preferences were unattainable: shape:${t2}, breakAxis:${e2.breakAxis}`);
             }
-            const i2 = t2.reduce((t3, e3) => t3 * e3);
+            const i2 = t2.reduce(((t3, e3) => t3 * e3));
             let o2 = Math.floor(Math.sqrt(i2));
             for (; o2 < n2 && o2 < i2 && i2 % o2 != 0; o2++) ;
             if (o2 >= n2 || i2 % o2 != 0) throw new Error(`The given dimensions are outside this GPU's boundaries: ${t2}`);
@@ -8984,17 +8984,17 @@ ${t2}
             if (0 === t2.length) return n2 ? [2, 2] : [1, 1];
             let i2 = this.maxTextureSize;
             if (e2 && void 0 !== e2.breakAxis) {
-              const n3 = e2.breakAxis >= t2.length ? 1 : t2.slice(e2.breakAxis).reduce((t3, e3) => t3 * e3), o2 = e2.breakAxis <= 0 ? 1 : t2.slice(0, e2.breakAxis).reduce((t3, e3) => t3 * e3);
+              const n3 = e2.breakAxis >= t2.length ? 1 : t2.slice(e2.breakAxis).reduce(((t3, e3) => t3 * e3)), o2 = e2.breakAxis <= 0 ? 1 : t2.slice(0, e2.breakAxis).reduce(((t3, e3) => t3 * e3));
               if (!(n3 > i2 || o2 > i2)) return [n3, o2];
               r.Logger.verbose("TextureLayout", `Given width/height preferences were unattainable: shape:${t2}, breakAxis:${e2.breakAxis}`);
             }
             let a2 = t2.slice(0);
-            if (n2 && (i2 *= 2, a2 = a2.map((t3, e3) => e3 >= a2.length - 2 ? a2[e3] % 2 == 0 ? a2[e3] : a2[e3] + 1 : a2[e3]), 1 === a2.length && (a2 = [2, a2[0]])), 2 !== a2.length) {
+            if (n2 && (i2 *= 2, a2 = a2.map(((t3, e3) => e3 >= a2.length - 2 ? a2[e3] % 2 == 0 ? a2[e3] : a2[e3] + 1 : a2[e3])), 1 === a2.length && (a2 = [2, a2[0]])), 2 !== a2.length) {
               const t3 = o(a2);
               a2 = t3.newShape;
             }
             const s2 = u(a2);
-            return a2.length <= 1 && s2 <= i2 ? [1, s2] : 2 === a2.length && a2[0] <= i2 && a2[1] <= i2 ? a2 : 3 === a2.length && a2[0] * a2[1] <= i2 && a2[2] <= i2 ? [a2[0] * a2[1], a2[2]] : 3 === a2.length && a2[0] <= i2 && a2[1] * a2[2] <= i2 ? [a2[0], a2[1] * a2[2]] : 4 === a2.length && a2[0] * a2[1] * a2[2] <= i2 && a2[3] <= i2 ? [a2[0] * a2[1] * a2[2], a2[3]] : 4 === a2.length && a2[0] <= i2 && a2[1] * a2[2] * a2[3] <= i2 ? [a2[0], a2[1] * a2[2] * a2[3]] : n2 ? c(s2 / 4).map((t3) => 2 * t3) : c(s2);
+            return a2.length <= 1 && s2 <= i2 ? [1, s2] : 2 === a2.length && a2[0] <= i2 && a2[1] <= i2 ? a2 : 3 === a2.length && a2[0] * a2[1] <= i2 && a2[2] <= i2 ? [a2[0] * a2[1], a2[2]] : 3 === a2.length && a2[0] <= i2 && a2[1] * a2[2] <= i2 ? [a2[0], a2[1] * a2[2]] : 4 === a2.length && a2[0] * a2[1] * a2[2] <= i2 && a2[3] <= i2 ? [a2[0] * a2[1] * a2[2], a2[3]] : 4 === a2.length && a2[0] <= i2 && a2[1] * a2[2] * a2[3] <= i2 ? [a2[0], a2[1] * a2[2] * a2[3]] : n2 ? c(s2 / 4).map(((t3) => 2 * t3)) : c(s2);
           }
         }, e.squeezeShape = o, e.parseAxisParam = a, e.isInt = s, e.sizeFromShape = u, e.getRowsCols = function(t2) {
           if (0 === t2.length) throw Error("Cannot get rows and columns of an empty shape array.");
@@ -9007,7 +9007,7 @@ ${t2}
         Object.defineProperty(e, "__esModule", { value: true }), e.createTextureLayoutFromShape = e.calculateTextureWidthAndHeight = e.createTextureLayoutFromTextureType = void 0;
         const r = n(2517), i = n(2039);
         e.createTextureLayoutFromTextureType = (t2, n2, r2) => {
-          const o = r2 === i.TextureType.unpacked || r2 === i.TextureType.unpackedReversed ? 1 : 4, a = r2 === i.TextureType.packed, s = r2 === i.TextureType.unpackedReversed || r2 === i.TextureType.packed, u = r2 === i.TextureType.packedLastDimension ? n2.length - 1 : void 0, c = r2 === i.TextureType.packedLastDimension ? n2.map((t3, e2) => e2 === n2.length - 1 ? 4 * t3 : t3) : void 0;
+          const o = r2 === i.TextureType.unpacked || r2 === i.TextureType.unpackedReversed ? 1 : 4, a = r2 === i.TextureType.packed, s = r2 === i.TextureType.unpackedReversed || r2 === i.TextureType.packed, u = r2 === i.TextureType.packedLastDimension ? n2.length - 1 : void 0, c = r2 === i.TextureType.packedLastDimension ? n2.map(((t3, e2) => e2 === n2.length - 1 ? 4 * t3 : t3)) : void 0;
           return (0, e.createTextureLayoutFromShape)(t2, n2, o, c, { isPacked: a, reverseWH: s, breakAxis: u });
         }, e.calculateTextureWidthAndHeight = (t2, n2, r2) => {
           const i2 = (0, e.createTextureLayoutFromTextureType)(t2, n2, r2);
@@ -9048,30 +9048,30 @@ ${t2}
             return this.config.reuseTextures && (l.push(p), this.textureLookup.set(p, c)), p;
           }
           readTexture(t2, e2, n2) {
-            return n2 || (n2 = 1), this.profiler.event("backend", "TextureManager.readTexture", () => {
-              const r2 = t2.shape.reduce((t3, e3) => t3 * e3) * n2, i = this.glContext.readTexture(t2.texture, t2.width, t2.height, r2, this.toEncoderType(e2), n2);
+            return n2 || (n2 = 1), this.profiler.event("backend", "TextureManager.readTexture", (() => {
+              const r2 = t2.shape.reduce(((t3, e3) => t3 * e3)) * n2, i = this.glContext.readTexture(t2.texture, t2.width, t2.height, r2, this.toEncoderType(e2), n2);
               return this.toTensorData(e2, i);
-            });
+            }));
           }
           async readTextureAsync(t2, e2, n2) {
             const r2 = t2.tensor.dataId;
             if (n2 || (n2 = 1), this.pendingRead.has(r2)) {
               const t3 = this.pendingRead.get(r2);
-              return new Promise((e3) => null == t3 ? void 0 : t3.push(e3));
+              return new Promise(((e3) => null == t3 ? void 0 : t3.push(e3)));
             }
-            return this.profiler.event("backend", "TextureManager.readTextureAsync", async () => {
+            return this.profiler.event("backend", "TextureManager.readTextureAsync", (async () => {
               this.pendingRead.set(r2, []);
-              const i = t2.shape.reduce((t3, e3) => t3 * e3) * n2;
+              const i = t2.shape.reduce(((t3, e3) => t3 * e3)) * n2;
               await this.glContext.createAndWaitForFence();
               const o = this.glContext.readTexture(t2.texture, t2.width, t2.height, i, this.toEncoderType(e2), n2), a = this.toTensorData(e2, o), s = this.pendingRead.get(r2);
-              return this.pendingRead.delete(r2), null == s || s.forEach((t3) => t3(a)), a;
-            });
+              return this.pendingRead.delete(r2), null == s || s.forEach(((t3) => t3(a))), a;
+            }));
           }
           readUint8TextureAsFloat(t2) {
-            return this.profiler.event("backend", "TextureManager.readUint8TextureAsFloat", () => {
-              const e2 = t2.shape.reduce((t3, e3) => t3 * e3), n2 = this.glContext.readTexture(t2.texture, t2.width, t2.height, 4 * e2, "byte", 4);
+            return this.profiler.event("backend", "TextureManager.readUint8TextureAsFloat", (() => {
+              const e2 = t2.shape.reduce(((t3, e3) => t3 * e3)), n2 = this.glContext.readTexture(t2.texture, t2.width, t2.height, 4 * e2, "byte", 4);
               return new Float32Array(n2.buffer, n2.byteOffset, e2);
-            });
+            }));
           }
           releaseTexture(t2, e2) {
             let n2;
@@ -9133,8 +9133,8 @@ ${t2}
         e.getPackedShape = function(t2) {
           const e2 = t2.length;
           return t2.slice(0, e2 - 1).concat(t2[e2 - 1] / 4);
-        }, e.repeatedTry = async function(t2, e2 = (t3) => 0, n2) {
-          return new Promise((r2, i) => {
+        }, e.repeatedTry = async function(t2, e2 = ((t3) => 0), n2) {
+          return new Promise(((r2, i) => {
             let o = 0;
             const a = () => {
               if (t2()) return void r2();
@@ -9143,16 +9143,16 @@ ${t2}
               null != n2 && o >= n2 ? i() : setTimeout(a, s);
             };
             a();
-          });
+          }));
         }, e.generateShaderFuncNameFromInputSamplerName = function(t2) {
-          return (0, r.assert)(void 0 !== t2 && 0 !== t2.length, () => "empty string found for sampler name"), "get" + t2.charAt(0).toUpperCase() + t2.slice(1);
+          return (0, r.assert)(void 0 !== t2 && 0 !== t2.length, (() => "empty string found for sampler name")), "get" + t2.charAt(0).toUpperCase() + t2.slice(1);
         }, e.generateShaderFuncNameFromInputSamplerNameAtOutCoords = function(t2) {
-          return (0, r.assert)(void 0 !== t2 && 0 !== t2.length, () => "empty string found for sampler name"), "get" + t2.charAt(0).toUpperCase() + t2.slice(1) + "AtOutCoords";
+          return (0, r.assert)(void 0 !== t2 && 0 !== t2.length, (() => "empty string found for sampler name")), "get" + t2.charAt(0).toUpperCase() + t2.slice(1) + "AtOutCoords";
         }, e.squeezeInputShape = function(t2, e2) {
           let n2 = JSON.parse(JSON.stringify(t2));
           return n2 = e2, n2;
         }, e.getSqueezedParams = function(t2, e2) {
-          return e2.map((e3) => t2[e3]).join(", ");
+          return e2.map(((e3) => t2[e3])).join(", ");
         }, e.getCoordsDataType = function(t2) {
           if (t2 <= 1) return "int";
           if (2 === t2) return "ivec2";
@@ -9169,14 +9169,14 @@ ${t2}
         Object.defineProperty(e, "__esModule", { value: true }), e.createNewWebGLContext = e.createWebGLContext = void 0;
         const r = n(6231), i = n(1713), o = {};
         function a(t2) {
-          const e2 = function() {
+          const e2 = (function() {
             if ("undefined" == typeof document) {
               if ("undefined" == typeof OffscreenCanvas) throw new TypeError("failed to create canvas: OffscreenCanvas is not supported");
               return new OffscreenCanvas(1, 1);
             }
             const t3 = document.createElement("canvas");
             return t3.width = 1, t3.height = 1, t3;
-          }();
+          })();
           let n2;
           const o2 = { alpha: false, depth: false, antialias: false, stencil: false, preserveDrawingBuffer: false, premultipliedAlpha: false, failIfMajorPerformanceCaveat: false };
           if ((!t2 || "webgl2" === t2) && (n2 = e2.getContext("webgl2", o2), n2)) try {
@@ -9439,7 +9439,7 @@ ${t2}`);
             return e2 / 1e6;
           }
           async waitForQueryAndGetTime(t2) {
-            return await (0, u.repeatedTry)(() => this.isTimerResultAvailable(t2)), this.getTimerResult(t2);
+            return await (0, u.repeatedTry)((() => this.isTimerResultAvailable(t2))), this.getTimerResult(t2);
           }
           async createAndWaitForFence() {
             const t2 = this.createFence(this.gl);
@@ -9454,12 +9454,12 @@ ${t2}`);
             }, { query: r2, isFencePassed: e2 };
           }
           async pollFence(t2) {
-            return new Promise((e2) => {
-              this.addItemToPoll(() => t2.isFencePassed(), () => e2());
-            });
+            return new Promise(((e2) => {
+              this.addItemToPoll((() => t2.isFencePassed()), (() => e2()));
+            }));
           }
           pollItems() {
-            const t2 = c(this.itemsToPoll.map((t3) => t3.isDoneFn));
+            const t2 = c(this.itemsToPoll.map(((t3) => t3.isDoneFn)));
             for (let e2 = 0; e2 <= t2; ++e2) {
               const { resolveFn: t3 } = this.itemsToPoll[e2];
               t3();
@@ -9467,7 +9467,7 @@ ${t2}`);
             this.itemsToPoll = this.itemsToPoll.slice(t2 + 1);
           }
           async addItemToPoll(t2, e2) {
-            this.itemsToPoll.push({ isDoneFn: t2, resolveFn: e2 }), this.itemsToPoll.length > 1 || await (0, u.repeatedTry)(() => (this.pollItems(), 0 === this.itemsToPoll.length));
+            this.itemsToPoll.push({ isDoneFn: t2, resolveFn: e2 }), this.itemsToPoll.length > 1 || await (0, u.repeatedTry)((() => (this.pollItems(), 0 === this.itemsToPoll.length)));
           }
         };
       }, 1036: (t, e, n) => {
@@ -9484,47 +9484,47 @@ ${t2}`);
             this.graph = t2, this.profiler = n2, this.initialize(e2);
           }
           initialize(t2) {
-            this.profiler.event("session", "ExecutionPlan.initialize", () => {
+            this.profiler.event("session", "ExecutionPlan.initialize", (() => {
               const e2 = this.graph.getNodes();
               if (e2.length !== t2.length) throw new Error("The size of nodes and OPs do not match.");
-              this._ops = t2.map((t3, n2) => new i(t3, e2[n2])), this.reset(), this._starter = [], this._ops.forEach((t3, e3) => {
+              this._ops = t2.map(((t3, n2) => new i(t3, e2[n2]))), this.reset(), this._starter = [], this._ops.forEach(((t3, e3) => {
                 let n2 = true;
                 for (const e4 of t3.node.inputs) if (!this._values[e4] && -1 === this.graph.getInputIndices().indexOf(e4)) {
                   n2 = false;
                   break;
                 }
                 n2 && this._starter.push(e3);
-              });
-            });
+              }));
+            }));
           }
           reset() {
-            this._values = this.graph.getValues().map((t2) => t2.tensor);
+            this._values = this.graph.getValues().map(((t2) => t2.tensor));
           }
           async execute(t2, e2) {
-            return this.profiler.event("session", "ExecutionPlan.execute", async () => {
+            return this.profiler.event("session", "ExecutionPlan.execute", (async () => {
               this.reset();
               const n2 = t2.createInferenceHandler(), i2 = this.graph.getInputIndices();
               if (e2.length !== i2.length) throw new Error(`number of input tensors don't match the number of inputs to the model: actual: ${e2.length} expected: ${i2.length}`);
-              e2.forEach((t3, e3) => {
+              e2.forEach(((t3, e3) => {
                 const n3 = i2[e3];
                 this._values[n3] = t3;
-              });
+              }));
               const o = this._starter.slice(0), a = this.graph.getValues(), s = this.graph.getNodes();
               let u = 0;
               for (; u < o.length; ) {
-                const t3 = o[u++], e3 = this._ops[t3], i3 = e3.node.inputs.map((t4) => this._values[t4]);
+                const t3 = o[u++], e3 = this._ops[t3], i3 = e3.node.inputs.map(((t4) => this._values[t4]));
                 if (-1 !== i3.indexOf(void 0)) throw new Error(`unresolved input detected: op: ${e3.node}`);
                 const c2 = i3;
-                r.Logger.verbose("ExecPlan", `Runing op:${e3.node.name} (${c2.map((t4, n3) => `'${e3.node.inputs[n3]}': ${t4.type}[${t4.dims.join(",")}]`).join(", ")})`);
-                const l = await this.profiler.event("node", e3.node.name, async () => e3.op.impl(n2, c2, e3.op.context));
+                r.Logger.verbose("ExecPlan", `Runing op:${e3.node.name} (${c2.map(((t4, n3) => `'${e3.node.inputs[n3]}': ${t4.type}[${t4.dims.join(",")}]`)).join(", ")})`);
+                const l = await this.profiler.event("node", e3.node.name, (async () => e3.op.impl(n2, c2, e3.op.context)));
                 if (l.length !== e3.node.outputs.length) throw new Error("the size of output does not match model definition.");
-                l.forEach((t4, n3) => {
+                l.forEach(((t4, n3) => {
                   const r2 = e3.node.outputs[n3];
                   if (this._values[r2]) throw new Error(`output [${r2}] already has value: op:${e3.node.name}`);
                   this._values[r2] = t4;
-                });
+                }));
                 const p = /* @__PURE__ */ new Set();
-                l.forEach((t4, n3) => {
+                l.forEach(((t4, n3) => {
                   const r2 = e3.node.outputs[n3];
                   for (const t5 of a[r2].to) {
                     const e4 = s[t5];
@@ -9535,7 +9535,7 @@ ${t2}`);
                     }
                     n4 && p.add(t5);
                   }
-                }), o.push(...p);
+                })), o.push(...p);
               }
               const c = [];
               for (let t3 = 0; t3 < this.graph.getOutputIndices().length; t3++) {
@@ -9544,7 +9544,7 @@ ${t2}`);
                 0 === e3 ? await n3.getData() : n3.data, c.push(n3);
               }
               return r.Logger.verbose("ExecPlan", "disposing of inferenceHandler"), n2.dispose(), c;
-            });
+            }));
           }
         };
       }, 7070: (t, e, n) => {
@@ -9736,23 +9736,23 @@ ${t2}`);
           }
           checkIsAcyclic() {
             const t2 = /* @__PURE__ */ new Set();
-            this._allInputIndices.forEach((e3) => {
-              this._allData[e3]._to.forEach((e4) => {
+            this._allInputIndices.forEach(((e3) => {
+              this._allData[e3]._to.forEach(((e4) => {
                 t2.add(e4);
-              });
-            });
+              }));
+            }));
             const e2 = Array.from(t2), n2 = new Array(this._nodes.length).fill("white");
             for (; e2.length > 0; ) {
               const t3 = e2.pop();
-              "gray" === n2[t3] ? n2[t3] = "black" : (e2.push(t3), n2[t3] = "gray", this._nodes[t3].outputs.forEach((r2) => {
+              "gray" === n2[t3] ? n2[t3] = "black" : (e2.push(t3), n2[t3] = "gray", this._nodes[t3].outputs.forEach(((r2) => {
                 const i2 = this._allData[r2];
                 if (void 0 !== i2.tensor) throw new Error("node outputs should not be initialized");
                 if (i2._from !== t3) throw new Error("from property of the Value object doesn't match index of Node being processed");
-                i2._to.forEach((t4) => {
+                i2._to.forEach(((t4) => {
                   if ("gray" === n2[t4]) throw new Error("model graph is cyclic");
                   "white" === n2[t4] && e2.push(t4);
-                });
-              }));
+                }));
+              })));
             }
           }
           transformGraph(t2) {
@@ -9760,21 +9760,21 @@ ${t2}`);
           }
           finalizeGraph() {
             let t2 = 0;
-            for (let e2 = 0; e2 < this._nodes.length; e2++) this._nodes[e2].executeNode ? t2 > 0 && (this._nodes[e2].inputs.forEach((n2) => {
+            for (let e2 = 0; e2 < this._nodes.length; e2++) this._nodes[e2].executeNode ? t2 > 0 && (this._nodes[e2].inputs.forEach(((n2) => {
               const r2 = this._allData[n2]._to.indexOf(e2 + t2);
               -1 !== r2 && (this._allData[n2]._to[r2] = e2);
-            }), this._nodes[e2].outputs.forEach((n2) => {
+            })), this._nodes[e2].outputs.forEach(((n2) => {
               this._allData[n2]._from && this._allData[n2]._from === e2 + t2 && (this._allData[n2]._from = e2);
-            })) : (t2++, this._nodes[e2].outputs.forEach((t3) => {
+            }))) : (t2++, this._nodes[e2].outputs.forEach(((t3) => {
               this._allData[t3]._from = -2;
-            }), this._nodes.splice(e2, 1), e2--);
+            })), this._nodes.splice(e2, 1), e2--);
             t2 = 0;
             for (let e2 = 0; e2 < this._allData.length; e2++) if (-2 !== this._allData[e2].from || -1 !== this._allOutputIndices.indexOf(e2 + t2)) {
               if (t2 > 0) {
                 let n2 = -1;
-                void 0 !== this._allData[e2].from && -1 !== this._allData[e2].from ? (n2 = this._nodes[this._allData[e2].from].outputs.indexOf(e2 + t2), -1 !== n2 && (this._nodes[this._allData[e2].from].outputs[n2] = e2)) : (n2 = this._allInputIndices.indexOf(e2 + t2), -1 !== n2 && (this._allInputIndices[n2] = e2)), this._allData[e2].to.forEach((r2) => {
+                void 0 !== this._allData[e2].from && -1 !== this._allData[e2].from ? (n2 = this._nodes[this._allData[e2].from].outputs.indexOf(e2 + t2), -1 !== n2 && (this._nodes[this._allData[e2].from].outputs[n2] = e2)) : (n2 = this._allInputIndices.indexOf(e2 + t2), -1 !== n2 && (this._allInputIndices[n2] = e2)), this._allData[e2].to.forEach(((r2) => {
                   n2 = this._nodes[r2].inputs.indexOf(e2 + t2), -1 !== n2 && (this._nodes[r2].inputs[n2] = e2);
-                }), 0 === this._allData[e2].to.length && (n2 = this._allOutputIndices.indexOf(e2 + t2), -1 !== n2 && (this._allOutputIndices[n2] = e2));
+                })), 0 === this._allData[e2].to.length && (n2 = this._allOutputIndices.indexOf(e2 + t2), -1 !== n2 && (this._allOutputIndices[n2] = e2));
               }
             } else t2++, this._allData.splice(e2, 1), e2--;
           }
@@ -9882,7 +9882,7 @@ ${t2}`);
           const s2 = o[a2 || ""] || o[""];
           n[t2] < n[s2.minimalSeverity] || (s2.logDateTime && (e2 = `${(/* @__PURE__ */ new Date()).toISOString()}|${e2}`), s2.logSourceLocation, r[s2.provider].log(t2, e2, a2));
         }
-        !function(t2) {
+        !(function(t2) {
           function e2(t3) {
             o = {}, n2("", t3 || {});
           }
@@ -9907,7 +9907,7 @@ ${t2}`);
             const e3 = {};
             t3.logLevel && (e3.minimalSeverity = t3.logLevel), n2("", e3);
           };
-        }(a || (a = {})), e.Logger = a;
+        })(a || (a = {})), e.Logger = a;
         class u {
           constructor(t2, e2, n2, r2, i2, o2) {
             this.category = t2, this.name = e2, this.startTime = n2, this.endCallback = r2, this.timer = i2, this.ctx = o2;
@@ -9942,22 +9942,22 @@ ${t2}`);
             const i2 = this._started ? this.begin(t2, e2, r2) : void 0;
             let o2 = false;
             const a2 = n2();
-            if (a2 && "function" == typeof a2.then) return o2 = true, new Promise((t3, e3) => {
-              a2.then(async (e4) => {
+            if (a2 && "function" == typeof a2.then) return o2 = true, new Promise(((t3, e3) => {
+              a2.then((async (e4) => {
                 i2 && await i2.end(), t3(e4);
-              }, async (t4) => {
+              }), (async (t4) => {
                 i2 && await i2.end(), e3(t4);
-              });
-            });
+              }));
+            }));
             if (!o2 && i2) {
               const t3 = i2.end();
-              if (t3 && "function" == typeof t3.then) return new Promise((e3, n3) => {
-                t3.then(() => {
+              if (t3 && "function" == typeof t3.then) return new Promise(((e3, n3) => {
+                t3.then((() => {
                   e3(a2);
-                }, (t4) => {
+                }), ((t4) => {
                   n3(t4);
-                });
-              });
+                }));
+              }));
             }
             return a2;
           }
@@ -9965,11 +9965,11 @@ ${t2}`);
             if (!this._started) throw new Error("profiler is not started yet");
             if (void 0 === r2) {
               const r3 = (0, e.now)();
-              return this.flush(r3), new u(t2, n2, r3, (t3) => this.endSync(t3));
+              return this.flush(r3), new u(t2, n2, r3, ((t3) => this.endSync(t3)));
             }
             {
               const e2 = r2.beginTimer();
-              return new u(t2, n2, 0, async (t3) => this.end(t3), e2, r2);
+              return new u(t2, n2, 0, (async (t3) => this.end(t3)), e2, r2);
             }
           }
           async end(t2) {
@@ -10012,7 +10012,7 @@ ${t2}`);
           loadFromOnnxFormat(t2, e2) {
             const n2 = i.onnx.ModelProto.decode(t2);
             if (s.LongUtil.longToNumber(n2.irVersion) < 3) throw new Error("only support ONNX model with IR_VERSION>=3");
-            this._opsets = n2.opsetImport.map((t3) => ({ domain: t3.domain, version: s.LongUtil.longToNumber(t3.version) })), this._graph = o.Graph.from(n2.graph, e2);
+            this._opsets = n2.opsetImport.map(((t3) => ({ domain: t3.domain, version: s.LongUtil.longToNumber(t3.version) }))), this._graph = o.Graph.from(n2.graph, e2);
           }
           loadFromOrtFormat(t2, e2) {
             const n2 = new r.flatbuffers.ByteBuffer(t2), i2 = u.InferenceSession.getRootAsInferenceSession(n2).model();
@@ -10054,57 +10054,57 @@ ${t2}`);
               for (const t3 of e2) if ((t3.domain === o || "ai.onnx" === t3.domain && "" === o) && n(t3.version, a)) return { opImpl: s, opInit: u };
             }
           }
-          throw new TypeError(`cannot resolve operator '${t2.opType}' with opsets: ${e2.map((t3) => `${t3.domain || "ai.onnx"} v${t3.version}`).join(", ")}`);
+          throw new TypeError(`cannot resolve operator '${t2.opType}' with opsets: ${e2.map(((t3) => `${t3.domain || "ai.onnx"} v${t3.version}`)).join(", ")}`);
         };
       }, 9395: (t, e, n) => {
         "use strict";
         Object.defineProperty(e, "__esModule", { value: true }), e.onnxruntime = void 0;
         const r = n(5686);
         var i, o;
-        i = e.onnxruntime || (e.onnxruntime = {}), function(t2) {
+        i = e.onnxruntime || (e.onnxruntime = {}), (function(t2) {
           let e2;
-          !function(t3) {
+          !(function(t3) {
             t3[t3.UNDEFINED = 0] = "UNDEFINED", t3[t3.FLOAT = 1] = "FLOAT", t3[t3.INT = 2] = "INT", t3[t3.STRING = 3] = "STRING", t3[t3.TENSOR = 4] = "TENSOR", t3[t3.GRAPH = 5] = "GRAPH", t3[t3.FLOATS = 6] = "FLOATS", t3[t3.INTS = 7] = "INTS", t3[t3.STRINGS = 8] = "STRINGS", t3[t3.TENSORS = 9] = "TENSORS", t3[t3.GRAPHS = 10] = "GRAPHS", t3[t3.SPARSE_TENSOR = 11] = "SPARSE_TENSOR", t3[t3.SPARSE_TENSORS = 12] = "SPARSE_TENSORS";
-          }(e2 = t2.AttributeType || (t2.AttributeType = {}));
-        }((o = i.experimental || (i.experimental = {})).fbs || (o.fbs = {})), function(t2) {
-          !function(t3) {
-            !function(t4) {
+          })(e2 = t2.AttributeType || (t2.AttributeType = {}));
+        })((o = i.experimental || (i.experimental = {})).fbs || (o.fbs = {})), (function(t2) {
+          !(function(t3) {
+            !(function(t4) {
               let e2;
-              !function(t5) {
+              !(function(t5) {
                 t5[t5.UNKNOWN = 0] = "UNKNOWN", t5[t5.VALUE = 1] = "VALUE", t5[t5.PARAM = 2] = "PARAM";
-              }(e2 = t4.DimensionValueType || (t4.DimensionValueType = {}));
-            }(t3.fbs || (t3.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(t3) {
-            !function(t4) {
+              })(e2 = t4.DimensionValueType || (t4.DimensionValueType = {}));
+            })(t3.fbs || (t3.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(t3) {
+            !(function(t4) {
               let e2;
-              !function(t5) {
+              !(function(t5) {
                 t5[t5.UNDEFINED = 0] = "UNDEFINED", t5[t5.FLOAT = 1] = "FLOAT", t5[t5.UINT8 = 2] = "UINT8", t5[t5.INT8 = 3] = "INT8", t5[t5.UINT16 = 4] = "UINT16", t5[t5.INT16 = 5] = "INT16", t5[t5.INT32 = 6] = "INT32", t5[t5.INT64 = 7] = "INT64", t5[t5.STRING = 8] = "STRING", t5[t5.BOOL = 9] = "BOOL", t5[t5.FLOAT16 = 10] = "FLOAT16", t5[t5.DOUBLE = 11] = "DOUBLE", t5[t5.UINT32 = 12] = "UINT32", t5[t5.UINT64 = 13] = "UINT64", t5[t5.COMPLEX64 = 14] = "COMPLEX64", t5[t5.COMPLEX128 = 15] = "COMPLEX128", t5[t5.BFLOAT16 = 16] = "BFLOAT16";
-              }(e2 = t4.TensorDataType || (t4.TensorDataType = {}));
-            }(t3.fbs || (t3.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(t3) {
-            !function(t4) {
+              })(e2 = t4.TensorDataType || (t4.TensorDataType = {}));
+            })(t3.fbs || (t3.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(t3) {
+            !(function(t4) {
               let e2;
-              !function(t5) {
+              !(function(t5) {
                 t5[t5.Primitive = 0] = "Primitive", t5[t5.Fused = 1] = "Fused";
-              }(e2 = t4.NodeType || (t4.NodeType = {}));
-            }(t3.fbs || (t3.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(t3) {
-            !function(t4) {
+              })(e2 = t4.NodeType || (t4.NodeType = {}));
+            })(t3.fbs || (t3.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(t3) {
+            !(function(t4) {
               let e2;
-              !function(t5) {
+              !(function(t5) {
                 t5[t5.NONE = 0] = "NONE", t5[t5.tensor_type = 1] = "tensor_type", t5[t5.sequence_type = 2] = "sequence_type", t5[t5.map_type = 3] = "map_type";
-              }(e2 = t4.TypeInfoValue || (t4.TypeInfoValue = {}));
-            }(t3.fbs || (t3.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+              })(e2 = t4.TypeInfoValue || (t4.TypeInfoValue = {}));
+            })(t3.fbs || (t3.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10148,11 +10148,11 @@ ${t2}`);
                 }
               }
               e3.Shape = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10191,11 +10191,11 @@ ${t2}`);
                 }
               }
               e3.Dimension = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10241,11 +10241,11 @@ ${t2}`);
                 }
               }
               e3.DimensionValue = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10284,11 +10284,11 @@ ${t2}`);
                 }
               }
               e3.TensorTypeAndShape = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10327,11 +10327,11 @@ ${t2}`);
                 }
               }
               e3.MapType = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10363,10 +10363,10 @@ ${t2}`);
                 }
               }
               e3.SequenceType = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(t3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(t3) {
             (t3.fbs || (t3.fbs = {})).EdgeEnd = class {
               constructor() {
                 this.bb = null, this.bb_pos = 0;
@@ -10387,10 +10387,10 @@ ${t2}`);
                 return t4.prep(4, 12), t4.writeInt32(r2), t4.writeInt32(n2), t4.writeInt32(e2), t4.offset();
               }
             };
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10450,11 +10450,11 @@ ${t2}`);
                 }
               }
               e3.NodeEdge = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10634,11 +10634,11 @@ ${t2}`);
                 }
               }
               e3.Node = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10684,11 +10684,11 @@ ${t2}`);
                 }
               }
               e3.ValueInfo = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10734,11 +10734,11 @@ ${t2}`);
                 }
               }
               e3.TypeInfo = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(t3) {
-            !function(t4) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(t3) {
+            !(function(t4) {
               class e2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10777,11 +10777,11 @@ ${t2}`);
                 }
               }
               t4.OperatorSetId = e2;
-            }(t3.fbs || (t3.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(t3.fbs || (t3.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10888,11 +10888,11 @@ ${t2}`);
                 }
               }
               e3.Tensor = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -10950,11 +10950,11 @@ ${t2}`);
                 }
               }
               e3.SparseTensor = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -11134,11 +11134,11 @@ ${t2}`);
                 }
               }
               e3.Attribute = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -11303,11 +11303,11 @@ ${t2}`);
                 }
               }
               e3.Graph = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -11407,11 +11407,11 @@ ${t2}`);
                 }
               }
               e3.Model = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(t3) {
-            !function(t4) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(t3) {
+            !(function(t4) {
               class e2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -11478,11 +11478,11 @@ ${t2}`);
                 }
               }
               t4.KernelCreateInfos = e2;
-            }(t3.fbs || (t3.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(t3.fbs || (t3.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -11522,11 +11522,11 @@ ${t2}`);
                 }
               }
               e3.SubGraphSessionState = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -11577,11 +11577,11 @@ ${t2}`);
                 }
               }
               e3.SessionState = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {})), function(t2) {
-          !function(e2) {
-            !function(e3) {
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {})), (function(t2) {
+          !(function(e2) {
+            !(function(e3) {
               class n2 {
                 constructor() {
                   this.bb = null, this.bb_pos = 0;
@@ -11636,9 +11636,9 @@ ${t2}`);
                 }
               }
               e3.InferenceSession = n2;
-            }(e2.fbs || (e2.fbs = {}));
-          }(t2.experimental || (t2.experimental = {}));
-        }(e.onnxruntime || (e.onnxruntime = {}));
+            })(e2.fbs || (e2.fbs = {}));
+          })(t2.experimental || (t2.experimental = {}));
+        })(e.onnxruntime || (e.onnxruntime = {}));
       }, 7448: (t, e, n) => {
         "use strict";
         Object.defineProperty(e, "__esModule", { value: true }), e.OnnxjsSessionHandler = void 0;
@@ -11656,9 +11656,9 @@ ${t2}`);
               o.set(e3, new i.Tensor(n3.dims, n3.type, void 0, void 0, n3.data));
             }
             const a = await this.session.run(o), s = {};
-            return a.forEach((t3, e3) => {
+            return a.forEach(((t3, e3) => {
               s[e3] = new r.Tensor(t3.type, t3.data, t3.dims);
-            }), s;
+            })), s;
           }
           startProfiling() {
             this.session.startProfiling();
@@ -11688,7 +11688,7 @@ ${t2}`);
             this.profiler.stop();
           }
           async loadModel(t2, e2, n2) {
-            await this.profiler.event("session", "Session.loadModel", async () => {
+            await this.profiler.event("session", "Session.loadModel", (async () => {
               const a2 = await (0, o.resolveBackend)(this.backendHint);
               if (this.sessionHandler = a2.createSessionHandler(this.context), this._model = new u.Model(), "string" == typeof t2) {
                 const e3 = t2.endsWith(".ort");
@@ -11704,21 +11704,21 @@ ${t2}`);
                 const r2 = new Uint8Array(t2, e2 || 0, n2 || t2.byteLength);
                 this.initialize(r2);
               }
-            });
+            }));
           }
           initialize(t2, e2) {
             if (this._initialized) throw new Error("already initialized");
-            this.profiler.event("session", "Session.initialize", () => {
+            this.profiler.event("session", "Session.initialize", (() => {
               const n2 = this.sessionHandler.transformGraph ? this.sessionHandler : void 0;
               this._model.load(t2, n2, e2), this.sessionHandler.onGraphInitialized && this.sessionHandler.onGraphInitialized(this._model.graph), this.initializeOps(this._model.graph), this._executionPlan = new a.ExecutionPlan(this._model.graph, this._ops, this.profiler);
-            }), this._initialized = true;
+            })), this._initialized = true;
           }
           async run(t2) {
             if (!this._initialized) throw new Error("session not initialized yet");
-            return this.profiler.event("session", "Session.run", async () => {
+            return this.profiler.event("session", "Session.run", (async () => {
               const e2 = this.normalizeAndValidateInputs(t2), n2 = await this._executionPlan.execute(this.sessionHandler, e2);
               return this.createOutput(n2);
-            });
+            }));
           }
           normalizeAndValidateInputs(t2) {
             const e2 = this._model.graph.getInputNames();
@@ -11841,7 +11841,7 @@ ${t2}`);
             const s2 = this.size, c2 = void 0 === n2 && void 0 === r2 && void 0 === o2;
             if (void 0 !== o2 && o2.length !== s2) throw new RangeError("Input dims doesn't match data length.");
             if ("string" === e2) {
-              if (!(void 0 === o2 || Array.isArray(o2) && o2.every((t3) => "string" == typeof t3))) throw new TypeError("cache should be a string array");
+              if (!(void 0 === o2 || Array.isArray(o2) && o2.every(((t3) => "string" == typeof t3)))) throw new TypeError("cache should be a string array");
               c2 && (this.cache = new Array(s2));
             } else {
               if (void 0 !== o2) {
@@ -11849,7 +11849,7 @@ ${t2}`);
                 if (!(o2 instanceof t3)) throw new TypeError(`cache should be type ${t3.name}`);
               }
               if (c2) {
-                const t3 = new ArrayBuffer(s2 * function(t4) {
+                const t3 = new ArrayBuffer(s2 * (function(t4) {
                   switch (t4) {
                     case "bool":
                     case "int8":
@@ -11867,19 +11867,19 @@ ${t2}`);
                     default:
                       throw new Error(`cannot calculate sizeof() on type ${t4}`);
                   }
-                }(e2));
-                this.cache = function(t4, e3) {
+                })(e2));
+                this.cache = (function(t4, e3) {
                   return new (f(e3))(t4);
-                }(t3, e2);
+                })(t3, e2);
               }
             }
           }
           static fromProto(t2) {
             if (!t2) throw new Error("cannot construct Value from an empty tensor");
             const e2 = u.ProtoUtil.tensorDataTypeFromProto(t2.dataType), n2 = u.ProtoUtil.tensorDimsFromProto(t2.dims), r2 = new l(n2, e2);
-            if ("string" === e2) t2.stringData.forEach((t3, e3) => {
+            if ("string" === e2) t2.stringData.forEach(((t3, e3) => {
               r2.data[e3] = (0, u.decodeUtf8String)(t3);
-            });
+            }));
             else if (t2.rawData && "number" == typeof t2.rawData.byteLength && t2.rawData.byteLength > 0) {
               const e3 = r2.data, n3 = new DataView(t2.rawData.buffer, t2.rawData.byteOffset, t2.rawData.byteLength), i2 = p(t2.dataType), o2 = t2.rawData.byteLength / i2;
               if (t2.rawData.byteLength % i2 != 0) throw new Error("invalid buffer length");
@@ -12198,10 +12198,10 @@ ${t2}`);
             }
           }
           static tensorDimsFromProto(t2) {
-            return t2.map((t3) => o.default.isLong(t3) ? t3.toNumber() : t3);
+            return t2.map(((t3) => o.default.isLong(t3) ? t3.toNumber() : t3));
           }
           static tensorValueTypeFromProto(t2) {
-            return { tensorType: l.tensorDataTypeFromProto(t2.elemType), shape: { dims: l.tensorDimsFromProto(t2.shape.dim.map((t3) => t3.dimValue)) } };
+            return { tensorType: l.tensorDataTypeFromProto(t2.elemType), shape: { dims: l.tensorDimsFromProto(t2.shape.dim.map(((t3) => t3.dimValue))) } };
           }
           static tensorDimsFromORTFormat(t2) {
             const e2 = [];
@@ -12275,7 +12275,7 @@ ${t2}`);
             return t2 < 0 ? t2 + e2 : t2;
           }
           static normalizeAxes(t2, e2) {
-            return t2.map((t3) => this.normalizeAxis(t3, e2));
+            return t2.map(((t3) => this.normalizeAxis(t3, e2)));
           }
           static incrementIndex(t2, e2, n2) {
             if (0 === e2.length || 0 === t2.length) throw new Error("Index incrementing unsupported for scalar Tensor");
@@ -12311,14 +12311,14 @@ ${t2}`);
             return r2;
           }
           static sortBasedOnPerm(t2, e2) {
-            return e2 ? e2.map((e3) => t2[e3]) : t2.slice().reverse();
+            return e2 ? e2.map(((e3) => t2[e3])) : t2.slice().reverse();
           }
           static padShape(t2, e2) {
             const n2 = t2.length;
-            return t2.map((t3, r2) => t3 + e2[r2] + e2[r2 + n2]);
+            return t2.map(((t3, r2) => t3 + e2[r2] + e2[r2 + n2]));
           }
           static areEqual(t2, e2) {
-            return t2.length === e2.length && t2.every((t3, n2) => t3 === e2[n2]);
+            return t2.length === e2.length && t2.every(((t3, n2) => t3 === e2[n2]));
           }
           static validateDimsAndCalcSize(t2) {
             if (t2.length > 6) throw new TypeError("Only rank 0 to 6 is supported for tensor shape.");
@@ -12332,7 +12332,7 @@ ${t2}`);
           }
           static flattenShape(t2, e2) {
             e2 < 0 && (e2 += t2.length);
-            const n2 = t2.reduce((t3, e3) => t3 * e3, 1), r2 = t2.slice(e2).reduce((t3, e3) => t3 * e3, 1);
+            const n2 = t2.reduce(((t3, e3) => t3 * e3), 1), r2 = t2.slice(e2).reduce(((t3, e3) => t3 * e3), 1);
             return [n2 / r2, r2];
           }
           static squeezeShape(t2, e2) {
@@ -12413,7 +12413,7 @@ ${t2}`);
         class h {
           static calcReduce(t2, e2, n2, r2, i2) {
             const o2 = t2.dims.slice(0);
-            0 === e2.length && o2.forEach((t3, n3) => e2.push(n3));
+            0 === e2.length && o2.forEach(((t3, n3) => e2.push(n3)));
             const a2 = h.calcReduceShape(o2, e2, true), u2 = f.size(a2), l2 = new s.Tensor(a2, t2.type), p2 = f.computeStrides(a2), d2 = f.computeStrides(o2), g2 = new Array(o2.length);
             for (let n3 = 0; n3 < u2; n3++) {
               const a3 = f.offsetToIndices(n3, p2);
@@ -12431,7 +12431,7 @@ ${t2}`);
           static calcReduceShape(t2, e2, n2) {
             const r2 = t2.slice();
             for (let t3 = 0; t3 < e2.length; t3++) r2[e2[t3]] = n2 ? 1 : 0;
-            return r2.filter((t3) => 0 !== t3);
+            return r2.filter(((t3) => 0 !== t3));
           }
         }
         e.ReduceUtil = h;
@@ -12503,7 +12503,7 @@ ${t2}`);
             if (r.has(t2)) throw new Error("Circular reference in options");
             r.add(t2);
           }
-          Object.entries(t2).forEach(([t3, o]) => {
+          Object.entries(t2).forEach((([t3, o]) => {
             const a = n ? n + t3 : t3;
             if ("object" == typeof o) (0, e.iterateExtraOptions)(o, a + ".", r, i);
             else if ("string" == typeof o || "number" == typeof o) i(a, o.toString());
@@ -12511,7 +12511,7 @@ ${t2}`);
               if ("boolean" != typeof o) throw new Error("Can't handle extra config type: " + typeof o);
               i(a, o ? "1" : "0");
             }
-          });
+          }));
         };
       }, 2157: function(t, e, n) {
         "use strict";
@@ -12570,49 +12570,49 @@ ${t2}`);
             if (g) return;
             if (h) throw new Error("multiple calls to 'initWasm()' detected.");
             if (b) throw new Error("previous call to 'initWasm()' failed.");
-            return h = true, void 0 === s.env.wasm.wasmPaths && O && 0 !== O.indexOf("blob:") && (s.env.wasm.wasmPaths = O.substr(0, +O.lastIndexOf("/") + 1)), new Promise((t2, e2) => {
+            return h = true, void 0 === s.env.wasm.wasmPaths && O && 0 !== O.indexOf("blob:") && (s.env.wasm.wasmPaths = O.substr(0, +O.lastIndexOf("/") + 1)), new Promise(((t2, e2) => {
               null == p || p.terminate(), p = n(9710).Z(), p.onmessage = S, f = [t2, e2];
               const r2 = { type: "init-wasm", in: s.env.wasm };
               p.postMessage(r2);
-            });
+            }));
           }
           return (0, c.initializeWebAssembly)(s.env.wasm);
         }, e.initOrt = async (t2, e2) => {
-          if (l()) return T(), new Promise((n2, r2) => {
+          if (l()) return T(), new Promise(((n2, r2) => {
             d = [n2, r2];
             const i2 = { type: "init-ort", in: { numThreads: t2, loggingLevel: e2 } };
             p.postMessage(i2);
-          });
+          }));
           u.initOrt(t2, e2);
-        }, e.createSessionAllocate = async (t2) => l() ? (T(), new Promise((e2, n2) => {
+        }, e.createSessionAllocate = async (t2) => l() ? (T(), new Promise(((e2, n2) => {
           m.push([e2, n2]);
           const r2 = { type: "create_allocate", in: { model: t2 } };
           p.postMessage(r2, [t2.buffer]);
-        })) : u.createSessionAllocate(t2), e.createSessionFinalize = async (t2, e2) => l() ? (T(), new Promise((n2, r2) => {
+        }))) : u.createSessionAllocate(t2), e.createSessionFinalize = async (t2, e2) => l() ? (T(), new Promise(((n2, r2) => {
           y.push([n2, r2]);
           const i2 = { type: "create_finalize", in: { modeldata: t2, options: e2 } };
           p.postMessage(i2);
-        })) : u.createSessionFinalize(t2, e2), e.createSession = async (t2, e2) => l() ? (T(), new Promise((n2, r2) => {
+        }))) : u.createSessionFinalize(t2, e2), e.createSession = async (t2, e2) => l() ? (T(), new Promise(((n2, r2) => {
           _.push([n2, r2]);
           const i2 = { type: "create", in: { model: t2, options: e2 } };
           p.postMessage(i2, [t2.buffer]);
-        })) : u.createSession(t2, e2), e.releaseSession = async (t2) => {
-          if (l()) return T(), new Promise((e2, n2) => {
+        }))) : u.createSession(t2, e2), e.releaseSession = async (t2) => {
+          if (l()) return T(), new Promise(((e2, n2) => {
             v.push([e2, n2]);
             const r2 = { type: "release", in: t2 };
             p.postMessage(r2);
-          });
+          }));
           u.releaseSession(t2);
-        }, e.run = async (t2, e2, n2, r2, i2) => l() ? (T(), new Promise((o2, a2) => {
+        }, e.run = async (t2, e2, n2, r2, i2) => l() ? (T(), new Promise(((o2, a2) => {
           w.push([o2, a2]);
           const s2 = { type: "run", in: { sessionId: t2, inputIndices: e2, inputs: n2, outputIndices: r2, options: i2 } };
           p.postMessage(s2, u.extractTransferableBuffers(n2));
-        })) : u.run(t2, e2, n2, r2, i2), e.endProfiling = async (t2) => {
-          if (l()) return T(), new Promise((e2, n2) => {
+        }))) : u.run(t2, e2, n2, r2, i2), e.endProfiling = async (t2) => {
+          if (l()) return T(), new Promise(((e2, n2) => {
             x.push([e2, n2]);
             const r2 = { type: "end-profiling", in: t2 };
             p.postMessage(r2);
-          });
+          }));
           u.endProfiling(t2);
         };
       }, 586: (t, e, n) => {
@@ -12631,10 +12631,10 @@ ${t2}`);
             void 0 === (null == t2 ? void 0 : t2.terminate) && (s.terminate = false);
             let o2 = 0;
             if (void 0 !== (null == t2 ? void 0 : t2.tag) && (o2 = (0, i.allocWasmString)(t2.tag, a)), n2 = e2._OrtCreateRunOptions(s.logSeverityLevel, s.logVerbosityLevel, !!s.terminate, o2), 0 === n2) throw new Error("Can't create run options");
-            return void 0 !== (null == t2 ? void 0 : t2.extra) && (0, r.iterateExtraOptions)(t2.extra, "", /* @__PURE__ */ new WeakSet(), (t3, r2) => {
+            return void 0 !== (null == t2 ? void 0 : t2.extra) && (0, r.iterateExtraOptions)(t2.extra, "", /* @__PURE__ */ new WeakSet(), ((t3, r2) => {
               const o3 = (0, i.allocWasmString)(t3, a), s2 = (0, i.allocWasmString)(r2, a);
               if (0 !== e2._OrtAddRunConfigEntry(n2, o3, s2)) throw new Error(`Can't set a run config entry: ${t3} - ${r2}`);
-            }), [n2, a];
+            })), [n2, a];
           } catch (t3) {
             throw 0 !== n2 && e2._OrtReleaseRunOptions(n2), a.forEach(e2._free), t3;
           }
@@ -12679,18 +12679,18 @@ ${t2}`);
           }
           async run(t2, e2, n2) {
             const r2 = [], o2 = [];
-            Object.entries(t2).forEach((t3) => {
+            Object.entries(t2).forEach(((t3) => {
               const e3 = t3[0], n3 = t3[1], i2 = this.inputNames.indexOf(e3);
               if (-1 === i2) throw new Error(`invalid input '${e3}'`);
               r2.push(n3), o2.push(i2);
-            });
+            }));
             const s2 = [];
-            Object.entries(e2).forEach((t3) => {
+            Object.entries(e2).forEach(((t3) => {
               const e3 = t3[0], n3 = this.outputNames.indexOf(e3);
               if (-1 === n3) throw new Error(`invalid output '${e3}'`);
               s2.push(n3);
-            });
-            const u = await (0, a.run)(this.sessionId, o2, r2.map((t3) => [t3.type, t3.dims, t3.data]), s2, n2), c = {};
+            }));
+            const u = await (0, a.run)(this.sessionId, o2, r2.map(((t3) => [t3.type, t3.dims, t3.data])), s2, n2), c = {};
             for (let t3 = 0; t3 < u.length; t3++) c[this.outputNames[s2[t3]]] = new i.Tensor(u[t3][0], u[t3][2], u[t3][1]);
             return c;
           }
@@ -12762,10 +12762,10 @@ ${t2}`);
                 const a2 = (0, i.allocWasmString)(e4, n3);
                 if (0 !== (0, o.getInstance)()._OrtAppendExecutionProvider(t3, a2)) throw new Error(`Can't append execution provider: ${e4}`);
               }
-            })(n2, t2.executionProviders, a), void 0 !== (null == t2 ? void 0 : t2.extra) && (0, r.iterateExtraOptions)(t2.extra, "", /* @__PURE__ */ new WeakSet(), (t3, r2) => {
+            })(n2, t2.executionProviders, a), void 0 !== (null == t2 ? void 0 : t2.extra) && (0, r.iterateExtraOptions)(t2.extra, "", /* @__PURE__ */ new WeakSet(), ((t3, r2) => {
               const o2 = (0, i.allocWasmString)(t3, a), s2 = (0, i.allocWasmString)(r2, a);
               if (0 !== e2._OrtAddSessionConfigEntry(n2, o2, s2)) throw new Error(`Can't set a session config entry: ${t3} - ${r2}`);
-            }), [n2, a];
+            })), [n2, a];
           } catch (t3) {
             throw 0 !== n2 && e2._OrtReleaseSessionOptions(n2), a.forEach(e2._free), t3;
           }
@@ -12926,7 +12926,7 @@ ${t2}`);
               const c2 = f.stackSave(), l2 = f.stackAlloc(4 * r2.length);
               try {
                 let t5 = l2 / 4;
-                r2.forEach((e4) => f.HEAP32[t5++] = e4);
+                r2.forEach(((e4) => f.HEAP32[t5++] = e4));
                 const n3 = f._OrtCreateTensor(u(e3), a3, s3, l2, r2.length);
                 if (0 === n3) throw new Error("Can't create a tensor");
                 w.push(n3);
@@ -12952,7 +12952,7 @@ ${t2}`);
                   const s3 = f.HEAPU32[t5++], u3 = f.HEAPU32[t5++], d3 = [];
                   for (let t6 = 0; t6 < u3; t6++) d3.push(f.HEAPU32[s3 / 4 + t6]);
                   f._OrtFree(s3);
-                  const h2 = 0 === d3.length ? 1 : d3.reduce((t6, e4) => t6 * e4);
+                  const h2 = 0 === d3.length ? 1 : d3.reduce(((t6, e4) => t6 * e4));
                   if (i3 = c(a3), "string" === i3) {
                     const t6 = [];
                     let e4 = o3 / 4;
@@ -13037,23 +13037,23 @@ ${t2}`);
           })(), g = "string" == typeof t2.wasmPaths ? t2.wasmPaths : void 0, b = h(false, o2), m = h(a2, o2), y = "object" == typeof t2.wasmPaths ? t2.wasmPaths[m] : void 0;
           let _ = false;
           const v = [];
-          if (e2 > 0 && v.push(new Promise((t3) => {
-            setTimeout(() => {
+          if (e2 > 0 && v.push(new Promise(((t3) => {
+            setTimeout((() => {
               _ = true, t3();
-            }, e2);
-          })), v.push(new Promise((t3, e3) => {
+            }), e2);
+          }))), v.push(new Promise(((t3, e3) => {
             const r3 = o2 ? c : u.default, i3 = { locateFile: (t4, e4) => o2 && t4.endsWith(".worker.js") && "undefined" != typeof Blob ? URL.createObjectURL(new Blob([n(4154)], { type: "text/javascript" })) : t4 === b ? null != y ? y : (null != g ? g : e4) + m : e4 + t4 };
             if (o2) if ("undefined" == typeof Blob) i3.mainScriptUrlOrBlob = s.join("/", "ort-wasm-threaded.js");
             else {
               const t4 = `var ortWasmThreaded=(function(){var _scriptDir;return ${r3.toString()}})();`;
               i3.mainScriptUrlOrBlob = new Blob([t4], { type: "text/javascript" });
             }
-            r3(i3).then((e4) => {
+            r3(i3).then(((e4) => {
               f = false, p = true, l = e4, t3();
-            }, (t4) => {
+            }), ((t4) => {
               f = false, d = true, e3(t4);
-            });
-          })), await Promise.race(v), _) throw new Error(`WebAssembly backend initializing failed due to timeout: ${e2}ms`);
+            }));
+          }))), await Promise.race(v), _) throw new Error(`WebAssembly backend initializing failed due to timeout: ${e2}ms`);
         }, e.getInstance = () => {
           if (p && l) return l;
           throw new Error("WebAssembly is not initialized yet.");
@@ -13354,19 +13354,19 @@ ${t2}`);
         return __webpack_require__.d(e, { a: e }), e;
       }, __webpack_require__.d = (t, e) => {
         for (var n in e) __webpack_require__.o(e, n) && !__webpack_require__.o(t, n) && Object.defineProperty(t, n, { enumerable: true, get: e[n] });
-      }, __webpack_require__.g = function() {
+      }, __webpack_require__.g = (function() {
         if ("object" == typeof globalThis) return globalThis;
         try {
           return this || new Function("return this")();
         } catch (t) {
           if ("object" == typeof window) return window;
         }
-      }(), __webpack_require__.o = (t, e) => Object.prototype.hasOwnProperty.call(t, e), __webpack_require__.r = (t) => {
+      })(), __webpack_require__.o = (t, e) => Object.prototype.hasOwnProperty.call(t, e), __webpack_require__.r = (t) => {
         "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(t, Symbol.toStringTag, { value: "Module" }), Object.defineProperty(t, "__esModule", { value: true });
       };
       var __webpack_exports__ = __webpack_require__(6018);
       return __webpack_exports__;
-    })());
+    })()));
   }
 });
 
@@ -24901,6 +24901,7 @@ var RawImage = class _RawImage {
     let newData = new Uint8ClampedArray(this.width * this.height * 1);
     switch (this.channels) {
       case 3:
+      // rgb to grayscale
       case 4:
         for (let i = 0, offset = 0; i < this.data.length; i += this.channels) {
           const red = this.data[i];
@@ -29391,9 +29392,9 @@ document.addEventListener("keydown", (ev) => {
 });
 var MAX_FILE_BYTES = 5 * 1024 * 1024;
 var FILE_TYPES = {
-  csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-ZWMW3R4Q.js") },
-  xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-TMF4LVCK.js") },
-  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-6ATIQEYH.js") }
+  csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-FFK2G2H4.js") },
+  xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-BBLAZWMQ.js") },
+  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-V4WQ4SPL.js") }
 };
 var chosenFile = null;
 var fileOutBlob = null;
@@ -29466,7 +29467,7 @@ async function processFile() {
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
-    const { anonymizeUnits } = await import("./anonymize-units-EG67AGYP.js");
+    const { anonymizeUnits } = await import("./anonymize-units-7FUVSLRA.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = adapter.extractTextUnits(input);
     if (!units.length) {
