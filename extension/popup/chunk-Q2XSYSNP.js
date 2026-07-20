@@ -1,5 +1,3 @@
-import "./chunk-TRTQSARU.js";
-
 // node_modules/pdfjs-dist/legacy/build/pdf.mjs
 var __webpack_modules__ = {
   /***/
@@ -31759,13 +31757,17 @@ async function applyMask(buffer, resultsById) {
 function stripMetadata(markdown) {
   return markdown;
 }
+
 export {
-  HEADING_SIZE_RATIO,
+  OPS,
+  GlobalWorkerOptions,
+  getDocument,
   PARAGRAPH_GAP_RATIO,
-  applyMask,
-  extractTextUnits,
+  HEADING_SIZE_RATIO,
   groupIntoLines,
   median,
   splitIntoColumns,
+  extractTextUnits,
+  applyMask,
   stripMetadata
 };

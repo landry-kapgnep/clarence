@@ -29394,11 +29394,11 @@ var MAX_FILE_BYTES = 5 * 1024 * 1024;
 var FILE_TYPES = {
   csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-FFK2G2H4.js") },
   xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-BBLAZWMQ.js") },
-  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-V4WQ4SPL.js") },
+  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-BALTMJED.js") },
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-O7JEE4X6.js"), outExt: ".md" },
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-3ZS7PXKR.js"), outExt: ".md" },
   // Images : metadataOnly → processFile() court-circuite le pipeline de
   // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
   // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
@@ -29448,6 +29448,7 @@ function setChosenFile(file) {
   $("fileSize").textContent = humanSize(file.size);
   $("fileChosen").hidden = false;
   $("fileOptions").hidden = !!FILE_TYPES[ext].metadataOnly;
+  $("pdfModeChoice").hidden = ext !== "pdf";
   $("fileAnalyzeBtn").textContent = FILE_TYPES[ext].metadataOnly ? "Nettoyer les m\xE9tadonn\xE9es" : "Anonymiser le fichier";
   $("fileResults").hidden = true;
   fileSetStatus("");
@@ -29461,6 +29462,20 @@ function fileMaskOptions(units) {
       avoid: (v) => joined.includes(v)
     })
   };
+}
+function showFileResults(mapping, copyable) {
+  lastMapping = mapping;
+  chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {
+  });
+  $("fileMappingWrap").innerHTML = mapping.length ? `<table>${mapping.map(
+    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
+  ).join("")}</table>` : "<p>Aucun masque actif.</p>";
+  $("fileSummary").textContent = mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.";
+  $("fileSummary").className = "status active";
+  $("fileResults").hidden = false;
+  $("fileCopyBtn").hidden = !copyable;
+  $("reinjectSection").hidden = false;
+  $("dragCard").hidden = !document.body.classList.contains("panel-mode");
 }
 async function processFile() {
   if (!chosenFile) return;
@@ -29485,7 +29500,25 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-7FUVSLRA.js");
+    if (ext === "pdf" && $("pdfModePreserve")?.checked) {
+      fileSetStatus("Chargement du mod\xE8le et reconstruction du PDF\u2026");
+      await ensureNER();
+      const { reconstructPdf } = await import("./pdf-reconstruct-ROWOBFFI.js");
+      const pdflib = await import("./es-LDLWYJWP.js");
+      const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
+        nerPipeline: nerPipe,
+        forceTerms: parseLines($("fileAlwaysMask")?.value),
+        disabledTypes: fileDisabledTypes,
+        keepValues: parseLines($("fileAlwaysKeep")?.value),
+        deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
+      });
+      fileOutBlob = new Blob([outBuf], { type: "application/pdf" });
+      fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, "-anonymise$1");
+      showFileResults(mapping2, false);
+      fileSetStatus(nerPipe ? "" : "D\xE9tection des noms indisponible \u2014 relis attentivement le PDF.", nerPipe ? "" : "error");
+      return;
+    }
+    const { anonymizeUnits } = await import("./anonymize-units-6FNJ4MPA.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -29508,18 +29541,7 @@ async function processFile() {
     const cleaned = await adapter.stripMetadata(masked);
     fileOutBlob = new Blob([cleaned], { type: kind.mime });
     fileOutName = kind.outExt ? chosenFile.name.replace(/\.[^.]+$/, "-anonymise" + kind.outExt) : chosenFile.name.replace(/(\.[^.]+)$/, "-anonymise$1");
-    lastMapping = mapping;
-    chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {
-    });
-    $("fileMappingWrap").innerHTML = mapping.length ? `<table>${mapping.map(
-      (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
-    ).join("")}</table>` : "<p>Aucun masque actif.</p>";
-    $("fileSummary").textContent = mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.";
-    $("fileSummary").className = "status active";
-    $("fileResults").hidden = false;
-    $("fileCopyBtn").hidden = !kind.mime.startsWith("text/");
-    $("reinjectSection").hidden = false;
-    $("dragCard").hidden = !document.body.classList.contains("panel-mode");
+    showFileResults(mapping, kind.mime.startsWith("text/"));
     if (!nerPipe) {
       fileSetStatus("D\xE9tection des noms indisponible (connexion requise au premier usage) \u2014 seules les donn\xE9es structur\xE9es ont \xE9t\xE9 rep\xE9r\xE9es. Relis attentivement le fichier.", "error");
     } else {

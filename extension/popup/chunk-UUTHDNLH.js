@@ -7,7 +7,6 @@ import {
   mergeEntities,
   selectActive
 } from "./chunk-KNKQTNVF.js";
-import "./chunk-TRTQSARU.js";
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\uE000\uE004\uE000";
@@ -58,6 +57,7 @@ async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabl
   const emptyResults = units.filter((u) => u.text.length === 0).map((u) => ({ id: u.id, text: u.text, maskedText: u.text, entities: [] }));
   return { results: [...results, ...emptyResults], mapping };
 }
+
 export {
   UNIT_SEP,
   anonymizeUnits

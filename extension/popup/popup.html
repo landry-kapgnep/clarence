@@ -87,6 +87,17 @@
         </div>
 
         <div id="fileOptions" hidden>
+        <div id="pdfModeChoice" hidden>
+          <div class="field-label">Sortie PDF</div>
+          <label class="hint" style="display:block;cursor:pointer;">
+            <input type="radio" name="pdfMode" id="pdfModeLight" value="md" checked>
+            Alléger (Markdown, texte seul — moins de tokens, images perdues)
+          </label>
+          <label class="hint" style="display:block;cursor:pointer;">
+            <input type="radio" name="pdfMode" id="pdfModePreserve" value="pdf">
+            Préserver mise en page + images (PDF reconstruit — rendu approximatif ; le contenu des images n'est pas anonymisé)
+          </label>
+        </div>
         <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
           <input type="checkbox" id="fileRealisticToggle">
           Pseudonymes (lieux, noms, contacts)

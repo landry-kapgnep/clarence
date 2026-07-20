@@ -446,6 +446,7 @@ function setChosenFile(file) {
   // contrairement au mode texte où elles se règlent après l'analyse. Sans objet
   // pour une image (metadataOnly : pas de détection de texte) → masquées.
   $('fileOptions').hidden = !!FILE_TYPES[ext].metadataOnly;
+  $('pdfModeChoice').hidden = ext !== 'pdf'; // choix Alléger/Préserver : PDF seul
   $('fileAnalyzeBtn').textContent = FILE_TYPES[ext].metadataOnly
     ? 'Nettoyer les métadonnées' : 'Anonymiser le fichier';
   $('fileResults').hidden = true;
@@ -461,6 +462,26 @@ function fileMaskOptions(units) {
       avoid: v => joined.includes(v)
     })
   };
+}
+
+// Affichage partagé du résultat fichier (chemin standard ET reconstruction PDF).
+// copyable : la sortie est-elle du texte copiable (md/csv) vs binaire (pdf/xlsx/docx).
+function showFileResults(mapping, copyable) {
+  lastMapping = mapping;
+  chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {});
+  $('fileMappingWrap').innerHTML = mapping.length
+    ? `<table>${mapping.map(m =>
+        `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
+      ).join('')}</table>`
+    : '<p>Aucun masque actif.</p>';
+  $('fileSummary').textContent = mapping.length
+    ? `${mapping.length} valeur(s) distincte(s) masquée(s), métadonnées nettoyées.`
+    : 'Aucune donnée sensible détectée — métadonnées nettoyées.';
+  $('fileSummary').className = 'status active';
+  $('fileResults').hidden = false;
+  $('fileCopyBtn').hidden = !copyable;
+  $('reinjectSection').hidden = false;
+  $('dragCard').hidden = !document.body.classList.contains('panel-mode');
 }
 
 async function processFile() {
@@ -487,6 +508,28 @@ async function processFile() {
       $('fileCopyBtn').hidden = true; // une image n'a pas de texte à copier
       $('dragCard').hidden = !document.body.classList.contains('panel-mode');
       fileSetStatus('');
+      return;
+    }
+
+    // PDF + choix « Préserver » : reconstruction d'un PDF (images gardées),
+    // chemin indépendant de l'extraction Markdown. Une seule passe de détection
+    // à l'intérieur de reconstructPdf. Sortie binaire .pdf (pas copiable texte).
+    if (ext === 'pdf' && $('pdfModePreserve')?.checked) {
+      fileSetStatus('Chargement du modèle et reconstruction du PDF…');
+      await ensureNER();
+      const { reconstructPdf } = await import('../files/pdf-reconstruct.js');
+      const pdflib = await import('pdf-lib');
+      const { buffer: outBuf, mapping } = await reconstructPdf(await chosenFile.arrayBuffer(), {
+        nerPipeline: nerPipe,
+        forceTerms: parseLines($('fileAlwaysMask')?.value),
+        disabledTypes: fileDisabledTypes,
+        keepValues: parseLines($('fileAlwaysKeep')?.value),
+        deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
+      });
+      fileOutBlob = new Blob([outBuf], { type: 'application/pdf' });
+      fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, '-anonymise$1');
+      showFileResults(mapping, false);
+      fileSetStatus(nerPipe ? '' : 'Détection des noms indisponible — relis attentivement le PDF.', nerPipe ? '' : 'error');
       return;
     }
 
@@ -528,29 +571,8 @@ async function processFile() {
       ? chosenFile.name.replace(/\.[^.]+$/, '-anonymise' + kind.outExt)
       : chosenFile.name.replace(/(\.[^.]+)$/, '-anonymise$1');
 
-    // Table de correspondance partagée avec la désanonymisation (mode texte).
-    lastMapping = mapping;
-    chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {});
-
-    $('fileMappingWrap').innerHTML = mapping.length
-      ? `<table>${mapping.map(m =>
-          `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
-        ).join('')}</table>`
-      : '<p>Aucun masque actif.</p>';
-    $('fileSummary').textContent = mapping.length
-      ? `${mapping.length} valeur(s) distincte(s) masquée(s), métadonnées nettoyées.`
-      : 'Aucune donnée sensible détectée — métadonnées nettoyées.';
-    $('fileSummary').className = 'status active';
-    $('fileResults').hidden = false;
-    // Copier : voie 100% fiable pour les sorties TEXTE (PDF→.md, CSV) — coller
-    // directement dans le chat, sans fichier ni injection. Caché pour les
-    // sorties binaires (XLSX/DOCX) où seul un fichier a du sens.
-    $('fileCopyBtn').hidden = !kind.mime.startsWith('text/');
-    $('reinjectSection').hidden = false; // désanonymisation dispo après traitement
-    // Glisser-déposer direct vers la page : n'a de sens qu'en mode panneau
-    // (coexiste avec la zone d'upload du site) — le popup de barre d'outils
-    // est une fenêtre séparée, on ne peut rien glisser vers la page depuis là.
-    $('dragCard').hidden = !document.body.classList.contains('panel-mode');
+    // Copier n'a de sens que pour une sortie TEXTE (md/csv), pas binaire.
+    showFileResults(mapping, kind.mime.startsWith('text/'));
 
     if (!nerPipe) {
       fileSetStatus('Détection des noms indisponible (connexion requise au premier usage) — seules les données structurées ont été repérées. Relis attentivement le fichier.', 'error');
