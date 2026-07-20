@@ -29480,6 +29480,7 @@ async function processFile() {
       $("fileSummary").textContent = "M\xE9tadonn\xE9es retir\xE9es (EXIF, GPS, appareil).";
       $("fileSummary").className = "status active";
       $("fileResults").hidden = false;
+      $("fileCopyBtn").hidden = true;
       $("dragCard").hidden = !document.body.classList.contains("panel-mode");
       fileSetStatus("");
       return;
@@ -29516,6 +29517,7 @@ async function processFile() {
     $("fileSummary").textContent = mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.";
     $("fileSummary").className = "status active";
     $("fileResults").hidden = false;
+    $("fileCopyBtn").hidden = !kind.mime.startsWith("text/");
     $("reinjectSection").hidden = false;
     $("dragCard").hidden = !document.body.classList.contains("panel-mode");
     if (!nerPipe) {
@@ -29563,11 +29565,21 @@ $("fileResetBtn").addEventListener("click", () => {
   $("fileChosen").hidden = true;
   $("fileOptions").hidden = true;
   $("fileResults").hidden = true;
+  $("fileCopyBtn").hidden = true;
   $("dragCard").hidden = true;
   fileSetStatus("");
 });
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
+$("fileCopyBtn").addEventListener("click", async () => {
+  if (!fileOutBlob) return;
+  await navigator.clipboard.writeText(await fileOutBlob.text());
+  $("fileCopyStatus").textContent = "Copi\xE9 \u2014 colle dans le chat.";
+  $("fileCopyStatus").className = "status active";
+  setTimeout(() => {
+    $("fileCopyStatus").textContent = "";
+  }, 4e3);
+});
 $("dragCard").addEventListener("click", () => {
   if (!fileOutBlob) return;
   window.parent.postMessage({ clarenceDeliverFile: { blob: fileOutBlob, name: fileOutName } }, "*");

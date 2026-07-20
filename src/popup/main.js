@@ -484,6 +484,7 @@ async function processFile() {
       $('fileSummary').textContent = 'Métadonnées retirées (EXIF, GPS, appareil).';
       $('fileSummary').className = 'status active';
       $('fileResults').hidden = false;
+      $('fileCopyBtn').hidden = true; // une image n'a pas de texte à copier
       $('dragCard').hidden = !document.body.classList.contains('panel-mode');
       fileSetStatus('');
       return;
@@ -541,6 +542,10 @@ async function processFile() {
       : 'Aucune donnée sensible détectée — métadonnées nettoyées.';
     $('fileSummary').className = 'status active';
     $('fileResults').hidden = false;
+    // Copier : voie 100% fiable pour les sorties TEXTE (PDF→.md, CSV) — coller
+    // directement dans le chat, sans fichier ni injection. Caché pour les
+    // sorties binaires (XLSX/DOCX) où seul un fichier a du sens.
+    $('fileCopyBtn').hidden = !kind.mime.startsWith('text/');
     $('reinjectSection').hidden = false; // désanonymisation dispo après traitement
     // Glisser-déposer direct vers la page : n'a de sens qu'en mode panneau
     // (coexiste avec la zone d'upload du site) — le popup de barre d'outils
@@ -600,11 +605,22 @@ $('fileResetBtn').addEventListener('click', () => {
   $('fileChosen').hidden = true;
   $('fileOptions').hidden = true;
   $('fileResults').hidden = true;
+  $('fileCopyBtn').hidden = true;
   $('dragCard').hidden = true;
   fileSetStatus('');
 });
 $('fileAnalyzeBtn').addEventListener('click', processFile);
 $('fileDownloadBtn').addEventListener('click', downloadFile);
+
+// Copier le texte de sortie (sorties texte uniquement — bouton caché sinon).
+// Voie fiable pour amener le contenu dans le LLM : coller, sans fichier.
+$('fileCopyBtn').addEventListener('click', async () => {
+  if (!fileOutBlob) return;
+  await navigator.clipboard.writeText(await fileOutBlob.text());
+  $('fileCopyStatus').textContent = 'Copié — colle dans le chat.';
+  $('fileCopyStatus').className = 'status active';
+  setTimeout(() => { $('fileCopyStatus').textContent = ''; }, 4000);
+});
 
 // Livraison directe du fichier anonymisé dans la page hôte. Le glisser-déposer
 // natif cross-frame (iframe extension → JS propriétaire du site) s'est avéré
