@@ -383,7 +383,13 @@ const FILE_TYPES = {
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf:  { mime: 'text/markdown;charset=utf-8', text: false, load: () => import('../files/pdf-adapter.js'), outExt: '.md' }
+  pdf:  { mime: 'text/markdown;charset=utf-8', text: false, load: () => import('../files/pdf-adapter.js'), outExt: '.md' },
+  // Images : metadataOnly → processFile() court-circuite le pipeline de
+  // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
+  // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
+  jpg:  { mime: 'image/jpeg', text: false, metadataOnly: true, load: () => import('../files/image-adapter.js') },
+  jpeg: { mime: 'image/jpeg', text: false, metadataOnly: true, load: () => import('../files/image-adapter.js') },
+  png:  { mime: 'image/png',  text: false, metadataOnly: true, load: () => import('../files/image-adapter.js') }
 };
 
 let chosenFile = null;
@@ -423,7 +429,7 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus('Format non pris en charge. Formats acceptés : CSV, Excel (.xlsx), Word (.docx), PDF (converti en .md).', 'error');
+    fileSetStatus('Format non pris en charge. Formats acceptés : CSV, Excel (.xlsx), Word (.docx), PDF (→ .md), images .jpg/.png (métadonnées).', 'error');
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -437,8 +443,11 @@ function setChosenFile(file) {
   $('fileChosen').hidden = false;
   // Options (pseudonymes/personnaliser) : révélées dès qu'un fichier est
   // choisi — elles doivent être réglées AVANT le traitement (flux en un clic),
-  // contrairement au mode texte où elles se règlent après l'analyse.
-  $('fileOptions').hidden = false;
+  // contrairement au mode texte où elles se règlent après l'analyse. Sans objet
+  // pour une image (metadataOnly : pas de détection de texte) → masquées.
+  $('fileOptions').hidden = !!FILE_TYPES[ext].metadataOnly;
+  $('fileAnalyzeBtn').textContent = FILE_TYPES[ext].metadataOnly
+    ? 'Nettoyer les métadonnées' : 'Anonymiser le fichier';
   $('fileResults').hidden = true;
   fileSetStatus('');
 }
@@ -463,6 +472,23 @@ async function processFile() {
   fileSetStatus('Lecture du fichier…');
   try {
     const adapter = await kind.load();
+
+    // Images : pas de PII textuelle, juste des métadonnées à retirer.
+    // Court-circuit total du pipeline détection/masquage/NER.
+    if (kind.metadataOnly) {
+      fileSetStatus('Nettoyage des métadonnées…');
+      const cleaned = await adapter.stripMetadata(await chosenFile.arrayBuffer(), { mime: kind.mime });
+      fileOutBlob = new Blob([cleaned], { type: kind.mime });
+      fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, '-nettoye$1');
+      $('fileMappingWrap').innerHTML = '<p>Image : métadonnées (EXIF/GPS/appareil) retirées. Le contenu visuel n\'est pas modifié.</p>';
+      $('fileSummary').textContent = 'Métadonnées retirées (EXIF, GPS, appareil).';
+      $('fileSummary').className = 'status active';
+      $('fileResults').hidden = false;
+      $('dragCard').hidden = !document.body.classList.contains('panel-mode');
+      fileSetStatus('');
+      return;
+    }
+
     const { anonymizeUnits } = await import('../files/anonymize-units.js');
     const input = kind.text
       // ignoreBOM: garde le ﻿ initial dans la chaîne pour que l'adaptateur
@@ -580,27 +606,31 @@ $('fileResetBtn').addEventListener('click', () => {
 $('fileAnalyzeBtn').addEventListener('click', processFile);
 $('fileDownloadBtn').addEventListener('click', downloadFile);
 
-// Glisser le fichier anonymisé vers l'extérieur (zone d'upload du site).
-// Deux mécanismes posés ensemble pour maximiser la compatibilité :
-//  - DownloadURL (spécifique Chromium) : la façon standard de faire glisser un
-//    fichier GÉNÉRÉ hors de la page — Chrome matérialise le blob à la volée.
-//    C'est ce qui a la meilleure chance de traverser la frontière iframe → page
-//    hôte (le curseur « interdit » venait de items.add seul, souvent rejeté).
-//  - items.add(File) en repli, pour les cibles qui lisent dataTransfer.files.
-// NB : reste tributaire de la cible (certaines zones d'upload n'acceptent que
-// les fichiers issus du disque) — limite navigateur, pas contournable côté nous.
-let dragUrl = null;
-$('dragCard').addEventListener('dragstart', ev => {
-  if (!fileOutBlob) { ev.preventDefault(); return; }
-  if (dragUrl) URL.revokeObjectURL(dragUrl);
-  dragUrl = URL.createObjectURL(fileOutBlob);
-  const mime = fileOutBlob.type || 'application/octet-stream';
-  ev.dataTransfer.setData('DownloadURL', `${mime}:${fileOutName}:${dragUrl}`);
-  try { ev.dataTransfer.items.add(new File([fileOutBlob], fileOutName, { type: mime })); } catch {}
-  ev.dataTransfer.effectAllowed = 'copy';
+// Livraison directe du fichier anonymisé dans la page hôte. Le glisser-déposer
+// natif cross-frame (iframe extension → JS propriétaire du site) s'est avéré
+// peu fiable après deux tentatives (items.add seul, puis +DownloadURL) —
+// abandon de cette voie. À la place : le CONTENT SCRIPT (qui tourne dans le
+// contexte réel de la page, contrairement à cette iframe) assigne directement
+// le fichier à un <input type="file"> trouvé sur la page — ne dépend d'aucun
+// geste de glisser. Déclenché par clic, pas par glisser (plus fiable, plus
+// visible). Limite assumée : si le site ne rend son input qu'après ouverture
+// de son propre menu "joindre un fichier", la livraison échoue — communiqué
+// honnêtement, pas caché.
+$('dragCard').addEventListener('click', () => {
+  if (!fileOutBlob) return;
+  window.parent.postMessage({ clarenceDeliverFile: { blob: fileOutBlob, name: fileOutName } }, '*');
+  fileSetStatus('Tentative de livraison dans la page…');
 });
-$('dragCard').addEventListener('dragend', () => {
-  if (dragUrl) { URL.revokeObjectURL(dragUrl); dragUrl = null; }
+
+window.addEventListener('message', ev => {
+  const result = ev.data && ev.data.clarenceDeliverResult;
+  if (!result) return;
+  fileSetStatus(
+    result.delivered
+      ? 'Fichier transmis à la page — vérifie qu\'il apparaît bien avant d\'envoyer.'
+      : 'La page n\'a pas de zone de dépôt détectable — utilise le téléchargement classique.',
+    result.delivered ? 'active' : 'error'
+  );
 });
 
 const dropzone = $('dropzone');

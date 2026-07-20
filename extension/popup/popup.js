@@ -29398,7 +29398,13 @@ var FILE_TYPES = {
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-TRYQUDCK.js"), outExt: ".md" }
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-TRYQUDCK.js"), outExt: ".md" },
+  // Images : metadataOnly → processFile() court-circuite le pipeline de
+  // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
+  // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
+  jpg: { mime: "image/jpeg", text: false, metadataOnly: true, load: () => import("./image-adapter-MDL4JKAD.js") },
+  jpeg: { mime: "image/jpeg", text: false, metadataOnly: true, load: () => import("./image-adapter-MDL4JKAD.js") },
+  png: { mime: "image/png", text: false, metadataOnly: true, load: () => import("./image-adapter-MDL4JKAD.js") }
 };
 var chosenFile = null;
 var fileOutBlob = null;
@@ -29429,7 +29435,7 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus("Format non pris en charge. Formats accept\xE9s : CSV, Excel (.xlsx), Word (.docx), PDF (converti en .md).", "error");
+    fileSetStatus("Format non pris en charge. Formats accept\xE9s : CSV, Excel (.xlsx), Word (.docx), PDF (\u2192 .md), images .jpg/.png (m\xE9tadonn\xE9es).", "error");
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -29441,7 +29447,8 @@ function setChosenFile(file) {
   $("fileName").textContent = file.name;
   $("fileSize").textContent = humanSize(file.size);
   $("fileChosen").hidden = false;
-  $("fileOptions").hidden = false;
+  $("fileOptions").hidden = !!FILE_TYPES[ext].metadataOnly;
+  $("fileAnalyzeBtn").textContent = FILE_TYPES[ext].metadataOnly ? "Nettoyer les m\xE9tadonn\xE9es" : "Anonymiser le fichier";
   $("fileResults").hidden = true;
   fileSetStatus("");
 }
@@ -29464,6 +29471,19 @@ async function processFile() {
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
+    if (kind.metadataOnly) {
+      fileSetStatus("Nettoyage des m\xE9tadonn\xE9es\u2026");
+      const cleaned2 = await adapter.stripMetadata(await chosenFile.arrayBuffer(), { mime: kind.mime });
+      fileOutBlob = new Blob([cleaned2], { type: kind.mime });
+      fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, "-nettoye$1");
+      $("fileMappingWrap").innerHTML = "<p>Image : m\xE9tadonn\xE9es (EXIF/GPS/appareil) retir\xE9es. Le contenu visuel n'est pas modifi\xE9.</p>";
+      $("fileSummary").textContent = "M\xE9tadonn\xE9es retir\xE9es (EXIF, GPS, appareil).";
+      $("fileSummary").className = "status active";
+      $("fileResults").hidden = false;
+      $("dragCard").hidden = !document.body.classList.contains("panel-mode");
+      fileSetStatus("");
+      return;
+    }
     const { anonymizeUnits } = await import("./anonymize-units-7FUVSLRA.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
@@ -29548,27 +29568,18 @@ $("fileResetBtn").addEventListener("click", () => {
 });
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
-var dragUrl = null;
-$("dragCard").addEventListener("dragstart", (ev) => {
-  if (!fileOutBlob) {
-    ev.preventDefault();
-    return;
-  }
-  if (dragUrl) URL.revokeObjectURL(dragUrl);
-  dragUrl = URL.createObjectURL(fileOutBlob);
-  const mime = fileOutBlob.type || "application/octet-stream";
-  ev.dataTransfer.setData("DownloadURL", `${mime}:${fileOutName}:${dragUrl}`);
-  try {
-    ev.dataTransfer.items.add(new File([fileOutBlob], fileOutName, { type: mime }));
-  } catch {
-  }
-  ev.dataTransfer.effectAllowed = "copy";
+$("dragCard").addEventListener("click", () => {
+  if (!fileOutBlob) return;
+  window.parent.postMessage({ clarenceDeliverFile: { blob: fileOutBlob, name: fileOutName } }, "*");
+  fileSetStatus("Tentative de livraison dans la page\u2026");
 });
-$("dragCard").addEventListener("dragend", () => {
-  if (dragUrl) {
-    URL.revokeObjectURL(dragUrl);
-    dragUrl = null;
-  }
+window.addEventListener("message", (ev) => {
+  const result = ev.data && ev.data.clarenceDeliverResult;
+  if (!result) return;
+  fileSetStatus(
+    result.delivered ? "Fichier transmis \xE0 la page \u2014 v\xE9rifie qu'il appara\xEEt bien avant d'envoyer." : "La page n'a pas de zone de d\xE9p\xF4t d\xE9tectable \u2014 utilise le t\xE9l\xE9chargement classique.",
+    result.delivered ? "active" : "error"
+  );
 });
 var dropzone = $("dropzone");
 for (const evName of ["dragenter", "dragover"]) {

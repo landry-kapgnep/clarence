@@ -1,7 +1,41 @@
 // Content script : badge + bouton flottant ouvrant Clarence dans un panneau
-// iframe. Ne lit RIEN de la page. Le seul message accepté depuis l'iframe est
-// sa hauteur de contenu (nombre), pour dimensionner le panneau sans scroll.
+// iframe. Ne lit RIEN de la page. Deux messages acceptés depuis l'iframe :
+// sa hauteur de contenu (dimensionnement sans scroll) et une demande de
+// livraison du fichier anonymisé DANS la page (voir deliverFileToPage — le
+// glisser-déposer natif cross-frame vers un site tiers s'est avéré peu fiable
+// après deux tentatives, cette méthode contourne le glisser entièrement).
 chrome.runtime.sendMessage({ clarence: 'ai-site' });
+
+// Injecte un fichier (déjà anonymisé, reçu de l'iframe) directement dans la
+// page hôte — sans passer par un geste de glisser natif, peu fiable entre
+// une iframe d'extension et le JS propriétaire d'un site tiers.
+// Deux méthodes, dans l'ordre de fiabilité :
+//  1. Assigner directement .files d'un <input type="file"> trouvé sur la
+//     page (technique standard d'automatisation ; ne dépend d'aucun geste
+//     utilisateur ni d'un événement "trusted"). On NE filtre PAS sur la
+//     visibilité : beaucoup de sites cachent leur input natif (display:none)
+//     derrière un bouton stylé, c'est justement la cible qu'on veut.
+//  2. Repli : un événement 'drop' synthétique sur le corps de la page — best
+//     effort, certains sites l'ignorent s'ils vérifient event.isTrusted.
+// Limite assumée : si le site ne rend son input qu'après ouverture de son
+// propre menu "joindre un fichier", rien n'est trouvable tant que l'utilisateur
+// n'a pas cliqué sur ce menu côté site.
+function deliverFileToPage(blob, name) {
+  const file = new File([blob], name, { type: blob.type || 'application/octet-stream' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+
+  const input = document.querySelector('input[type="file"]');
+  if (input) {
+    input.files = dt.files;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return { delivered: true, method: 'input' };
+  }
+
+  document.body.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  return { delivered: true, method: 'drop-fallback' };
+}
 
 const HOST_ID = 'clarence-host';
 if (!document.getElementById(HOST_ID)) {
@@ -105,12 +139,18 @@ btn.style.cursor = 'pointer';
   });
 
   // Auto-dimensionnement : l'iframe annonce la hauteur de son contenu
-  // (uniquement un nombre, borné par max-height côté CSS).
+  // (uniquement un nombre, borné par max-height côté CSS). Et demande de
+  // livraison directe d'un fichier anonymisé dans la page (voir plus haut).
   window.addEventListener('message', ev => {
     if (ev.source !== frame.contentWindow) return; // uniquement notre panneau
     const h = ev.data && ev.data.clarencePanelHeight;
     if (typeof h === 'number' && h > 0) {
       frame.style.height = Math.ceil(h) + 'px';
+    }
+    const deliver = ev.data && ev.data.clarenceDeliverFile;
+    if (deliver && deliver.blob) {
+      const result = deliverFileToPage(deliver.blob, deliver.name);
+      frame.contentWindow.postMessage({ clarenceDeliverResult: result }, '*');
     }
   });
 

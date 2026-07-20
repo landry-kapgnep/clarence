@@ -73,9 +73,9 @@
       <div id="fileMode" hidden>
         <label class="field-label" for="input"></label> Anonymiser fichier
         <div class="dropzone" id="dropzone">
-          <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf" hidden>
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf,.jpg,.jpeg,.png" hidden>
           <p class="dropzone-main">Glisse ou <button class="link-btn" id="filePickBtn">parcours tes fichiers</button></p>
-          <p class="hint">CSV, .xlsx, .docx, .pdf (converti en .md)</p>
+          <p class="hint">CSV, .xlsx, .docx, .pdf (→ .md), images .jpg/.png (métadonnées)</p>
         </div>
 
         <div id="fileChosen" hidden>
@@ -112,10 +112,10 @@
           <div class="controls">
             <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png">Télécharger le fichier propre</button>
           </div>
-          <div id="dragCard" class="drag-card" draggable="true" hidden>
+          <button id="dragCard" class="drag-card" hidden>
             <span class="drag-card-icon">⇢</span>
-            <span>Glissez et déposer le fichier</span>
-          </div>
+            <span>Envoyer directement dans la page</span>
+          </button>
           <p class="status" id="fileSummary"></p>
           <details>
             <summary>Données masquées</summary>
