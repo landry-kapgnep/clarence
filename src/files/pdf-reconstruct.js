@@ -69,6 +69,71 @@ function paragraphToRuns(para, id) {
   return { id, text: joinRuns(runs).text, runs };
 }
 
+// Multiplication de deux matrices affines 2D [a,b,c,d,e,f].
+function matMul(a, b) {
+  return [
+    a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1],
+    a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5]
+  ];
+}
+
+// Position/taille de chaque image via interprétation de la matrice de
+// transformation courante (CTM) sur la liste d'opérateurs — validé au spike.
+// Une image occupe le carré unité [0,1]² transformé par le CTM au moment du
+// paint. Défensif : toute image problématique est simplement ignorée (les
+// images sont un bonus, la sécurité tient sur le TEXTE reconstruit).
+async function extractImages(page) {
+  const out = [];
+  let opList;
+  try { opList = await page.getOperatorList(); } catch { return out; }
+  const OPS = pdfjsLib.OPS;
+  let ctm = [1, 0, 0, 1, 0, 0];
+  const stack = [];
+  const refs = [];
+  for (let i = 0; i < opList.fnArray.length; i++) {
+    const fn = opList.fnArray[i], args = opList.argsArray[i];
+    if (fn === OPS.save) stack.push(ctm.slice());
+    else if (fn === OPS.restore) ctm = stack.pop() || [1, 0, 0, 1, 0, 0];
+    else if (fn === OPS.transform) ctm = matMul(ctm, args);
+    else if (fn === OPS.paintImageXObject || fn === OPS.paintJpegXObject) {
+      // min-corner + dimensions absolues : gère le retournement vertical
+      // classique des images PDF (le bitmap pdfjs est déjà décodé à l'endroit).
+      const x = Math.min(ctm[4], ctm[4] + ctm[0]);
+      const y = Math.min(ctm[5], ctm[5] + ctm[3]);
+      refs.push({ name: args[0], x, y, w: Math.abs(ctm[0]), h: Math.abs(ctm[3]) });
+    }
+  }
+  for (const ref of refs) {
+    const bitmap = await new Promise(res => {
+      try { page.objs.get(ref.name, obj => res(obj || null)); } catch { res(null); }
+    }).catch(() => null);
+    if (bitmap && bitmap.data && bitmap.width && bitmap.height && ref.w > 1 && ref.h > 1) {
+      out.push({ ...ref, bitmap });
+    }
+  }
+  return out;
+}
+
+// Ré-encode un bitmap pdfjs (kind RGBA/RGB/gris) en PNG via canvas. NAVIGATEUR
+// UNIQUEMENT (OffscreenCanvas) — comme image-adapter.js. Strippe toute
+// métadonnée au passage. Retourne un ArrayBuffer PNG, ou null si indisponible.
+async function bitmapToPng(bitmap) {
+  if (typeof OffscreenCanvas === 'undefined') return null;
+  const { width, height, kind, data } = bitmap;
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  if (kind === 3) { // RGBA_32BPP
+    rgba.set(data.subarray(0, rgba.length));
+  } else if (kind === 2) { // RGB_24BPP
+    for (let i = 0, j = 0; i < width * height; i++) {
+      rgba[j++] = data[i * 3]; rgba[j++] = data[i * 3 + 1]; rgba[j++] = data[i * 3 + 2]; rgba[j++] = 255;
+    }
+  } else { return null; } // 1bpp gris et autres : non gérés en v1 (rare)
+  const canvas = new OffscreenCanvas(width, height);
+  canvas.getContext('2d').putImageData(new ImageData(rgba, width, height), 0, 0);
+  return (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer();
+}
+
 // Ré-extrait la structure géométrique page par page (convention stateless ;
 // buffer.slice(0) car pdfjs détache — cf. gotcha CLAUDE.md).
 async function parsePages(buffer) {
@@ -82,6 +147,7 @@ async function parsePages(buffer) {
     const page = await pdf.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1 });
     const textContent = await page.getTextContent();
+    const images = await extractImages(page);
     const allLines = groupIntoLines(textContent.items);
     const dominantSize = median(allLines.map(l => l.size));
 
@@ -93,7 +159,7 @@ async function parsePages(buffer) {
         units.push(paragraphToRuns(para, `page${pageNum}#para${paraIdx++}`));
       }
     }
-    pages.push({ pageNum, width: viewport.width, height: viewport.height, units });
+    pages.push({ pageNum, width: viewport.width, height: viewport.height, units, images });
   }
   return pages;
 }
@@ -122,6 +188,19 @@ export async function reconstructPdf(buffer, opts = {}) {
 
   for (const page of pages) {
     const pdfPage = pdfDoc.addPage([page.width, page.height]);
+
+    // Images d'abord (en fond), texte par-dessus. Défensif : une image qui
+    // échoue (format non géré, canvas absent en Node) est ignorée sans
+    // interrompre la reconstruction du texte.
+    for (const img of page.images || []) {
+      try {
+        const png = await bitmapToPng(img.bitmap);
+        if (!png) continue;
+        const embedded = await pdfDoc.embedPng(png);
+        pdfPage.drawImage(embedded, { x: img.x, y: img.y, width: img.w, height: img.h });
+      } catch { /* image ignorée, jamais bloquant */ }
+    }
+
     for (const unit of page.units) {
       const masked = distributeEntitiesOverRuns(unit.runs, entitiesById.get(unit.id) || []);
       unit.runs.forEach((run, i) => {

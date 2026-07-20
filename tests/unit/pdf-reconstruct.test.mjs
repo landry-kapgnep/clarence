@@ -47,6 +47,22 @@ test('reconstruction : aucune PII d\'origine ne subsiste, placeholders présents
   assert.ok(mapping.length >= 2, 'la table de correspondance doit lister les valeurs masquées');
 });
 
+test('reconstruction : un PDF avec image ne plante pas ; texte anonymisé (images gérées en navigateur uniquement)', async () => {
+  // 1x1 PNG. En Node (pas d'OffscreenCanvas), l'image est ignorée SANS casser
+  // la reconstruction du texte — la sécurité tient sur le texte, pas l'image.
+  const redPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const png = await doc.embedPng(redPng);
+  const page = doc.addPage([400, 300]);
+  page.drawText('Email a@b.fr avant image', { x: 40, y: 250, size: 12, font });
+  page.drawImage(png, { x: 100, y: 100, width: 120, height: 80 });
+  const { buffer } = await reconstructPdf((await doc.save()).buffer, { deps });
+  const text = await extractText(buffer);
+  assert.equal(text.includes('a@b.fr'), false);
+  assert.match(text, /\[EMAIL_1\]/);
+});
+
 test('reconstruction : caractères typographiques hors WinAnsi ne font pas planter', async () => {
   // guillemets courbes, tiret cadratin, points de suspension, œ
   const inBuf = await makePdf(['Réunion « stratégie » — cœur du sujet… voir a@b.fr']);
