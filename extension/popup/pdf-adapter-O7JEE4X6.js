@@ -31656,13 +31656,16 @@ function groupIntoLines(items) {
       line = { y, parts: [] };
       lines.push(line);
     }
-    line.parts.push({ x: item.transform[4], str: item.str, size: fontSizeOf(item) });
+    line.parts.push({ x: item.transform[4], y, str: item.str, size: fontSizeOf(item) });
   }
   lines.sort((a, b) => b.y - a.y);
   return lines.map((l) => {
     const parts = [...l.parts].sort((a, b) => a.x - b.x);
     return {
       y: l.y,
+      // parts exposé pour la reconstruction PDF (pdf-reconstruct.js) : dessiner
+      // chaque fragment à sa position. Le chemin Markdown, lui, n'utilise que text.
+      parts,
       text: parts.map((p) => p.str).join(" ").replace(/\s+/g, " ").trim(),
       // Taille dominante de la ligne : la plus fréquente parmi ses fragments.
       size: parts.map((p) => p.size).sort((a, b) => a - b)[Math.floor(parts.length / 2)]
@@ -31757,7 +31760,12 @@ function stripMetadata(markdown) {
   return markdown;
 }
 export {
+  HEADING_SIZE_RATIO,
+  PARAGRAPH_GAP_RATIO,
   applyMask,
   extractTextUnits,
+  groupIntoLines,
+  median,
+  splitIntoColumns,
   stripMetadata
 };

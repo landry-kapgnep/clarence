@@ -29,11 +29,11 @@ if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
 // Un écart vertical supérieur à ce multiple de la taille de police de la
 // ligne précédente marque un nouveau paragraphe (ligne vide en Markdown) ;
 // en dessous, c'est un simple retour à la ligne dans le même paragraphe.
-const PARAGRAPH_GAP_RATIO = 1.6;
+export const PARAGRAPH_GAP_RATIO = 1.6;
 // Une ligne dont la police dépasse ce ratio par rapport à la taille
 // dominante de la page est traitée comme un titre (heuristique best-effort,
 // jamais bloquante si elle se trompe).
-const HEADING_SIZE_RATIO = 1.3;
+export const HEADING_SIZE_RATIO = 1.3;
 
 function fontSizeOf(item) {
   // item.transform = [a,b,c,d,e,f] ; pour du texte non pivoté, |d| donne la
@@ -47,20 +47,23 @@ function fontSizeOf(item) {
 // une même ligne : une ligne accolée en trop est cosmétique, un mot collé
 // risquerait de fusionner deux valeurs sensibles ou d'en manquer une —
 // priorité zéro-fuite, comme pour les IBAN/NIR à structure valide (regex-detect.js).
-function groupIntoLines(items) {
+export function groupIntoLines(items) {
   const lines = [];
   for (const item of items) {
     if (!item.str) continue;
     const y = item.transform[5];
     let line = lines.find(l => Math.abs(l.y - y) < 3);
     if (!line) { line = { y, parts: [] }; lines.push(line); }
-    line.parts.push({ x: item.transform[4], str: item.str, size: fontSizeOf(item) });
+    line.parts.push({ x: item.transform[4], y, str: item.str, size: fontSizeOf(item) });
   }
   lines.sort((a, b) => b.y - a.y);
   return lines.map(l => {
     const parts = [...l.parts].sort((a, b) => a.x - b.x);
     return {
       y: l.y,
+      // parts exposé pour la reconstruction PDF (pdf-reconstruct.js) : dessiner
+      // chaque fragment à sa position. Le chemin Markdown, lui, n'utilise que text.
+      parts,
       text: parts.map(p => p.str).join(' ').replace(/\s+/g, ' ').trim(),
       // Taille dominante de la ligne : la plus fréquente parmi ses fragments.
       size: parts.map(p => p.size).sort((a, b) => a - b)[Math.floor(parts.length / 2)]
@@ -91,7 +94,7 @@ function groupIntoParagraphs(lines, dominantSize) {
   return paragraphs;
 }
 
-function median(nums) {
+export function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   return s[Math.floor(s.length / 2)] || 11;
 }
@@ -105,7 +108,7 @@ function median(nums) {
 //  - mono-colonne → [tousLesItems] ;
 //  - bi-colonne   → [bandePleineLargeur (titre), colonneGauche, colonneDroite].
 // Limite assumée : ne gère que 1 ou 2 colonnes (3+ colonnes très rares).
-function splitIntoColumns(items) {
+export function splitIntoColumns(items) {
   const withGeom = items.filter(i => i.str && i.str.trim()).map(i => ({
     item: i, x: i.transform[4], w: i.width || 0
   }));

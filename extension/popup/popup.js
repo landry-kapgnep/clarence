@@ -29398,7 +29398,7 @@ var FILE_TYPES = {
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-TRYQUDCK.js"), outExt: ".md" },
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-O7JEE4X6.js"), outExt: ".md" },
   // Images : metadataOnly → processFile() court-circuite le pipeline de
   // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
   // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
