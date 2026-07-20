@@ -25,16 +25,27 @@ function deliverFileToPage(blob, name) {
   const dt = new DataTransfer();
   dt.items.add(file);
 
-  const input = document.querySelector('input[type="file"]');
+  // Tous les <input type=file> de la page (visibles ou cachés — les sites
+  // cachent souvent le vrai input derrière un bouton stylé). On préfère celui
+  // dont l'attribut accept correspond au type du fichier, sinon le dernier
+  // (souvent le plus récemment monté = l'actif), sinon n'importe lequel.
+  const inputs = [...document.querySelectorAll('input[type="file"]')];
+  let input = inputs.find(i => {
+    const acc = (i.getAttribute('accept') || '').toLowerCase();
+    return acc && (acc.includes(file.type) || acc.split(',').some(a => name.toLowerCase().endsWith(a.trim().replace(/^\./, '.'))));
+  }) || inputs[inputs.length - 1] || null;
+
   if (input) {
     input.files = dt.files;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
-    return { delivered: true, method: 'input' };
+    return { delivered: true, method: 'input', inputs: inputs.length };
   }
 
+  // Repli : drop synthétique. Best effort — beaucoup de sites l'ignorent
+  // (event.isTrusted === false). Signalé comme non fiable dans le résultat.
   document.body.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
-  return { delivered: true, method: 'drop-fallback' };
+  return { delivered: false, method: 'drop-fallback', inputs: 0 };
 }
 
 const HOST_ID = 'clarence-host';

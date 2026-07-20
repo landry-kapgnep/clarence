@@ -29577,7 +29577,7 @@ window.addEventListener("message", (ev) => {
   const result = ev.data && ev.data.clarenceDeliverResult;
   if (!result) return;
   fileSetStatus(
-    result.delivered ? "Fichier transmis \xE0 la page \u2014 v\xE9rifie qu'il appara\xEEt bien avant d'envoyer." : "La page n'a pas de zone de d\xE9p\xF4t d\xE9tectable \u2014 utilise le t\xE9l\xE9chargement classique.",
+    result.delivered ? "Fichier transmis \xE0 la page \u2014 v\xE9rifie qu'il appara\xEEt bien avant d'envoyer." : "Aucun champ de fichier d\xE9tect\xE9 sur la page. Ouvre d'abord le menu \xAB joindre \xBB du site, ou utilise le t\xE9l\xE9chargement.",
     result.delivered ? "active" : "error"
   );
 });

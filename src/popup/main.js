@@ -628,7 +628,7 @@ window.addEventListener('message', ev => {
   fileSetStatus(
     result.delivered
       ? 'Fichier transmis à la page — vérifie qu\'il apparaît bien avant d\'envoyer.'
-      : 'La page n\'a pas de zone de dépôt détectable — utilise le téléchargement classique.',
+      : 'Aucun champ de fichier détecté sur la page. Ouvre d\'abord le menu « joindre » du site, ou utilise le téléchargement.',
     result.delivered ? 'active' : 'error'
   );
 });
