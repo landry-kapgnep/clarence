@@ -484,12 +484,29 @@ function showFileResults(mapping, copyable) {
   $('dragCard').hidden = !document.body.classList.contains('panel-mode');
 }
 
+// Loader "vaguelettes" dans le bouton pendant le traitement : le NER + la
+// reconstruction PDF tournent sur le thread principal (pas de worker, contrainte
+// CSP MV3) et peuvent prendre plusieurs secondes sur un gros fichier — sans
+// signal visible, l'utilisateur croit que c'est planté et abandonne.
+function setAnalyzeBtnLoading(loading) {
+  const btn = $('fileAnalyzeBtn');
+  if (loading) {
+    if (!btn.classList.contains('loading')) btn.dataset.label = btn.textContent;
+    btn.classList.add('loading');
+    btn.innerHTML = '<span class="dots"><i></i><i></i><i></i><i></i><i></i></span>';
+  } else {
+    btn.classList.remove('loading');
+    if (btn.dataset.label) btn.textContent = btn.dataset.label;
+  }
+}
+
 async function processFile() {
   if (!chosenFile) return;
   const ext = extOf(chosenFile.name);
   const kind = FILE_TYPES[ext];
   const btn = $('fileAnalyzeBtn');
   btn.disabled = true;
+  setAnalyzeBtnLoading(true);
   fileSetStatus('Lecture du fichier…');
   try {
     const adapter = await kind.load();
@@ -586,6 +603,7 @@ async function processFile() {
     $('dragCard').hidden = true;
     fileSetStatus('Le traitement a échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
   } finally {
+    setAnalyzeBtnLoading(false);
     btn.disabled = false;
   }
 }

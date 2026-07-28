@@ -75,6 +75,26 @@ diagnostic ; le CV testé n'a AUCUNE image raster — que du texte + vectoriel,
 
 ---
 
+## P3bis — Performance : traitement très lent sur PDF à images
+
+Constaté : un PDF avec images met un temps « incroyablement long » à traiter, au
+point que l'utilisateur croit à un plantage et abandonne. Deux causes :
+- **Reconstruction** : `getOperatorList()` décode TOUTES les images, puis
+  ré-encodage canvas + `embedPng` par image — coûteux sur de grosses/nombreuses
+  images. (Le mode Markdown, lui, ne touche pas aux images → rapide.)
+- **NER** : tourne sur le thread principal (pas de worker, contrainte CSP MV3),
+  double passe, par fenêtres — coût dominant sur un long document.
+
+Traité (partiel) : **loader animé "vaguelettes"** dans le bouton pendant le
+traitement (règle la PERCEPTION de plantage, pas la lenteur elle-même).
+
+Reste : la vraie accélération = **Web Worker** pour sortir le NER (et
+l'encodage image) du thread principal. Gros chantier (le NER a été gardé sur le
+thread principal justement à cause de la CSP MV3 / `numThreads=1`) — à cadrer à
+part. Pistes intermédiaires plus légères : traiter les images en parallèle
+(`Promise.all`), sauter le décodage image en mode Markdown (déjà le cas),
+plafonner la résolution des images ré-encodées.
+
 ## P4 — Divers reconstruction (cosmétique)
 
 - Glyphes non-WinAnsi (puces/icônes du CV) remplacés par `?` par

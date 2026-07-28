@@ -29477,12 +29477,24 @@ function showFileResults(mapping, copyable) {
   $("reinjectSection").hidden = false;
   $("dragCard").hidden = !document.body.classList.contains("panel-mode");
 }
+function setAnalyzeBtnLoading(loading) {
+  const btn = $("fileAnalyzeBtn");
+  if (loading) {
+    if (!btn.classList.contains("loading")) btn.dataset.label = btn.textContent;
+    btn.classList.add("loading");
+    btn.innerHTML = '<span class="dots"><i></i><i></i><i></i><i></i><i></i></span>';
+  } else {
+    btn.classList.remove("loading");
+    if (btn.dataset.label) btn.textContent = btn.dataset.label;
+  }
+}
 async function processFile() {
   if (!chosenFile) return;
   const ext = extOf(chosenFile.name);
   const kind = FILE_TYPES[ext];
   const btn = $("fileAnalyzeBtn");
   btn.disabled = true;
+  setAnalyzeBtnLoading(true);
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
@@ -29554,6 +29566,7 @@ async function processFile() {
     $("dragCard").hidden = true;
     fileSetStatus("Le traitement a \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
   } finally {
+    setAnalyzeBtnLoading(false);
     btn.disabled = false;
   }
 }
