@@ -166,6 +166,17 @@ var REGEX_PATTERNS = [
     validate: (m) => !/^(19|20)\d\d$/.test(m)
   },
   {
+    // Handle de profil social/pro : identifie directement une personne, et
+    // contient très souvent le nom en minuscules (« linkedin.com/in/landry-kapgnep »)
+    // — forme que le NER ne détecte pas. Déterministe : le domaine lève toute
+    // ambiguïté, donc aucun risque de faux positif sur de la prose.
+    // extract: seul le handle est masqué, le domaine reste lisible (contexte utile).
+    type: "PSEUDO",
+    re: /(?:linkedin\.com\/in\/|github\.com\/|gitlab\.com\/|x\.com\/|twitter\.com\/|instagram\.com\/|facebook\.com\/|tiktok\.com\/@|behance\.net\/|dribbble\.com\/|medium\.com\/@|t\.me\/)([A-Za-z0-9](?:[A-Za-z0-9._-]{1,38})?)/gi,
+    extract: 1,
+    validate: null
+  },
+  {
     // Civilité + nom : rattrape en déterministe des noms que le NER peut rater.
     type: "PER",
     re: /\b(?:Monsieur|Madame|Mademoiselle|M\.|Mme|Mlle|Dr|Me|Pr)\s+((?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})(?:\s+(?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})){0,2})/g,
@@ -389,12 +400,16 @@ var STOPWORDS_FR = /* @__PURE__ */ new Set([
   "cordialement",
   "svp"
 ]);
+var ALLCAPS_MIN = 4;
 function boostCase(text) {
   return text.split(new RegExp("(\\p{L}+)", "u")).map((tok) => {
     if (!new RegExp("^\\p{L}+$", "u").test(tok)) return tok;
     const lower = tok.toLowerCase();
-    if (tok !== lower || tok.length < 2 || STOPWORDS_FR.has(lower)) return tok;
-    return tok[0].toUpperCase() + tok.slice(1);
+    const upper = tok.toUpperCase();
+    if (STOPWORDS_FR.has(lower)) return tok;
+    if (tok === lower && tok.length >= 2) return tok[0].toUpperCase() + tok.slice(1);
+    if (tok === upper && tok.length >= ALLCAPS_MIN) return tok[0] + tok.slice(1).toLowerCase();
+    return tok;
   }).join("");
 }
 function chunkText(text) {
@@ -541,6 +556,7 @@ var TYPE_PRIORITY = [
   "BIC",
   "IP",
   "MAC",
+  "PSEUDO",
   "DATE_NAISSANCE",
   "ADRESSE",
   "CODE_POSTAL_VILLE",
@@ -619,7 +635,8 @@ var TYPE_LABELS = {
   REFERENCE: "REFERENCE",
   IP: "IP",
   MAC: "MAC",
-  BIC: "BIC"
+  BIC: "BIC",
+  PSEUDO: "PSEUDO"
 };
 var escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function maskText(text, entities, opts = {}) {

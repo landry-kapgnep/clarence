@@ -35,3 +35,26 @@ test('ne touche pas aux chiffres ni à la ponctuation', () => {
 test('ne capitalise pas un mot d\'une seule lettre', () => {
   assert.ok(boostCase('y a-t-il un souci').startsWith('y '));
 });
+
+// --- TOUT-MAJUSCULE : fuite constatée sur un vrai CV (nom en titre jamais
+// détecté car le modèle cased ne reconnaît pas « LANDRY KAPGNEP »).
+test('remet en Titre un patronyme écrit tout en majuscules', () => {
+  assert.equal(boostCase('LANDRY KAPGNEP'), 'Landry Kapgnep');
+});
+
+test('épargne les acronymes courts d\'un CV (SQL, API, JWT, BUT, IUT…)', () => {
+  const text = 'SQL API JWT BUT IUT NSI PHP CTF';
+  assert.equal(boostCase(text), text, 'aucun acronyme de 3 lettres ne doit être modifié');
+});
+
+test('le tout-majuscule préserve aussi la longueur (offsets valides)', () => {
+  const text = 'CV de MARIE DUPONT, 06 12 34 56 78';
+  assert.equal(boostCase(text).length, text.length);
+  assert.ok(boostCase(text).includes('Marie Dupont'));
+});
+
+test('accents gérés en tout-majuscule (é/É de même longueur)', () => {
+  const text = 'ÉLODIE LEMERCIER';
+  assert.equal(boostCase(text).length, text.length);
+  assert.equal(boostCase(text), 'Élodie Lemercier');
+});

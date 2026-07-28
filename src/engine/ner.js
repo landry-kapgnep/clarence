@@ -43,15 +43,28 @@ const STOPWORDS_FR = new Set([
   'bonjour', 'bonsoir', 'merci', 'cordialement', 'svp'
 ]);
 
-// Capitalise chaque mot entièrement minuscule qui n'est pas un mot-outil.
+// Longueur minimale d'un mot TOUT EN MAJUSCULES pour être remis en Titre.
+// Épargne les acronymes courts omniprésents dans un CV (SQL, API, JWT, CTF,
+// IUT, BUT, NSI, PHP) tout en visant les patronymes (LANDRY, KAPGNEP).
+const ALLCAPS_MIN = 4;
+
+// Normalise la casse pour la passe "boostée" du NER. Deux cas, car le modèle
+// est *cased* et ne reconnaît un nom propre qu'en Casse Titre :
+//  - mot entièrement minuscule (hors mot-outil) → capitalisé ;
+//  - mot entièrement MAJUSCULE d'au moins ALLCAPS_MIN lettres → mis en Titre.
+//    Sans ça, un nom en titre de document (« LANDRY KAPGNEP » sur un CV) n'est
+//    JAMAIS détecté : fuite constatée sur un vrai fichier.
 // Préserve la longueur exacte de la chaîne (les offsets restent valides) ;
-// un mot déjà capitalisé (même partiellement) n'est jamais modifié.
+// un mot en casse mixte (déjà exploitable par le modèle) n'est jamais modifié.
 export function boostCase(text) {
   return text.split(/(\p{L}+)/u).map(tok => {
     if (!/^\p{L}+$/u.test(tok)) return tok;
     const lower = tok.toLowerCase();
-    if (tok !== lower || tok.length < 2 || STOPWORDS_FR.has(lower)) return tok;
-    return tok[0].toUpperCase() + tok.slice(1);
+    const upper = tok.toUpperCase();
+    if (STOPWORDS_FR.has(lower)) return tok;
+    if (tok === lower && tok.length >= 2) return tok[0].toUpperCase() + tok.slice(1);
+    if (tok === upper && tok.length >= ALLCAPS_MIN) return tok[0] + tok.slice(1).toLowerCase();
+    return tok;
   }).join('');
 }
 

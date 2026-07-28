@@ -9,7 +9,7 @@ import {
   mergeEntities,
   reinject,
   selectActive
-} from "./chunk-MUV5HHJR.js";
+} from "./chunk-3VMPP6LD.js";
 import {
   __commonJS,
   __toESM
@@ -29254,6 +29254,7 @@ var TYPE_DISPLAY = {
   IP: "IP",
   MAC: "MAC",
   BIC: "BIC",
+  PSEUDO: "Pseudos/handles",
   MISC: "Divers",
   PERSONNALISE: "Perso"
 };
@@ -29667,7 +29668,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Chargement du mod\xE8le et reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-TOTR2MX5.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-MWI24CV7.js");
       const pdflib = await import("./es-LDLWYJWP.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -29683,7 +29684,7 @@ async function processFile() {
       fileSetStatus(nerPipe ? "" : "D\xE9tection des noms indisponible \u2014 relis attentivement le PDF.", nerPipe ? "" : "error");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-IOOUK7KX.js");
+    const { anonymizeUnits } = await import("./anonymize-units-GRIAWDIK.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

@@ -12,7 +12,7 @@ const TYPE_LABELS = {
   CARTE_BANCAIRE: 'CARTE', NIR: 'NIR', SIRET_SIREN: 'SIRET',
   CODE_POSTAL_VILLE: 'CODE_POSTAL', MONTANT: 'MONTANT',
   ADRESSE: 'ADRESSE', DATE_NAISSANCE: 'DATE_NAISSANCE', REFERENCE: 'REFERENCE',
-  IP: 'IP', MAC: 'MAC', BIC: 'BIC'
+  IP: 'IP', MAC: 'MAC', BIC: 'BIC', PSEUDO: 'PSEUDO'
 };
 
 const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

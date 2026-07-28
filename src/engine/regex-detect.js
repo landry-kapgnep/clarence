@@ -129,6 +129,17 @@ export const REGEX_PATTERNS = [
     validate: m => !/^(19|20)\d\d$/.test(m)
   },
   {
+    // Handle de profil social/pro : identifie directement une personne, et
+    // contient très souvent le nom en minuscules (« linkedin.com/in/landry-kapgnep »)
+    // — forme que le NER ne détecte pas. Déterministe : le domaine lève toute
+    // ambiguïté, donc aucun risque de faux positif sur de la prose.
+    // extract: seul le handle est masqué, le domaine reste lisible (contexte utile).
+    type: 'PSEUDO',
+    re: /(?:linkedin\.com\/in\/|github\.com\/|gitlab\.com\/|x\.com\/|twitter\.com\/|instagram\.com\/|facebook\.com\/|tiktok\.com\/@|behance\.net\/|dribbble\.com\/|medium\.com\/@|t\.me\/)([A-Za-z0-9](?:[A-Za-z0-9._-]{1,38})?)/gi,
+    extract: 1,
+    validate: null
+  },
+  {
     // Civilité + nom : rattrape en déterministe des noms que le NER peut rater.
     type: 'PER',
     re: /\b(?:Monsieur|Madame|Mademoiselle|M\.|Mme|Mlle|Dr|Me|Pr)\s+((?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})(?:\s+(?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})){0,2})/g,

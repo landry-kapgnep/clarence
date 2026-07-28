@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { detectRegex } from '../../src/engine/regex-detect.js';
 import { mergeEntities } from '../../src/engine/merge.js';
+import { maskText } from '../../src/engine/masking.js';
 
 const find = (text, type) => detectRegex(text).filter(e => e.type === type);
 // Après fusion : dédoublonne les chevauchements (un motif nu + un motif
@@ -81,6 +82,31 @@ test('MONTANT garde la virgule FR et les milliers (1 240,50 €)', () => {
 // --- TELEPHONE : ne mange plus un fragment au milieu d'un long nombre.
 test('le téléphone ne matche pas un fragment de 10 chiffres au milieu d\'une carte', () => {
   assert.equal(find('4970123456789012', 'TELEPHONE').length, 0);
+});
+
+// --- PSEUDO : handles de profil (fuite constatée sur un vrai CV, le nom en
+// minuscules dans une URL n'étant jamais vu par le NER).
+test('handle LinkedIn/GitHub détecté, domaine préservé', () => {
+  const [li] = find('linkedin.com/in/landry-kapgnep', 'PSEUDO');
+  assert.equal(li.value, 'landry-kapgnep');
+  const [gh] = find('github.com/landry-kapgnep', 'PSEUDO');
+  assert.equal(gh.value, 'landry-kapgnep');
+});
+
+test('URL complète avec https/www : le handle seul est capté', () => {
+  const [e] = find('https://www.linkedin.com/in/marie-dupont-123', 'PSEUDO');
+  assert.equal(e.value, 'marie-dupont-123');
+});
+
+test('un domaine sans handle ne déclenche rien', () => {
+  assert.equal(find('on parle de github.com/ ici', 'PSEUDO').length, 0);
+  assert.equal(find('le site github.com est connu', 'PSEUDO').length, 0);
+});
+
+test('le même handle sur deux plateformes reçoit un seul placeholder', () => {
+  const text = 'linkedin.com/in/jdupont et github.com/jdupont';
+  const { masked } = maskText(text, mergeEntities(detectRegex(text), []));
+  assert.equal(masked, 'linkedin.com/in/[PSEUDO_1] et github.com/[PSEUDO_1]');
 });
 
 // --- IBAN international (liste blanche de pays).
