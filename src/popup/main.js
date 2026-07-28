@@ -7,6 +7,7 @@ import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
 import { createPseudonymizer } from '../engine/pseudonyms.js';
 import { maskText, reinject } from '../engine/masking.js';
+import { loadProfiles, upsertProfile, deleteProfile } from './profiles.js';
 
 // --- Config Transformers.js : tout en local sauf le téléchargement du modèle
 // (fichiers de poids depuis Hugging Face au 1er usage, mis en cache ensuite —
@@ -699,4 +700,86 @@ for (const evName of ['dragleave', 'drop']) {
 dropzone.addEventListener('drop', ev => {
   const file = ev.dataTransfer?.files?.[0];
   if (file) setChosenFile(file);
+});
+
+// ===== Profils d'anonymisation ============================================
+// Préréglages nommés persistants (chrome.storage.local) des options de
+// personnalisation. Le profil « Développeur / Tech » livré par défaut règle le
+// sur-masquage des technos (React/Prisma/Docker) via sa liste « ne jamais
+// masquer » — éditable, propriété de l'utilisateur, jamais une règle cachée du
+// moteur. bindProfileBar est monté 2× (texte + fichier) pour ne rien dupliquer.
+//
+// cfg : { selectId, saveId, newId, deleteId, read(), apply(profile) }
+async function bindProfileBar(cfg) {
+  const sel = $(cfg.selectId);
+  if (!sel) return;
+  let profiles = await loadProfiles();
+
+  const refill = selected => {
+    sel.innerHTML = '<option value="">(personnalisé)</option>' +
+      profiles.map(p => `<option${p.name === selected ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+  };
+  refill();
+
+  sel.addEventListener('change', () => {
+    const p = profiles.find(x => x.name === sel.value);
+    if (p) cfg.apply(p);
+  });
+
+  $(cfg.saveId)?.addEventListener('click', async () => {
+    // Enregistre l'état courant dans le profil sélectionné, ou demande un nom.
+    let name = sel.value;
+    if (!name) { name = (window.prompt('Nom du profil ?') || '').trim(); if (!name) return; }
+    profiles = await upsertProfile({ name, ...cfg.read() });
+    refill(name);
+  });
+
+  $(cfg.newId)?.addEventListener('click', async () => {
+    const name = (window.prompt('Nom du nouveau profil ?') || '').trim();
+    if (!name) return;
+    profiles = await upsertProfile({ name, ...cfg.read() });
+    refill(name);
+  });
+
+  $(cfg.deleteId)?.addEventListener('click', async () => {
+    if (!sel.value) return;
+    if (!window.confirm(`Supprimer le profil « ${sel.value} » ?`)) return;
+    profiles = await deleteProfile(sel.value);
+    refill();
+  });
+}
+
+bindProfileBar({
+  selectId: 'profileSelect', saveId: 'profileSaveBtn', newId: 'profileNewBtn', deleteId: 'profileDeleteBtn',
+  read: () => ({
+    alwaysKeep: parseLines($('alwaysKeep')?.value),
+    alwaysMask: parseLines($('alwaysMask')?.value),
+    disabledTypes: [...disabledTypes],
+    realistic: !!$('realisticToggle')?.checked
+  }),
+  apply: p => {
+    if ($('alwaysKeep')) $('alwaysKeep').value = p.alwaysKeep.join('\n');
+    if ($('alwaysMask')) $('alwaysMask').value = p.alwaysMask.join('\n');
+    disabledTypes = new Set(p.disabledTypes);
+    if ($('realisticToggle')) $('realisticToggle').checked = p.realistic;
+    renderTypeChips('typeToggles', disabledTypes);
+    if (currentText) render();
+  }
+});
+
+bindProfileBar({
+  selectId: 'fileProfileSelect', saveId: 'fileProfileSaveBtn', newId: 'fileProfileNewBtn', deleteId: 'fileProfileDeleteBtn',
+  read: () => ({
+    alwaysKeep: parseLines($('fileAlwaysKeep')?.value),
+    alwaysMask: parseLines($('fileAlwaysMask')?.value),
+    disabledTypes: [...fileDisabledTypes],
+    realistic: !!$('fileRealisticToggle')?.checked
+  }),
+  apply: p => {
+    if ($('fileAlwaysKeep')) $('fileAlwaysKeep').value = p.alwaysKeep.join('\n');
+    if ($('fileAlwaysMask')) $('fileAlwaysMask').value = p.alwaysMask.join('\n');
+    fileDisabledTypes = new Set(p.disabledTypes);
+    if ($('fileRealisticToggle')) $('fileRealisticToggle').checked = p.realistic;
+    renderTypeChips('fileTypeToggles', fileDisabledTypes);
+  }
 });

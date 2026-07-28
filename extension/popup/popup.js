@@ -29078,6 +29078,154 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false } = {}) {
   };
 }
 
+// src/popup/profiles.js
+var PROFILES_KEY = "clarenceProfiles";
+var TECH_KEEP = [
+  "React",
+  "Angular",
+  "Vue",
+  "Svelte",
+  "Node",
+  "Node.js",
+  "Deno",
+  "Next.js",
+  "Python",
+  "Java",
+  "Kotlin",
+  "Go",
+  "Rust",
+  "PHP",
+  "Ruby",
+  "Scala",
+  "C++",
+  "C#",
+  "FastAPI",
+  "Django",
+  "Flask",
+  "Fastify",
+  "Express",
+  "Spring",
+  "Laravel",
+  "Symfony",
+  "Prisma",
+  "Sequelize",
+  "Hibernate",
+  "TypeORM",
+  "MongoDB",
+  "PostgreSQL",
+  "MySQL",
+  "MariaDB",
+  "Redis",
+  "SQLite",
+  "Elasticsearch",
+  "Cassandra",
+  "Docker",
+  "Kubernetes",
+  "Podman",
+  "Terraform",
+  "Ansible",
+  "Ollama",
+  "PyTorch",
+  "TensorFlow",
+  "Keras",
+  "Scikit-learn",
+  "NumPy",
+  "Pandas",
+  "Hugging Face",
+  "Git",
+  "GitHub",
+  "GitLab",
+  "Bitbucket",
+  "Jenkins",
+  "CircleCI",
+  "Linux",
+  "Ubuntu",
+  "Debian",
+  "Bash",
+  "Nginx",
+  "Apache",
+  "AWS",
+  "Azure",
+  "GCP",
+  "Vercel",
+  "Netlify",
+  "Heroku",
+  "Cloudflare",
+  "Kafka",
+  "Spark",
+  "Airflow",
+  "Hadoop",
+  "Hive",
+  "Sqoop",
+  "RabbitMQ",
+  "GraphQL",
+  "Power BI",
+  "Tableau",
+  "Excel",
+  "n8n",
+  "Zapier",
+  "Figma",
+  "GPT-4o",
+  "Llama",
+  "Mistral",
+  "Claude",
+  "Gemini",
+  "Transformers.js",
+  "WebAssembly"
+];
+function defaultProfiles() {
+  return [
+    { name: "Vierge", alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...TECH_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
+  ];
+}
+function normalizeProfile(p) {
+  const arr = (v) => Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  return {
+    name: typeof p?.name === "string" && p.name.trim() ? p.name.trim() : "Sans nom",
+    alwaysKeep: arr(p?.alwaysKeep),
+    alwaysMask: arr(p?.alwaysMask),
+    disabledTypes: arr(p?.disabledTypes),
+    realistic: !!p?.realistic
+  };
+}
+function seedDefaults(existing) {
+  const list = (Array.isArray(existing) ? existing : []).map(normalizeProfile);
+  const names = new Set(list.map((p) => p.name));
+  for (const d of defaultProfiles()) if (!names.has(d.name)) list.push(d);
+  return list;
+}
+function hasStore() {
+  return typeof chrome !== "undefined" && chrome.storage?.local;
+}
+async function loadProfiles() {
+  if (!hasStore()) return seedDefaults([]);
+  const r = await chrome.storage.local.get(PROFILES_KEY).catch(() => ({}));
+  const seeded = seedDefaults(r?.[PROFILES_KEY]);
+  if (!r?.[PROFILES_KEY]) await chrome.storage.local.set({ [PROFILES_KEY]: seeded }).catch(() => {
+  });
+  return seeded;
+}
+async function saveAllProfiles(list) {
+  if (!hasStore()) return;
+  await chrome.storage.local.set({ [PROFILES_KEY]: list.map(normalizeProfile) }).catch(() => {
+  });
+}
+async function upsertProfile(profile) {
+  const list = await loadProfiles();
+  const p = normalizeProfile(profile);
+  const idx = list.findIndex((x) => x.name === p.name);
+  if (idx >= 0) list[idx] = p;
+  else list.push(p);
+  await saveAllProfiles(list);
+  return list;
+}
+async function deleteProfile(name2) {
+  const list = (await loadProfiles()).filter((p) => p.name !== name2);
+  await saveAllProfiles(list);
+  return list;
+}
+
 // src/popup/main.js
 env.allowLocalModels = false;
 env.useBrowserCache = true;
@@ -29644,6 +29792,79 @@ for (const evName of ["dragleave", "drop"]) {
 dropzone.addEventListener("drop", (ev) => {
   const file = ev.dataTransfer?.files?.[0];
   if (file) setChosenFile(file);
+});
+async function bindProfileBar(cfg) {
+  const sel = $(cfg.selectId);
+  if (!sel) return;
+  let profiles = await loadProfiles();
+  const refill = (selected) => {
+    sel.innerHTML = '<option value="">(personnalis\xE9)</option>' + profiles.map((p) => `<option${p.name === selected ? " selected" : ""}>${esc(p.name)}</option>`).join("");
+  };
+  refill();
+  sel.addEventListener("change", () => {
+    const p = profiles.find((x) => x.name === sel.value);
+    if (p) cfg.apply(p);
+  });
+  $(cfg.saveId)?.addEventListener("click", async () => {
+    let name2 = sel.value;
+    if (!name2) {
+      name2 = (window.prompt("Nom du profil ?") || "").trim();
+      if (!name2) return;
+    }
+    profiles = await upsertProfile({ name: name2, ...cfg.read() });
+    refill(name2);
+  });
+  $(cfg.newId)?.addEventListener("click", async () => {
+    const name2 = (window.prompt("Nom du nouveau profil ?") || "").trim();
+    if (!name2) return;
+    profiles = await upsertProfile({ name: name2, ...cfg.read() });
+    refill(name2);
+  });
+  $(cfg.deleteId)?.addEventListener("click", async () => {
+    if (!sel.value) return;
+    if (!window.confirm(`Supprimer le profil \xAB ${sel.value} \xBB ?`)) return;
+    profiles = await deleteProfile(sel.value);
+    refill();
+  });
+}
+bindProfileBar({
+  selectId: "profileSelect",
+  saveId: "profileSaveBtn",
+  newId: "profileNewBtn",
+  deleteId: "profileDeleteBtn",
+  read: () => ({
+    alwaysKeep: parseLines($("alwaysKeep")?.value),
+    alwaysMask: parseLines($("alwaysMask")?.value),
+    disabledTypes: [...disabledTypes],
+    realistic: !!$("realisticToggle")?.checked
+  }),
+  apply: (p) => {
+    if ($("alwaysKeep")) $("alwaysKeep").value = p.alwaysKeep.join("\n");
+    if ($("alwaysMask")) $("alwaysMask").value = p.alwaysMask.join("\n");
+    disabledTypes = new Set(p.disabledTypes);
+    if ($("realisticToggle")) $("realisticToggle").checked = p.realistic;
+    renderTypeChips("typeToggles", disabledTypes);
+    if (currentText) render();
+  }
+});
+bindProfileBar({
+  selectId: "fileProfileSelect",
+  saveId: "fileProfileSaveBtn",
+  newId: "fileProfileNewBtn",
+  deleteId: "fileProfileDeleteBtn",
+  read: () => ({
+    alwaysKeep: parseLines($("fileAlwaysKeep")?.value),
+    alwaysMask: parseLines($("fileAlwaysMask")?.value),
+    disabledTypes: [...fileDisabledTypes],
+    realistic: !!$("fileRealisticToggle")?.checked
+  }),
+  apply: (p) => {
+    if ($("fileAlwaysKeep")) $("fileAlwaysKeep").value = p.alwaysKeep.join("\n");
+    if ($("fileAlwaysMask")) $("fileAlwaysMask").value = p.alwaysMask.join("\n");
+    fileDisabledTypes = new Set(p.disabledTypes);
+    if ($("fileRealisticToggle")) $("fileRealisticToggle").checked = p.realistic;
+    renderTypeChips("fileTypeToggles", fileDisabledTypes);
+  }
 });
 /*! Bundled license information:
 

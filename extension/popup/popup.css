@@ -570,6 +570,29 @@ mark { transition: outline-color .12s ease, background .12s ease; }
   40%      { transform: translateY(-3px); opacity: 1; }
 }
 
+/* ===== Barre de profils d'anonymisation ===== */
+.profile-bar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.profile-select {
+  flex: 1;
+  min-width: 90px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 250, 242, 0.96);
+  color: var(--ink);
+  cursor: pointer;
+}
+.profile-btn {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
 /* ===== Masquage personnalisé ===== */
 #customRules { margin-top: 10px; }
 .custom-body { margin-top: 8px; }

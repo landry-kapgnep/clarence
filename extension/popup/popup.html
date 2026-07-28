@@ -38,6 +38,12 @@
       <details id="customRules">
         <summary>Personnaliser le masquage</summary>
         <div class="custom-body">
+          <div class="profile-bar">
+            <select id="profileSelect" class="profile-select"></select>
+            <button class="btn-ghost profile-btn" id="profileSaveBtn" title="Enregistrer les réglages actuels dans ce profil">Enregistrer</button>
+            <button class="btn-ghost profile-btn" id="profileNewBtn" title="Créer un nouveau profil à partir des réglages actuels">Nouveau</button>
+            <button class="btn-ghost profile-btn" id="profileDeleteBtn" title="Supprimer ce profil">Suppr.</button>
+          </div>
           <div class="field-label">Types à masquer <span class="hint">(décoche pour garder visible)</span></div>
           <div id="typeToggles" class="type-toggles"></div>
           <label class="field-label" for="alwaysMask">Toujours masquer <span class="hint">(un terme par ligne)</span></label>
@@ -106,6 +112,12 @@
         <details id="fileCustomRules">
           <summary>Personnaliser le masquage</summary>
           <div class="custom-body">
+            <div class="profile-bar">
+              <select id="fileProfileSelect" class="profile-select"></select>
+              <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer les réglages actuels dans ce profil">Enregistrer</button>
+              <button class="btn-ghost profile-btn" id="fileProfileNewBtn" title="Créer un nouveau profil à partir des réglages actuels">Nouveau</button>
+              <button class="btn-ghost profile-btn" id="fileProfileDeleteBtn" title="Supprimer ce profil">Suppr.</button>
+            </div>
             <div class="field-label">Types à masquer <span class="hint">(décoche pour garder visible)</span></div>
             <div id="fileTypeToggles" class="type-toggles"></div>
             <label class="field-label" for="fileAlwaysMask">Toujours masquer <span class="hint">(un terme par ligne)</span></label>
