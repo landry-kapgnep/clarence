@@ -1,6 +1,6 @@
-// Popup Clarence — source bundlée par build.mjs (Transformers.js inclus en
-// local : MV3 interdit tout code distant).
-import { pipeline, env } from '@xenova/transformers';
+// Popup Clarence — source bundlée par build.mjs. Transformers.js n'est PLUS
+// importé ici : il vit dans le worker NER (src/worker/ner-worker.js), ce qui
+// libère le thread principal ET allège fortement ce bundle.
 import { detectRegex } from '../engine/regex-detect.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { mergeEntities } from '../engine/merge.js';
@@ -8,14 +8,6 @@ import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/s
 import { createPseudonymizer } from '../engine/pseudonyms.js';
 import { maskText, reinject } from '../engine/masking.js';
 import { loadProfiles, upsertProfile, deleteProfile } from './profiles.js';
-
-// --- Config Transformers.js : tout en local sauf le téléchargement du modèle
-// (fichiers de poids depuis Hugging Face au 1er usage, mis en cache ensuite —
-// ce sont des poids statiques, jamais du code ni des données utilisateur).
-env.allowLocalModels = false;
-env.useBrowserCache = true;
-env.backends.onnx.wasm.wasmPaths = chrome.runtime.getURL('vendor/');
-env.backends.onnx.wasm.numThreads = 1; // pas de worker → pas de souci CSP MV3
 
 // --- État (mémoire du popup uniquement ; tout disparaît à la fermeture)
 let currentText = '';
@@ -78,6 +70,14 @@ if (new URLSearchParams(location.search).has('panel')) {
     { clarencePanelHeight: shell.offsetHeight }, '*');
   new ResizeObserver(announce).observe(shell);
   window.addEventListener('load', announce);
+  // Assurance en plus du ResizeObserver : déplier un <details> change la
+  // hauteur d'un coup. Le contenu se retrouvait coupé quand l'annonce partait
+  // trop tard (thread principal occupé) ; on annonce explicitement au toggle,
+  // et au tick suivant pour laisser le re-layout se terminer.
+  document.addEventListener('toggle', () => {
+    announce();
+    setTimeout(announce, 0);
+  }, true);
 }
 const keyOf = entityKey;
 const esc = s => s.replace(/[&<>"']/g, c =>
@@ -210,12 +210,51 @@ function render() {
 // NER fiable et l'interface fluide.
 const MAX_INPUT = 8000;
 
+// --- Worker NER : le modèle tourne hors du thread principal, sinon l'UI gèle
+// pendant toute la détection (menus au contenu coupé, impression de plantage).
+// `detectNER` prend déjà son pipeline en paramètre : il suffit de lui passer
+// un proxy vers le worker, tout le moteur reste inchangé.
+let nerWorker = null;
+let nerReqId = 0;
+const nerPending = new Map();
+
+function createNerWorker() {
+  const worker = new Worker(chrome.runtime.getURL('popup/ner-worker.js'), { type: 'module' });
+  worker.addEventListener('message', ev => {
+    const msg = ev.data || {};
+    if (msg.type === 'result' || (msg.type === 'error' && msg.id != null)) {
+      const p = nerPending.get(msg.id);
+      if (!p) return;
+      nerPending.delete(msg.id);
+      msg.type === 'result' ? p.resolve(msg.tokens) : p.reject(new Error(msg.message));
+    }
+  });
+  return worker;
+}
+
 async function ensureNER() {
   if (nerPipe || nerLoading) return;
   nerLoading = true;
   setStatus('Chargement du modèle de détection des noms (~30 Mo au premier usage, mis en cache ensuite)…');
   try {
-    nerPipe = await pipeline('token-classification', NER_MODEL);
+    const worker = createNerWorker();
+    await new Promise((resolve, reject) => {
+      const onInit = ev => {
+        const msg = ev.data || {};
+        if (msg.type === 'ready') { worker.removeEventListener('message', onInit); resolve(); }
+        else if (msg.type === 'error' && msg.id == null) { worker.removeEventListener('message', onInit); reject(new Error(msg.message)); }
+      };
+      worker.addEventListener('message', onInit);
+      worker.addEventListener('error', e => reject(new Error(e.message || 'worker NER indisponible')));
+      worker.postMessage({ type: 'init', wasmPath: chrome.runtime.getURL('vendor/'), model: NER_MODEL });
+    });
+    nerWorker = worker;
+    // Proxy : même signature que le pipeline Transformers.js (texte → tokens).
+    nerPipe = text => new Promise((resolve, reject) => {
+      const id = ++nerReqId;
+      nerPending.set(id, { resolve, reject });
+      nerWorker.postMessage({ type: 'run', id, text });
+    });
   } catch (err) {
     console.error(err);
     // Le regex tourne quand même : mieux vaut un résultat partiel signalé

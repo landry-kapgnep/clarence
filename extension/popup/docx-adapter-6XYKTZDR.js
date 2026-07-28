@@ -1,4 +1,8 @@
 import {
+  distributeEntitiesOverRuns,
+  joinRuns
+} from "./chunk-3WGABFPD.js";
+import {
   strFromU8,
   strToU8,
   stripAppProps,
@@ -7,10 +11,6 @@ import {
   unzipSync,
   zipSync
 } from "./chunk-S5HPOW2S.js";
-import {
-  distributeEntitiesOverRuns,
-  joinRuns
-} from "./chunk-3WGABFPD.js";
 import "./chunk-TRTQSARU.js";
 
 // src/files/docx-adapter.js

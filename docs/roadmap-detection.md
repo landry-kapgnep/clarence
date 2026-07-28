@@ -6,7 +6,19 @@ Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
 
 ---
 
-## P0 — Fuites de noms propres (CRITIQUE)
+## ~~P0 — Fuites de noms propres~~ ✅ CORRIGÉ (21/07/2026)
+
+- **Nom TOUT-MAJUSCULE** : `boostCase` ignorait volontairement le tout-majuscule
+  (`tok !== lower → return tok`), donc « LANDRY KAPGNEP » n'était jamais soumis
+  au modèle *cased* sous une forme reconnaissable. Corrigé : mot tout en
+  majuscules de ≥ 4 lettres remis en Titre (seuil qui épargne les acronymes
+  SQL/API/JWT/BUT/IUT). Coût nul (la passe boostée existait déjà), longueur
+  préservée. Garde-fou : fixture « zéro faux positif » toujours à zéro.
+- **Nom dans les URL** : nouveau type déterministe `PSEUDO` (handle après
+  `linkedin.com/in/`, `github.com/`, `t.me/`…). Le domaine lève l'ambiguïté →
+  aucun faux positif sur de la prose, et masque même sans détection NER.
+
+## P0 (ancien intitulé, conservé pour l'historique)
 
 Le nom du propriétaire du CV **fuit à 3 endroits** — c'est le pire cas possible.
 
@@ -112,10 +124,17 @@ Traité :
   progresse au lieu d'interrompre ;
 - encodage des images en parallèle + JPEG + plafond 1600 px.
 
-Reste (vraie accélération, chantier à cadrer) : sortir le NER du thread
-principal (**Web Worker**), ou réduire le travail (sauter la passe boostée sur
+**✅ Web Worker fait (21/07/2026)** — l'affirmation « MV3 interdit les workers »
+était fausse (on exécutait déjà `pdf.worker.min.mjs`). Le NER vit dans
+`src/worker/ner-worker.js` ; `detectNER` prenait déjà son pipeline en paramètre,
+il reçoit maintenant un proxy vers le worker : **moteur inchangé**. Effets :
+thread principal libre (fin des gels et des menus au contenu coupé) et
+**popup.js 1,3 Mo → 35 Ko** (Transformers.js n'est plus dans la popup).
+`numThreads` = 4 si `crossOriginIsolated`, sinon 1 (repli runtime).
+
+Reste éventuellement : réduire le travail lui-même (sauter la passe boostée sur
 un texte déjà bien casé — risqué, testé et rejeté une fois ; ou un modèle plus
-petit).
+petit). Le temps total d'inférence est inchangé — c'est l'UI qui ne gèle plus.
 
 ## P4 — Divers reconstruction (cosmétique)
 

@@ -15,7 +15,10 @@ for (const f of readdirSync('extension/popup')) {
 // chargés seulement au passage en mode Fichier — le mode texte (gratuit) reste
 // léger. entryPoints en objet pour forcer le nom de sortie « popup.js ».
 await build({
-  entryPoints: { popup: 'src/popup/main.js' },
+  // ner-worker : entry séparé, chargé via new Worker(). Transformers.js n'est
+  // importé QUE par lui → il quitte le bundle popup (ouverture plus rapide) et
+  // le modèle tourne hors du thread principal (UI fluide pendant la détection).
+  entryPoints: { popup: 'src/popup/main.js', 'ner-worker': 'src/worker/ner-worker.js' },
   outdir: 'extension/popup',
   bundle: true,
   splitting: true,
