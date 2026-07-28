@@ -31644,6 +31644,18 @@ var HEADING_SIZE_RATIO = 1.3;
 function fontSizeOf(item) {
   return item.height || Math.abs(item.transform?.[3]) || 1;
 }
+function needsSpace(a, b) {
+  const gap = b.x - (a.x + (a.width || 0));
+  return gap > Math.max(1, (a.size || 10) * 0.2);
+}
+function joinParts(parts) {
+  let out = "";
+  parts.forEach((p, i) => {
+    if (i > 0 && needsSpace(parts[i - 1], p)) out += " ";
+    out += p.str;
+  });
+  return out.replace(/\s+/g, " ").trim();
+}
 function groupIntoLines(items) {
   const lines = [];
   for (const item of items) {
@@ -31654,7 +31666,7 @@ function groupIntoLines(items) {
       line = { y, parts: [] };
       lines.push(line);
     }
-    line.parts.push({ x: item.transform[4], y, str: item.str, size: fontSizeOf(item) });
+    line.parts.push({ x: item.transform[4], y, str: item.str, size: fontSizeOf(item), width: item.width || 0 });
   }
   lines.sort((a, b) => b.y - a.y);
   return lines.map((l) => {
@@ -31664,7 +31676,7 @@ function groupIntoLines(items) {
       // parts exposé pour la reconstruction PDF (pdf-reconstruct.js) : dessiner
       // chaque fragment à sa position. Le chemin Markdown, lui, n'utilise que text.
       parts,
-      text: parts.map((p) => p.str).join(" ").replace(/\s+/g, " ").trim(),
+      text: joinParts(parts),
       // Taille dominante de la ligne : la plus fréquente parmi ses fragments.
       size: parts.map((p) => p.size).sort((a, b) => a - b)[Math.floor(parts.length / 2)]
     };
@@ -31764,6 +31776,7 @@ export {
   getDocument,
   PARAGRAPH_GAP_RATIO,
   HEADING_SIZE_RATIO,
+  needsSpace,
   groupIntoLines,
   median,
   splitIntoColumns,

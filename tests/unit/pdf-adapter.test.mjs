@@ -4,8 +4,25 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { extractTextUnits, applyMask, stripMetadata } from '../../src/files/pdf-adapter.js';
+import { extractTextUnits, applyMask, stripMetadata, groupIntoLines } from '../../src/files/pdf-adapter.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
+
+// Items pdfjs synthétiques (transform = [a,b,c,d,x,y]) : reproduit de façon
+// déterministe la fragmentation d'un mot par pdfjs, impossible à obtenir
+// fiablement via pdf-lib (pdfjs re-fusionne les drawText adjacents).
+const item = (str, x, y, width, size = 12) => ({ str, transform: [size, 0, 0, size, x, y], width, height: size });
+
+test('P1 fragmentation : deux fragments collés du même mot ne sont PAS séparés', () => {
+  // "Sem" finit à x=70 (50+20), "antikmatch" commence à 70 → aucun écart.
+  const lines = groupIntoLines([item('Sem', 50, 700, 20), item('antikmatch', 70, 700, 60)]);
+  assert.equal(lines[0].text, 'Semantikmatch');
+});
+
+test('P1 fragmentation : deux mots avec un vrai écart restent séparés', () => {
+  // "Nom" finit à x=70, "Prenom" commence à 120 → écart franc → espace.
+  const lines = groupIntoLines([item('Nom', 50, 700, 20), item('Prenom', 120, 700, 40)]);
+  assert.equal(lines[0].text, 'Nom Prenom');
+});
 
 const fixturePath = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'echantillon.pdf');
 const fxBuffer = () => new Uint8Array(readFileSync(fixturePath)).buffer;

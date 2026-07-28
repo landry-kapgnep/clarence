@@ -42,11 +42,28 @@ function fontSizeOf(item) {
   return item.height || Math.abs(item.transform?.[3]) || 1;
 }
 
+// Faut-il un espace entre deux fragments consécutifs d'une même ligne ?
+// pdfjs découpe parfois UN SEUL mot en plusieurs items (kerning, changement de
+// fonte) : y insérer un espace systématiquement coupait le mot (« Semantikmatch »
+// → « Sem antik... »), cassant la détection PII (fuite partielle) ET la
+// lisibilité. On n'insère un espace que si l'écart horizontal réel dépasse un
+// seuil relatif à la taille de police ; deux fragments collés = même mot.
+export function needsSpace(a, b) {
+  const gap = b.x - (a.x + (a.width || 0));
+  return gap > Math.max(1, (a.size || 10) * 0.2);
+}
+
+function joinParts(parts) {
+  let out = '';
+  parts.forEach((p, i) => {
+    if (i > 0 && needsSpace(parts[i - 1], p)) out += ' ';
+    out += p.str;
+  });
+  return out.replace(/\s+/g, ' ').trim();
+}
+
 // Regroupe les items d'une page en lignes (par coordonnée Y, tolérance 3px),
-// triées par X. Un espace est TOUJOURS inséré entre deux items distincts sur
-// une même ligne : une ligne accolée en trop est cosmétique, un mot collé
-// risquerait de fusionner deux valeurs sensibles ou d'en manquer une —
-// priorité zéro-fuite, comme pour les IBAN/NIR à structure valide (regex-detect.js).
+// triées par X, avec jointure sensible aux écarts (voir needsSpace).
 export function groupIntoLines(items) {
   const lines = [];
   for (const item of items) {
@@ -54,7 +71,7 @@ export function groupIntoLines(items) {
     const y = item.transform[5];
     let line = lines.find(l => Math.abs(l.y - y) < 3);
     if (!line) { line = { y, parts: [] }; lines.push(line); }
-    line.parts.push({ x: item.transform[4], y, str: item.str, size: fontSizeOf(item) });
+    line.parts.push({ x: item.transform[4], y, str: item.str, size: fontSizeOf(item), width: item.width || 0 });
   }
   lines.sort((a, b) => b.y - a.y);
   return lines.map(l => {
@@ -64,7 +81,7 @@ export function groupIntoLines(items) {
       // parts exposé pour la reconstruction PDF (pdf-reconstruct.js) : dessiner
       // chaque fragment à sa position. Le chemin Markdown, lui, n'utilise que text.
       parts,
-      text: parts.map(p => p.str).join(' ').replace(/\s+/g, ' ').trim(),
+      text: joinParts(parts),
       // Taille dominante de la ligne : la plus fréquente parmi ses fragments.
       size: parts.map(p => p.size).sort((a, b) => a - b)[Math.floor(parts.length / 2)]
     };

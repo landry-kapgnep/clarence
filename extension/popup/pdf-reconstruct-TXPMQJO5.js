@@ -10,8 +10,9 @@ import {
   getDocument,
   groupIntoLines,
   median,
+  needsSpace,
   splitIntoColumns
-} from "./chunk-Q2XSYSNP.js";
+} from "./chunk-7H3FO5ON.js";
 import {
   anonymizeUnits
 } from "./chunk-UUTHDNLH.js";
@@ -47,7 +48,7 @@ function paragraphToRuns(para, id) {
   para.lines.forEach((line, li) => {
     line.parts.forEach((p, pi) => {
       if (li > 0 && pi === 0) runs.push({ id: `s${n++}`, text: " ", draw: false });
-      else if (pi > 0) runs.push({ id: `s${n++}`, text: " ", draw: false });
+      else if (pi > 0 && needsSpace(line.parts[pi - 1], p)) runs.push({ id: `s${n++}`, text: " ", draw: false });
       runs.push({ id: `r${n++}`, text: p.str, draw: true, x: p.x, y: p.y, size: p.size });
     });
   });

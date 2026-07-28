@@ -5,9 +5,10 @@ import {
   extractTextUnits,
   groupIntoLines,
   median,
+  needsSpace,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-Q2XSYSNP.js";
+} from "./chunk-7H3FO5ON.js";
 import "./chunk-TRTQSARU.js";
 export {
   HEADING_SIZE_RATIO,
@@ -16,6 +17,7 @@ export {
   extractTextUnits,
   groupIntoLines,
   median,
+  needsSpace,
   splitIntoColumns,
   stripMetadata
 };
