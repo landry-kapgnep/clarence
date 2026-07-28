@@ -50,12 +50,14 @@ function joinWithSentinel(units) {
 // - forceTerms    : termes « toujours masquer » (recherche littérale, toutes occurrences) ;
 // - disabledTypes : Set de types que l'utilisateur choisit de NE PAS masquer ;
 // - keepValues    : valeurs « ne jamais masquer » (les masques forcés restent intouchables).
-export async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues } = {}) {
+// onProgress (optionnel) : transmis à detectNER, pour afficher l'avancement
+// (le NER est le poste long — voir commentaire dans ner.js).
+export async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
   const regexEntities = detectRegex(combined);
-  const nerEntities = nerPipeline ? await detectNER(combined, nerPipeline) : [];
+  const nerEntities = nerPipeline ? await detectNER(combined, nerPipeline, { onProgress }) : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, new Set());
   const active = filterByRules(selected, {

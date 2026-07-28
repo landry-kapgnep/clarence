@@ -15,8 +15,8 @@ import {
 } from "./chunk-7H3FO5ON.js";
 import {
   anonymizeUnits
-} from "./chunk-UUTHDNLH.js";
-import "./chunk-KNKQTNVF.js";
+} from "./chunk-FZE3TEAE.js";
+import "./chunk-MUV5HHJR.js";
 import "./chunk-TRTQSARU.js";
 
 // src/files/pdf-reconstruct.js
@@ -88,38 +88,57 @@ async function extractImages(page) {
     }
   }
   for (const ref of refs) {
-    const bitmap = await new Promise((res) => {
-      try {
-        page.objs.get(ref.name, (obj) => res(obj || null));
-      } catch {
-        res(null);
-      }
-    }).catch(() => null);
-    if (bitmap && bitmap.data && bitmap.width && bitmap.height && ref.w > 1 && ref.h > 1) {
+    const bitmap = await Promise.race([
+      new Promise((res) => {
+        try {
+          page.objs.get(ref.name, (obj) => res(obj || null));
+        } catch {
+          res(null);
+        }
+      }),
+      new Promise((res) => setTimeout(() => res(null), 8e3))
+    ]).catch(() => null);
+    if (bitmap && (bitmap.data || bitmap.bitmap) && bitmap.width && bitmap.height && ref.w > 1 && ref.h > 1) {
       out.push({ ...ref, bitmap });
     }
   }
   return out;
 }
-async function bitmapToPng(bitmap) {
-  if (typeof OffscreenCanvas === "undefined") return null;
-  const { width, height, kind, data } = bitmap;
+var MAX_IMG_DIM = 1600;
+function rawToRgba({ width, height, kind, data }) {
   const rgba = new Uint8ClampedArray(width * height * 4);
-  if (kind === 3) {
-    rgba.set(data.subarray(0, rgba.length));
-  } else if (kind === 2) {
+  if (kind === 3) rgba.set(data.subarray(0, rgba.length));
+  else if (kind === 2) {
     for (let i = 0, j = 0; i < width * height; i++) {
       rgba[j++] = data[i * 3];
       rgba[j++] = data[i * 3 + 1];
       rgba[j++] = data[i * 3 + 2];
       rgba[j++] = 255;
     }
+  } else return null;
+  return rgba;
+}
+async function encodeImage(img) {
+  if (typeof OffscreenCanvas === "undefined") return null;
+  const srcW = img.width, srcH = img.height;
+  if (!srcW || !srcH) return null;
+  const scale = Math.min(1, MAX_IMG_DIM / Math.max(srcW, srcH));
+  const w = Math.max(1, Math.round(srcW * scale));
+  const h = Math.max(1, Math.round(srcH * scale));
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext("2d");
+  if (img.bitmap) {
+    ctx.drawImage(img.bitmap, 0, 0, w, h);
   } else {
-    return null;
+    const rgba = rawToRgba(img);
+    if (!rgba) return null;
+    const src = new OffscreenCanvas(srcW, srcH);
+    src.getContext("2d").putImageData(new ImageData(rgba, srcW, srcH), 0, 0);
+    ctx.drawImage(src, 0, 0, w, h);
   }
-  const canvas = new OffscreenCanvas(width, height);
-  canvas.getContext("2d").putImageData(new ImageData(rgba, width, height), 0, 0);
-  return (await canvas.convertToBlob({ type: "image/png" })).arrayBuffer();
+  const useJpeg = w * h > 128 * 128;
+  const blob = await canvas.convertToBlob(useJpeg ? { type: "image/jpeg", quality: 0.82 } : { type: "image/png" });
+  return { bytes: await blob.arrayBuffer(), jpeg: useJpeg };
 }
 async function parsePages(buffer) {
   const pdf = await getDocument({
@@ -154,6 +173,7 @@ async function reconstructPdf(buffer, opts = {}) {
   const allUnits = pages.flatMap((p) => p.units.map((u) => ({ id: u.id, text: u.text })));
   const { results, mapping } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
+    onProgress: opts.onProgress,
     maskOpts: opts.maskOpts,
     forceTerms: opts.forceTerms,
     disabledTypes: opts.disabledTypes,
@@ -164,11 +184,17 @@ async function reconstructPdf(buffer, opts = {}) {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   for (const page of pages) {
     const pdfPage = pdfDoc.addPage([page.width, page.height]);
-    for (const img of page.images || []) {
+    const encoded = await Promise.all((page.images || []).map(async (img) => {
       try {
-        const png = await bitmapToPng(img.bitmap);
-        if (!png) continue;
-        const embedded = await pdfDoc.embedPng(png);
+        return { img, enc: await encodeImage(img.bitmap) };
+      } catch {
+        return { img, enc: null };
+      }
+    }));
+    for (const { img, enc } of encoded) {
+      if (!enc) continue;
+      try {
+        const embedded = enc.jpeg ? await pdfDoc.embedJpg(enc.bytes) : await pdfDoc.embedPng(enc.bytes);
         pdfPage.drawImage(embedded, { x: img.x, y: img.y, width: img.w, height: img.h });
       } catch {
       }

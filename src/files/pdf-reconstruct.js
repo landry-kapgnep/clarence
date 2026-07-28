@@ -109,33 +109,70 @@ async function extractImages(page) {
     }
   }
   for (const ref of refs) {
-    const bitmap = await new Promise(res => {
-      try { page.objs.get(ref.name, obj => res(obj || null)); } catch { res(null); }
-    }).catch(() => null);
-    if (bitmap && bitmap.data && bitmap.width && bitmap.height && ref.w > 1 && ref.h > 1) {
+    // objs.get est à callback : en navigateur (worker réel) l'objet peut ne
+    // jamais arriver → le callback ne se déclenche pas et on bloquerait
+    // indéfiniment. Timeout défensif : mieux vaut perdre une image que figer
+    // tout le traitement (l'utilisateur croirait à un plantage).
+    const bitmap = await Promise.race([
+      new Promise(res => { try { page.objs.get(ref.name, obj => res(obj || null)); } catch { res(null); } }),
+      new Promise(res => setTimeout(() => res(null), 8000))
+    ]).catch(() => null);
+    // Deux formes possibles selon l'environnement (vérifié dans la source
+    // pdfjs, qui poste `{bitmap, data}`) : en NAVIGATEUR l'image arrive
+    // décodée en ImageBitmap (`bitmap`), en Node en données brutes (`data`).
+    // Ne tester que `data` écartait TOUTES les images en Chrome — le bug.
+    if (bitmap && (bitmap.data || bitmap.bitmap) && bitmap.width && bitmap.height && ref.w > 1 && ref.h > 1) {
       out.push({ ...ref, bitmap });
     }
   }
   return out;
 }
 
-// Ré-encode un bitmap pdfjs (kind RGBA/RGB/gris) en PNG via canvas. NAVIGATEUR
-// UNIQUEMENT (OffscreenCanvas) — comme image-adapter.js. Strippe toute
-// métadonnée au passage. Retourne un ArrayBuffer PNG, ou null si indisponible.
-async function bitmapToPng(bitmap) {
-  if (typeof OffscreenCanvas === 'undefined') return null;
-  const { width, height, kind, data } = bitmap;
+// Au-delà, l'image est redimensionnée : borne le temps d'encodage et le poids
+// du PDF de sortie (une image de 4000px n'apporte rien de plus à un LLM).
+const MAX_IMG_DIM = 1600;
+
+// Convertit les données brutes pdfjs en RGBA (kind 2 = RGB, 3 = RGBA).
+function rawToRgba({ width, height, kind, data }) {
   const rgba = new Uint8ClampedArray(width * height * 4);
-  if (kind === 3) { // RGBA_32BPP
-    rgba.set(data.subarray(0, rgba.length));
-  } else if (kind === 2) { // RGB_24BPP
+  if (kind === 3) rgba.set(data.subarray(0, rgba.length));
+  else if (kind === 2) {
     for (let i = 0, j = 0; i < width * height; i++) {
       rgba[j++] = data[i * 3]; rgba[j++] = data[i * 3 + 1]; rgba[j++] = data[i * 3 + 2]; rgba[j++] = 255;
     }
-  } else { return null; } // 1bpp gris et autres : non gérés en v1 (rare)
-  const canvas = new OffscreenCanvas(width, height);
-  canvas.getContext('2d').putImageData(new ImageData(rgba, width, height), 0, 0);
-  return (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer();
+  } else return null; // 1bpp gris/masques : non gérés (rare)
+  return rgba;
+}
+
+// Ré-encode une image pdfjs via canvas. NAVIGATEUR UNIQUEMENT (OffscreenCanvas)
+// — comme image-adapter.js ; strippe toute métadonnée au passage.
+// Retourne { bytes, jpeg } ou null.
+async function encodeImage(img) {
+  if (typeof OffscreenCanvas === 'undefined') return null;
+  const srcW = img.width, srcH = img.height;
+  if (!srcW || !srcH) return null;
+  const scale = Math.min(1, MAX_IMG_DIM / Math.max(srcW, srcH));
+  const w = Math.max(1, Math.round(srcW * scale));
+  const h = Math.max(1, Math.round(srcH * scale));
+
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext('2d');
+  if (img.bitmap) {
+    ctx.drawImage(img.bitmap, 0, 0, w, h); // navigateur : déjà décodé
+  } else {
+    const rgba = rawToRgba(img);
+    if (!rgba) return null;
+    const src = new OffscreenCanvas(srcW, srcH);
+    src.getContext('2d').putImageData(new ImageData(rgba, srcW, srcH), 0, 0);
+    ctx.drawImage(src, 0, 0, w, h);
+  }
+
+  // JPEG pour les grandes images (photos/scans) : un PNG sans perte ferait
+  // exploser le poids du PDF de sortie. PNG pour les petites (logos, icônes),
+  // où la transparence compte et le poids est négligeable.
+  const useJpeg = w * h > 128 * 128;
+  const blob = await canvas.convertToBlob(useJpeg ? { type: 'image/jpeg', quality: 0.82 } : { type: 'image/png' });
+  return { bytes: await blob.arrayBuffer(), jpeg: useJpeg };
 }
 
 // Ré-extrait la structure géométrique page par page (convention stateless ;
@@ -180,6 +217,7 @@ export async function reconstructPdf(buffer, opts = {}) {
   const allUnits = pages.flatMap(p => p.units.map(u => ({ id: u.id, text: u.text })));
   const { results, mapping } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
+    onProgress: opts.onProgress,
     maskOpts: opts.maskOpts,
     forceTerms: opts.forceTerms,
     disabledTypes: opts.disabledTypes,
@@ -193,14 +231,18 @@ export async function reconstructPdf(buffer, opts = {}) {
   for (const page of pages) {
     const pdfPage = pdfDoc.addPage([page.width, page.height]);
 
-    // Images d'abord (en fond), texte par-dessus. Défensif : une image qui
-    // échoue (format non géré, canvas absent en Node) est ignorée sans
-    // interrompre la reconstruction du texte.
-    for (const img of page.images || []) {
+    // Images d'abord (en fond), texte par-dessus. Encodage en PARALLÈLE (le
+    // ré-encodage canvas est le poste coûteux), dessin ensuite dans l'ordre.
+    // Défensif : une image qui échoue (format non géré, canvas absent en Node)
+    // est ignorée sans interrompre la reconstruction du texte.
+    const encoded = await Promise.all((page.images || []).map(async img => {
+      try { return { img, enc: await encodeImage(img.bitmap) }; }
+      catch { return { img, enc: null }; }
+    }));
+    for (const { img, enc } of encoded) {
+      if (!enc) continue;
       try {
-        const png = await bitmapToPng(img.bitmap);
-        if (!png) continue;
-        const embedded = await pdfDoc.embedPng(png);
+        const embedded = enc.jpeg ? await pdfDoc.embedJpg(enc.bytes) : await pdfDoc.embedPng(enc.bytes);
         pdfPage.drawImage(embedded, { x: img.x, y: img.y, width: img.w, height: img.h });
       } catch { /* image ignorée, jamais bloquant */ }
     }

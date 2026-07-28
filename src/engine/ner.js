@@ -148,10 +148,17 @@ const MIN_SCORE = 0.6;
 // Sur un chevauchement entre les deux passes, on garde donc le span le plus
 // long (le plus complet), la confiance ne départageant qu'à égalité de
 // longueur — même logique que resolveOverlaps dans merge.js pour le regex.
-export async function detectNER(text, nerPipeline) {
+// onProgress({ done, total }) (optionnel) : appelé après chaque fenêtre. Le NER
+// tourne sur le thread principal (pas de worker, contrainte CSP MV3) et fait
+// DEUX inférences BERT par fenêtre — sur un document de quelques milliers de
+// caractères ça se compte en dizaines de secondes. Sans retour chiffré,
+// l'utilisateur croit à un plantage et interrompt (constaté).
+export async function detectNER(text, nerPipeline, { onProgress } = {}) {
   if (!nerPipeline) return [];
   const all = [];
-  for (const { offset, text: chunk } of chunkText(text)) {
+  const chunks = chunkText(text);
+  let done = 0;
+  for (const { offset, text: chunk } of chunks) {
     // Le filtre de confiance s'applique AVANT le calcul des chevauchements :
     // un fragment bruité (score très faible) ne doit pas pouvoir bloquer une
     // détection solide de l'autre passe puis disparaître lui-même au filtre
@@ -178,6 +185,10 @@ export async function detectNER(text, nerPipeline) {
     for (const e of kept) {
       all.push({ ...e, start: e.start + offset, end: e.end + offset });
     }
+    // await : le callback peut rendre la main au navigateur (setTimeout 0) pour
+    // qu'il repeigne l'avancement — sinon le thread principal reste bloqué du
+    // début à la fin et l'UI semble figée.
+    if (onProgress) await onProgress({ done: ++done, total: chunks.length });
   }
   // Recalage des entités PER sur les frontières de mot. Le modèle cased produit
   // deux défauts qui laissent fuir une partie du nom :

@@ -462,10 +462,12 @@ function locateGroups(text, groups) {
   return entities;
 }
 var MIN_SCORE = 0.6;
-async function detectNER(text, nerPipeline) {
+async function detectNER(text, nerPipeline, { onProgress } = {}) {
   if (!nerPipeline) return [];
   const all = [];
-  for (const { offset, text: chunk } of chunkText(text)) {
+  const chunks = chunkText(text);
+  let done = 0;
+  for (const { offset, text: chunk } of chunks) {
     const natural = locateGroups(chunk, groupTokens(await nerPipeline(chunk))).filter((e) => e.score >= MIN_SCORE);
     const boosted = boostCase(chunk);
     const boostedEntities = locateGroups(boosted, groupTokens(await nerPipeline(boosted))).map((e) => ({ ...e, value: chunk.slice(e.start, e.end) })).filter((e) => e.score >= MIN_SCORE);
@@ -480,6 +482,7 @@ async function detectNER(text, nerPipeline) {
     for (const e of kept) {
       all.push({ ...e, start: e.start + offset, end: e.end + offset });
     }
+    if (onProgress) await onProgress({ done: ++done, total: chunks.length });
   }
   const nameChar = /[A-Za-zÀ-ÿ'’-]/;
   for (const e of all) {

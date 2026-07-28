@@ -6,7 +6,7 @@ import {
   maskText,
   mergeEntities,
   selectActive
-} from "./chunk-KNKQTNVF.js";
+} from "./chunk-MUV5HHJR.js";
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\uE000\uE004\uE000";
@@ -24,11 +24,11 @@ function joinWithSentinel(units) {
   }
   return { combined, ranges };
 }
-async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues } = {}) {
+async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
   const regexEntities = detectRegex(combined);
-  const nerEntities = nerPipeline ? await detectNER(combined, nerPipeline) : [];
+  const nerEntities = nerPipeline ? await detectNER(combined, nerPipeline, { onProgress }) : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, /* @__PURE__ */ new Set());
   const active = filterByRules(selected, {

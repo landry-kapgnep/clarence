@@ -9,7 +9,7 @@ import {
   mergeEntities,
   reinject,
   selectActive
-} from "./chunk-KNKQTNVF.js";
+} from "./chunk-MUV5HHJR.js";
 import {
   __commonJS,
   __toESM
@@ -29625,6 +29625,10 @@ function showFileResults(mapping, copyable) {
   $("reinjectSection").hidden = false;
   $("dragCard").hidden = !document.body.classList.contains("panel-mode");
 }
+var nerProgress = ({ done, total }) => {
+  fileSetStatus(`D\xE9tection en cours\u2026 ${done}/${total}`);
+  return new Promise((r) => setTimeout(r, 0));
+};
 function setAnalyzeBtnLoading(loading) {
   const btn = $("fileAnalyzeBtn");
   if (loading) {
@@ -29663,10 +29667,11 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Chargement du mod\xE8le et reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-TXPMQJO5.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-TOTR2MX5.js");
       const pdflib = await import("./es-LDLWYJWP.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
+        onProgress: nerProgress,
         forceTerms: parseLines($("fileAlwaysMask")?.value),
         disabledTypes: fileDisabledTypes,
         keepValues: parseLines($("fileAlwaysKeep")?.value),
@@ -29678,7 +29683,7 @@ async function processFile() {
       fileSetStatus(nerPipe ? "" : "D\xE9tection des noms indisponible \u2014 relis attentivement le PDF.", nerPipe ? "" : "error");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-6FNJ4MPA.js");
+    const { anonymizeUnits } = await import("./anonymize-units-IOOUK7KX.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -29689,6 +29694,7 @@ async function processFile() {
     await ensureNER();
     const { results, mapping } = await anonymizeUnits(units, {
       nerPipeline: nerPipe,
+      onProgress: nerProgress,
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte
       // (selection.js), appliquées au document combiné entier.

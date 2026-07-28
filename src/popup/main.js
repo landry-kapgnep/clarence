@@ -489,6 +489,15 @@ function showFileResults(mapping, copyable) {
 // reconstruction PDF tournent sur le thread principal (pas de worker, contrainte
 // CSP MV3) et peuvent prendre plusieurs secondes sur un gros fichier — sans
 // signal visible, l'utilisateur croit que c'est planté et abandonne.
+// Avancement chiffré du NER : sans lui, l'utilisateur ne sait pas si ça
+// progresse ou si c'est figé (il interrompait le traitement — constaté).
+// Un await yield laisse le navigateur repeindre entre deux fenêtres, sinon le
+// thread principal reste bloqué et le statut ne s'affiche jamais.
+const nerProgress = ({ done, total }) => {
+  fileSetStatus(`Détection en cours… ${done}/${total}`);
+  return new Promise(r => setTimeout(r, 0));
+};
+
 function setAnalyzeBtnLoading(loading) {
   const btn = $('fileAnalyzeBtn');
   if (loading) {
@@ -539,6 +548,7 @@ async function processFile() {
       const pdflib = await import('pdf-lib');
       const { buffer: outBuf, mapping } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
+        onProgress: nerProgress,
         forceTerms: parseLines($('fileAlwaysMask')?.value),
         disabledTypes: fileDisabledTypes,
         keepValues: parseLines($('fileAlwaysKeep')?.value),
@@ -570,6 +580,7 @@ async function processFile() {
     await ensureNER();
     const { results, mapping } = await anonymizeUnits(units, {
       nerPipeline: nerPipe,
+      onProgress: nerProgress,
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte
       // (selection.js), appliquées au document combiné entier.

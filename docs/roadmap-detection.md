@@ -59,7 +59,24 @@ intérêt (ce ne sont pas des PII) et rend le CV inexploitable par le LLM.
 
 ---
 
-## P3 — Images non rendues dans la reconstruction PDF
+## ~~P3 — Images non rendues dans la reconstruction PDF~~ ✅ CORRIGÉ (21/07/2026)
+
+**Cause trouvée** (diagnostic sur un vrai PDF à images de l'utilisateur, confirmé
+dans la source du worker pdfjs qui poste `{bitmap, data}`) : selon
+l'environnement, pdfjs livre une image sous **deux formes différentes** —
+en **navigateur** un `ImageBitmap` déjà décodé (propriété `bitmap`), en **Node**
+des données brutes (`data` + `kind`). `extractImages` ne testait que `data` →
+en Chrome **toutes** les images étaient silencieusement écartées, alors que les
+tests Node passaient. Même famille de piège que le `workerSrc` (cf. gotchas).
+
+Corrigé : les deux formes sont acceptées, `encodeImage` dessine soit
+l'`ImageBitmap` (`drawImage`), soit les données brutes (`putImageData`).
+Ajouté au passage : timeout de 8 s sur `objs.get` (API à callback qui pouvait
+bloquer indéfiniment), **JPEG q0.82** pour les grandes images (un PNG sans perte
+sur des photos ferait exploser le poids du PDF), plafond de 1600 px, encodage
+**en parallèle** par page.
+
+## P3 (ancien intitulé, conservé pour l'historique)
 
 Constaté par l'utilisateur sur un PDF à images (fichier non disponible pour
 diagnostic ; le CV testé n'a AUCUNE image raster — que du texte + vectoriel,
@@ -75,25 +92,30 @@ diagnostic ; le CV testé n'a AUCUNE image raster — que du texte + vectoriel,
 
 ---
 
-## P3bis — Performance : traitement très lent sur PDF à images
+## P3bis — Performance : le NER est le coût dominant (MESURÉ)
 
-Constaté : un PDF avec images met un temps « incroyablement long » à traiter, au
-point que l'utilisateur croit à un plantage et abandonne. Deux causes :
-- **Reconstruction** : `getOperatorList()` décode TOUTES les images, puis
-  ré-encodage canvas + `embedPng` par image — coûteux sur de grosses/nombreuses
-  images. (Le mode Markdown, lui, ne touche pas aux images → rapide.)
-- **NER** : tourne sur le thread principal (pas de worker, contrainte CSP MV3),
-  double passe, par fenêtres — coût dominant sur un long document.
+Mesures réelles sur le PDF de l'utilisateur (1,6 Mo, 5 pages, 9 images) :
+- `getOperatorList` sur tout le document : **198 ms**
+- reconstruction complète **sans NER** : **377 ms**
+- texte extrait : **4 735 caractères → 6 fenêtres NER → 12 inférences BERT**
+  (double passe naturelle + boostée) ≈ **15-20 s**, plus le chargement du
+  modèle (~30 Mo) au premier usage.
 
-Traité (partiel) : **loader animé "vaguelettes"** dans le bouton pendant le
-traitement (règle la PERCEPTION de plantage, pas la lenteur elle-même).
+→ Le parsing/la reconstruction ne sont PAS le problème : **c'est le NER**, sur
+le thread principal (pas de worker, contrainte CSP MV3 / `numThreads=1`).
 
-Reste : la vraie accélération = **Web Worker** pour sortir le NER (et
-l'encodage image) du thread principal. Gros chantier (le NER a été gardé sur le
-thread principal justement à cause de la CSP MV3 / `numThreads=1`) — à cadrer à
-part. Pistes intermédiaires plus légères : traiter les images en parallèle
-(`Promise.all`), sauter le décodage image en mode Markdown (déjà le cas),
-plafonner la résolution des images ré-encodées.
+Traité :
+- **loader "vaguelettes"** dans le bouton (perception) ;
+- **avancement chiffré** « Détection en cours… 3/6 » (`onProgress` de
+  `detectNER` → `anonymizeUnits`/`reconstructPdf` → statut), avec un yield
+  entre fenêtres pour que le navigateur repeigne — l'utilisateur voit que ça
+  progresse au lieu d'interrompre ;
+- encodage des images en parallèle + JPEG + plafond 1600 px.
+
+Reste (vraie accélération, chantier à cadrer) : sortir le NER du thread
+principal (**Web Worker**), ou réduire le travail (sauter la passe boostée sur
+un texte déjà bien casé — risqué, testé et rejeté une fois ; ou un modèle plus
+petit).
 
 ## P4 — Divers reconstruction (cosmétique)
 
