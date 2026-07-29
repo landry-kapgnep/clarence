@@ -212,9 +212,13 @@ export async function detectNER(text, nerPipeline, { onProgress } = {}) {
   //    travers les traits d'union vers les mots capitalisés adjacents.
   // Déterministe et sûr : n'étend qu'une détection PER existante (jamais de
   // franchissement d'espace), et on rogne les tirets aux extrémités.
+  // Le recalage vaut aussi pour ORG/LOC : le modèle n'étiquette parfois que le
+  // premier sous-mot (« Sem » de Semantikmatch, « UT » de IUT), ce qui laissait
+  // le reste du mot EN CLAIR à côté du placeholder ([ENTREPRISE_4]antikmatch) —
+  // fuite partielle constatée sur un vrai CV.
   const nameChar = /[A-Za-zÀ-ÿ'’-]/;
   for (const e of all) {
-    if (e.type !== 'PER') continue;
+    if (e.type !== 'PER' && e.type !== 'ORG' && e.type !== 'LOC') continue;
     let { start, end } = e;
     while (start > 0 && nameChar.test(text[start - 1])) start--;
     while (end < text.length && nameChar.test(text[end])) end++;

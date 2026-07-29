@@ -9,12 +9,47 @@ import { mergeEntities } from '../engine/merge.js';
 import { selectActive, forcedMasks, filterByRules } from '../engine/selection.js';
 import { maskText } from '../engine/masking.js';
 
-// Séparateur entre unités : caractère de la zone d'usage privé Unicode,
-// jamais présent dans un vrai document. Frontière dure qu'aucune entité ni
-// aucune propagation de maskText ne peut franchir, donc masked.split(UNIT_SEP)
-// retrouve exactement le texte masqué de chaque unité — propagation
-// (répétitions non détectées individuellement) comprise gratuitement.
-export const UNIT_SEP = '';
+// Séparateur entre unités : caractères de la zone d'usage privé Unicode,
+// jamais présents dans un vrai document, encadrés de retours à la ligne.
+// Frontière dure qu'aucune entité ni propagation de maskText ne franchit,
+// donc masked.split(UNIT_SEP) retrouve exactement le texte de chaque unité.
+// Les retours à la ligne donnent en plus une frontière visible au tokenizer du
+// modèle (les caractères de zone privée, eux, sont ignorés par lui : sans eux
+// les unités lui apparaissent collées). NB : cela n'a PAS suffi à corriger les
+// noms ratés en tête d'unité — la vraie cause était le fenêtrage de détection,
+// voir detectNerPerUnit ci-dessous.
+export const UNIT_SEP = '\n\u{E000}\u{E004}\u{E000}\n';
+
+// Détection NER unité par unité, et NON sur le texte combiné.
+//
+// Mesuré sur un vrai CV (38 unités) : le texte combiné donnait 7 entités et
+// AUCUN nom de personne, alors que le même modèle détecte parfaitement le nom
+// quand l'unité est isolée. Par unité : 22 entités, nom trouvé, pour seulement
+// +24 % de temps. Un contexte propre vaut mieux qu'une grande fenêtre — testé
+// aussi en lots de 150/300/600 caractères : tous échouaient à trouver le nom.
+// (Le masquage, lui, reste fait sur le texte combiné : c'est de là que vient
+// la cohérence des placeholders, indépendamment de la détection.)
+//
+// Deux garde-fous pour les fichiers à nombreuses cellules (CSV/XLSX), où un
+// appel par cellule serait prohibitif :
+//  - unités sans aucune suite de 2 lettres (nombres, dates, codes) : ignorées ;
+//  - textes identiques (valeurs répétées d'une colonne) : détectés une seule fois.
+async function detectNerPerUnit(units, ranges, nerPipeline, onProgress) {
+  const out = [];
+  const cache = new Map();
+  for (let i = 0; i < units.length; i++) {
+    const text = units[i].text;
+    if (/\p{L}{2}/u.test(text)) {
+      if (!cache.has(text)) cache.set(text, await detectNER(text, nerPipeline));
+      const base = ranges[i].start;
+      for (const e of cache.get(text)) {
+        out.push({ ...e, start: e.start + base, end: e.end + base });
+      }
+    }
+    if (onProgress) await onProgress({ done: i + 1, total: units.length });
+  }
+  return out;
+}
 
 function joinWithSentinel(units) {
   let combined = '';
@@ -57,7 +92,7 @@ export async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms,
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
   const regexEntities = detectRegex(combined);
-  const nerEntities = nerPipeline ? await detectNER(combined, nerPipeline, { onProgress }) : [];
+  const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress) : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, new Set());
   const active = filterByRules(selected, {

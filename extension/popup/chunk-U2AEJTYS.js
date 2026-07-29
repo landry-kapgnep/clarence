@@ -501,7 +501,7 @@ async function detectNER(text, nerPipeline, { onProgress } = {}) {
   }
   const nameChar = /[A-Za-zÀ-ÿ'’-]/;
   for (const e of all) {
-    if (e.type !== "PER") continue;
+    if (e.type !== "PER" && e.type !== "ORG" && e.type !== "LOC") continue;
     let { start, end } = e;
     while (start > 0 && nameChar.test(text[start - 1])) start--;
     while (end < text.length && nameChar.test(text[end])) end++;

@@ -6,10 +6,26 @@ import {
   maskText,
   mergeEntities,
   selectActive
-} from "./chunk-3VMPP6LD.js";
+} from "./chunk-U2AEJTYS.js";
 
 // src/files/anonymize-units.js
-var UNIT_SEP = "\uE000\uE004\uE000";
+var UNIT_SEP = "\n\uE000\uE004\uE000\n";
+async function detectNerPerUnit(units, ranges, nerPipeline, onProgress) {
+  const out = [];
+  const cache = /* @__PURE__ */ new Map();
+  for (let i = 0; i < units.length; i++) {
+    const text = units[i].text;
+    if (new RegExp("\\p{L}{2}", "u").test(text)) {
+      if (!cache.has(text)) cache.set(text, await detectNER(text, nerPipeline));
+      const base = ranges[i].start;
+      for (const e of cache.get(text)) {
+        out.push({ ...e, start: e.start + base, end: e.end + base });
+      }
+    }
+    if (onProgress) await onProgress({ done: i + 1, total: units.length });
+  }
+  return out;
+}
 function joinWithSentinel(units) {
   let combined = "";
   const ranges = [];
@@ -28,7 +44,7 @@ async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabl
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
   const regexEntities = detectRegex(combined);
-  const nerEntities = nerPipeline ? await detectNER(combined, nerPipeline, { onProgress }) : [];
+  const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress) : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, /* @__PURE__ */ new Set());
   const active = filterByRules(selected, {
