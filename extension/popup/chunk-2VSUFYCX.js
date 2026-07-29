@@ -1,12 +1,13 @@
 import {
   detectNER,
+  detectPhonesIntl,
   detectRegex,
   filterByRules,
   forcedMasks,
   maskText,
   mergeEntities,
   selectActive
-} from "./chunk-U2AEJTYS.js";
+} from "./chunk-5O3GQECX.js";
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\n\uE000\uE004\uE000\n";
@@ -43,7 +44,7 @@ function joinWithSentinel(units) {
 async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
-  const regexEntities = detectRegex(combined);
+  const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
   const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress) : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, /* @__PURE__ */ new Set());

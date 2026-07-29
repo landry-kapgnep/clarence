@@ -2,6 +2,7 @@
 // importé ici : il vit dans le worker NER (src/worker/ner-worker.js), ce qui
 // libère le thread principal ET allège fortement ce bundle.
 import { detectRegex } from '../engine/regex-detect.js';
+import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
@@ -277,7 +278,8 @@ async function analyze() {
   btn.disabled = true;
   try {
     await ensureNER();
-    const rx = detectRegex(text);
+    // Structuré = regex FR + téléphones internationaux (libphonenumber).
+    const rx = [...detectRegex(text), ...detectPhonesIntl(text)];
     const ner = nerPipe ? await detectNER(text, nerPipe) : [];
     autoEntities = mergeEntities(rx, ner);
     render();

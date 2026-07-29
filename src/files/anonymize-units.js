@@ -4,6 +4,7 @@
 // appel par cellule/paragraphe isolé, qui numéroterait les placeholders au
 // hasard d'une unité à l'autre pour une même valeur répétée.
 import { detectRegex } from '../engine/regex-detect.js';
+import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER } from '../engine/ner.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, forcedMasks, filterByRules } from '../engine/selection.js';
@@ -91,7 +92,8 @@ export async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms,
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
-  const regexEntities = detectRegex(combined);
+  // Structuré = regex FR + téléphones internationaux (libphonenumber).
+  const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
   const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress) : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, new Set());

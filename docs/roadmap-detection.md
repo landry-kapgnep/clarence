@@ -153,3 +153,34 @@ trancher « à masquer ou pas ». C'est exactement ce que la couche LLM local
 (cadrage §5/§8, roadmap Étape 5) est censée résoudre — mais c'est lourd. P1 est
 indépendant (géométrie pure) et devrait être fait en premier : c'est une vraie
 fuite partielle, à coût faible.
+
+---
+
+## P5 — Internationalisation de la couche structurée (21/07/2026)
+
+Constaté sur un texte anglais : le regex ne détectait **que l'email**. Le NER,
+lui, marchait très bien (Eleanor Vance, TechCorp Solutions LLC, Springfield,
+Oregon…) — le modèle est multilingue, **le problème n'a jamais été le modèle**,
+seulement notre couche de motifs, écrite pour la France.
+
+**Fait** : téléphones internationaux via `libphonenumber-js`
+(`src/engine/phone-intl.js`). Les métadonnées par pays sont maintenues par la
+bibliothèque — rien à suivre de notre côté. Choix de conception vérifiés par
+test : pas de `defaultCountry` (sinon « 483 921 657 » du piège SIREN devient un
+numéro FR) et mode `extended` (masque les numéros plausibles mais invalides).
+Coût : ~235 Ko en chunk, chargé à l'ouverture de la popup.
+
+**Reste à internationaliser** (par ordre de valeur) :
+- **codes postaux** hors FR (le motif actuel exige 5 chiffres + ville capitalisée
+  APRÈS ; « Oregon, 97477, United States » échoue) → `validator.isPostalCode(v, locale)`
+  couvre ~35 pays et se branche sur l'architecture « regex trouve → validateur confirme » ;
+- **dates en anglais** (« March 14, 1988 », « August 2028 ») : simple ajout de motif ;
+- **identifiants nationaux non-FR** (SSN US, NHS UK, tax IDs) → `validator.isTaxID`
+  et/ou portage du catalogue de recognizers de **Microsoft Presidio** (référence
+  open-source du domaine, mais **Python** : on porte les motifs, pas le code) ;
+- **identifiants de compte génériques** (« CUST-849204-X ») : motif contextuel,
+  proche de REFERENCE déjà existant.
+
+Note : `@faker-js/faker` (portage JS officiel, MIT, import par locale) rendrait
+les pseudonymes cohérents avec la langue du document. À arbitrer contre le poids
+et le déterminisme actuel de `pseudonyms.js`.

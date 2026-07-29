@@ -1,6 +1,7 @@
 import {
   NER_MODEL,
   detectNER,
+  detectPhonesIntl,
   detectRegex,
   entityKey,
   filterByRules,
@@ -9,7 +10,7 @@ import {
   mergeEntities,
   reinject,
   selectActive
-} from "./chunk-U2AEJTYS.js";
+} from "./chunk-5O3GQECX.js";
 import "./chunk-TRTQSARU.js";
 
 // src/engine/pseudonyms.js
@@ -586,7 +587,7 @@ async function analyze() {
   btn.disabled = true;
   try {
     await ensureNER();
-    const rx = detectRegex(text);
+    const rx = [...detectRegex(text), ...detectPhonesIntl(text)];
     const ner = nerPipe ? await detectNER(text, nerPipe) : [];
     autoEntities = mergeEntities(rx, ner);
     render();
@@ -839,7 +840,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Chargement du mod\xE8le et reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-QCPH2YTP.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-OPO5RLIS.js");
       const pdflib = await import("./es-LDLWYJWP.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -855,7 +856,7 @@ async function processFile() {
       fileSetStatus(nerPipe ? "" : "D\xE9tection des noms indisponible \u2014 relis attentivement le PDF.", nerPipe ? "" : "error");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-CH3VF6CJ.js");
+    const { anonymizeUnits } = await import("./anonymize-units-LN5RACLI.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

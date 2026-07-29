@@ -1,127 +1,102 @@
 :root {
-  --paper: #EDE6D3;
-  --paper-dim: #E2D8BF;
-  --ink: #2B2621;
-  --ink-soft: #5A4F42;
-  --seal: #252a41;
-  --moss: #4B5A45;
-  --line: rgba(43, 38, 33, 0.14);
+  /* Encre et papier, inversés : le papier devient l'encre. */
+  --paper: #EDE6D3;            /* texte principal (ex-fond) */
+  --paper-dim: #A39C8C;        /* texte secondaire */
+  --ink: #EDE6D3;              /* alias historique : sert de couleur de texte */
+  --ink-soft: #A39C8C;
+  --muted: #6E6A60;
+
+  /* Surfaces */
+  --bg-page: #050506;          /* fond hors coquille */
+  --bg-shell: #0A0A0D;         /* .wrap */
+  --bg-field: #0F1014;         /* champs, panneaux */
+  --bg-raised: #171A22;        /* segment actif, chips */
+
+  /* Sceau : la teinte du projet, + une version éclaircie lisible sur noir */
+  --seal: #252A41;
+  --seal-lit: #8D93D6;
+  --moss: #8CA882;             /* détections modèle */
+  --tan: #C2A06A;              /* masques manuels, actions expérimentales */
+
+  --line: rgba(237, 230, 211, 0.14);
+  --line-soft: rgba(237, 230, 211, 0.10);
+
   --control-weight: 400;
-  --control-size: 13px;
-  --control-bg: var(--seal);
-  --control-fg: var(--paper);
-  --control-border: rgba(43, 38, 33, 0.08);
-  --control-ghost-bg: rgba(255,255,255,0.7);
-  --control-ghost-hover-bg: rgba(255,255,255,0.9);
-  --control-hover-bg: rgba(0,0,0,0.06);
+  --control-size: 14px;        /* Times porte moins que Syne Mono : +1px */
+  --control-bg: var(--paper);
+  --control-fg: #0F1014;
+  --control-border: var(--line);
+  --control-ghost-bg: rgba(237, 230, 211, 0.07);
+  --control-ghost-hover-bg: rgba(237, 230, 211, 0.12);
+  --control-hover-bg: rgba(237, 230, 211, 0.10);
+
+  --font-body: 'Syne Mono', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-@font-face {
-  font-family: 'Benne';
-  src: local('Benne'), url('fonts/Syne_Mono/SyneMono-Regular.ttf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+* { box-sizing: border-box; }
 
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  background: transparent;
-}
+html, body { margin: 0; padding: 0; }
+html { background: transparent; }
 
 body {
   width: 520px;
   min-width: 320px;
-  /* Le défilement vit sur .popup-shell (div interne), PAS sur body : l'overflow
-     du body se propage au viewport et sa max-height est ignorée → aucune barre.
-     Un conteneur interne, lui, défile de façon fiable. */
   overflow: visible;
   position: relative;
   border-radius: 24px;
-  color: var(--ink);
-  font-family: 'Benne', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: var(--control-size);
+  line-height: 1.5;
   background: transparent;
 }
 
+/* Le défilement vit sur .popup-shell (div interne), PAS sur body. */
 .popup-shell {
   padding: 12px;
-  /* Conteneur de défilement du popup de barre d'outils. Valeur FIXE (pas 100vh :
-     circulaire dans une popup qui s'auto-dimensionne → ne plafonne jamais).
-     Chrome plafonne la fenêtre à 600px ; on cape juste en-dessous pour que la
-     barre apparaisse dès que le contenu dépasse (menus dépliés, longs résultats),
-     sinon la fenêtre se réduit au contenu. Barre fine, discrète, on-brand. */
   max-height: 584px;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  scrollbar-color: rgba(43, 38, 33, 0.32) transparent;
-  background: linear-gradient(180deg, #252a41, rgba(255, 255, 255, 0));
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3), 0 18px 50px rgba(43,38,33,0.16);
+  scrollbar-color: rgba(237, 230, 211, 0.28) transparent;
+  /* Liseré gradienté conservé : le sceau se fond dans le noir. */
+  background: linear-gradient(180deg, var(--seal), rgba(5, 5, 6, 0));
+  box-shadow: inset 0 0 0 1px rgba(237, 230, 211, 0.12), 0 18px 50px rgba(0, 0, 0, 0.6);
 }
 .popup-shell::-webkit-scrollbar { width: 8px; }
 .popup-shell::-webkit-scrollbar-track { background: transparent; }
 .popup-shell::-webkit-scrollbar-thumb {
-  background: rgba(43, 38, 33, 0.28);
+  background: rgba(237, 230, 211, 0.24);
   border-radius: 8px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-.popup-shell::-webkit-scrollbar-thumb:hover { background: rgba(43, 38, 33, 0.45); }
-/*couleur sympa 252a41 btw*/
+.popup-shell::-webkit-scrollbar-thumb:hover { background: rgba(237, 230, 211, 0.4); }
+
 .wrap {
   padding: 16px;
   border-radius: 22px;
-  background: rgba(255, 250, 242, 0.96);
-  backdrop-filter: blur(6px);
-  background-image: url("img/PrintGridTransparent.png");
+  background: var(--bg-shell);
+  /* Trame d'impression en blanc : la sensation papier passe par elle. */
+  background-image: url("img/PrintGridTransparentW.png");
   background-size: contain;
   background-repeat: no-repeat;
-  
+  position: relative;
 }
 
-header {
-  display: flex;
-  align-items: center;
-}
+header { display: flex; align-items: center; }
 
-h1 {
-  font-size: 17px;
-  margin: 0;
-}
+h1 { font-size: 18px; margin: 0; font-weight: 400; }
+h2 { font-size: 14px; margin: 14px 0 6px; font-weight: 400; color: var(--paper); }
 
-.tagline {
-  margin: 0;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-
-h2 {
-  font-size: 13px;
-  margin: 14px 0 6px;
-}
-
-.hint {
-  font-weight: 400;
-  font-size: 11px;
-  color: var(--ink-soft);
-}
+.tagline { margin: 0; font-size: 13px; color: var(--paper-dim); }
+.hint { font-weight: 400; font-size: 12px; color: var(--muted); }
 
 .field-label {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.05em;
-  color: var(--ink-soft);
+  color: var(--paper-dim);
   margin-bottom: 6px;
 }
 
@@ -129,54 +104,246 @@ textarea {
   width: 100%;
   min-height: 110px;
   max-height: 260px;
-  background: rgba(255, 250, 242, 0.96);
+  background: var(--bg-field);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
-  font: var(--control-size)/1.45 'Benne', system-ui;
-  color: var(--ink);
+  font: var(--control-size)/1.5 var(--font-body);
+  color: var(--paper);
   resize: vertical;
   overflow-y: auto;
   scrollbar-width: none;
 }
-
+textarea::placeholder { color: var(--muted); }
 textarea::-webkit-scrollbar { display: none; }
-
 textarea:focus {
   outline: none;
-  border-color: var(--seal);
-  box-shadow: 0 0 0 3px #ffffff;
+  border-color: var(--seal-lit);
+  box-shadow: 0 0 0 3px rgba(141, 147, 214, 0.18);
 }
 
-.controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
+.controls { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 
 button {
+  font-family: var(--font-body);
   font-weight: var(--control-weight);
   font-size: var(--control-size);
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   background: var(--control-bg);
   color: var(--control-fg);
+  transition: transform .16s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .2s ease, filter .15s ease, background .2s ease,
+              border-color .2s ease;
+}
+button:hover:not(:disabled) { transform: translateY(-1px); }
+button:active:not(:disabled) { transform: translateY(0) scale(.96); }
+button:focus-visible { outline: 2px solid var(--seal-lit); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--paper);
+  color: var(--control-fg);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.04); }
+
+.btn-ghost {
+  background: var(--control-ghost-bg);
+  border: 1px solid var(--control-border);
+  color: var(--paper);
+}
+.btn-ghost:hover:not(:disabled) { background: var(--control-ghost-hover-bg); }
+
+.status { font-size: 13px; color: var(--paper-dim); margin-top: 6px; min-height: 16px; }
+.status.active { color: var(--moss); }
+.status.error { color: var(--tan); }
+
+.panel {
+  background: var(--bg-field);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 200px;
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: var(--control-size);
+  line-height: 1.7;
 }
 
-button:hover:not(:disabled) {
-  transform: translateY(-1px);
+.overlay-trigger { display: block; margin: 6px 0 0; font-size: 12px; padding: 4px 8px; }
+
+input, textarea, select, button, .panel, .status, .hint {
+  font-family: var(--font-body);
+  font-weight: var(--control-weight);
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* ===== Marques de détection ===== */
+mark {
+  padding: 1px 3px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--paper);
+  transition: box-shadow .12s ease, background .12s ease;
+}
+mark.src-regex {
+  background: rgba(141, 147, 214, 0.20);
+  box-shadow: inset 0 -1.5px 0 var(--seal-lit);
+}
+mark.src-ner {
+  background: rgba(140, 168, 130, 0.18);
+  box-shadow: inset 0 -1.5px 0 var(--moss);
+}
+mark.src-manuel {
+  background: rgba(194, 160, 106, 0.22);
+  box-shadow: inset 0 -1.5px 0 var(--tan);
+}
+mark:hover { outline: 1px solid var(--seal-lit); }
+
+details { margin-top: 12px; font-size: 13px; }
+summary { cursor: pointer; color: var(--paper-dim); }
+summary::marker { color: var(--seal-lit); }
+
+table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+td { padding: 3px 4px; font-size: 13px; color: var(--paper-dim); }
+td.mono { font-family: var(--font-body); color: var(--seal-lit); }
+
+footer {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 12px;
+  color: var(--muted);
 }
 
+/* ===== Images de marque (variantes blanches) ===== */
+.logo { width: 200px; height: auto; flex-shrink: 0; margin: auto; }
+.dlbtn { width: 20px; height: auto; flex-shrink: 0; }
+.cpbtn { width: 15px; height: auto; flex-shrink: 0; }
+/* Les pictos de bouton sont blancs ; sur un bouton clair il faut les inverser. */
+.btn-primary .dlbtn, .btn-primary .cpbtn { filter: invert(1); }
+
+/* ===== Mode panneau (iframe injectée dans les sites IA, ?panel=1) ===== */
+html.panel-mode { height: 100%; margin: 0; overflow: hidden; }
+body.panel-mode {
+  width: 100%;
+  height: 100vh;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(237, 230, 211, 0.28) transparent;
+  background: var(--bg-page);
+  border-radius: 0;
+}
+body.panel-mode::-webkit-scrollbar { width: 8px; }
+body.panel-mode::-webkit-scrollbar-track { background: transparent; }
+body.panel-mode::-webkit-scrollbar-thumb {
+  background: rgba(237, 230, 211, 0.24);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+body.panel-mode .popup-shell {
+  /* Chrome peint un canvas opaque derrière l'iframe : rien ne doit rester
+     transparent. Le liseré se fond dans le noir de page. */
+  background: linear-gradient(180deg, var(--seal) 0%, var(--bg-page) 55%);
+  max-height: none;
+  overflow: visible;
+}
+
+/* ===== Animations ===== */
+@keyframes clarence-reveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#results:not([hidden]),
+#reinjectZone:not([hidden]),
+#reinjected:not([hidden]),
+#fileResults:not([hidden]) {
+  animation: clarence-reveal .28s cubic-bezier(.2,.9,.3,1) both;
+}
+
+/* ===== Fenêtre flottante « Voir tout » ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(5, 5, 6, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.overlay[hidden] { display: none; }
+
+.overlay-card {
+  width: 100%;
+  max-width: min(460px, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-shell);
+  background-image: url("img/PrintGridTransparentW.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+.overlay-head strong { font-size: 14px; font-weight: 400; }
+.overlay-body {
+  padding: 14px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: var(--font-body);
+  font-size: var(--control-size);
+  line-height: 1.7;
+}
+.overlay-body::-webkit-scrollbar { display: none; }
+
+/* ===== Bascule Texte / Fichier ===== */
+.mode-switch {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(237, 230, 211, 0.06);
+}
+.mode-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--paper-dim);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  opacity: 0.55;
+}
+.mode-btn:hover:not(:disabled) { transform: none; background: rgba(237, 230, 211, 0.08); opacity: 0.8; }
+.mode-btn.active {
+  background: var(--bg-raised);
+  border-color: rgba(237, 230, 211, 0.16);
+  color: var(--paper);
+  opacity: 1;
+  box-shadow: none;
+}
 .mode-switch .txtmode,
 .mode-switch .filemode {
   flex: 1;
@@ -188,12 +355,6 @@ button:disabled {
   align-items: center;
   justify-content: center;
 }
-
-.mode-switch .txtmode:hover,
-.mode-switch .filemode:hover {
-  background: rgba(255, 255, 255, 0.9);
-}
-
 .mode-switch .txtmode img,
 .mode-switch .filemode img {
   width: 100%;
@@ -202,338 +363,36 @@ button:disabled {
   display: block;
 }
 
-.btn-primary {
-  background: var(--control-bg);
-  color: var(--control-fg);
-  box-shadow: 0 6px 14px rgba(43,38,33,0.12);
-}
-
-.btn-primary:hover:not(:disabled) {
-  filter: brightness(0.94);
-}
-
-.btn-ghost {
-  background: var(--control-ghost-bg);
-  border: 1px solid var(--control-border);
-  color: var(--ink);
-}
-
-.btn-ghost:hover:not(:disabled) {
-  background: var(--control-ghost-hover-bg);
-}
-
-.status {
-  font-size: 12px;
-  color: var(--ink-soft);
-  margin-top: 6px;
-  min-height: 15px;
-}
-
-.status.active {
-  color: var(--moss);
-}
-
-.status.error {
-  color: var(--seal);
-}
-
-.panel {
-  background: rgba(255, 250, 242, 0.96);
-  border-radius: 12px;
-  padding: 12px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  /* Le contenu est déjà tronqué en JS (PREVIEW_LIMIT) ; max-height + hidden
-     n'est qu'un filet de sécurité, jamais une vraie barre de défilement. */
-  max-height: 200px;
-  overflow: hidden;
-  font-family: 'Benne', system-ui;
-  font-size: var(--control-size);
-  font-weight: var(--control-weight);
-}
-
-.overlay-trigger {
-  display: block;
-  margin: 6px 0 0;
-  font-size: 11px;
-  padding: 4px 8px;
-}
-
-/* Harmonisation: utiliser Benne pour les contrôles */
-input, textarea, select, button, .panel, .status, .hint {
-  font-family: 'Benne', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-weight: var(--control-weight);
-  font-size: var(--control-size);
-}
-
-mark {
-  padding: 1px 3px;
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-mark.src-regex {
-  background: rgba(123, 45, 38, 0.16);
-  box-shadow: inset 0 -1.5px 0 var(--seal);
-}
-
-mark.src-ner {
-  background: rgba(75, 90, 69, 0.16);
-  box-shadow: inset 0 -1.5px 0 var(--moss);
-}
-
-mark.src-manuel {
-  background: rgba(176, 141, 87, 0.25);
-  box-shadow: inset 0 -1.5px 0 #B08D57;
-}
-
-mark:hover {
-  outline: 2px solid var(--seal);
-}
-
-details {
-  margin-top: 12px;
-  font-size: 12px;
-}
-
-summary {
-  cursor: pointer;
-  color: var(--ink-soft);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 6px;
-}
-
-td {
-  padding: 2px 4px;
-  font-size: 12px;
-}
-
-td.mono {
-  font-family: monospace;
-}
-
-footer {
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--line);
-  font-size: 11.5px;
-  color: var(--ink-soft);
-}
-
-.logo {
-  width: 200px;
-  height: auto;
-  flex-shrink: 0;
-  border-radius: 18px;
-  margin: auto;
-}
-
-.dlbtn {
-  width: 20px;
-  height: auto;
-  flex-shrink: 0;
-  border-radius: 18px;
-}
-
-.cpbtn {
-  width: 15px;
-  height: auto;
-  flex-shrink: 0;
-  border-radius: 18px;
-}
-
-/* ===== Mode panneau (iframe injectée dans les sites IA, ?panel=1) =====
-   Chrome peint un canvas blanc opaque derrière l'iframe : tout doit être
-   couvert par un fond opaque, et le contenu doit pouvoir défiler. Les coins
-   arrondis sont déjà découpés par l'iframe côté content script. */
-/* NB : la classe est "panel-mode" (et pas "panel") pour ne pas entrer en
-   collision avec la classe composant .panel ci-dessus. */
-html.panel-mode {
-  height: 100%;
-  margin: 0;
-  overflow: hidden; /* le défilement (s'il faut) vit sur body, pas ici */
-}
-body.panel-mode {
-  width: 100%;
-  /* 100vh À L'INTÉRIEUR D'UNE IFRAME = la hauteur réellement rendue de CETTE
-     iframe, déjà plafonnée côté page hôte par .panel { max-height: calc(100vh
-     - 110px) } (content.js). Tant que le contenu tient sous ce plafond, le
-     postMessage a fait grandir l'iframe pour l'égaler exactement → rien ne
-     déborde de ces 100vh, aucune barre. Si le contenu dépasse VRAIMENT le
-     plafond (menus dépliés, mode Fichier + résultats), il déborde de ces
-     100vh et défile — au lieu d'être invisible comme avant (overflow: hidden
-     sans aucun repli). C'est le même principe « grandit jusqu'à la limite,
-     puis scrollbar » que le popup de barre d'outils, adapté au panneau. */
-  height: 100vh;
-  max-height: none;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(43, 38, 33, 0.32) transparent;
-  background: #FFFAF2;
-  border-radius: 0;
-}
-body.panel-mode::-webkit-scrollbar { width: 8px; }
-body.panel-mode::-webkit-scrollbar-track { background: transparent; }
-body.panel-mode::-webkit-scrollbar-thumb {
-  background: rgba(43, 38, 33, 0.28);
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-body.panel-mode .popup-shell {
-  /* Chrome peint un canvas blanc opaque derrière l'iframe : rien ne doit
-     rester transparent. Le dégradé se fond dans le papier, sans démarcation. */
-  background: linear-gradient(180deg, #252a41 0%, #FFFAF2 55%);
-  /* En panneau, l'iframe se redimensionne au contenu : pas de plafond ni de
-     défilement interne (sinon double barre / hauteur figée). */
-  max-height: none;
-  overflow: visible;
-}
-
-/* ===== Animations (boutons + apparition des sections) ===== */
-@keyframes clarence-reveal {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-button {
-  transition: transform .16s cubic-bezier(.34,1.56,.64,1),
-              box-shadow .2s ease, filter .15s ease, background .2s ease,
-              border-color .2s ease;
-}
-button:active:not(:disabled) { transform: translateY(0) scale(.96); }
-button:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
-
-#results:not([hidden]),
-#reinjectZone:not([hidden]),
-#reinjected:not([hidden]) {
-  animation: clarence-reveal .28s cubic-bezier(.2,.9,.3,1) both;
-}
-
-mark { transition: outline-color .12s ease, background .12s ease; }
-
-/* ===== Fenêtre flottante « Voir tout » =====
-   Seul endroit du popup où un contenu peut réellement défiler : c'est un
-   choix explicite de l'utilisateur (clic sur "Voir tout"), pas un débordement
-   subi. La barre reste masquée pour rester cohérent avec le reste de l'UI. */
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(43, 38, 33, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.overlay[hidden] { display: none; }
-
-.overlay-card {
-  width: 100%;
-  max-width: min(460px, 100%);
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  background: rgba(255, 250, 242, 0.98);
-  border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(0,0,0,.35);
-  overflow: hidden;
-}
-
-.overlay-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line);
-  flex-shrink: 0;
-}
-
-.overlay-head strong {
-  font-size: 13px;
-}
-
-.overlay-body {
-  padding: 14px;
-  overflow-y: auto;
-  scrollbar-width: none;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-family: 'Benne', system-ui;
-  font-size: var(--control-size);
-  line-height: 1.45;
-}
-
-.overlay-body::-webkit-scrollbar { display: none; }
-
-/* ===== Bascule Texte / Fichier ===== */
-.mode-switch {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 12px;
-  padding: 3px;
-  border-radius: 10px;
-  background: rgba(43, 38, 33, 0.06);
-}
-.mode-btn {
-  flex: 1;
-  background: transparent;
-  color: var(--ink-soft);
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 6px 10px;
-}
-.mode-btn:hover:not(:disabled) { transform: none; background: rgba(255,255,255,0.5); }
-.mode-btn.active {
-  background: rgba(255, 250, 242, 0.98);
-  color: var(--ink);
-  box-shadow: 0 2px 6px rgba(43,38,33,0.12);
-}
-
 /* ===== Mode Fichier : dropzone ===== */
 .dropzone {
-  border: 1.5px dashed var(--line);
+  border: 1.5px dashed rgba(237, 230, 211, 0.22);
   border-radius: 12px;
   padding: 22px 14px;
   text-align: center;
-  background: rgba(255, 250, 242, 0.6);
-  transition: border-color .18s ease, background .18s ease;
+  background: var(--bg-field);
+  background-image: url("img/PrintGridTransparentW.png");
+  background-size: 22px;
+  transition: border-color .18s ease, background-color .18s ease;
 }
-.dropzone.dragover {
-  border-color: var(--seal);
-  background: rgba(255, 250, 242, 0.98);
-}
-.dropzone-main { margin: 0 0 6px; font-size: var(--control-size); }
+.dropzone.dragover { border-color: var(--seal-lit); background-color: var(--bg-raised); }
+.dropzone-main { margin: 0 0 6px; font-size: var(--control-size); color: var(--paper); }
 .dropzone .hint { margin: 0; }
 
 .link-btn {
   background: none;
   border: none;
   padding: 0;
-  color: var(--seal);
+  color: var(--seal-lit);
   text-decoration: underline;
   cursor: pointer;
   font-size: inherit;
 }
-.link-btn:hover:not(:disabled) { transform: none; filter: brightness(1.2); }
+.link-btn:hover:not(:disabled) { transform: none; filter: brightness(1.15); }
 
-.file-chosen-line { margin: 12px 0 0; word-break: break-all; }
-.file-chosen-line strong { font-size: var(--control-size); }
+.file-chosen-line { margin: 12px 0 0; word-break: break-all; color: var(--paper); }
+.file-chosen-line strong { font-size: var(--control-size); font-weight: 400; }
 
-#fileResults:not([hidden]) {
-  animation: clarence-reveal .28s cubic-bezier(.2,.9,.3,1) both;
-}
-
-/* Carte glissable (mode panneau uniquement — le popup de barre d'outils ne
-   peut pas glisser vers le contenu de la page). Le curseur "grab" signale
-   l'affordance ; pas de bouton, le geste de glisser doit venir de l'utilisateur. */
+/* Carte glissable (mode panneau) */
 .drag-card {
   margin-top: 10px;
   width: 100%;
@@ -542,18 +401,17 @@ mark { transition: outline-color .12s ease, background .12s ease; }
   gap: 8px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1.5px dashed var(--line);
-  background: rgba(176, 141, 87, 0.1);
+  border: 1.5px dashed rgba(194, 160, 106, 0.45);
+  background: rgba(194, 160, 106, 0.10);
   cursor: pointer;
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 13px;
+  color: var(--tan);
   text-align: left;
 }
-.drag-card:hover:not(:disabled) { background: rgba(176, 141, 87, 0.18); transform: none; }
+.drag-card:hover:not(:disabled) { background: rgba(194, 160, 106, 0.18); transform: none; }
 .drag-card-icon { font-size: 16px; flex-shrink: 0; }
 
-/* Loader "vaguelettes" : points qui ondulent en séquence (pas un rond qui
-   tourne). Affiché dans le bouton pendant un traitement long. */
+/* Loader « vaguelettes » */
 .btn-primary.loading { cursor: progress; opacity: 1; }
 .dots { display: inline-flex; gap: 5px; align-items: center; height: 1em; }
 .dots i {
@@ -570,56 +428,46 @@ mark { transition: outline-color .12s ease, background .12s ease; }
   40%      { transform: translateY(-3px); opacity: 1; }
 }
 
-/* ===== Barre de profils d'anonymisation ===== */
-.profile-bar {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
+/* ===== Barre de profils ===== */
+.profile-bar { display: flex; gap: 4px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
 .profile-select {
   flex: 1;
   min-width: 90px;
   padding: 5px 8px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255, 250, 242, 0.96);
-  color: var(--ink);
+  background: var(--bg-field);
+  color: var(--paper);
   cursor: pointer;
 }
-.profile-btn {
-  padding: 5px 8px;
-  font-size: 11px;
-}
+.profile-btn { padding: 5px 8px; font-size: 12px; }
 
 /* ===== Masquage personnalisé ===== */
 #customRules { margin-top: 10px; }
 .custom-body { margin-top: 8px; }
-.type-toggles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 4px 0 10px;
-}
+.type-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
 .type-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(43, 38, 33, 0.06);
+  background: rgba(141, 147, 214, 0.14);
+  border: 1px solid rgba(141, 147, 214, 0.30);
+  color: var(--paper);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12.5px;
   user-select: none;
 }
-.type-chip input { margin: 0; }
+.type-chip input { margin: 0; accent-color: var(--seal-lit); }
 .type-chip.off {
-  opacity: 0.5;
+  background: rgba(237, 230, 211, 0.05);
+  border-color: rgba(237, 230, 211, 0.12);
+  color: var(--muted);
+  opacity: 1;
   text-decoration: line-through;
 }
-textarea.mini {
-  min-height: 46px;
-  max-height: 120px;
-  margin-bottom: 8px;
-}
+textarea.mini { min-height: 46px; max-height: 120px; margin-bottom: 8px; }
+
+/* Cases à cocher et radios : ne pas laisser Chrome peindre en bleu système. */
+input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
