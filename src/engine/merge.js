@@ -10,9 +10,9 @@
 //    tous les cas, seul le libellé du placeholder change).
 
 const TYPE_PRIORITY = [
-  'NIR', 'IBAN', 'SIRET_SIREN', 'CARTE_BANCAIRE', 'EMAIL', 'TELEPHONE',
+  'NIR', 'ID_NATIONAL', 'IBAN', 'SIRET_SIREN', 'CARTE_BANCAIRE', 'EMAIL', 'TELEPHONE',
   'BIC', 'IP', 'MAC', 'PSEUDO',
-  'DATE_NAISSANCE', 'ADRESSE', 'CODE_POSTAL_VILLE', 'REFERENCE', 'MONTANT',
+  'DATE_NAISSANCE', 'DATE', 'ADRESSE', 'CODE_POSTAL_VILLE', 'REFERENCE', 'MONTANT',
   'PER', 'ORG', 'LOC', 'MISC'
 ];
 const rank = t => {

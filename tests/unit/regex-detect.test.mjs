@@ -109,6 +109,60 @@ test('le même handle sur deux plateformes reçoit un seul placeholder', () => {
   assert.equal(masked, 'linkedin.com/in/[PSEUDO_1] et github.com/[PSEUDO_1]');
 });
 
+// ===== Motifs internationaux (constatés manquants sur un texte anglais réel :
+// seul l'email était détecté). Approche « motif + mot-clé de contexte », celle
+// de référence (catalogue Presidio, porté depuis Python).
+
+test('date de naissance en anglais, tous formats', () => {
+  assert.equal(find('born on March 14, 1988 in Ohio', 'DATE_NAISSANCE')[0].value, 'March 14, 1988');
+  assert.equal(find('Date of birth: 1988-03-14', 'DATE_NAISSANCE')[0].value, '1988-03-14');
+  assert.equal(find('DOB 14 March 1988', 'DATE_NAISSANCE')[0].value, '14 March 1988');
+});
+
+test('date de naissance en français toujours détectée (non-régression)', () => {
+  assert.equal(find('née le 23/07/1991 à Marseille', 'DATE_NAISSANCE')[0].value, '23/07/1991');
+  assert.equal(find('date de naissance : 14 mars 1988', 'DATE_NAISSANCE')[0].value, '14 mars 1988');
+});
+
+test('date sensible par libellé (expiration), mois+année seuls', () => {
+  assert.equal(find('expiration date set for August 2028', 'DATE')[0].value, 'August 2028');
+  assert.equal(find('valid until 12/2027', 'DATE')[0].value, '12/2027');
+});
+
+test('les dates SANS libellé sensible ne sont PAS masquées (sinon un CV devient illisible)', () => {
+  // Dates d'emploi d'un CV : aucune raison de les masquer.
+  assert.equal(find('Data Engineer Janv. - Mars 2026, puis Avr. 2026', 'DATE').length, 0);
+  assert.equal(find('Réunion du 12/03/2026 à 14h', 'DATE').length, 0);
+});
+
+test('SSN américain détecté (format 3-2-4, sans checksum existant)', () => {
+  assert.equal(find('recorded as 900-12-3456, payment', 'ID_NATIONAL')[0].value, '900-12-3456');
+});
+
+test('identifiant interne alphanumérique capté par son libellé', () => {
+  assert.equal(find('account identifier CUST-849204-X to reflect', 'REFERENCE')[0].value, 'CUST-849204-X');
+  assert.equal(find('Policy no: POL-2026-99A', 'REFERENCE')[0].value, 'POL-2026-99A');
+});
+
+test('code postal US via nom d\'état, et ZIP+4 seul', () => {
+  assert.equal(find('Springfield, Oregon, 97477, United States', 'CODE_POSTAL_VILLE')[0].value, '97477');
+  assert.equal(find('adresse 12345-6789 ici', 'CODE_POSTAL_VILLE')[0].value, '12345-6789');
+  assert.equal(find('ZIP code: 97477', 'CODE_POSTAL_VILLE')[0].value, '97477');
+});
+
+test('4 derniers chiffres de carte captés par le libellé', () => {
+  assert.equal(find('Visa card ending in 4242 with', 'CARTE_BANCAIRE')[0].value, '4242');
+});
+
+test('AUCUN nouveau faux positif sur les pièges connus', () => {
+  // Les fixtures 1-3 sont le vrai garde-fou (suite complète) ; ici les cas
+  // limites propres aux nouveaux motifs.
+  assert.equal(find('La référence interne du poste: 483 921 657', 'REFERENCE').length, 0, 'libellé non collé à la valeur');
+  assert.equal(find('Le point durera 45 minutes environ', 'DATE').length, 0);
+  assert.equal(find('slides avant vendredi 17 h', 'DATE_NAISSANCE').length, 0);
+  assert.equal(find('un nombre 123-45-6789 sans contexte', 'REFERENCE').length, 0);
+});
+
 // --- IBAN international (liste blanche de pays).
 test('IBAN suisse à structure correcte : détecté même si mod-97 échoue', () => {
   const [e] = find('Coordonnées : CH76 0023 4000 W123 4567 8 (UBS)', 'IBAN');

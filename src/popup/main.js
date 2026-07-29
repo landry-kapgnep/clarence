@@ -23,7 +23,7 @@ const TYPE_DISPLAY = {
   TELEPHONE: 'Téléphones', IBAN: 'IBAN', CARTE_BANCAIRE: 'Cartes',
   NIR: 'NIR', SIRET_SIREN: 'SIRET/SIREN', CODE_POSTAL_VILLE: 'Code postal',
   MONTANT: 'Montants', ADRESSE: 'Adresses', DATE_NAISSANCE: 'Dates naiss.',
-  REFERENCE: 'Références', IP: 'IP', MAC: 'MAC', BIC: 'BIC', PSEUDO: 'Pseudos/handles',
+  REFERENCE: 'Références', IP: 'IP', MAC: 'MAC', BIC: 'BIC', PSEUDO: 'Pseudos/handles', DATE: 'Dates sensibles', ID_NATIONAL: 'ID nationaux',
   MISC: 'Divers', PERSONNALISE: 'Perso'
 };
 const parseLines = v => (v || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
