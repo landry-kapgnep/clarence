@@ -9,6 +9,14 @@
 <body>
   <div class="popup-shell">
     <div class="wrap">
+      <!-- Fond animé pendant le traitement (body.processing). Décoratif :
+           aria-hidden, et statique si l'utilisateur a demandé moins de
+           mouvement. Placé DANS .wrap car son fond est opaque. -->
+      <div id="waveBg" aria-hidden="true">
+        <span class="wave wave-1"></span>
+        <span class="wave wave-2"></span>
+        <span class="wave wave-3"></span>
+      </div>
       <header>
         <img class="logo" src="img/ClarenceLogoW.png" alt="Clarence">
         <div>
@@ -54,6 +62,9 @@
       </details>
       </div>
 
+      <div class="progress-track" id="textProgress" hidden>
+        <div class="progress-fill" id="textProgressFill"></div>
+      </div>
       <div class="engine-badge" id="engineBadge" hidden></div>
       <div class="status" id="status"></div>
 
@@ -83,14 +94,6 @@
           <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf,.jpg,.jpeg,.png" hidden>
           <p class="dropzone-main">Glisse ou <button class="link-btn" id="filePickBtn">parcours tes fichiers</button></p>
           <p class="hint">CSV, .xlsx, .docx, .pdf (→ .md), images .jpg/.png (métadonnées)</p>
-        </div>
-
-        <div id="fileChosen" hidden>
-          <p class="file-chosen-line"><strong id="fileName"></strong> <span class="hint" id="fileSize"></span></p>
-          <div class="controls">
-            <button class="btn-primary" id="fileAnalyzeBtn">Anonymiser le fichier</button>
-            <button class="btn-ghost" id="fileResetBtn">Choisir un autre fichier</button>
-          </div>
         </div>
 
         <div id="fileOptions" hidden>
@@ -129,6 +132,17 @@
         </details>
         </div>
 
+        <div id="fileChosen" hidden>
+          <p class="file-chosen-line"><strong id="fileName"></strong> <span class="hint" id="fileSize"></span></p>
+          <div class="controls">
+            <button class="btn-primary" id="fileAnalyzeBtn">Anonymiser le fichier</button>
+            <button class="btn-ghost" id="fileResetBtn">Choisir un autre fichier</button>
+          </div>
+        </div>
+
+        <div class="progress-track" id="fileProgress" hidden>
+          <div class="progress-fill" id="fileProgressFill"></div>
+        </div>
         <div class="engine-badge" id="fileEngineBadge" hidden></div>
         <div class="status" id="fileStatus"></div>
 
@@ -172,6 +186,7 @@
       <footer>
         ⚠ Vérifiez toujours le rendu anonymisé avant de l'utiliser. La détection n'est pas infaillible.
         Vous pouvez ajouter un masque manuellement en sélectionnant un passage du texte.
+        <button class="link-btn" id="identityOpenBtn">Mon identité</button>
       </footer>
     </div>
   </div>
@@ -186,6 +201,28 @@
         </div>
       </div>
       <div class="overlay-body" id="overlayBody"></div>
+    </div>
+  </div>
+
+  <!-- Profil d'identité : proposé UNE FOIS au premier lancement, modifiable
+       ensuite via le lien « Mon identité ». Rien ne quitte le navigateur. -->
+  <div class="overlay" id="identityOverlay" hidden>
+    <div class="overlay-card">
+      <div class="overlay-head">
+        <strong>Ton identité, masquée une bonne fois pour toutes</strong>
+      </div>
+      <div class="overlay-body identity-body">
+        <p class="hint">Déclare ici ce qui t'identifie : ces valeurs seront <strong>toujours masquées</strong>,
+        dans chaque texte et chaque fichier — sans dépendre de la détection automatique.
+        Tout reste <strong>sur cette machine</strong> (stockage local du navigateur), rien n'est jamais envoyé nulle part,
+        et tu peux tout effacer d'un clic.</p>
+        <div id="identityFields" class="identity-fields"></div>
+        <div class="controls identity-actions">
+          <button class="btn-primary" id="identitySaveBtn">Enregistrer</button>
+          <button class="btn-ghost" id="identityLaterBtn">Plus tard</button>
+          <button class="btn-ghost identity-clear" id="identityClearBtn">Tout effacer</button>
+        </div>
+      </div>
     </div>
   </div>
 <script type="module" src="popup.js"></script>

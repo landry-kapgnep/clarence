@@ -495,3 +495,126 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   background: color-mix(in srgb, var(--tan) 16%, transparent);
   font-weight: 600;
 }
+
+/* ===== Profil d'identité =====
+   .overlay-body porte `white-space: pre-wrap` (utile pour afficher du texte
+   brut, néfaste pour un formulaire : chaque saut de ligne du HTML devenait un
+   blanc réel, d'où des colonnes trouées). Même piège que la collision
+   .panel / body.panel-mode déjà documentée — on neutralise ici. */
+.identity-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  white-space: normal;
+}
+.identity-body p { margin: 0; }
+.identity-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 10px;
+  align-content: start;
+}
+/* Chaque cellule : libellé collé à son champ, sans étirement vertical. */
+.identity-fields > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.identity-fields .field-label { margin: 0; }
+.identity-fields textarea.mini {
+  min-height: 32px;
+  height: 32px;
+  resize: vertical;
+}
+/* Champ « autres » en pleine largeur : c'est une liste libre. */
+.identity-fields .identity-field-autres { grid-column: 1 / -1; }
+.identity-actions { margin-top: 2px; }
+.identity-clear { margin-left: auto; color: var(--tan); }
+
+/* ===== Barre de progression =====
+   Remplit par transform:scaleX (composité GPU) — jamais par width, qui
+   déclencherait un layout à chaque tick pendant que le thread principal
+   est déjà sollicité. */
+.progress-track {
+  height: 4px;
+  margin-top: 8px;
+  border-radius: 2px;
+  background: var(--bg-raised);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--seal-lit), var(--moss));
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform .18s ease-out;
+}
+
+/* ===== Fond animé pendant le traitement =====
+   Vagues aériennes, en fond de toute la popup. Uniquement transform et
+   opacity : ces deux propriétés sont composées par le GPU, donc l'animation
+   ne dispute PAS le thread principal, déjà occupé par la détection — c'est
+   exactement le moment où une animation mal faite se mettrait à saccader. */
+/* Vit DANS .wrap (déjà position:relative) : le fond de .wrap est opaque, des
+   vagues placées derrière lui seraient purement et simplement invisibles. */
+#waveBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .6s ease;
+}
+body.processing #waveBg { opacity: 1; }
+
+/* Tout le contenu de la coquille passe au-dessus des vagues. */
+.wrap > *:not(#waveBg) { position: relative; z-index: 1; }
+
+#waveBg .wave {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  border-radius: 42% 58% 55% 45% / 48% 44% 56% 52%;
+  filter: blur(34px);
+  will-change: transform;
+  transform: translate(-50%, -50%);
+}
+#waveBg .wave-1 {
+  background: radial-gradient(circle at 35% 40%, var(--seal-lit), transparent 68%);
+  opacity: .22;
+  animation: wave-drift-a 13s ease-in-out infinite;
+}
+#waveBg .wave-2 {
+  background: radial-gradient(circle at 65% 55%, var(--moss), transparent 66%);
+  opacity: .16;
+  animation: wave-drift-b 17s ease-in-out infinite;
+}
+#waveBg .wave-3 {
+  background: radial-gradient(circle at 50% 70%, var(--seal), transparent 72%);
+  opacity: .3;
+  animation: wave-drift-c 21s ease-in-out infinite;
+}
+
+@keyframes wave-drift-a {
+  0%, 100% { transform: translate(-58%, -54%) rotate(0deg) scale(1); }
+  50%      { transform: translate(-44%, -46%) rotate(140deg) scale(1.14); }
+}
+@keyframes wave-drift-b {
+  0%, 100% { transform: translate(-44%, -48%) rotate(0deg) scale(1.08); }
+  50%      { transform: translate(-56%, -56%) rotate(-120deg) scale(.94); }
+}
+@keyframes wave-drift-c {
+  0%, 100% { transform: translate(-50%, -42%) rotate(20deg) scale(.96); }
+  50%      { transform: translate(-50%, -60%) rotate(200deg) scale(1.2); }
+}
+
+/* Accessibilité : mouvement supprimé si l'utilisateur l'a demandé au système.
+   La présence visuelle reste (dégradé statique), l'agitation disparaît. */
+@media (prefers-reduced-motion: reduce) {
+  #waveBg .wave { animation: none; }
+}

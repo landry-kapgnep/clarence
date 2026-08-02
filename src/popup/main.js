@@ -10,6 +10,9 @@ import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/s
 import { createPseudonymizer } from '../engine/pseudonyms.js';
 import { maskText, reinject } from '../engine/masking.js';
 import { loadProfiles, upsertProfile, deleteProfile } from './profiles.js';
+import {
+  loadIdentity, saveIdentity, clearIdentity, identitySearchTerms, IDENTITY_FIELDS
+} from './identity.js';
 
 // --- État (mémoire du popup uniquement ; tout disparaît à la fermeture)
 let currentText = '';
@@ -95,7 +98,9 @@ const esc = s => s.replace(/[&<>"']/g, c =>
 // Règles perso : « toujours masquer » (termes forcés), « ne jamais masquer »
 // (valeurs épargnées) et types désactivés.
 function activeEntities() {
-  const forced = forcedMasks(currentText, parseLines($('alwaysMask')?.value));
+  // Règles saisies + identité déclarée : l'identité s'AJOUTE, toujours.
+  const forced = forcedMasks(currentText,
+    [...parseLines($('alwaysMask')?.value), ...identityForceTerms()]);
   const sel = selectActive(autoEntities, [...manualEntities, ...forced], removedKeys);
   return filterByRules(sel, { disabledTypes, keepValues: parseLines($('alwaysKeep')?.value) });
 }
@@ -246,6 +251,10 @@ function createNerWorker() {
     if (msg.type === 'progress' && msg.total) {
       const pct = Math.round((msg.loaded / msg.total) * 100);
       setStatus(`Téléchargement du modèle de détection… ${pct} % (une seule fois, mis en cache ensuite)`);
+      // Le premier vrai temps d'attente, c'est ce téléchargement (~180 Mo) :
+      // la barre du mode actif le montre aussi.
+      const ratio = msg.loaded / msg.total;
+      if (!$('fileMode')?.hidden) setFileProgress(ratio); else setTextProgress(ratio);
       return;
     }
     if (msg.type === 'result' || (msg.type === 'error' && msg.id != null)) {
@@ -347,11 +356,18 @@ async function analyze() {
   currentText = text;
   const btn = $('analyzeBtn');
   btn.disabled = true;
+  setProcessing(true);
   try {
     await ensureNER();
     // Structuré = regex FR + téléphones internationaux (libphonenumber).
     const rx = [...detectRegex(text), ...detectPhonesIntl(text)];
-    const ner = await detectContextual(text, { disabledTypes });
+    const ner = await detectContextual(text, {
+      disabledTypes,
+      onProgress: ({ done, total }) => {
+        setTextProgress(total ? done / total : null);
+        return new Promise(r => setTimeout(r, 0));
+      }
+    });
     autoEntities = mergeEntities(rx, ner);
     render();
     // Ne JAMAIS laisser croire que les noms/lieux ont été vérifiés alors que
@@ -365,6 +381,8 @@ async function analyze() {
     $('results').hidden = true;
     setStatus('L’analyse a échoué — rien n’a été masqué, ne colle pas ce texte tel quel. Détail dans la console.', 'error');
   } finally {
+    setProcessing(false);
+    setTextProgress(null);
     btn.disabled = false;
   }
 }
@@ -546,7 +564,31 @@ $('fileTypeToggles')?.addEventListener('change', ev => {
   if (cb.checked) fileDisabledTypes.delete(cb.dataset.type);
   else fileDisabledTypes.add(cb.dataset.type);
   renderTypeChips('fileTypeToggles', fileDisabledTypes);
+  invalidateFileResult();
 });
+
+// Un résultat de fichier ne vaut QUE pour les options avec lesquelles il a été
+// produit. Sans cette invalidation, changer « Alléger » ↔ « Préserver » après
+// coup puis retélécharger redonnait silencieusement l'ANCIEN fichier : on
+// croit tenir un Markdown sans images et on tient un PDF qui les contient
+// toutes. C'est une fuite, pas une gêne — d'où l'effacement du résultat plutôt
+// qu'un simple avertissement.
+function invalidateFileResult() {
+  if (!fileOutBlob) return;
+  fileOutBlob = null;
+  fileOutName = '';
+  $('fileResults').hidden = true;
+  $('dragCard').hidden = true;
+  fileSetStatus('Options modifiées — relance l’anonymisation pour obtenir le fichier correspondant.');
+}
+
+// Toutes les options qui changent la SORTIE invalident le résultat.
+for (const id of ['pdfModeLight', 'pdfModePreserve', 'fileRealisticToggle']) {
+  $(id)?.addEventListener('change', invalidateFileResult);
+}
+for (const id of ['fileAlwaysMask', 'fileAlwaysKeep']) {
+  $(id)?.addEventListener('input', invalidateFileResult);
+}
 
 function fileSetStatus(msg, cls = '') {
   $('fileStatus').textContent = msg;
@@ -631,10 +673,32 @@ function showFileResults(mapping, copyable) {
 // progresse ou si c'est figé (il interrompait le traitement — constaté).
 // Un await yield laisse le navigateur repeindre entre deux fenêtres, sinon le
 // thread principal reste bloqué et le statut ne s'affiche jamais.
+// Barre de progression : trackId selon le mode actif. ratio ∈ [0,1] ou null
+// pour masquer. Le texte chiffré reste (accessibilité + précision), la barre
+// porte la sensation d'avancement.
+function setProgress(trackId, fillId, ratio) {
+  const track = $(trackId);
+  const fill = $(fillId);
+  if (!track || !fill) return;
+  if (ratio == null) { track.hidden = true; fill.style.transform = 'scaleX(0)'; return; }
+  track.hidden = false;
+  fill.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
+}
+const setFileProgress = r => setProgress('fileProgress', 'fileProgressFill', r);
+const setTextProgress = r => setProgress('textProgress', 'textProgressFill', r);
+
 const nerProgress = ({ done, total }) => {
   fileSetStatus(`Détection en cours… ${done}/${total}`);
+  setFileProgress(total ? done / total : null);
   return new Promise(r => setTimeout(r, 0));
 };
+
+// Fond animé : marque l'état « ça travaille » sur toute la surface, pas
+// seulement dans un bouton. Purement CSS (transform/opacity, composé GPU) —
+// aucun coût sur le thread principal pendant la détection.
+function setProcessing(on) {
+  document.body.classList.toggle('processing', !!on);
+}
 
 function setAnalyzeBtnLoading(loading) {
   const btn = $('fileAnalyzeBtn');
@@ -654,6 +718,7 @@ async function processFile() {
   const kind = FILE_TYPES[ext];
   const btn = $('fileAnalyzeBtn');
   btn.disabled = true;
+  setProcessing(true);
   setAnalyzeBtnLoading(true);
   fileSetStatus('Lecture du fichier…');
   try {
@@ -688,7 +753,7 @@ async function processFile() {
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
         onProgress: nerProgress,
-        forceTerms: parseLines($('fileAlwaysMask')?.value),
+        forceTerms: [...parseLines($('fileAlwaysMask')?.value), ...identityForceTerms()],
         disabledTypes: fileDisabledTypes,
         keepValues: parseLines($('fileAlwaysKeep')?.value),
         deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
@@ -725,7 +790,7 @@ async function processFile() {
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte
       // (selection.js), appliquées au document combiné entier.
-      forceTerms: parseLines($('fileAlwaysMask')?.value),
+      forceTerms: [...parseLines($('fileAlwaysMask')?.value), ...identityForceTerms()],
       disabledTypes: fileDisabledTypes,
       keepValues: parseLines($('fileAlwaysKeep')?.value)
     });
@@ -753,6 +818,8 @@ async function processFile() {
     $('dragCard').hidden = true;
     fileSetStatus('Le traitement a échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
   } finally {
+    setProcessing(false);
+    setFileProgress(null);
     setAnalyzeBtnLoading(false);
     btn.disabled = false;
   }
@@ -932,3 +999,81 @@ bindProfileBar({
     renderTypeChips('fileTypeToggles', fileDisabledTypes);
   }
 });
+
+// ===== Profil d'identité ====================================================
+// Les termes déclarés ici sont TOUJOURS masqués (recherche littérale +
+// variantes de casse), indépendamment de tout modèle : la propre identité de
+// l'utilisateur ne doit jamais dépendre d'un score de confiance. Stockage
+// chrome.storage.local UNIQUEMENT — voir identity.js pour le pourquoi.
+let identityCache = { status: 'neuf', champs: {} };
+
+// Termes injectés dans forceTerms aux trois points d'entrée (texte, fichier,
+// reconstruction PDF). Toujours AJOUTÉS aux règles saisies, jamais substitués.
+function identityForceTerms() {
+  return identitySearchTerms(identityCache);
+}
+
+function buildIdentityForm() {
+  const wrap = $('identityFields');
+  if (!wrap) return;
+  wrap.innerHTML = IDENTITY_FIELDS.map(([key, label]) => `
+    <div class="identity-field-${key}">
+      <label class="field-label" for="identity_${key}">${esc(label)}</label>
+      <textarea class="mini" id="identity_${key}" placeholder="Un terme par ligne"></textarea>
+    </div>`).join('');
+}
+
+function fillIdentityForm() {
+  for (const [key] of IDENTITY_FIELDS) {
+    const el = $(`identity_${key}`);
+    if (el) el.value = (identityCache.champs[key] || []).join('\n');
+  }
+}
+
+function readIdentityForm() {
+  const champs = {};
+  for (const [key] of IDENTITY_FIELDS) champs[key] = $(`identity_${key}`)?.value ?? '';
+  return champs;
+}
+
+function openIdentityModal() {
+  buildIdentityForm();
+  fillIdentityForm();
+  $('identityOverlay').hidden = false;
+}
+
+async function initIdentity() {
+  identityCache = await loadIdentity();
+  // Proposé UNE fois, au premier lancement : ensuite l'utilisateur a répondu
+  // (configuré ou « Plus tard ») et on ne le harcèle plus — le lien
+  // « Mon identité » du pied de page reste le chemin de retour.
+  if (identityCache.status === 'neuf') openIdentityModal();
+}
+
+$('identityOpenBtn')?.addEventListener('click', openIdentityModal);
+
+$('identitySaveBtn')?.addEventListener('click', async () => {
+  identityCache = { status: 'configuré', champs: readIdentityForm() };
+  await saveIdentity(identityCache);
+  identityCache = await loadIdentity(); // relit la forme normalisée
+  $('identityOverlay').hidden = true;
+});
+
+$('identityLaterBtn')?.addEventListener('click', async () => {
+  // Mémorise le refus SANS toucher aux champs éventuels déjà stockés.
+  identityCache = { ...identityCache, status: 'refusé' };
+  await saveIdentity(identityCache);
+  $('identityOverlay').hidden = true;
+});
+
+$('identityClearBtn')?.addEventListener('click', async () => {
+  if (!window.confirm('Effacer toutes les informations d\'identité stockées ?')) return;
+  await clearIdentity();
+  // status 'refusé' : tout est effacé ET on ne re-propose pas la modale au
+  // prochain lancement (l'utilisateur vient de dire non explicitement).
+  identityCache = { status: 'refusé', champs: {} };
+  await saveIdentity(identityCache);
+  fillIdentityForm();
+});
+
+initIdentity();

@@ -452,6 +452,84 @@ async function deleteProfile(name) {
   return list;
 }
 
+// src/popup/identity.js
+var IDENTITY_KEY = "clarenceIdentity";
+var IDENTITY_FIELDS = [
+  ["prenom", "Pr\xE9nom(s)"],
+  ["nom", "Nom(s) de famille"],
+  ["emails", "Emails"],
+  ["telephones", "T\xE9l\xE9phones"],
+  ["adresse", "Adresse postale"],
+  ["ville", "Ville"],
+  ["dateNaissance", "Date de naissance"],
+  ["employeurs", "Employeur(s), entreprise(s)"],
+  ["ecoles", "\xC9cole(s), universit\xE9(s)"],
+  ["pseudos", "Pseudos, handles (GitHub, LinkedIn\u2026)"],
+  ["autres", "Autres termes \xE0 toujours masquer"]
+];
+var splitLines = (v) => String(v ?? "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+function normalizeIdentity(raw) {
+  const champs = {};
+  for (const [key] of IDENTITY_FIELDS) {
+    champs[key] = splitLines(Array.isArray(raw?.champs?.[key]) ? raw.champs[key].join("\n") : raw?.champs?.[key]);
+  }
+  const status = ["configur\xE9", "refus\xE9"].includes(raw?.status) ? raw.status : "neuf";
+  return { status, champs };
+}
+var MIN_TERM_LENGTH = 2;
+function identityTerms(identity) {
+  const { champs } = normalizeIdentity(identity);
+  const vus = /* @__PURE__ */ new Set();
+  const out = [];
+  for (const [key] of IDENTITY_FIELDS) {
+    for (const terme of champs[key]) {
+      if (terme.length < MIN_TERM_LENGTH) continue;
+      const k = terme.toLowerCase();
+      if (vus.has(k)) continue;
+      vus.add(k);
+      out.push(terme);
+    }
+  }
+  return out;
+}
+function caseVariants(terme) {
+  const title = terme.replace(
+    new RegExp("\\p{L}[\\p{L}'\u2019-]*", "gu"),
+    (w) => w[0].toUpperCase() + w.slice(1).toLowerCase()
+  );
+  return [terme, terme.toUpperCase(), terme.toLowerCase(), title];
+}
+function identitySearchTerms(identity) {
+  const vus = /* @__PURE__ */ new Set();
+  const out = [];
+  for (const terme of identityTerms(identity)) {
+    for (const v of caseVariants(terme)) {
+      if (vus.has(v)) continue;
+      vus.add(v);
+      out.push(v);
+    }
+  }
+  return out;
+}
+function hasStore2() {
+  return typeof chrome !== "undefined" && chrome.storage?.local;
+}
+async function loadIdentity() {
+  if (!hasStore2()) return normalizeIdentity(null);
+  const r = await chrome.storage.local.get(IDENTITY_KEY).catch(() => ({}));
+  return normalizeIdentity(r?.[IDENTITY_KEY]);
+}
+async function saveIdentity(identity) {
+  if (!hasStore2()) return;
+  await chrome.storage.local.set({ [IDENTITY_KEY]: normalizeIdentity(identity) }).catch(() => {
+  });
+}
+async function clearIdentity() {
+  if (!hasStore2()) return;
+  await chrome.storage.local.remove(IDENTITY_KEY).catch(() => {
+  });
+}
+
 // src/popup/main.js
 var currentText = "";
 var autoEntities = [];
@@ -532,7 +610,10 @@ if (new URLSearchParams(location.search).has("panel")) {
 var keyOf = entityKey;
 var esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 function activeEntities() {
-  const forced = forcedMasks(currentText, parseLines($("alwaysMask")?.value));
+  const forced = forcedMasks(
+    currentText,
+    [...parseLines($("alwaysMask")?.value), ...identityForceTerms()]
+  );
   const sel = selectActive(autoEntities, [...manualEntities, ...forced], removedKeys);
   return filterByRules(sel, { disabledTypes, keepValues: parseLines($("alwaysKeep")?.value) });
 }
@@ -634,6 +715,9 @@ function createNerWorker() {
     if (msg.type === "progress" && msg.total) {
       const pct = Math.round(msg.loaded / msg.total * 100);
       setStatus(`T\xE9l\xE9chargement du mod\xE8le de d\xE9tection\u2026 ${pct} % (une seule fois, mis en cache ensuite)`);
+      const ratio = msg.loaded / msg.total;
+      if (!$("fileMode")?.hidden) setFileProgress(ratio);
+      else setTextProgress(ratio);
       return;
     }
     if (msg.type === "result" || msg.type === "error" && msg.id != null) {
@@ -720,10 +804,17 @@ async function analyze() {
   currentText = text;
   const btn = $("analyzeBtn");
   btn.disabled = true;
+  setProcessing(true);
   try {
     await ensureNER();
     const rx = [...detectRegex(text), ...detectPhonesIntl(text)];
-    const ner = await detectContextual(text, { disabledTypes });
+    const ner = await detectContextual(text, {
+      disabledTypes,
+      onProgress: ({ done, total }) => {
+        setTextProgress(total ? done / total : null);
+        return new Promise((r) => setTimeout(r, 0));
+      }
+    });
     autoEntities = mergeEntities(rx, ner);
     render();
     renderEngineBadge("engineBadge");
@@ -732,6 +823,8 @@ async function analyze() {
     $("results").hidden = true;
     setStatus("L\u2019analyse a \xE9chou\xE9 \u2014 rien n\u2019a \xE9t\xE9 masqu\xE9, ne colle pas ce texte tel quel. D\xE9tail dans la console.", "error");
   } finally {
+    setProcessing(false);
+    setTextProgress(null);
     btn.disabled = false;
   }
 }
@@ -893,7 +986,22 @@ $("fileTypeToggles")?.addEventListener("change", (ev) => {
   if (cb.checked) fileDisabledTypes.delete(cb.dataset.type);
   else fileDisabledTypes.add(cb.dataset.type);
   renderTypeChips("fileTypeToggles", fileDisabledTypes);
+  invalidateFileResult();
 });
+function invalidateFileResult() {
+  if (!fileOutBlob) return;
+  fileOutBlob = null;
+  fileOutName = "";
+  $("fileResults").hidden = true;
+  $("dragCard").hidden = true;
+  fileSetStatus("Options modifi\xE9es \u2014 relance l\u2019anonymisation pour obtenir le fichier correspondant.");
+}
+for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle"]) {
+  $(id)?.addEventListener("change", invalidateFileResult);
+}
+for (const id of ["fileAlwaysMask", "fileAlwaysKeep"]) {
+  $(id)?.addEventListener("input", invalidateFileResult);
+}
 function fileSetStatus(msg, cls = "") {
   $("fileStatus").textContent = msg;
   $("fileStatus").className = "status " + cls;
@@ -953,10 +1061,28 @@ function showFileResults(mapping, copyable) {
   $("reinjectSection").hidden = false;
   $("dragCard").hidden = !document.body.classList.contains("panel-mode");
 }
+function setProgress(trackId, fillId, ratio) {
+  const track = $(trackId);
+  const fill = $(fillId);
+  if (!track || !fill) return;
+  if (ratio == null) {
+    track.hidden = true;
+    fill.style.transform = "scaleX(0)";
+    return;
+  }
+  track.hidden = false;
+  fill.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
+}
+var setFileProgress = (r) => setProgress("fileProgress", "fileProgressFill", r);
+var setTextProgress = (r) => setProgress("textProgress", "textProgressFill", r);
 var nerProgress = ({ done, total }) => {
   fileSetStatus(`D\xE9tection en cours\u2026 ${done}/${total}`);
+  setFileProgress(total ? done / total : null);
   return new Promise((r) => setTimeout(r, 0));
 };
+function setProcessing(on) {
+  document.body.classList.toggle("processing", !!on);
+}
 function setAnalyzeBtnLoading(loading) {
   const btn = $("fileAnalyzeBtn");
   if (loading) {
@@ -974,6 +1100,7 @@ async function processFile() {
   const kind = FILE_TYPES[ext];
   const btn = $("fileAnalyzeBtn");
   btn.disabled = true;
+  setProcessing(true);
   setAnalyzeBtnLoading(true);
   fileSetStatus("Lecture du fichier\u2026");
   try {
@@ -1001,7 +1128,7 @@ async function processFile() {
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
         onProgress: nerProgress,
-        forceTerms: parseLines($("fileAlwaysMask")?.value),
+        forceTerms: [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()],
         disabledTypes: fileDisabledTypes,
         keepValues: parseLines($("fileAlwaysKeep")?.value),
         deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
@@ -1029,7 +1156,7 @@ async function processFile() {
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte
       // (selection.js), appliquées au document combiné entier.
-      forceTerms: parseLines($("fileAlwaysMask")?.value),
+      forceTerms: [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()],
       disabledTypes: fileDisabledTypes,
       keepValues: parseLines($("fileAlwaysKeep")?.value)
     });
@@ -1048,6 +1175,8 @@ async function processFile() {
     $("dragCard").hidden = true;
     fileSetStatus("Le traitement a \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
   } finally {
+    setProcessing(false);
+    setFileProgress(null);
     setAnalyzeBtnLoading(false);
     btn.disabled = false;
   }
@@ -1200,3 +1329,56 @@ bindProfileBar({
     renderTypeChips("fileTypeToggles", fileDisabledTypes);
   }
 });
+var identityCache = { status: "neuf", champs: {} };
+function identityForceTerms() {
+  return identitySearchTerms(identityCache);
+}
+function buildIdentityForm() {
+  const wrap = $("identityFields");
+  if (!wrap) return;
+  wrap.innerHTML = IDENTITY_FIELDS.map(([key, label]) => `
+    <div class="identity-field-${key}">
+      <label class="field-label" for="identity_${key}">${esc(label)}</label>
+      <textarea class="mini" id="identity_${key}" placeholder="Un terme par ligne"></textarea>
+    </div>`).join("");
+}
+function fillIdentityForm() {
+  for (const [key] of IDENTITY_FIELDS) {
+    const el = $(`identity_${key}`);
+    if (el) el.value = (identityCache.champs[key] || []).join("\n");
+  }
+}
+function readIdentityForm() {
+  const champs = {};
+  for (const [key] of IDENTITY_FIELDS) champs[key] = $(`identity_${key}`)?.value ?? "";
+  return champs;
+}
+function openIdentityModal() {
+  buildIdentityForm();
+  fillIdentityForm();
+  $("identityOverlay").hidden = false;
+}
+async function initIdentity() {
+  identityCache = await loadIdentity();
+  if (identityCache.status === "neuf") openIdentityModal();
+}
+$("identityOpenBtn")?.addEventListener("click", openIdentityModal);
+$("identitySaveBtn")?.addEventListener("click", async () => {
+  identityCache = { status: "configur\xE9", champs: readIdentityForm() };
+  await saveIdentity(identityCache);
+  identityCache = await loadIdentity();
+  $("identityOverlay").hidden = true;
+});
+$("identityLaterBtn")?.addEventListener("click", async () => {
+  identityCache = { ...identityCache, status: "refus\xE9" };
+  await saveIdentity(identityCache);
+  $("identityOverlay").hidden = true;
+});
+$("identityClearBtn")?.addEventListener("click", async () => {
+  if (!window.confirm("Effacer toutes les informations d'identit\xE9 stock\xE9es ?")) return;
+  await clearIdentity();
+  identityCache = { status: "refus\xE9", champs: {} };
+  await saveIdentity(identityCache);
+  fillIdentityForm();
+});
+initIdentity();
