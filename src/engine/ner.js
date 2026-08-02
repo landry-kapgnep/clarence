@@ -172,6 +172,49 @@ export function snapToWordBoundaries(text, entities) {
   return entities;
 }
 
+// Pontage de noms à particules / patronymes ratés — PARTAGÉ par les deux
+// moteurs contextuels. Deux défauts distincts, tous deux constatés sur de
+// vrais fichiers :
+//  - noms nobiliaires ("Sébastien De La Villardière" : "Villardière" pris pour
+//    un LIEU, le prénom + particules laissés en clair) ;
+//  - patronyme en MAJUSCULES séparé du prénom en deux détections distinctes
+//    ("Amandine" + "ROUSSEAU-LEFEBVRE" ; ou, avec GLiNER, "LANDRY" détecté et
+//    "KAPGNEP" laissé en clair — le nom en tête d'un vrai CV).
+// Recollage déterministe, TOUJOURS ancré sur une détection existante (jamais
+// de nom créé de zéro). Tradeoff assumé (priorité zéro-fuite) : peut
+// sur-masquer un lieu précédé d'un mot capitalisé + particule ("Voyage De La
+// Rochelle"), cas rare et sans gravité (sur-masquage, pas fuite).
+// Modifie les entités EN PLACE et les retourne.
+const PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['’]|[Ll]['’]|von|van|[Dd]a|[Dd]i)";
+const CAPWORD = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*";
+const ALLCAPS = "[A-ZÀ-Ü]{2,}(?:[-'’][A-ZÀ-Ü]+)*";
+const FWD_PARTICLE = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
+const FWD_ALLCAPS = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-zÀ-ÿ])`);
+const BACK_PARTICLE = new RegExp(`(${CAPWORD}(?:\\s+${PARTICLE})+\\s+)$`);
+export function bridgeNameParts(text, entities) {
+  for (const e of entities) {
+    // (a) extension AVANT depuis un PER : " De La Rochefoucauld", " KAPGNEP".
+    if (e.type === 'PER') {
+      let m;
+      while ((m = FWD_PARTICLE.exec(text.slice(e.end))) || (m = FWD_ALLCAPS.exec(text.slice(e.end)))) {
+        e.end += m[0].length;
+        e.value = text.slice(e.start, e.end);
+      }
+    }
+    // (b) un LIEU/MISC précédé de "Prénom + particules" est en fait un
+    // patronyme : on l'absorbe en arrière et on le re-type en PER.
+    if (e.type === 'LOC' || e.type === 'MISC') {
+      const m = BACK_PARTICLE.exec(text.slice(0, e.start));
+      if (m) {
+        e.start -= m[1].length;
+        e.value = text.slice(e.start, e.end);
+        e.type = 'PER';
+      }
+    }
+  }
+  return entities;
+}
+
 // Sous ce seuil, trop de bruit : la casse boostée (boostCase) fait parfois
 // dériver un mot-outil vers un B-PER isolé et peu sûr (ex. "habite" → "Ha" à
 // 52%), très en dessous de la confiance des vraies entités (>95% en pratique).
@@ -237,40 +280,7 @@ export async function detectNER(text, nerPipeline, { onProgress } = {}) {
   }
   snapToWordBoundaries(text, all);
 
-  // Pontage de noms à particules / patronymes ratés — le NER cased échoue sur
-  // les noms nobiliaires ("Sébastien De La Villardière" : "Villardière" pris
-  // pour un LIEU, le prénom + particules laissés en clair) et sur les patronymes
-  // en majuscules séparés du prénom ("Amandine" + "ROUSSEAU-LEFEBVRE"). On
-  // recolle de façon déterministe, TOUJOURS ancré sur une détection existante
-  // (jamais de nom créé de zéro). Tradeoff assumé (priorité zéro-fuite) : peut
-  // sur-masquer un lieu précédé d'un mot capitalisé + particule ("Voyage De La
-  // Rochelle"), cas rare et sans gravité (sur-masquage, pas fuite).
-  const PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['’]|[Ll]['’]|von|van|[Dd]a|[Dd]i)";
-  const CAPWORD = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*";
-  const ALLCAPS = "[A-ZÀ-Ü]{2,}(?:[-'’][A-ZÀ-Ü]+)*";
-  const fwdParticle = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
-  const fwdAllCaps = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-zÀ-ÿ])`);
-  const backParticle = new RegExp(`(${CAPWORD}(?:\\s+${PARTICLE})+\\s+)$`);
-  for (const e of all) {
-    // (a) extension AVANT depuis un PER : " De La Rochefoucauld", " ROUSSEAU".
-    if (e.type === 'PER') {
-      let m;
-      while ((m = fwdParticle.exec(text.slice(e.end))) || (m = fwdAllCaps.exec(text.slice(e.end)))) {
-        e.end += m[0].length;
-        e.value = text.slice(e.start, e.end);
-      }
-    }
-    // (b) un LIEU/MISC précédé de "Prénom + particules" est en fait un
-    // patronyme : on l'absorbe en arrière et on le re-type en PER.
-    if (e.type === 'LOC' || e.type === 'MISC') {
-      const m = backParticle.exec(text.slice(0, e.start));
-      if (m) {
-        e.start -= m[1].length;
-        e.value = text.slice(e.start, e.end);
-        e.type = 'PER';
-      }
-    }
-  }
+  bridgeNameParts(text, all);
   // Dédoublonnage des zones de recouvrement (mêmes bornes, même type).
   const seen = new Set();
   return all

@@ -1,5 +1,6 @@
 import {
   NER_MODEL,
+  bridgeNameParts,
   chunkText,
   detectNER,
   detectPhonesIntl,
@@ -12,7 +13,7 @@ import {
   reinject,
   selectActive,
   snapToWordBoundaries
-} from "./chunk-S3EUP2VP.js";
+} from "./chunk-RB6ZNCL6.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -22,6 +23,13 @@ var GROUPES = [
   {
     // Le cœur : ce que le NER BERT couvrait déjà, en mieux sur les valeurs
     // isolées. Marge de bruit très confortable (pire faux positif 0,26).
+    //
+    // Seuil ABAISSÉ à 0,45, mesuré sur un vrai CV : un nom seul sur sa ligne,
+    // en gros, sans rien autour (« LANDRY KAPGNEP », titre du document) ne
+    // sort qu'à 0,47 — un titre de CV est trop court pour donner au modèle de
+    // quoi être sûr. À 0,50 il FUYAIT. Le plancher de bruit du garde-fou étant
+    // à 0,26, la marge reste large. Ne pas remonter sans re-tester ce cas.
+    seuil: 0.45,
     labels: ["person", "company", "location"],
     types: { person: "PER", company: "ORG", location: "LOC" }
   },
@@ -59,9 +67,10 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
     const duChunk = [];
     for (const groupe of groupesActifs) {
       const spans = await glinerPipeline(chunk, groupe.labels);
+      const seuil = groupe.seuil ?? GLINER_THRESHOLD;
       for (const s of spans || []) {
         const type = groupe.types[s.label];
-        if (!type || s.score < GLINER_THRESHOLD) continue;
+        if (!type || s.score < seuil) continue;
         duChunk.push({
           type,
           value: chunk.slice(s.start, s.end),
@@ -85,6 +94,7 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
     for (const e of gardes) all.push({ ...e, start: e.start + offset, end: e.end + offset });
   }
   snapToWordBoundaries(text, all);
+  bridgeNameParts(text, all);
   const vus = /* @__PURE__ */ new Set();
   return all.filter((e) => {
     const k = `${e.start}:${e.end}:${e.type}`;
@@ -716,10 +726,7 @@ async function analyze() {
     const ner = await detectContextual(text, { disabledTypes });
     autoEntities = mergeEntities(rx, ner);
     render();
-    if (!nerPipe) {
-      const count = activeEntities().length;
-      setStatus(`${count} \xE9l\xE9ment(s) masqu\xE9(s) \u2014 d\xE9tection des noms indisponible (connexion requise au premier usage), seules les donn\xE9es structur\xE9es ont \xE9t\xE9 rep\xE9r\xE9es. Relis attentivement.`, "error");
-    }
+    renderEngineBadge("engineBadge");
   } catch (err) {
     console.error(err);
     $("results").hidden = true;
@@ -764,6 +771,29 @@ async function copyClean() {
 function setStatus(msg, cls = "") {
   $("status").textContent = msg;
   $("status").className = "status " + cls;
+}
+var ENGINE_MESSAGES = {
+  bert: {
+    cls: "fallback",
+    texte: "D\xE9tection de secours active \u2014 le moteur principal n'a pas pu d\xE9marrer. Les noms isol\xE9s sans phrase autour (titre de CV, cellule de tableau) risquent d'\xEAtre manqu\xE9s. Relis attentivement."
+  },
+  none: {
+    cls: "none",
+    texte: "D\xE9tection des noms INDISPONIBLE \u2014 seules les donn\xE9es structur\xE9es (emails, IBAN, t\xE9l\xE9phones\u2026) ont \xE9t\xE9 rep\xE9r\xE9es. Relis attentivement avant de coller."
+  }
+};
+function renderEngineBadge(id) {
+  const el = $(id);
+  if (!el) return;
+  const etat = !nerPipe ? "none" : nerEngine === "bert" ? "bert" : null;
+  if (!etat) {
+    el.hidden = true;
+    el.textContent = "";
+    return;
+  }
+  el.hidden = false;
+  el.className = "engine-badge " + ENGINE_MESSAGES[etat].cls;
+  el.textContent = ENGINE_MESSAGES[etat].texte;
 }
 $("analyzeBtn").addEventListener("click", analyze);
 $("realisticToggle").addEventListener("change", () => {
@@ -965,7 +995,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Chargement du mod\xE8le et reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-ZYXUPHWL.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-RIUDGJGT.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -979,10 +1009,11 @@ async function processFile() {
       fileOutBlob = new Blob([outBuf], { type: "application/pdf" });
       fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, "-anonymise$1");
       showFileResults(mapping2, false);
-      fileSetStatus(nerPipe ? "" : "D\xE9tection des noms indisponible \u2014 relis attentivement le PDF.", nerPipe ? "" : "error");
+      renderEngineBadge("fileEngineBadge");
+      fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-DHVZIPQJ.js");
+    const { anonymizeUnits } = await import("./anonymize-units-AP32PJVB.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -1008,11 +1039,8 @@ async function processFile() {
     fileOutBlob = new Blob([cleaned], { type: kind.mime });
     fileOutName = kind.outExt ? chosenFile.name.replace(/\.[^.]+$/, "-anonymise" + kind.outExt) : chosenFile.name.replace(/(\.[^.]+)$/, "-anonymise$1");
     showFileResults(mapping, kind.mime.startsWith("text/"));
-    if (!nerPipe) {
-      fileSetStatus("D\xE9tection des noms indisponible (connexion requise au premier usage) \u2014 seules les donn\xE9es structur\xE9es ont \xE9t\xE9 rep\xE9r\xE9es. Relis attentivement le fichier.", "error");
-    } else {
-      fileSetStatus("");
-    }
+    renderEngineBadge("fileEngineBadge");
+    fileSetStatus("");
   } catch (err) {
     console.error(err);
     fileOutBlob = null;

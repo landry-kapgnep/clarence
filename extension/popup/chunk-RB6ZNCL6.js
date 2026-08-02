@@ -3806,6 +3806,32 @@ function snapToWordBoundaries(text, entities) {
   }
   return entities;
 }
+var PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['\u2019]|[Ll]['\u2019]|von|van|[Dd]a|[Dd]i)";
+var CAPWORD = "[A-Z\xC0-\xDC][A-Za-z\xC0-\xFF'\u2019-]*";
+var ALLCAPS = "[A-Z\xC0-\xDC]{2,}(?:[-'\u2019][A-Z\xC0-\xDC]+)*";
+var FWD_PARTICLE = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
+var FWD_ALLCAPS = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-z\xC0-\xFF])`);
+var BACK_PARTICLE = new RegExp(`(${CAPWORD}(?:\\s+${PARTICLE})+\\s+)$`);
+function bridgeNameParts(text, entities) {
+  for (const e of entities) {
+    if (e.type === "PER") {
+      let m;
+      while ((m = FWD_PARTICLE.exec(text.slice(e.end))) || (m = FWD_ALLCAPS.exec(text.slice(e.end)))) {
+        e.end += m[0].length;
+        e.value = text.slice(e.start, e.end);
+      }
+    }
+    if (e.type === "LOC" || e.type === "MISC") {
+      const m = BACK_PARTICLE.exec(text.slice(0, e.start));
+      if (m) {
+        e.start -= m[1].length;
+        e.value = text.slice(e.start, e.end);
+        e.type = "PER";
+      }
+    }
+  }
+  return entities;
+}
 var MIN_SCORE = 0.6;
 async function detectNER(text, nerPipeline, { onProgress } = {}) {
   if (!nerPipeline) return [];
@@ -3830,29 +3856,7 @@ async function detectNER(text, nerPipeline, { onProgress } = {}) {
     if (onProgress) await onProgress({ done: ++done, total: chunks.length });
   }
   snapToWordBoundaries(text, all);
-  const PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['\u2019]|[Ll]['\u2019]|von|van|[Dd]a|[Dd]i)";
-  const CAPWORD = "[A-Z\xC0-\xDC][A-Za-z\xC0-\xFF'\u2019-]*";
-  const ALLCAPS = "[A-Z\xC0-\xDC]{2,}(?:[-'\u2019][A-Z\xC0-\xDC]+)*";
-  const fwdParticle = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
-  const fwdAllCaps = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-z\xC0-\xFF])`);
-  const backParticle = new RegExp(`(${CAPWORD}(?:\\s+${PARTICLE})+\\s+)$`);
-  for (const e of all) {
-    if (e.type === "PER") {
-      let m;
-      while ((m = fwdParticle.exec(text.slice(e.end))) || (m = fwdAllCaps.exec(text.slice(e.end)))) {
-        e.end += m[0].length;
-        e.value = text.slice(e.start, e.end);
-      }
-    }
-    if (e.type === "LOC" || e.type === "MISC") {
-      const m = backParticle.exec(text.slice(0, e.start));
-      if (m) {
-        e.start -= m[1].length;
-        e.value = text.slice(e.start, e.end);
-        e.type = "PER";
-      }
-    }
-  }
+  bridgeNameParts(text, all);
   const seen = /* @__PURE__ */ new Set();
   return all.filter((e) => {
     const k = `${e.start}:${e.end}:${e.type}`;
@@ -4022,6 +4026,7 @@ export {
   NER_MODEL,
   chunkText,
   snapToWordBoundaries,
+  bridgeNameParts,
   detectNER,
   mergeEntities,
   entityKey,

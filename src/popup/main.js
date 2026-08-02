@@ -354,12 +354,10 @@ async function analyze() {
     const ner = await detectContextual(text, { disabledTypes });
     autoEntities = mergeEntities(rx, ner);
     render();
-    if (!nerPipe) {
-      // Ne JAMAIS laisser croire que les noms/lieux ont été vérifiés alors
-      // que seul le structuré (regex) a tourné.
-      const count = activeEntities().length;
-      setStatus(`${count} élément(s) masqué(s) — détection des noms indisponible (connexion requise au premier usage), seules les données structurées ont été repérées. Relis attentivement.`, 'error');
-    }
+    // Ne JAMAIS laisser croire que les noms/lieux ont été vérifiés alors que
+    // seul le structuré (regex) a tourné, NI que le moteur complet a tourné
+    // alors qu'on est retombé sur le moteur de secours.
+    renderEngineBadge('engineBadge');
   } catch (err) {
     // Ne JAMAIS échouer en silence : l'utilisateur pourrait coller un texte
     // qu'il croit analysé.
@@ -404,6 +402,34 @@ async function copyClean() {
 function setStatus(msg, cls = '') {
   $('status').textContent = msg;
   $('status').className = 'status ' + cls;
+}
+
+// Quel moteur a RÉELLEMENT tourné. Affiché seulement quand ce n'est pas le
+// moteur nominal : en fonctionnement normal un badge permanent deviendrait du
+// bruit qu'on cesse de lire, alors que c'est précisément le repli qui doit
+// alerter — il change ce que l'outil sait détecter (les valeurs isolées sans
+// contexte, cellules de tableau et titres de CV, ne le sont plus).
+const ENGINE_MESSAGES = {
+  bert: {
+    cls: 'fallback',
+    texte: 'Détection de secours active — le moteur principal n\'a pas pu démarrer. '
+         + 'Les noms isolés sans phrase autour (titre de CV, cellule de tableau) risquent d\'être manqués. Relis attentivement.'
+  },
+  none: {
+    cls: 'none',
+    texte: 'Détection des noms INDISPONIBLE — seules les données structurées '
+         + '(emails, IBAN, téléphones…) ont été repérées. Relis attentivement avant de coller.'
+  }
+};
+
+function renderEngineBadge(id) {
+  const el = $(id);
+  if (!el) return;
+  const etat = !nerPipe ? 'none' : (nerEngine === 'bert' ? 'bert' : null);
+  if (!etat) { el.hidden = true; el.textContent = ''; return; }
+  el.hidden = false;
+  el.className = 'engine-badge ' + ENGINE_MESSAGES[etat].cls;
+  el.textContent = ENGINE_MESSAGES[etat].texte;
 }
 
 $('analyzeBtn').addEventListener('click', analyze);
@@ -670,7 +696,8 @@ async function processFile() {
       fileOutBlob = new Blob([outBuf], { type: 'application/pdf' });
       fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, '-anonymise$1');
       showFileResults(mapping, false);
-      fileSetStatus(nerPipe ? '' : 'Détection des noms indisponible — relis attentivement le PDF.', nerPipe ? '' : 'error');
+      renderEngineBadge('fileEngineBadge');
+      fileSetStatus('');
       return;
     }
 
@@ -717,11 +744,8 @@ async function processFile() {
     // Copier n'a de sens que pour une sortie TEXTE (md/csv), pas binaire.
     showFileResults(mapping, kind.mime.startsWith('text/'));
 
-    if (!nerPipe) {
-      fileSetStatus('Détection des noms indisponible (connexion requise au premier usage) — seules les données structurées ont été repérées. Relis attentivement le fichier.', 'error');
-    } else {
-      fileSetStatus('');
-    }
+    renderEngineBadge('fileEngineBadge');
+    fileSetStatus('');
   } catch (err) {
     console.error(err);
     fileOutBlob = null;

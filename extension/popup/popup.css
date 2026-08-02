@@ -471,3 +471,27 @@ textarea.mini { min-height: 46px; max-height: 120px; margin-bottom: 8px; }
 
 /* Cases à cocher et radios : ne pas laisser Chrome peindre en bleu système. */
 input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
+
+/* Moteur de détection réellement actif. Affiché SEULEMENT quand on n'est pas
+   sur le moteur nominal (repli) ou en cas d'indisponibilité totale : un badge
+   permanent en fonctionnement normal deviendrait du bruit que l'utilisateur
+   cesserait de lire — or c'est justement quand il change qu'il doit alerter. */
+.engine-badge {
+  font-size: 12px;
+  margin-top: 6px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  line-height: 1.4;
+}
+.engine-badge.fallback {
+  color: var(--tan);
+  border-color: color-mix(in srgb, var(--tan) 45%, transparent);
+  background: color-mix(in srgb, var(--tan) 10%, transparent);
+}
+.engine-badge.none {
+  color: var(--tan);
+  border-color: var(--tan);
+  background: color-mix(in srgb, var(--tan) 16%, transparent);
+  font-weight: 600;
+}

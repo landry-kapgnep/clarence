@@ -10,13 +10,13 @@
 //
 // Contrat de sortie IDENTIQUE à detectNER : tout l'aval (merge, selection,
 // masking) est donc inchangé et les deux moteurs sont interchangeables.
-import { chunkText, snapToWordBoundaries } from './ner.js';
+import { chunkText, snapToWordBoundaries, bridgeNameParts } from './ner.js';
 
 export const GLINER_MODEL = 'onnx-community/gliner_small-v2';
 
-// Seuil de confiance. Choisi sur mesures (voir GROUPES ci-dessous) : au-dessus
-// de 0,47 (pire faux positif observé sur les fixtures) et sous 0,59 (plus
-// faible vraie valeur à conserver, la cellule de date nue).
+// Seuil par défaut, calé sur les fixtures propres : au-dessus du pire faux
+// positif observé et sous la plus faible vraie valeur à conserver (la cellule
+// de date nue, 0,59). Chaque groupe peut le surcharger — voir GROUPES.
 export const GLINER_THRESHOLD = 0.5;
 
 // GROUPES DE LABELS DISJOINTS — le point le moins intuitif de ce module.
@@ -37,6 +37,13 @@ export const GROUPES = [
   {
     // Le cœur : ce que le NER BERT couvrait déjà, en mieux sur les valeurs
     // isolées. Marge de bruit très confortable (pire faux positif 0,26).
+    //
+    // Seuil ABAISSÉ à 0,45, mesuré sur un vrai CV : un nom seul sur sa ligne,
+    // en gros, sans rien autour (« LANDRY KAPGNEP », titre du document) ne
+    // sort qu'à 0,47 — un titre de CV est trop court pour donner au modèle de
+    // quoi être sûr. À 0,50 il FUYAIT. Le plancher de bruit du garde-fou étant
+    // à 0,26, la marge reste large. Ne pas remonter sans re-tester ce cas.
+    seuil: 0.45,
     labels: ['person', 'company', 'location'],
     types: { person: 'PER', company: 'ORG', location: 'LOC' }
   },
@@ -87,11 +94,12 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
     const duChunk = [];
     for (const groupe of groupesActifs) {
       const spans = await glinerPipeline(chunk, groupe.labels);
+      const seuil = groupe.seuil ?? GLINER_THRESHOLD;
       for (const s of spans || []) {
         const type = groupe.types[s.label];
         // Un label inconnu ne doit jamais devenir une entité sans type : mieux
         // vaut l'ignorer que produire un placeholder [undefined_1].
-        if (!type || s.score < GLINER_THRESHOLD) continue;
+        if (!type || s.score < seuil) continue;
         duChunk.push({
           type,
           value: chunk.slice(s.start, s.end),
@@ -125,6 +133,12 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
   // ner-worker.js), mais un span à cheval sur une frontière de mot resterait
   // une fuite partielle. Mécanisme partagé avec le moteur BERT.
   snapToWordBoundaries(text, all);
+
+  // Recollage des noms détectés EN DEUX MORCEAUX. Cas réel : sur un CV,
+  // « LANDRY KAPGNEP » sort en deux spans distincts (0,47 et 0,36) — sans
+  // pontage, seul le prénom passerait le seuil et le patronyme fuirait en
+  // clair à côté du placeholder. Mécanisme partagé avec le moteur BERT.
+  bridgeNameParts(text, all);
 
   // Dédoublonnage des zones de recouvrement entre fenêtres.
   const vus = new Set();

@@ -38,6 +38,40 @@ Le nom du propriétaire du CV **fuit à 3 endroits** — c'est le pire cas possi
 
 ---
 
+## P1bis — La fragmentation PDF empoisonne la détection (MESURÉ, 02/08/2026)
+
+Constaté en soumettant un **vrai CV multi-colonnes** au moteur GLiNER. Le
+modèle étiquette confiamment des fragments de mots **avec des scores plus
+élevés que le vrai nom du candidat** :
+
+| Fragment produit par l'extraction | Étiquette | Score |
+|---|---|---|
+| `plicative` (de « applicative », coupé) | entreprise | 0,70 |
+| `matisée` (de « automatisée ») | donnée de santé | 0,70 |
+| `CLÉSEXPÉRIENCES` (2 en-têtes de colonnes collés) | santé | 0,59 |
+| `InformatiqueEn cours` | poste | 0,61 |
+| `courts-métrages`, `complexes`, `INTÉRÊTS` | lieu / personne | 0,62-0,72 |
+| **`LANDRY` (le vrai nom)** | **personne** | **0,47** |
+
+Sur les fixtures PROPRES, le plancher de bruit du groupe identité est à
+**0,26** ; sur ce CV il monte à **0,74**. Autrement dit : **le sur-masquage
+observé n'est pas un défaut du modèle, c'est du charabia en entrée.** Aucun
+réglage de seuil ne peut séparer un vrai nom à 0,47 d'un `plicative` à 0,70.
+
+→ La vraie correction est en AMONT, dans `pdf-adapter.js` : `groupIntoLines` +
+`splitIntoColumns` recollent mal les colonnes d'un CV. C'est le même sujet que
+le P1 ci-dessous (fragmentation), dont on mesure ici qu'il coûte bien plus cher
+qu'estimé — il ne dégrade pas seulement la lisibilité, il **rend la détection
+contextuelle non fiable sur les documents les plus sensibles (les CV)**.
+Prochain chantier prioritaire.
+
+Piste complémentaire, déterministe et sans ML : sur un PDF, le **bloc de plus
+grande police en tête de document** est presque toujours le nom de la personne
+(`pdf-adapter.js` connaît déjà la taille de police, il s'en sert pour détecter
+les titres). Masquer ce bloc par construction ne dépendrait d'aucun score.
+
+---
+
 ## P1 — Fragmentation de mots (fuite PARTIELLE + lisibilité) — cause identifiée
 
 Symptômes : `[ENTREPRISE_4]antikmatch` (Semantikmatch coupé), `[ENTREPRISE_3]ODC`

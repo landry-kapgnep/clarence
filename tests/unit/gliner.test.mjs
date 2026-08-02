@@ -66,10 +66,13 @@ test('les groupes sont DISJOINTS (la dilution mesurée en dépend)', () => {
 });
 
 test('un span sous le seuil est écarté, au-dessus il est gardé', async () => {
-  const sous = fakePipe({ Krendalyx: [{ label: 'company', len: 9, score: GLINER_THRESHOLD - 0.01 }] });
+  // Seuil EFFECTIF du groupe qui porte ce label (il peut surcharger le défaut).
+  const seuil = GROUPES.find(g => g.labels.includes('company')).seuil ?? GLINER_THRESHOLD;
+
+  const sous = fakePipe({ Krendalyx: [{ label: 'company', len: 9, score: seuil - 0.01 }] });
   assert.equal((await detectGliner('Stage chez Krendalyx hier', sous)).length, 0);
 
-  const dessus = fakePipe({ Krendalyx: [{ label: 'company', len: 9, score: GLINER_THRESHOLD }] });
+  const dessus = fakePipe({ Krendalyx: [{ label: 'company', len: 9, score: seuil }] });
   assert.equal((await detectGliner('Stage chez Krendalyx hier', dessus)).length, 1);
 });
 
@@ -173,4 +176,38 @@ test('progression : un tick par (fenêtre x groupe actif)', async () => {
 
 test('pipeline absent : aucune entité, aucune exception (repli silencieux)', async () => {
   assert.deepEqual(await detectGliner('Julien Marchand', null), []);
+});
+
+// --- Seuil par groupe + pontage des noms en deux morceaux.
+// Régression réelle : sur un vrai CV, « LANDRY KAPGNEP » (titre du document,
+// seul sur sa ligne) sortait en DEUX spans à 0,47 et 0,36. Avec un seuil
+// unique à 0,50 le nom fuyait entièrement ; sans pontage, seul le prénom
+// aurait été masqué et le patronyme serait resté en clair à côté.
+
+test('le groupe identité a un seuil PROPRE, plus bas que le défaut', () => {
+  const identite = GROUPES.find(g => g.labels.includes('person'));
+  assert.ok(identite.seuil < GLINER_THRESHOLD, 'le groupe identité doit surcharger le seuil');
+  assert.ok(identite.seuil <= 0.45, 'un nom de CV isolé sort à 0,47 : le seuil doit passer dessous');
+});
+
+test('un nom de CV isolé à 0,47 est masqué ENTIÈREMENT (seuil + pontage)', async () => {
+  const texte = 'LANDRY KAPGNEP';
+  // Scores réels mesurés sur le vrai modèle pour cette entrée exacte.
+  const pipe = async (t, labels) => labels.includes('person')
+    ? [{ label: 'person', start: 0, end: 6, spanText: 'LANDRY', score: 0.47 },
+       { label: 'person', start: 7, end: 14, spanText: 'KAPGNEP', score: 0.36 }]
+    : [];
+  const out = await detectGliner(texte, pipe);
+  assert.equal(out.length, 1, 'le nom doit former UNE entité');
+  assert.equal(out[0].value, 'LANDRY KAPGNEP', 'le patronyme ne doit pas rester en clair');
+  const { masked } = maskText(texte, out);
+  assert.equal(masked, '[PERSONNE_1]');
+});
+
+test('les groupes sans seuil propre gardent le défaut', async () => {
+  const pipe = async (t, labels) => labels.includes('date of birth')
+    ? [{ label: 'date of birth', start: 0, end: 10, spanText: '1988-03-14', score: 0.47 }]
+    : [];
+  // 0,47 passerait le seuil du groupe identité, mais PAS celui du groupe date.
+  assert.equal((await detectGliner('1988-03-14', pipe)).length, 0);
 });
