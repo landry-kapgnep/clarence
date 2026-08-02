@@ -111,7 +111,9 @@ Mesures réelles sur le PDF de l'utilisateur (1,6 Mo, 5 pages, 9 images) :
 - reconstruction complète **sans NER** : **377 ms**
 - texte extrait : **4 735 caractères → 6 fenêtres NER → 12 inférences BERT**
   (double passe naturelle + boostée) ≈ **15-20 s**, plus le chargement du
-  modèle (~30 Mo) au premier usage.
+  modèle au premier usage (**178 Mo** — `model_quantized.onnx` de
+  `Xenova/bert-base-multilingual-cased-ner-hrl`, vérifié le 02/08/2026 ; le
+  « ~30 Mo » écrit ici auparavant était faux).
 
 → Le parsing/la reconstruction ne sont PAS le problème : **c'est le NER**, sur
 le thread principal (pas de worker, contrainte CSP MV3 / `numThreads=1`).
