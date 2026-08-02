@@ -217,6 +217,7 @@ export async function reconstructPdf(buffer, opts = {}) {
   const allUnits = pages.flatMap(p => p.units.map(u => ({ id: u.id, text: u.text })));
   const { results, mapping } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
+    nerDetect: opts.nerDetect,
     onProgress: opts.onProgress,
     maskOpts: opts.maskOpts,
     forceTerms: opts.forceTerms,

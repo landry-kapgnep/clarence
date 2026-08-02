@@ -81,3 +81,37 @@ test('un masque forcé reste intouchable même si son "type" serait filtré', as
   });
   assert.equal(results[0].maskedText.includes('Hermes'), false);
 });
+
+// --- Injection du moteur contextuel (GLiNER par défaut, BERT en repli).
+// Le mode Fichier doit pouvoir tourner avec l'un OU l'autre sans que la couche
+// fichiers connaisse le moteur : elle reçoit la fonction de détection.
+test('nerDetect injecté : le mode fichier utilise le moteur fourni', async () => {
+  const appels = [];
+  const faux = async (text, pipeline, opts) => {
+    appels.push({ text, disabledTypes: opts?.disabledTypes });
+    return text.includes('Krendalyx')
+      ? [{ type: 'ORG', value: 'Krendalyx', start: text.indexOf('Krendalyx'),
+           end: text.indexOf('Krendalyx') + 9, source: 'ner', score: 0.9, validated: 'n/a' }]
+      : [];
+  };
+  const { results } = await anonymizeUnits(
+    [{ id: 'a', text: 'Stage chez Krendalyx' }, { id: 'b', text: 'Rien ici' }],
+    { nerPipeline: () => [], nerDetect: faux, disabledTypes: new Set(['SANTE']) }
+  );
+  assert.equal(results.find(r => r.id === 'a').maskedText, 'Stage chez [ENTREPRISE_1]');
+  assert.equal(appels.length, 2, 'une détection par unité');
+  // disabledTypes doit atteindre le moteur : GLiNER s'en sert pour sauter des passes.
+  assert.ok(appels[0].disabledTypes.has('SANTE'));
+});
+
+test('sans nerDetect, le moteur BERT historique reste utilisé (non-régression)', async () => {
+  // Pipeline BERT simulé : renvoie des TOKENS, pas des spans.
+  const pipeBert = async chunk => chunk.includes('Dupont')
+    ? [{ entity: 'B-PER', word: 'Jean', score: 0.99 }, { entity: 'I-PER', word: 'Dupont', score: 0.98 }]
+    : [];
+  const { results } = await anonymizeUnits(
+    [{ id: 'a', text: 'Contact : Jean Dupont' }],
+    { nerPipeline: pipeBert }
+  );
+  assert.equal(results[0].maskedText, 'Contact : [PERSONNE_1]');
+});

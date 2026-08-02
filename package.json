@@ -16,6 +16,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "dependencies": {
+    "gliner": "0.0.19",
     "libphonenumber-js": "^1.13.9",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.1.200"

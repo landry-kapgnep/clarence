@@ -35,13 +35,13 @@ export const UNIT_SEP = '\n\u{E000}\u{E004}\u{E000}\n';
 // appel par cellule serait prohibitif :
 //  - unités sans aucune suite de 2 lettres (nombres, dates, codes) : ignorées ;
 //  - textes identiques (valeurs répétées d'une colonne) : détectés une seule fois.
-async function detectNerPerUnit(units, ranges, nerPipeline, onProgress) {
+async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
   const out = [];
   const cache = new Map();
   for (let i = 0; i < units.length; i++) {
     const text = units[i].text;
     if (/\p{L}{2}/u.test(text)) {
-      if (!cache.has(text)) cache.set(text, await detectNER(text, nerPipeline));
+      if (!cache.has(text)) cache.set(text, await detect(text, nerPipeline, { disabledTypes }));
       const base = ranges[i].start;
       for (const e of cache.get(text)) {
         out.push({ ...e, start: e.start + base, end: e.end + base });
@@ -88,13 +88,15 @@ function joinWithSentinel(units) {
 // - keepValues    : valeurs « ne jamais masquer » (les masques forcés restent intouchables).
 // onProgress (optionnel) : transmis à detectNER, pour afficher l'avancement
 // (le NER est le poste long — voir commentaire dans ner.js).
-export async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
+export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
   // Structuré = regex FR + téléphones internationaux (libphonenumber).
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
-  const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress) : [];
+  const nerEntities = nerPipeline
+    ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes)
+    : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, new Set());
   const active = filterByRules(selected, {

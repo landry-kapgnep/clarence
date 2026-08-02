@@ -11,7 +11,7 @@ import {
   unzipSync,
   zipSync
 } from "./chunk-S5HPOW2S.js";
-import "./chunk-TRTQSARU.js";
+import "./chunk-PIRHQTI4.js";
 
 // src/files/docx-adapter.js
 var W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";

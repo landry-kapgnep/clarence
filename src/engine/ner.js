@@ -140,6 +140,38 @@ export function locateGroups(text, groups) {
   return entities;
 }
 
+// Recalage des entités sur les frontières de mot — PARTAGÉ par les deux
+// moteurs contextuels (BERT ici, GLiNER dans gliner.js), jamais dupliqué.
+// Corrige deux défauts qui laissent fuir une partie d'un nom :
+//  - reconstruction tronquée EN PLEIN MOT ("mandine" pour "Amandine" →
+//    "A[PERSONNE]") : on étend vers la gauche jusqu'au début du mot ;
+//  - arrêt au 1er élément d'un composé à trait d'union ("Antoine" dans
+//    "Marc-Antoine", "ROUSSEAU" sans "-LEFEBVRE") : on étend des deux côtés à
+//    travers les traits d'union vers les mots adjacents.
+// Déterministe et sûr : n'étend qu'une détection existante (jamais de
+// franchissement d'espace), et on rogne les tirets aux extrémités.
+// Vaut pour ORG/LOC autant que PER : le modèle n'étiquette parfois que le
+// premier sous-mot (« Sem » de Semantikmatch, « UT » de IUT), ce qui laissait
+// le reste du mot EN CLAIR à côté du placeholder ([ENTREPRISE_4]antikmatch) —
+// fuite partielle constatée sur un vrai CV.
+// Modifie les entités EN PLACE et les retourne.
+const SNAP_TYPES = new Set(['PER', 'ORG', 'LOC']);
+const NAME_CHAR = /[A-Za-zÀ-ÿ'’-]/;
+export function snapToWordBoundaries(text, entities) {
+  for (const e of entities) {
+    if (!SNAP_TYPES.has(e.type)) continue;
+    let { start, end } = e;
+    while (start > 0 && NAME_CHAR.test(text[start - 1])) start--;
+    while (end < text.length && NAME_CHAR.test(text[end])) end++;
+    while (start < end && text[start] === '-') start++;
+    while (end > start && text[end - 1] === '-') end--;
+    if (start !== e.start || end !== e.end) {
+      e.start = start; e.end = end; e.value = text.slice(start, end);
+    }
+  }
+  return entities;
+}
+
 // Sous ce seuil, trop de bruit : la casse boostée (boostCase) fait parfois
 // dériver un mot-outil vers un B-PER isolé et peu sûr (ex. "habite" → "Ha" à
 // 52%), très en dessous de la confiance des vraies entités (>95% en pratique).
@@ -203,31 +235,7 @@ export async function detectNER(text, nerPipeline, { onProgress } = {}) {
     // début à la fin et l'UI semble figée.
     if (onProgress) await onProgress({ done: ++done, total: chunks.length });
   }
-  // Recalage des entités PER sur les frontières de mot. Le modèle cased produit
-  // deux défauts qui laissent fuir une partie du nom :
-  //  - reconstruction tronquée EN PLEIN MOT ("mandine" pour "Amandine" →
-  //    "A[PERSONNE]") : on étend vers la gauche jusqu'au début du mot ;
-  //  - arrêt au 1er élément d'un composé à trait d'union ("Antoine" dans
-  //    "Marc-Antoine", "ROUSSEAU" sans "-LEFEBVRE") : on étend des deux côtés à
-  //    travers les traits d'union vers les mots capitalisés adjacents.
-  // Déterministe et sûr : n'étend qu'une détection PER existante (jamais de
-  // franchissement d'espace), et on rogne les tirets aux extrémités.
-  // Le recalage vaut aussi pour ORG/LOC : le modèle n'étiquette parfois que le
-  // premier sous-mot (« Sem » de Semantikmatch, « UT » de IUT), ce qui laissait
-  // le reste du mot EN CLAIR à côté du placeholder ([ENTREPRISE_4]antikmatch) —
-  // fuite partielle constatée sur un vrai CV.
-  const nameChar = /[A-Za-zÀ-ÿ'’-]/;
-  for (const e of all) {
-    if (e.type !== 'PER' && e.type !== 'ORG' && e.type !== 'LOC') continue;
-    let { start, end } = e;
-    while (start > 0 && nameChar.test(text[start - 1])) start--;
-    while (end < text.length && nameChar.test(text[end])) end++;
-    while (start < end && text[start] === '-') start++;
-    while (end > start && text[end - 1] === '-') end--;
-    if (start !== e.start || end !== e.end) {
-      e.start = start; e.end = end; e.value = text.slice(start, end);
-    }
-  }
+  snapToWordBoundaries(text, all);
 
   // Pontage de noms à particules / patronymes ratés — le NER cased échoue sur
   // les noms nobiliaires ("Sébastien De La Villardière" : "Villardière" pris

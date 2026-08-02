@@ -4,6 +4,7 @@
 import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
+import { detectGliner, GLINER_MODEL } from '../engine/gliner.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
 import { createPseudonymizer } from '../engine/pseudonyms.js';
@@ -24,6 +25,11 @@ const TYPE_DISPLAY = {
   NIR: 'NIR', SIRET_SIREN: 'SIRET/SIREN', CODE_POSTAL_VILLE: 'Code postal',
   MONTANT: 'Montants', ADRESSE: 'Adresses', DATE_NAISSANCE: 'Dates naiss.',
   REFERENCE: 'Références', IP: 'IP', MAC: 'MAC', BIC: 'BIC', PSEUDO: 'Pseudos/handles', DATE: 'Dates sensibles', ID_NATIONAL: 'ID nationaux',
+  // Apportés par la détection zero-shot. Décocher un de ces types SAUTE
+  // l'inférence correspondante (voir GROUPES dans engine/gliner.js) : on ne
+  // paie que ce qu'on demande.
+  POSTE: 'Postes', NATIONALITE: 'Nationalités',
+  ETABLISSEMENT: 'Établissements', SANTE: 'Santé',
   MISC: 'Divers', PERSONNALISE: 'Perso'
 };
 const parseLines = v => (v || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
@@ -211,50 +217,101 @@ function render() {
 // NER fiable et l'interface fluide.
 const MAX_INPUT = 8000;
 
-// --- Worker NER : le modèle tourne hors du thread principal, sinon l'UI gèle
-// pendant toute la détection (menus au contenu coupé, impression de plantage).
-// `detectNER` prend déjà son pipeline en paramètre : il suffit de lui passer
-// un proxy vers le worker, tout le moteur reste inchangé.
+// Poids du modèle GLiNER (ONNX quantifié). Téléchargé une fois puis conservé
+// dans la Cache API par le worker — ORT n'utilise pas le cache de
+// Transformers.js, il fallait donc le gérer nous-mêmes.
+const GLINER_MODEL_URL =
+  `https://huggingface.co/${GLINER_MODEL}/resolve/main/onnx/model_quantized.onnx`;
+
+// --- Worker de détection contextuelle : le modèle tourne hors du thread
+// principal, sinon l'UI gèle pendant toute la détection (menus au contenu
+// coupé, impression de plantage).
+//
+// DEUX moteurs derrière le même proxy. GLiNER (zero-shot) par défaut : il sait
+// qualifier une valeur isolée sans phrase autour — cellule de tableau, nom en
+// tête de CV — ce dont le NER BERT est incapable par construction. S'il ne
+// démarre pas, on replie SILENCIEUSEMENT sur BERT : l'utilisateur garde une
+// détection des noms, ce qui vaut mieux qu'un message d'erreur et rien.
+// `detectNER`/`detectGliner` prennent leur pipeline en paramètre : le moteur
+// pur reste inchangé, seul le proxy diffère.
 let nerWorker = null;
 let nerReqId = 0;
+let nerEngine = null; // 'gliner' | 'bert' — moteur réellement actif
 const nerPending = new Map();
 
 function createNerWorker() {
   const worker = new Worker(chrome.runtime.getURL('popup/ner-worker.js'), { type: 'module' });
   worker.addEventListener('message', ev => {
     const msg = ev.data || {};
+    if (msg.type === 'progress' && msg.total) {
+      const pct = Math.round((msg.loaded / msg.total) * 100);
+      setStatus(`Téléchargement du modèle de détection… ${pct} % (une seule fois, mis en cache ensuite)`);
+      return;
+    }
     if (msg.type === 'result' || (msg.type === 'error' && msg.id != null)) {
       const p = nerPending.get(msg.id);
       if (!p) return;
       nerPending.delete(msg.id);
-      msg.type === 'result' ? p.resolve(msg.tokens) : p.reject(new Error(msg.message));
+      // GLiNER renvoie des spans décodés, BERT des tokens bruts.
+      msg.type === 'result' ? p.resolve(msg.spans ?? msg.tokens) : p.reject(new Error(msg.message));
     }
   });
   return worker;
 }
 
+// Démarre un worker sur un moteur donné. Rejette si l'init échoue.
+function startEngine(engine) {
+  const worker = createNerWorker();
+  return new Promise((resolve, reject) => {
+    const onInit = ev => {
+      const msg = ev.data || {};
+      if (msg.type === 'ready') {
+        worker.removeEventListener('message', onInit);
+        resolve(worker);
+      } else if (msg.type === 'error' && msg.id == null) {
+        worker.removeEventListener('message', onInit);
+        worker.terminate(); // ne pas laisser un worker mort en mémoire
+        reject(new Error(msg.message));
+      }
+    };
+    worker.addEventListener('message', onInit);
+    worker.addEventListener('error', e => {
+      worker.terminate();
+      reject(new Error(e.message || 'worker de détection indisponible'));
+    });
+    worker.postMessage({
+      type: 'init',
+      engine,
+      wasmPath: chrome.runtime.getURL('vendor/'),
+      model: engine === 'gliner' ? GLINER_MODEL : NER_MODEL,
+      modelUrl: engine === 'gliner' ? GLINER_MODEL_URL : null
+    });
+  });
+}
+
 async function ensureNER() {
   if (nerPipe || nerLoading) return;
   nerLoading = true;
-  setStatus('Chargement du modèle de détection des noms (~30 Mo au premier usage, mis en cache ensuite)…');
+  setStatus('Chargement du modèle de détection des noms (~180 Mo au premier usage, mis en cache ensuite)…');
   try {
-    const worker = createNerWorker();
-    await new Promise((resolve, reject) => {
-      const onInit = ev => {
-        const msg = ev.data || {};
-        if (msg.type === 'ready') { worker.removeEventListener('message', onInit); resolve(); }
-        else if (msg.type === 'error' && msg.id == null) { worker.removeEventListener('message', onInit); reject(new Error(msg.message)); }
-      };
-      worker.addEventListener('message', onInit);
-      worker.addEventListener('error', e => reject(new Error(e.message || 'worker NER indisponible')));
-      worker.postMessage({ type: 'init', wasmPath: chrome.runtime.getURL('vendor/'), model: NER_MODEL });
-    });
+    let worker = null;
+    try {
+      worker = await startEngine('gliner');
+      nerEngine = 'gliner';
+    } catch (err) {
+      // Repli silencieux : l'utilisateur n'a pas à connaître nos moteurs, il a
+      // juste besoin que la détection des noms marche.
+      console.warn('GLiNER indisponible, repli sur le NER BERT :', err);
+      worker = await startEngine('bert');
+      nerEngine = 'bert';
+    }
     nerWorker = worker;
-    // Proxy : même signature que le pipeline Transformers.js (texte → tokens).
-    nerPipe = text => new Promise((resolve, reject) => {
+    // Proxy commun. GLiNER reçoit en plus les labels du groupe à chercher ;
+    // BERT les ignore.
+    nerPipe = (text, labels) => new Promise((resolve, reject) => {
       const id = ++nerReqId;
       nerPending.set(id, { resolve, reject });
-      nerWorker.postMessage({ type: 'run', id, text });
+      nerWorker.postMessage({ type: 'run', id, text, labels });
     });
   } catch (err) {
     console.error(err);
@@ -263,6 +320,20 @@ async function ensureNER() {
   } finally {
     nerLoading = false;
   }
+}
+
+// Fonction de détection du moteur ACTIF, avec la signature commune
+// (text, pipeline, opts) attendue par anonymizeUnits/reconstructPdf.
+// `disabledTypes` y sert à SAUTER des passes GLiNER entières (une passe = une
+// inférence), pas seulement à filtrer après coup.
+function contextualDetector() {
+  return nerEngine === 'gliner' ? detectGliner : detectNER;
+}
+
+// Même chose pour le mode texte, où le pipeline est déjà connu.
+function detectContextual(text, opts = {}) {
+  if (!nerPipe) return [];
+  return contextualDetector()(text, nerPipe, opts);
 }
 
 async function analyze() {
@@ -280,7 +351,7 @@ async function analyze() {
     await ensureNER();
     // Structuré = regex FR + téléphones internationaux (libphonenumber).
     const rx = [...detectRegex(text), ...detectPhonesIntl(text)];
-    const ner = nerPipe ? await detectNER(text, nerPipe) : [];
+    const ner = await detectContextual(text, { disabledTypes });
     autoEntities = mergeEntities(rx, ner);
     render();
     if (!nerPipe) {
@@ -589,6 +660,7 @@ async function processFile() {
       const pdflib = await import('pdf-lib');
       const { buffer: outBuf, mapping } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
+        nerDetect: contextualDetector(),
         onProgress: nerProgress,
         forceTerms: parseLines($('fileAlwaysMask')?.value),
         disabledTypes: fileDisabledTypes,
@@ -621,6 +693,7 @@ async function processFile() {
     await ensureNER();
     const { results, mapping } = await anonymizeUnits(units, {
       nerPipeline: nerPipe,
+      nerDetect: contextualDetector(),
       onProgress: nerProgress,
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte

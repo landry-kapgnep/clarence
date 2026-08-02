@@ -7,17 +7,17 @@ import {
   maskText,
   mergeEntities,
   selectActive
-} from "./chunk-D4AVYQEE.js";
+} from "./chunk-S3EUP2VP.js";
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\n\uE000\uE004\uE000\n";
-async function detectNerPerUnit(units, ranges, nerPipeline, onProgress) {
+async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
   const out = [];
   const cache = /* @__PURE__ */ new Map();
   for (let i = 0; i < units.length; i++) {
     const text = units[i].text;
     if (new RegExp("\\p{L}{2}", "u").test(text)) {
-      if (!cache.has(text)) cache.set(text, await detectNER(text, nerPipeline));
+      if (!cache.has(text)) cache.set(text, await detect(text, nerPipeline, { disabledTypes }));
       const base = ranges[i].start;
       for (const e of cache.get(text)) {
         out.push({ ...e, start: e.start + base, end: e.end + base });
@@ -41,11 +41,11 @@ function joinWithSentinel(units) {
   }
   return { combined, ranges };
 }
-async function anonymizeUnits(units, { nerPipeline, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
+async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
-  const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress) : [];
+  const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes) : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, /* @__PURE__ */ new Set());
   const active = filterByRules(selected, {

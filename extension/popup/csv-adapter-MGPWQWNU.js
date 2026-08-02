@@ -1,4 +1,4 @@
-import "./chunk-TRTQSARU.js";
+import "./chunk-PIRHQTI4.js";
 
 // src/files/csv-adapter.js
 function sniffDelimiter(text) {

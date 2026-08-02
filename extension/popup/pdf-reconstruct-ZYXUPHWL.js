@@ -15,9 +15,9 @@ import {
 } from "./chunk-7H3FO5ON.js";
 import {
   anonymizeUnits
-} from "./chunk-GM45N5BF.js";
-import "./chunk-D4AVYQEE.js";
-import "./chunk-TRTQSARU.js";
+} from "./chunk-JRGYRYMP.js";
+import "./chunk-S3EUP2VP.js";
+import "./chunk-PIRHQTI4.js";
 
 // src/files/pdf-reconstruct.js
 if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
@@ -173,6 +173,7 @@ async function reconstructPdf(buffer, opts = {}) {
   const allUnits = pages.flatMap((p) => p.units.map((u) => ({ id: u.id, text: u.text })));
   const { results, mapping } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
+    nerDetect: opts.nerDetect,
     onProgress: opts.onProgress,
     maskOpts: opts.maskOpts,
     forceTerms: opts.forceTerms,

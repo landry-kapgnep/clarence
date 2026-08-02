@@ -3788,6 +3788,24 @@ function locateGroups(text, groups) {
   }
   return entities;
 }
+var SNAP_TYPES = /* @__PURE__ */ new Set(["PER", "ORG", "LOC"]);
+var NAME_CHAR = /[A-Za-zÀ-ÿ'’-]/;
+function snapToWordBoundaries(text, entities) {
+  for (const e of entities) {
+    if (!SNAP_TYPES.has(e.type)) continue;
+    let { start, end } = e;
+    while (start > 0 && NAME_CHAR.test(text[start - 1])) start--;
+    while (end < text.length && NAME_CHAR.test(text[end])) end++;
+    while (start < end && text[start] === "-") start++;
+    while (end > start && text[end - 1] === "-") end--;
+    if (start !== e.start || end !== e.end) {
+      e.start = start;
+      e.end = end;
+      e.value = text.slice(start, end);
+    }
+  }
+  return entities;
+}
 var MIN_SCORE = 0.6;
 async function detectNER(text, nerPipeline, { onProgress } = {}) {
   if (!nerPipeline) return [];
@@ -3811,20 +3829,7 @@ async function detectNER(text, nerPipeline, { onProgress } = {}) {
     }
     if (onProgress) await onProgress({ done: ++done, total: chunks.length });
   }
-  const nameChar = /[A-Za-zÀ-ÿ'’-]/;
-  for (const e of all) {
-    if (e.type !== "PER" && e.type !== "ORG" && e.type !== "LOC") continue;
-    let { start, end } = e;
-    while (start > 0 && nameChar.test(text[start - 1])) start--;
-    while (end < text.length && nameChar.test(text[end])) end++;
-    while (start < end && text[start] === "-") start++;
-    while (end > start && text[end - 1] === "-") end--;
-    if (start !== e.start || end !== e.end) {
-      e.start = start;
-      e.end = end;
-      e.value = text.slice(start, end);
-    }
-  }
+  snapToWordBoundaries(text, all);
   const PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['\u2019]|[Ll]['\u2019]|von|van|[Dd]a|[Dd]i)";
   const CAPWORD = "[A-Z\xC0-\xDC][A-Za-z\xC0-\xFF'\u2019-]*";
   const ALLCAPS = "[A-Z\xC0-\xDC]{2,}(?:[-'\u2019][A-Z\xC0-\xDC]+)*";
@@ -3876,9 +3881,15 @@ var TYPE_PRIORITY = [
   "CODE_POSTAL_VILLE",
   "REFERENCE",
   "MONTANT",
+  // Types contextuels (NER/GLiNER) : toujours APRÈS les types regex, pour que
+  // le déterministe l'emporte à span identique (cadrage §8).
   "PER",
   "ORG",
   "LOC",
+  "SANTE",
+  "NATIONALITE",
+  "ETABLISSEMENT",
+  "POSTE",
   "MISC"
 ];
 var rank = (t) => {
@@ -3952,7 +3963,14 @@ var TYPE_LABELS = {
   BIC: "BIC",
   PSEUDO: "PSEUDO",
   DATE: "DATE",
-  ID_NATIONAL: "ID_NATIONAL"
+  ID_NATIONAL: "ID_NATIONAL",
+  // Apportés par le NER zero-shot (gliner.js), hors de portée des catégories
+  // figées du modèle BERT. SANTE et NATIONALITE sont des données sensibles au
+  // sens RGPD (art. 9), d'où leur masquage par défaut.
+  POSTE: "POSTE",
+  NATIONALITE: "NATIONALITE",
+  ETABLISSEMENT: "ETABLISSEMENT",
+  SANTE: "SANTE"
 };
 var escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function maskText(text, entities, opts = {}) {
@@ -4002,6 +4020,8 @@ export {
   detectRegex,
   detectPhonesIntl,
   NER_MODEL,
+  chunkText,
+  snapToWordBoundaries,
   detectNER,
   mergeEntities,
   entityKey,

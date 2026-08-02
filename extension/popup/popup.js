@@ -1,5 +1,6 @@
 import {
   NER_MODEL,
+  chunkText,
   detectNER,
   detectPhonesIntl,
   detectRegex,
@@ -9,9 +10,89 @@ import {
   maskText,
   mergeEntities,
   reinject,
-  selectActive
-} from "./chunk-D4AVYQEE.js";
-import "./chunk-TRTQSARU.js";
+  selectActive,
+  snapToWordBoundaries
+} from "./chunk-S3EUP2VP.js";
+import "./chunk-PIRHQTI4.js";
+
+// src/engine/gliner.js
+var GLINER_MODEL = "onnx-community/gliner_small-v2";
+var GLINER_THRESHOLD = 0.5;
+var GROUPES = [
+  {
+    // Le cœur : ce que le NER BERT couvrait déjà, en mieux sur les valeurs
+    // isolées. Marge de bruit très confortable (pire faux positif 0,26).
+    labels: ["person", "company", "location"],
+    types: { person: "PER", company: "ORG", location: "LOC" }
+  },
+  {
+    // Seul : associé à d'autres labels il perd sa précision, et « address »
+    // faisait monter le bruit du garde-fou à 0,47 (trop près du seuil).
+    // Les adresses restent couvertes par le motif ADRESSE, déterministe.
+    labels: ["date of birth"],
+    types: { "date of birth": "DATE_NAISSANCE" }
+  },
+  {
+    // Catégories sensibles au sens RGPD (santé, origine) + contexte pro.
+    // Vérifié : zéro faux positif sur les 3 fixtures ET sur une ligne de
+    // stack technique (« React, Docker, Prisma… »).
+    labels: ["job title", "nationality", "school", "medical condition"],
+    types: {
+      "job title": "POSTE",
+      nationality: "NATIONALITE",
+      school: "ETABLISSEMENT",
+      "medical condition": "SANTE"
+    }
+  }
+];
+var typesDuGroupe = (g) => Object.values(g.types);
+async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: disabledTypes2 } = {}) {
+  if (!glinerPipeline) return [];
+  const desactives = disabledTypes2 || /* @__PURE__ */ new Set();
+  const groupesActifs = GROUPES.filter((g) => typesDuGroupe(g).some((t) => !desactives.has(t)));
+  if (!groupesActifs.length) return [];
+  const chunks = chunkText(text);
+  const total = chunks.length * groupesActifs.length;
+  const all = [];
+  let done = 0;
+  for (const { offset, text: chunk } of chunks) {
+    const duChunk = [];
+    for (const groupe of groupesActifs) {
+      const spans = await glinerPipeline(chunk, groupe.labels);
+      for (const s of spans || []) {
+        const type = groupe.types[s.label];
+        if (!type || s.score < GLINER_THRESHOLD) continue;
+        duChunk.push({
+          type,
+          value: chunk.slice(s.start, s.end),
+          start: s.start,
+          end: s.end,
+          source: "ner",
+          score: s.score,
+          validated: "n/a"
+        });
+      }
+      if (onProgress) await onProgress({ done: ++done, total });
+    }
+    duChunk.sort(
+      (a, b) => a.start - b.start || b.end - b.start - (a.end - a.start) || b.score - a.score
+    );
+    const gardes = [];
+    for (const e of duChunk) {
+      if (gardes.some((k) => e.start < k.end && e.end > k.start)) continue;
+      gardes.push(e);
+    }
+    for (const e of gardes) all.push({ ...e, start: e.start + offset, end: e.end + offset });
+  }
+  snapToWordBoundaries(text, all);
+  const vus = /* @__PURE__ */ new Set();
+  return all.filter((e) => {
+    const k = `${e.start}:${e.end}:${e.type}`;
+    if (vus.has(k)) return false;
+    vus.add(k);
+    return true;
+  }).sort((a, b) => a.start - b.start);
+}
 
 // src/engine/pseudonyms.js
 var PRENOMS = [
@@ -388,6 +469,13 @@ var TYPE_DISPLAY = {
   PSEUDO: "Pseudos/handles",
   DATE: "Dates sensibles",
   ID_NATIONAL: "ID nationaux",
+  // Apportés par la détection zero-shot. Décocher un de ces types SAUTE
+  // l'inférence correspondante (voir GROUPES dans engine/gliner.js) : on ne
+  // paie que ce qu'on demande.
+  POSTE: "Postes",
+  NATIONALITE: "Nationalit\xE9s",
+  ETABLISSEMENT: "\xC9tablissements",
+  SANTE: "Sant\xE9",
   MISC: "Divers",
   PERSONNALISE: "Perso"
 };
@@ -524,54 +612,89 @@ function render() {
   refreshOverlayIfOpen();
 }
 var MAX_INPUT = 8e3;
+var GLINER_MODEL_URL = `https://huggingface.co/${GLINER_MODEL}/resolve/main/onnx/model_quantized.onnx`;
 var nerWorker = null;
 var nerReqId = 0;
+var nerEngine = null;
 var nerPending = /* @__PURE__ */ new Map();
 function createNerWorker() {
   const worker = new Worker(chrome.runtime.getURL("popup/ner-worker.js"), { type: "module" });
   worker.addEventListener("message", (ev) => {
     const msg = ev.data || {};
+    if (msg.type === "progress" && msg.total) {
+      const pct = Math.round(msg.loaded / msg.total * 100);
+      setStatus(`T\xE9l\xE9chargement du mod\xE8le de d\xE9tection\u2026 ${pct} % (une seule fois, mis en cache ensuite)`);
+      return;
+    }
     if (msg.type === "result" || msg.type === "error" && msg.id != null) {
       const p = nerPending.get(msg.id);
       if (!p) return;
       nerPending.delete(msg.id);
-      msg.type === "result" ? p.resolve(msg.tokens) : p.reject(new Error(msg.message));
+      msg.type === "result" ? p.resolve(msg.spans ?? msg.tokens) : p.reject(new Error(msg.message));
     }
   });
   return worker;
 }
+function startEngine(engine) {
+  const worker = createNerWorker();
+  return new Promise((resolve, reject) => {
+    const onInit = (ev) => {
+      const msg = ev.data || {};
+      if (msg.type === "ready") {
+        worker.removeEventListener("message", onInit);
+        resolve(worker);
+      } else if (msg.type === "error" && msg.id == null) {
+        worker.removeEventListener("message", onInit);
+        worker.terminate();
+        reject(new Error(msg.message));
+      }
+    };
+    worker.addEventListener("message", onInit);
+    worker.addEventListener("error", (e) => {
+      worker.terminate();
+      reject(new Error(e.message || "worker de d\xE9tection indisponible"));
+    });
+    worker.postMessage({
+      type: "init",
+      engine,
+      wasmPath: chrome.runtime.getURL("vendor/"),
+      model: engine === "gliner" ? GLINER_MODEL : NER_MODEL,
+      modelUrl: engine === "gliner" ? GLINER_MODEL_URL : null
+    });
+  });
+}
 async function ensureNER() {
   if (nerPipe || nerLoading) return;
   nerLoading = true;
-  setStatus("Chargement du mod\xE8le de d\xE9tection des noms (~30 Mo au premier usage, mis en cache ensuite)\u2026");
+  setStatus("Chargement du mod\xE8le de d\xE9tection des noms (~180 Mo au premier usage, mis en cache ensuite)\u2026");
   try {
-    const worker = createNerWorker();
-    await new Promise((resolve, reject) => {
-      const onInit = (ev) => {
-        const msg = ev.data || {};
-        if (msg.type === "ready") {
-          worker.removeEventListener("message", onInit);
-          resolve();
-        } else if (msg.type === "error" && msg.id == null) {
-          worker.removeEventListener("message", onInit);
-          reject(new Error(msg.message));
-        }
-      };
-      worker.addEventListener("message", onInit);
-      worker.addEventListener("error", (e) => reject(new Error(e.message || "worker NER indisponible")));
-      worker.postMessage({ type: "init", wasmPath: chrome.runtime.getURL("vendor/"), model: NER_MODEL });
-    });
+    let worker = null;
+    try {
+      worker = await startEngine("gliner");
+      nerEngine = "gliner";
+    } catch (err) {
+      console.warn("GLiNER indisponible, repli sur le NER BERT :", err);
+      worker = await startEngine("bert");
+      nerEngine = "bert";
+    }
     nerWorker = worker;
-    nerPipe = (text) => new Promise((resolve, reject) => {
+    nerPipe = (text, labels) => new Promise((resolve, reject) => {
       const id = ++nerReqId;
       nerPending.set(id, { resolve, reject });
-      nerWorker.postMessage({ type: "run", id, text });
+      nerWorker.postMessage({ type: "run", id, text, labels });
     });
   } catch (err) {
     console.error(err);
   } finally {
     nerLoading = false;
   }
+}
+function contextualDetector() {
+  return nerEngine === "gliner" ? detectGliner : detectNER;
+}
+function detectContextual(text, opts = {}) {
+  if (!nerPipe) return [];
+  return contextualDetector()(text, nerPipe, opts);
 }
 async function analyze() {
   const text = $("input").value;
@@ -590,7 +713,7 @@ async function analyze() {
   try {
     await ensureNER();
     const rx = [...detectRegex(text), ...detectPhonesIntl(text)];
-    const ner = nerPipe ? await detectNER(text, nerPipe) : [];
+    const ner = await detectContextual(text, { disabledTypes });
     autoEntities = mergeEntities(rx, ner);
     render();
     if (!nerPipe) {
@@ -715,19 +838,19 @@ document.addEventListener("keydown", (ev) => {
 });
 var MAX_FILE_BYTES = 5 * 1024 * 1024;
 var FILE_TYPES = {
-  csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-FFK2G2H4.js") },
-  xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-BBLAZWMQ.js") },
-  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-6XYKTZDR.js") },
+  csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-MGPWQWNU.js") },
+  xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-O6QN6V2F.js") },
+  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-YOBWEEHD.js") },
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-TQWFNX2U.js"), outExt: ".md" },
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-XTRDVQCO.js"), outExt: ".md" },
   // Images : metadataOnly → processFile() court-circuite le pipeline de
   // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
   // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
-  jpg: { mime: "image/jpeg", text: false, metadataOnly: true, load: () => import("./image-adapter-MDL4JKAD.js") },
-  jpeg: { mime: "image/jpeg", text: false, metadataOnly: true, load: () => import("./image-adapter-MDL4JKAD.js") },
-  png: { mime: "image/png", text: false, metadataOnly: true, load: () => import("./image-adapter-MDL4JKAD.js") }
+  jpg: { mime: "image/jpeg", text: false, metadataOnly: true, load: () => import("./image-adapter-2KEQSNMF.js") },
+  jpeg: { mime: "image/jpeg", text: false, metadataOnly: true, load: () => import("./image-adapter-2KEQSNMF.js") },
+  png: { mime: "image/png", text: false, metadataOnly: true, load: () => import("./image-adapter-2KEQSNMF.js") }
 };
 var chosenFile = null;
 var fileOutBlob = null;
@@ -842,10 +965,11 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Chargement du mod\xE8le et reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-4OPYEXFY.js");
-      const pdflib = await import("./es-LDLWYJWP.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-ZYXUPHWL.js");
+      const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
+        nerDetect: contextualDetector(),
         onProgress: nerProgress,
         forceTerms: parseLines($("fileAlwaysMask")?.value),
         disabledTypes: fileDisabledTypes,
@@ -858,7 +982,7 @@ async function processFile() {
       fileSetStatus(nerPipe ? "" : "D\xE9tection des noms indisponible \u2014 relis attentivement le PDF.", nerPipe ? "" : "error");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-KCAV572T.js");
+    const { anonymizeUnits } = await import("./anonymize-units-DHVZIPQJ.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -869,6 +993,7 @@ async function processFile() {
     await ensureNER();
     const { results, mapping } = await anonymizeUnits(units, {
       nerPipeline: nerPipe,
+      nerDetect: contextualDetector(),
       onProgress: nerProgress,
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte

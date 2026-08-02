@@ -1,7 +1,7 @@
 // Build de l'extension : bundle la popup (moteur + Transformers.js en local,
 // exigence MV3 : aucun code distant) et copie les runtimes WASM en vendor/.
 import { build } from 'esbuild';
-import { cpSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 
 // Nettoyage des sorties JS précédentes : les chunks du code-splitting ont des
 // noms hashés qui changent à chaque build ; sans ça les anciens s'accumulent.
@@ -29,8 +29,28 @@ await build({
 });
 
 mkdirSync('extension/vendor', { recursive: true });
-for (const f of ['ort-wasm.wasm', 'ort-wasm-simd.wasm']) {
-  cpSync(`node_modules/@xenova/transformers/dist/${f}`, `extension/vendor/${f}`);
+
+// DEUX runtimes ONNX cohabitent, et c'est voulu :
+//  - 1.14 (embarqué par Transformers.js) pour le moteur BERT de repli ;
+//  - 1.19 (embarqué par gliner) pour le moteur GLiNER par défaut.
+// Leurs binaires portent des noms DIFFÉRENTS, donc aucune collision dans
+// vendor/. Un binaire manquant = extension cassée en silence au runtime (la
+// CSP MV3 interdit d'aller le chercher sur un CDN), d'où l'échec bruyant.
+const WASM = [
+  ['node_modules/@xenova/transformers/dist', 'ort-wasm.wasm'],
+  ['node_modules/@xenova/transformers/dist', 'ort-wasm-simd.wasm'],
+  // npm peut hisser ou imbriquer la dépendance selon l'arbre : on essaie les
+  // deux emplacements plutôt que de coder en dur un résultat de hoisting.
+  [['node_modules/gliner/node_modules/onnxruntime-web/dist',
+    'node_modules/onnxruntime-web/dist'], 'ort-wasm-simd-threaded.wasm']
+];
+for (const [dirs, f] of WASM) {
+  const candidats = Array.isArray(dirs) ? dirs : [dirs];
+  const source = candidats.map(d => `${d}/${f}`).find(existsSync);
+  if (!source) {
+    throw new Error(`build : binaire WASM introuvable (${f}) — cherché dans ${candidats.join(', ')}`);
+  }
+  cpSync(source, `extension/vendor/${f}`);
 }
 // Worker pdfjs : exigé en navigateur (v6 refuse de démarrer sans workerSrc —
 // pas de repli automatique, contrairement à Node). Servi depuis vendor/ comme

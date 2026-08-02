@@ -13,7 +13,12 @@ const TYPE_LABELS = {
   CODE_POSTAL_VILLE: 'CODE_POSTAL', MONTANT: 'MONTANT',
   ADRESSE: 'ADRESSE', DATE_NAISSANCE: 'DATE_NAISSANCE', REFERENCE: 'REFERENCE',
   IP: 'IP', MAC: 'MAC', BIC: 'BIC', PSEUDO: 'PSEUDO',
-  DATE: 'DATE', ID_NATIONAL: 'ID_NATIONAL'
+  DATE: 'DATE', ID_NATIONAL: 'ID_NATIONAL',
+  // Apportés par le NER zero-shot (gliner.js), hors de portée des catégories
+  // figées du modèle BERT. SANTE et NATIONALITE sont des données sensibles au
+  // sens RGPD (art. 9), d'où leur masquage par défaut.
+  POSTE: 'POSTE', NATIONALITE: 'NATIONALITE',
+  ETABLISSEMENT: 'ETABLISSEMENT', SANTE: 'SANTE'
 };
 
 const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

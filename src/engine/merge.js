@@ -13,7 +13,11 @@ const TYPE_PRIORITY = [
   'NIR', 'ID_NATIONAL', 'IBAN', 'SIRET_SIREN', 'CARTE_BANCAIRE', 'EMAIL', 'TELEPHONE',
   'BIC', 'IP', 'MAC', 'PSEUDO',
   'DATE_NAISSANCE', 'DATE', 'ADRESSE', 'CODE_POSTAL_VILLE', 'REFERENCE', 'MONTANT',
-  'PER', 'ORG', 'LOC', 'MISC'
+  // Types contextuels (NER/GLiNER) : toujours APRÈS les types regex, pour que
+  // le déterministe l'emporte à span identique (cadrage §8).
+  'PER', 'ORG', 'LOC',
+  'SANTE', 'NATIONALITE', 'ETABLISSEMENT', 'POSTE',
+  'MISC'
 ];
 const rank = t => {
   const i = TYPE_PRIORITY.indexOf(t);

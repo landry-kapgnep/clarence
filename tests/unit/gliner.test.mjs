@@ -1,0 +1,176 @@
+// Moteur GLiNER : contrat de sortie, groupes disjoints, seuil, chevauchements.
+// Pipeline SIMULÉ (comme ner-chunk.test.mjs) — aucun modèle chargé ici.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { detectGliner, GROUPES, GLINER_THRESHOLD } from '../../src/engine/gliner.js';
+import { mergeEntities } from '../../src/engine/merge.js';
+import { maskText } from '../../src/engine/masking.js';
+
+// Fabrique un pipeline simulé à partir d'une table { texteCherché: [spans] }.
+// Reproduit le contrat réel : (text, labels) → spans filtrés sur ces labels.
+const fakePipe = (reponses) => async (text, labels) => {
+  const spans = [];
+  for (const [aiguille, liste] of Object.entries(reponses)) {
+    const i = text.indexOf(aiguille);
+    if (i === -1) continue;
+    for (const s of liste) {
+      if (!labels.includes(s.label)) continue;
+      spans.push({ ...s, start: i + (s.offset || 0), end: i + (s.offset || 0) + s.len,
+        spanText: text.substr(i + (s.offset || 0), s.len) });
+    }
+  }
+  return spans;
+};
+
+test('contrat de sortie identique à detectNER (types, offsets, source)', async () => {
+  const pipe = fakePipe({ 'Julien Marchand': [{ label: 'person', len: 15, score: 0.96 }] });
+  const [e] = await detectGliner('Bonjour Julien Marchand, merci.', pipe);
+  assert.equal(e.type, 'PER');
+  assert.equal(e.value, 'Julien Marchand');
+  assert.equal(e.source, 'ner');
+  assert.equal(e.validated, 'n/a');
+  assert.equal('Bonjour Julien Marchand, merci.'.slice(e.start, e.end), 'Julien Marchand');
+});
+
+test('les labels des trois groupes sont mappés vers les bons types', async () => {
+  const cas = [
+    ['person', 'PER'], ['company', 'ORG'], ['location', 'LOC'],
+    ['date of birth', 'DATE_NAISSANCE'], ['job title', 'POSTE'],
+    ['nationality', 'NATIONALITE'], ['school', 'ETABLISSEMENT'],
+    ['medical condition', 'SANTE']
+  ];
+  for (const [label, type] of cas) {
+    const pipe = fakePipe({ CIBLE: [{ label, len: 5, score: 0.9 }] });
+    const [e] = await detectGliner('valeur CIBLE ici', pipe);
+    assert.ok(e, `aucune entité pour le label ${label}`);
+    assert.equal(e.type, type, `mauvais type pour ${label}`);
+  }
+});
+
+test('chaque label déclaré possède un type — aucun placeholder [undefined_N] possible', () => {
+  for (const g of GROUPES) {
+    for (const label of g.labels) {
+      assert.ok(g.types[label], `label sans type : ${label}`);
+    }
+  }
+});
+
+test('les groupes sont DISJOINTS (la dilution mesurée en dépend)', () => {
+  const vus = new Set();
+  for (const g of GROUPES) {
+    for (const label of g.labels) {
+      assert.ok(!vus.has(label), `label présent dans deux groupes : ${label}`);
+      vus.add(label);
+    }
+  }
+});
+
+test('un span sous le seuil est écarté, au-dessus il est gardé', async () => {
+  const sous = fakePipe({ Krendalyx: [{ label: 'company', len: 9, score: GLINER_THRESHOLD - 0.01 }] });
+  assert.equal((await detectGliner('Stage chez Krendalyx hier', sous)).length, 0);
+
+  const dessus = fakePipe({ Krendalyx: [{ label: 'company', len: 9, score: GLINER_THRESHOLD }] });
+  assert.equal((await detectGliner('Stage chez Krendalyx hier', dessus)).length, 1);
+});
+
+test('un label inconnu du groupe est ignoré (jamais d\'entité sans type)', async () => {
+  const pipe = async () => [{ label: 'inventé', start: 0, end: 5, spanText: 'Bonjo', score: 0.99 }];
+  assert.deepEqual(await detectGliner('Bonjour tout le monde', pipe), []);
+});
+
+test('valeur ISOLÉE sans contexte : le cas que le pipeline figé ne sait pas traiter', async () => {
+  // Cellule de tableau nue — mesuré à 0,59 sur le vrai modèle.
+  const pipe = fakePipe({ '1988-03-14': [{ label: 'date of birth', len: 10, score: 0.59 }] });
+  const [e] = await detectGliner('1988-03-14', pipe);
+  assert.equal(e.type, 'DATE_NAISSANCE');
+  assert.equal(e.value, '1988-03-14');
+});
+
+test('un type désactivé fait SAUTER la passe entière (pas juste un filtre aval)', async () => {
+  let passes = 0;
+  const pipe = async (text, labels) => {
+    passes++;
+    return labels.includes('date of birth')
+      ? [{ label: 'date of birth', start: 0, end: 10, spanText: '1988-03-14', score: 0.9 }]
+      : [];
+  };
+  // Les 3 groupes actifs → 3 appels.
+  passes = 0;
+  await detectGliner('1988-03-14', pipe);
+  assert.equal(passes, 3);
+
+  // DATE_NAISSANCE désactivé → le groupe 2 n'est plus appelé du tout.
+  passes = 0;
+  const out = await detectGliner('1988-03-14', pipe, { disabledTypes: new Set(['DATE_NAISSANCE']) });
+  assert.equal(passes, 2, 'la passe désactivée a quand même coûté une inférence');
+  assert.equal(out.length, 0);
+});
+
+test('tous les types désactivés : aucune inférence du tout', async () => {
+  let appels = 0;
+  const pipe = async () => { appels++; return []; };
+  const tous = new Set(GROUPES.flatMap(g => Object.values(g.types)));
+  assert.deepEqual(await detectGliner('un texte', pipe, { disabledTypes: tous }), []);
+  assert.equal(appels, 0);
+});
+
+test('chevauchement entre deux groupes : le span le plus long gagne', async () => {
+  // « Université de Bordeaux » vu à la fois comme ETABLISSEMENT (span complet)
+  // et comme ORG (« Bordeaux » seul) : on garde le plus complet.
+  const texte = "Diplômé de Université de Bordeaux en 2019.";
+  const pipe = async (text, labels) => {
+    if (labels.includes('school')) {
+      return [{ label: 'school', start: 11, end: 33, spanText: text.slice(11, 33), score: 0.6 }];
+    }
+    if (labels.includes('company')) {
+      return [{ label: 'location', start: 25, end: 33, spanText: text.slice(25, 33), score: 0.95 }];
+    }
+    return [];
+  };
+  const out = await detectGliner(texte, pipe);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].type, 'ETABLISSEMENT');
+  assert.equal(out[0].value, 'Université de Bordeaux');
+});
+
+test('offsets globaux corrects au-delà de la première fenêtre', async () => {
+  const filler = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(40);
+  const texte = filler + 'Le contact est Jean Dupont, merci.';
+  const pipe = fakePipe({ 'Jean Dupont': [{ label: 'person', len: 11, score: 0.9 }] });
+  const out = await detectGliner(texte, pipe);
+  assert.ok(out.length >= 1);
+  assert.equal(texte.slice(out[0].start, out[0].end), 'Jean Dupont');
+});
+
+test('recalage sur frontières de mot : un span à cheval ne laisse pas fuir le reste', async () => {
+  // Défaut réel de la lib avant patch du découpeur : « Associ » au lieu de
+  // « Associés ». Le recalage partagé avec ner.js doit rattraper.
+  const texte = 'Le cabinet Fontaine & Associés relira.';
+  const pipe = fakePipe({ 'Fontaine & Associ': [{ label: 'company', len: 17, score: 0.9 }] });
+  const [e] = await detectGliner(texte, pipe);
+  assert.equal(e.value, 'Fontaine & Associés');
+});
+
+test('l\'aval est inchangé : merge + masquage cohérent fonctionnent tels quels', async () => {
+  const texte = 'Julien Marchand travaille chez Krendalyx. Julien Marchand signe.';
+  const pipe = fakePipe({
+    'Julien Marchand': [{ label: 'person', len: 15, score: 0.96 }],
+    Krendalyx: [{ label: 'company', len: 9, score: 0.83 }]
+  });
+  const ents = mergeEntities([], await detectGliner(texte, pipe));
+  const { masked, mapping } = maskText(texte, ents);
+  assert.equal(masked, '[PERSONNE_1] travaille chez [ENTREPRISE_1]. [PERSONNE_1] signe.');
+  assert.equal(mapping.length, 2);
+});
+
+test('progression : un tick par (fenêtre x groupe actif)', async () => {
+  const pipe = async () => [];
+  const ticks = [];
+  await detectGliner('texte court', pipe, { onProgress: p => ticks.push(p) });
+  assert.equal(ticks.length, 3, 'une fenêtre x 3 groupes');
+  assert.deepEqual(ticks[2], { done: 3, total: 3 });
+});
+
+test('pipeline absent : aucune entité, aucune exception (repli silencieux)', async () => {
+  assert.deepEqual(await detectGliner('Julien Marchand', null), []);
+});

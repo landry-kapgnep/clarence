@@ -1,4 +1,4 @@
-import "./chunk-TRTQSARU.js";
+import "./chunk-PIRHQTI4.js";
 
 // src/files/image-adapter.js
 async function stripMetadata(buffer, opts = {}) {
