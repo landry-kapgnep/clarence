@@ -18,16 +18,42 @@ function splitId(id) {
 // { units: [{ id: 'Feuille!A1', text }] } — seules les cellules de type
 // chaîne (t === 's'), sans formule, non vides, sont retenues. Nombres, dates,
 // booléens et formules ne sont jamais touchés (risque de corruption sinon).
+// Numéro de ligne d'une adresse de cellule (« B12 » → 12).
+const ligneDe = addr => Number((/\d+$/.exec(addr) || [0])[0]);
+
+// La première ligne d'une feuille est-elle un EN-TÊTE de colonnes ?
+// Même prudence que dans csv-adapter (voir looksLikeHeader) : croire à tort
+// qu'une ligne de DONNÉES est un en-tête ferait sauter la détection
+// contextuelle sur de vraies personnes. On exige donc une signature nette.
+function premiereLigneEstEntete(sheet) {
+  const textuelles = Object.keys(sheet).filter(a => !a.startsWith('!'));
+  const ligne1 = textuelles.filter(a => ligneDe(a) === 1)
+    .map(a => sheet[a])
+    .filter(c => c.f === undefined && c.t === 's' && c.v)
+    .map(c => String(c.v).trim());
+  // Une seule ligne dans la feuille : rien ne prouve que c'est un en-tête.
+  if (ligne1.length < 2 || !textuelles.some(a => ligneDe(a) > 1)) return false;
+  if (new Set(ligne1.map(v => v.toLowerCase())).size !== ligne1.length) return false;
+  return ligne1.every(v =>
+    v.length <= 40 && !/\d/.test(v) && !v.includes('@') && /\p{L}/u.test(v));
+}
+
 export function extractTextUnits(arrayBuffer) {
   const wb = XLSX.read(arrayBuffer, { type: 'array' });
   const units = [];
   for (const sheetName of wb.SheetNames) {
     const sheet = wb.Sheets[sheetName];
+    // Les libellés de colonnes décrivent la structure, jamais des personnes.
+    // Sans ce marquage, « Date de naissance » ou « Salaire » se faisaient
+    // masquer et la feuille devenait illisible (voir anonymize-units.js).
+    const entete = premiereLigneEstEntete(sheet);
     for (const addr of Object.keys(sheet)) {
       if (addr.startsWith('!')) continue; // clés spéciales de la feuille (!ref, !merges, !cols…)
       const cell = sheet[addr];
       if (cell.f !== undefined || cell.t !== 's' || !cell.v) continue;
-      units.push({ id: `${sheetName}!${addr}`, text: String(cell.v) });
+      const unit = { id: `${sheetName}!${addr}`, text: String(cell.v) };
+      if (entete && ligneDe(addr) === 1) unit.structurel = true;
+      units.push(unit);
     }
   }
   return { units };

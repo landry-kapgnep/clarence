@@ -60,3 +60,29 @@ test('aller-retour structurel : ré-analyser la sortie donne le même nombre de 
   assert.equal(after.length, before.length);
   assert.deepEqual(after.map(r => r.length), before.map(r => r.length));
 });
+
+// --- En-tête de colonnes marqué « structurel ».
+// Mesuré au banc : sans ce marquage, un export RH ressortait avec 43 masques
+// pour 62 mots — « Matricule », « Salaire », « Date de naissance » masqués.
+// Le fichier était sûr et illisible pour le LLM à qui on le destine.
+test('la ligne d\'en-tête est marquée structurelle, pas les données', () => {
+  const { units } = extractTextUnits('Nom,Email,Ville\nDupont,a@b.example,Lyon\n');
+  const entete = units.filter(u => u.id.startsWith('r0'));
+  const donnees = units.filter(u => !u.id.startsWith('r0'));
+  assert.ok(entete.every(u => u.structurel === true), 'en-tête non marqué');
+  assert.ok(donnees.every(u => !u.structurel), 'des données marquées à tort');
+});
+
+test('sans signature d\'en-tête, AUCUNE ligne n\'est exemptée (prudence anti-fuite)', () => {
+  // Se tromper ici ferait sauter la détection sur de vraies personnes.
+  const cas = [
+    'Dupont,a@b.example,Lyon\nMartin,c@d.example,Paris\n', // 1re ligne = données (email, donc pas un libellé)
+    'Nom,Email,Ville\n',                                   // une seule ligne : rien ne prouve que c'est un en-tête
+    'Nom,Nom,Ville\nDupont,Martin,Lyon\n',                 // libellés en doublon → suspect
+    '2024,Total,Ville\n1988,120,Lyon\n'                    // chiffres dans la 1re ligne → données
+  ];
+  for (const csv of cas) {
+    const { units } = extractTextUnits(csv);
+    assert.ok(units.every(u => !u.structurel), 'exemption abusive sur : ' + JSON.stringify(csv));
+  }
+});

@@ -298,7 +298,13 @@ var REGEX_PATTERNS = [
     // CUST-849204-X » : la forme est propre à l'organisation, seul le libellé
     // voisin la qualifie). Complète la REFERENCE numérique FR ci-dessus.
     type: "REFERENCE",
-    re: /\b(?:account|customer|client|member|employee|patient|policy|subscriber|user|order|invoice|badge|case|file)\s*(?:identifier|number|no\.?|id|#)?\s*[:=]?\s*([A-Z][A-Z0-9]*(?:[-_\/][A-Z0-9]+)+)\b/gi,
+    // Un VERBE de liaison peut séparer le libellé de la valeur : « his employee
+    // identifier IS EMP-4471-KD ». Sans ce petit groupe optionnel le motif
+    // échouait sur une phrase rédigée tout en marchant sur un libellé collé —
+    // fuite trouvée par le banc d'essai sur un email professionnel anglais.
+    // Volontairement limité à un seul mot de liaison : au-delà, on relierait
+    // un libellé à une valeur trop lointaine et sans rapport.
+    re: /\b(?:account|customer|client|member|employee|patient|policy|subscriber|user|order|invoice|badge|case|file)\s*(?:identifier|number|no\.?|id|#)?\s*(?:\s(?:is|was|est|était|sera)\b)?\s*[:=]?\s*([A-Z][A-Z0-9]*(?:[-_\/][A-Z0-9]+)+)\b/gi,
     extract: 1,
     validate: null
   },

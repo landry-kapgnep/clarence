@@ -78,12 +78,55 @@ function parseMeta(csvText) {
   return { rows, delimiter, eol, hasBOM, trailingEOL };
 }
 
-// { units: [{ id: 'r{row}c{col}', text }], meta } — cellules vides ignorées.
+// La première ligne est-elle un EN-TÊTE de colonnes plutôt que des données ?
+//
+// L'enjeu est asymétrique, d'où la prudence : se tromper en croyant qu'une
+// ligne de DONNÉES est un en-tête ferait sauter la détection contextuelle sur
+// de vraies personnes — une fuite. Se tromper dans l'autre sens ne coûte que
+// du sur-masquage. On n'affirme donc « en-tête » que sur une signature nette :
+// plusieurs lignes, libellés courts, tous distincts, aucun chiffre isolé et
+// aucune valeur qui ressemble déjà à une donnée personnelle.
+//
+// Même en cas d'erreur, la couche déterministe (regex + validateurs) continue
+// de tourner sur l'intégralité du fichier : un email ou un IBAN placé en
+// première ligne resterait masqué.
+function looksLikeHeader(rows) {
+  if (rows.length < 2) return false;
+  const head = rows[0].filter(c => c.length > 0);
+  if (head.length < 2) return false;
+
+  const distincts = new Set(head.map(c => c.trim().toLowerCase()));
+  if (distincts.size !== head.length) return false; // doublons → plutôt des données
+
+  return head.every(c => {
+    const v = c.trim();
+    if (v.length > 40) return false;          // un libellé de colonne est court
+    if (/\d/.test(v)) return false;           // « 1988-03-14 », « 38000 » → données
+    if (v.includes('@')) return false;        // un email n'est pas un libellé
+    return /\p{L}/u.test(v);                  // et il contient des lettres
+  });
+}
+
+// { units: [{ id: 'r{row}c{col}', text, structurel? }], meta }
+// Cellules vides ignorées.
+//
+// La ligne d'en-tête est marquée `structurel` : ses libellés décrivent les
+// colonnes, ils ne sont jamais des données personnelles. Sans ce marquage, le
+// modèle masquait « Date de naissance », « Matricule », « Salaire » — le
+// fichier ressortait sûr et illisible (voir detectNerPerUnit).
+//
+// Les cellules de données, elles, restent ISOLÉES : leur isolement est ce qui
+// permet au zero-shot de les qualifier. Leur ajouter le libellé de colonne en
+// contexte a été mesuré et REJETÉ (détail dans anonymize-units.js).
 export function extractTextUnits(csvText) {
   const meta = parseMeta(csvText);
+  const entete = looksLikeHeader(meta.rows);
   const units = [];
   meta.rows.forEach((row, r) => row.forEach((cell, c) => {
-    if (cell.length > 0) units.push({ id: `r${r}c${c}`, text: cell });
+    if (cell.length === 0) return;
+    const unit = { id: `r${r}c${c}`, text: cell };
+    if (entete && r === 0) unit.structurel = true;
+    units.push(unit);
   }));
   return { units, meta };
 }

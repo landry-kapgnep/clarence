@@ -35,12 +35,36 @@ export const UNIT_SEP = '\n\u{E000}\u{E004}\u{E000}\n';
 // appel par cellule serait prohibitif :
 //  - unités sans aucune suite de 2 lettres (nombres, dates, codes) : ignorées ;
 //  - textes identiques (valeurs répétées d'une colonne) : détectés une seule fois.
+// `structurel` : champ OPTIONNEL que les adaptateurs peuvent poser sur une
+// unité qui décrit la STRUCTURE du document (en-tête de colonne, ligne de
+// sommaire) plutôt que son contenu. Une telle unité est épargnée par la passe
+// contextuelle.
+//
+// Sans ça, le modèle confond « la case qui S'APPELLE Date de naissance » avec
+// « une case qui CONTIENT une date de naissance » : le libellé ressemble
+// presque mot pour mot à la catégorie cherchée, donc il sort à un score élevé.
+// Mesuré au banc sur un export RH : 43 masques pour 62 mots, en-têtes
+// (Matricule, Service, Salaire) masqués — fichier « sûr » et illisible.
+//
+// La couche DÉTERMINISTE continue de tourner sur TOUT le document : un en-tête
+// qui contiendrait par accident un email ou un IBAN reste masqué.
+//
+// ── PISTE TESTÉE ET REJETÉE, ne pas la refaire : donner le libellé de colonne
+// comme CONTEXTE à la cellule (« Date de naissance : 1988-03-14 ») dégrade la
+// détection au lieu de l'aider, parce que le libellé capte l'attention du
+// modèle à la place de la valeur. Mesuré :
+//     « EMP-0012 » seul                       → entreprise 0,57  (masqué)
+//     « Matricule : EMP-0012 »                → entreprise 0,32  (FUITE)
+//     « 1988-03-14 » seul                     → date de naissance 0,59 (masqué)
+//     « Date de naissance : 1988-03-14 »      → 0,74 sur le LIBELLÉ, 0,15 sur
+//                                               la vraie date (FUITE)
+// L'isolement de la cellule est donc un ATOUT du zero-shot, pas un manque.
 async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
   const out = [];
   const cache = new Map();
   for (let i = 0; i < units.length; i++) {
-    const text = units[i].text;
-    if (/\p{L}{2}/u.test(text)) {
+    const { text, structurel } = units[i];
+    if (!structurel && /\p{L}{2}/u.test(text)) {
       if (!cache.has(text)) cache.set(text, await detect(text, nerPipeline, { disabledTypes }));
       const base = ranges[i].start;
       for (const e of cache.get(text)) {

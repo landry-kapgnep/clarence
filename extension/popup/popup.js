@@ -14,7 +14,7 @@ import {
   reinject,
   selectActive,
   snapToWordBoundaries
-} from "./chunk-3AZMLSIQ.js";
+} from "./chunk-BB2FLB7Y.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -1192,8 +1192,8 @@ document.addEventListener("keydown", (ev) => {
 });
 var MAX_FILE_BYTES = 5 * 1024 * 1024;
 var FILE_TYPES = {
-  csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-MGPWQWNU.js") },
-  xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-O6QN6V2F.js") },
+  csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-WGD4I4OD.js") },
+  xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-6GL77ULE.js") },
   docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-YOBWEEHD.js") },
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
@@ -1647,7 +1647,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-HPWUXYRL.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-ZAEXJUKV.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -1672,7 +1672,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-32GIXP32.js");
+    const { anonymizeUnits } = await import("./anonymize-units-FVIU22PC.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

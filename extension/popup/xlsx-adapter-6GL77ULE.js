@@ -33190,16 +33190,27 @@ function splitId(id) {
   const idx = id.lastIndexOf("!");
   return [id.slice(0, idx), id.slice(idx + 1)];
 }
+var ligneDe = (addr) => Number((/\d+$/.exec(addr) || [0])[0]);
+function premiereLigneEstEntete(sheet) {
+  const textuelles = Object.keys(sheet).filter((a) => !a.startsWith("!"));
+  const ligne1 = textuelles.filter((a) => ligneDe(a) === 1).map((a) => sheet[a]).filter((c) => c.f === void 0 && c.t === "s" && c.v).map((c) => String(c.v).trim());
+  if (ligne1.length < 2 || !textuelles.some((a) => ligneDe(a) > 1)) return false;
+  if (new Set(ligne1.map((v) => v.toLowerCase())).size !== ligne1.length) return false;
+  return ligne1.every((v) => v.length <= 40 && !/\d/.test(v) && !v.includes("@") && new RegExp("\\p{L}", "u").test(v));
+}
 function extractTextUnits(arrayBuffer) {
   const wb = readSync(arrayBuffer, { type: "array" });
   const units = [];
   for (const sheetName of wb.SheetNames) {
     const sheet = wb.Sheets[sheetName];
+    const entete = premiereLigneEstEntete(sheet);
     for (const addr of Object.keys(sheet)) {
       if (addr.startsWith("!")) continue;
       const cell = sheet[addr];
       if (cell.f !== void 0 || cell.t !== "s" || !cell.v) continue;
-      units.push({ id: `${sheetName}!${addr}`, text: String(cell.v) });
+      const unit = { id: `${sheetName}!${addr}`, text: String(cell.v) };
+      if (entete && ligneDe(addr) === 1) unit.structurel = true;
+      units.push(unit);
     }
   }
   return { units };

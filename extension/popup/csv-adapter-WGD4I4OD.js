@@ -82,11 +82,29 @@ function parseMeta(csvText) {
   const trailingEOL = /\r\n$|\n$|\r$/.test(body);
   return { rows, delimiter, eol, hasBOM, trailingEOL };
 }
+function looksLikeHeader(rows) {
+  if (rows.length < 2) return false;
+  const head = rows[0].filter((c) => c.length > 0);
+  if (head.length < 2) return false;
+  const distincts = new Set(head.map((c) => c.trim().toLowerCase()));
+  if (distincts.size !== head.length) return false;
+  return head.every((c) => {
+    const v = c.trim();
+    if (v.length > 40) return false;
+    if (/\d/.test(v)) return false;
+    if (v.includes("@")) return false;
+    return new RegExp("\\p{L}", "u").test(v);
+  });
+}
 function extractTextUnits(csvText) {
   const meta = parseMeta(csvText);
+  const entete = looksLikeHeader(meta.rows);
   const units = [];
   meta.rows.forEach((row, r) => row.forEach((cell, c) => {
-    if (cell.length > 0) units.push({ id: `r${r}c${c}`, text: cell });
+    if (cell.length === 0) return;
+    const unit = { id: `r${r}c${c}`, text: cell };
+    if (entete && r === 0) unit.structurel = true;
+    units.push(unit);
   }));
   return { units, meta };
 }

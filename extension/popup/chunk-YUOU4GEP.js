@@ -8,7 +8,7 @@ import {
   mergeEntities,
   propagatedSpans,
   selectActive
-} from "./chunk-3AZMLSIQ.js";
+} from "./chunk-BB2FLB7Y.js";
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\n\uE000\uE004\uE000\n";
@@ -16,8 +16,8 @@ async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, 
   const out = [];
   const cache = /* @__PURE__ */ new Map();
   for (let i = 0; i < units.length; i++) {
-    const text = units[i].text;
-    if (new RegExp("\\p{L}{2}", "u").test(text)) {
+    const { text, structurel } = units[i];
+    if (!structurel && new RegExp("\\p{L}{2}", "u").test(text)) {
       if (!cache.has(text)) cache.set(text, await detect(text, nerPipeline, { disabledTypes }));
       const base = ranges[i].start;
       for (const e of cache.get(text)) {

@@ -38,6 +38,39 @@ Le nom du propriétaire du CV **fuit à 3 endroits** — c'est le pire cas possi
 
 ---
 
+## Progression mesurée — 03/08/2026 (après marquage des en-têtes)
+
+| | Ligne de base | Après | |
+|---|---|---|---|
+| Rappel structuré | 100 % | **100 %** | inchangé |
+| Rappel contextuel | 92 % | **92 %** | inchangé |
+| Termes préservés | 77 % | **90 %** | +13 pts |
+
+Le tableau RH passe de 20 % à **100 %** de termes préservés, sans perdre une
+seule détection. Cause traitée : les libellés de colonnes étaient masqués parce
+que le modèle confond « la case qui S'APPELLE Date de naissance » avec « une
+case qui CONTIENT une date de naissance ». Les unités d'en-tête sont désormais
+marquées `structurel` (CSV et XLSX) et épargnées par la passe contextuelle ; la
+couche déterministe, elle, continue de tourner partout.
+
+### Piste TESTÉE ET REJETÉE : donner le libellé de colonne comme contexte
+
+Intuitivement, une cellule nue « 1988-03-14 » devrait mieux se qualifier si on
+lui adjoint son libellé. **C'est faux, et mesuré :**
+
+| Entrée soumise au modèle | Score |
+|---|---|
+| `EMP-0012` seul | entreprise **0,57** → masqué |
+| `Matricule : EMP-0012` | entreprise **0,32** → **fuite** |
+| `1988-03-14` seul | date de naissance **0,59** → masqué |
+| `Date de naissance : 1988-03-14` | **0,74 sur le LIBELLÉ**, 0,15 sur la vraie date → **fuite** |
+
+Le libellé ressemble presque mot pour mot à la catégorie cherchée : il capte
+l'attention du modèle à la place de la valeur. **L'isolement d'une cellule est
+donc un ATOUT du zero-shot, pas un manque à combler.** Ne pas refaire.
+
+---
+
 ## Ligne de base mesurée — 03/08/2026 (`npm run bench`)
 
 Premier chiffrage reproductible, sur 5 documents synthétiques couvrant les cas
