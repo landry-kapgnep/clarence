@@ -238,6 +238,20 @@ var LOCALES = {
       "quai des Brumes"
     ],
     emailDomains: ["exemple-mail.fr", "courriel-temp.fr", "boite-anonyme.fr", "pseudo-mail.fr"],
+    mois: [
+      "janvier",
+      "f\xE9vrier",
+      "mars",
+      "avril",
+      "mai",
+      "juin",
+      "juillet",
+      "ao\xFBt",
+      "septembre",
+      "octobre",
+      "novembre",
+      "d\xE9cembre"
+    ],
     phone: (h2, i) => {
       const digitsAt = (hh, n) => String(hh % 10 ** n).padStart(n, "0");
       const d = digitsAt(h2 + i * 104729 >>> 0, 8);
@@ -376,6 +390,20 @@ var LOCALES = {
       "Harbour Drive"
     ],
     emailDomains: ["example-mail.com", "temp-inbox.com", "anon-mailbox.com", "pseudo-mail.com"],
+    mois: [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
     phone: (h2, i) => {
       const digitsAt = (hh, n) => String(hh % 10 ** n).padStart(n, "0");
       const area = 200 + (h2 + i) % 700;
@@ -431,7 +459,29 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
     "l'",
     "del",
     "bin",
-    "ben"
+    "ben",
+    "m",
+    "mr",
+    "mrs",
+    "ms",
+    "miss",
+    "mister",
+    "madam",
+    "sir",
+    "mme",
+    "mlle",
+    "monsieur",
+    "madame",
+    "mademoiselle",
+    "dr",
+    "doctor",
+    "docteur",
+    "pr",
+    "prof",
+    "professeur",
+    "me",
+    "maitre",
+    "ma\xEEtre"
   ]);
   const applyCase = (pseudo, original) => original === original.toUpperCase() && new RegExp("\\p{L}{2}", "u").test(original) ? pseudo.toUpperCase() : pseudo;
   function pseudoToken(token, isLast, total) {
@@ -477,10 +527,20 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
       return `${prenom}.${nom}@${pick(L.emailDomains, h2 >>> 11, i)}`;
     }, h),
     TELEPHONE: (h) => unique((h2, i) => L.phone(h2, i), h),
+    // Le FORMAT d'origine est reproduit, pas seulement la nature de la donnée :
+    // « january 1 2002 » devenait « 13/10/1976 », ce qui saute aux yeux au
+    // milieu d'un texte anglais et trahit le passage de l'outil.
     DATE_NAISSANCE: (h, original) => unique((h2, i) => {
       const j = (h2 + i) % 28 + 1;
       const m = ((h2 >>> 4) + i) % 12 + 1;
       const a = 1965 + ((h2 >>> 9) + i) % 40;
+      const litteral = new RegExp("\\p{L}{3}", "u").test(original);
+      if (litteral) {
+        const nom = L.mois[m - 1];
+        const source = original.match(new RegExp("\\p{L}{3,}", "u"))?.[0] || "";
+        const moisCase = source === source.toUpperCase() ? nom.toUpperCase() : source[0] === source[0].toLowerCase() ? nom.toLowerCase() : nom;
+        return locale === "en" ? `${moisCase} ${j} ${a}` : `${j} ${moisCase} ${a}`;
+      }
       const sep = original.includes("-") ? "-" : "/";
       return `${String(j).padStart(2, "0")}${sep}${String(m).padStart(2, "0")}${sep}${a}`;
     }, h)

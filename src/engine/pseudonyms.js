@@ -48,6 +48,8 @@ const LOCALES = {
       'rue du Moulin', 'allée des Charmes', 'quai des Brumes'
     ],
     emailDomains: ['exemple-mail.fr', 'courriel-temp.fr', 'boite-anonyme.fr', 'pseudo-mail.fr'],
+    mois: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+           'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
     phone: (h2, i) => {
       const digitsAt = (hh, n) => String(hh % 10 ** n).padStart(n, '0');
       const d = digitsAt((h2 + i * 104729) >>> 0, 8);
@@ -89,6 +91,8 @@ const LOCALES = {
       'Mill Road', 'Elm Way', 'Harbour Drive'
     ],
     emailDomains: ['example-mail.com', 'temp-inbox.com', 'anon-mailbox.com', 'pseudo-mail.com'],
+    mois: ['January', 'February', 'March', 'April', 'May', 'June',
+           'July', 'August', 'September', 'October', 'November', 'December'],
     phone: (h2, i) => {
       const digitsAt = (hh, n) => String(hh % 10 ** n).padStart(n, '0');
       const area = 200 + ((h2 + i) % 700);
@@ -148,10 +152,23 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   // « Lemaire ». C'est l'identifiant stable demandé.
   const tokenMap = new Map(); // composant réel (minuscule) → composant pseudo
 
-  // Particules gardées telles quelles : elles n'identifient personne et leur
-  // substitution rendrait le résultat illisible (« de La Villardière »).
+  // Composants gardés tels quels : ils n'identifient personne, et les
+  // substituer produit soit du charabia, soit — bien pire — une SECONDE
+  // identité pour la même personne.
+  //
+  // Particules nobiliaires : « de La Villardière » doit rester lisible.
+  //
+  // Civilités : le modèle contextuel inclut souvent le titre dans l'entité
+  // (« miss Deva » détecté d'un bloc). Traité comme un prénom, « miss »
+  // devenait « Amélie » — si bien que « Priya Deva » → « Clément Faure » et
+  // « miss Deva » → « Amélie Faure » désignaient deux personnes de genres
+  // différents dans le même texte, alors qu'il s'agit de la même. Constaté
+  // en usage réel. Le titre n'est pas une donnée identifiante : on le garde.
   const PARTICULES = new Set([
-    'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben'
+    'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben',
+    'm', 'mr', 'mrs', 'ms', 'miss', 'mister', 'madam', 'sir',
+    'mme', 'mlle', 'monsieur', 'madame', 'mademoiselle',
+    'dr', 'doctor', 'docteur', 'pr', 'prof', 'professeur', 'me', 'maitre', 'maître'
   ]);
 
   // Reproduit la casse de l'original : un patronyme en TOUT-MAJUSCULE (usage
@@ -212,10 +229,24 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
       return `${prenom}.${nom}@${pick(L.emailDomains, h2 >>> 11, i)}`;
     }, h),
     TELEPHONE: h => unique((h2, i) => L.phone(h2, i), h),
+    // Le FORMAT d'origine est reproduit, pas seulement la nature de la donnée :
+    // « january 1 2002 » devenait « 13/10/1976 », ce qui saute aux yeux au
+    // milieu d'un texte anglais et trahit le passage de l'outil.
     DATE_NAISSANCE: (h, original) => unique((h2, i) => {
       const j = ((h2 + i) % 28) + 1;
       const m = ((h2 >>> 4) + i) % 12 + 1;
       const a = 1965 + ((h2 >>> 9) + i) % 40;
+      const litteral = /\p{L}{3}/u.test(original); // contient un nom de mois
+      if (litteral) {
+        const nom = L.mois[m - 1];
+        // Casse du mois d'origine (« JANUARY », « January », « january »).
+        const source = original.match(/\p{L}{3,}/u)?.[0] || '';
+        const moisCase = source === source.toUpperCase() ? nom.toUpperCase()
+          : source[0] === source[0].toLowerCase() ? nom.toLowerCase()
+          : nom;
+        // Ordre jour/mois selon la locale (EN : mois d'abord).
+        return locale === 'en' ? `${moisCase} ${j} ${a}` : `${j} ${moisCase} ${a}`;
+      }
       const sep = original.includes('-') ? '-' : '/';
       return `${String(j).padStart(2, '0')}${sep}${String(m).padStart(2, '0')}${sep}${a}`;
     }, h)

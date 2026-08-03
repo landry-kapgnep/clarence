@@ -149,3 +149,43 @@ test('AUCUN composant réel ne subsiste dans le pseudo (anti-fuite)', () => {
     }
   }
 });
+
+// --- Civilité incluse dans l'entité par le modèle contextuel.
+// Cas réel : « Priya Deva » → « Clément Faure » mais « miss Deva » →
+// « Amélie Faure ». Deux personnes de genres différents pour la même, dans
+// le même texte — le titre était traité comme un prénom.
+test('la civilité est conservée, jamais transformée en prénom', () => {
+  const p = createPseudonymizer({ seed: 's1', locale: 'en' });
+  const complet = p('PER', 'Priya Deva');
+  const avecTitre = p('PER', 'miss Deva');
+  assert.ok(avecTitre.startsWith('miss '), 'civilité perdue : ' + avecTitre);
+  // et surtout : même patronyme des deux côtés → une seule personne perçue
+  assert.equal(avecTitre.split(' ')[1], complet.split(' ')[1]);
+});
+
+test('civilités françaises aussi (M., Mme, Dr…)', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  for (const titre of ['Monsieur', 'Mme', 'Dr']) {
+    const v = p('PER', `${titre} Villardière`);
+    assert.ok(v.startsWith(titre + ' '), `${titre} non conservé : ${v}`);
+  }
+});
+
+// --- Format de date reproduit (une date littérale anglaise devenait
+// « 13/10/1976 » au milieu d'un texte anglais).
+test('une date littérale reste littérale, dans la locale choisie', () => {
+  const en = createPseudonymizer({ seed: 's1', locale: 'en' });
+  const v = en('DATE_NAISSANCE', 'january 1 2002');
+  assert.match(v, /^[a-z]+ \d{1,2} \d{4}$/, 'format littéral EN non respecté : ' + v);
+  assert.equal(v.includes('january'), false, 'le vrai mois a fuité');
+
+  const fr = createPseudonymizer({ seed: 's1' });
+  const vf = fr('DATE_NAISSANCE', '14 mars 1988');
+  assert.match(vf, /^\d{1,2} \p{L}+ \d{4}$/u, 'format littéral FR non respecté : ' + vf);
+});
+
+test('une date numérique reste numérique (non-régression)', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  assert.match(p('DATE_NAISSANCE', '12/03/1985'), /^\d{2}\/\d{2}\/\d{4}$/);
+  assert.match(p('DATE_NAISSANCE', '12-03-1985'), /^\d{2}-\d{2}-\d{4}$/);
+});
