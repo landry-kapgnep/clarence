@@ -105,142 +105,285 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
 }
 
 // src/engine/pseudonyms.js
-var PRENOMS = [
-  "Alexandre",
-  "Antoine",
-  "Baptiste",
-  "Cl\xE9ment",
-  "\xC9tienne",
-  "Gabriel",
-  "Hugo",
-  "Jules",
-  "Louis",
-  "Lucas",
-  "Maxime",
-  "Nathan",
-  "Paul",
-  "Rapha\xEBl",
-  "Romain",
-  "Thomas",
-  "Victor",
-  "Julien",
-  "Quentin",
-  "Vincent",
-  "Am\xE9lie",
-  "Camille",
-  "Charlotte",
-  "Chlo\xE9",
-  "\xC9lise",
-  "Emma",
-  "In\xE8s",
-  "Juliette",
-  "L\xE9a",
-  "Louise",
-  "Lucie",
-  "Manon",
-  "Mathilde",
-  "No\xE9mie",
-  "Pauline",
-  "Marion",
-  "H\xE9l\xE8ne",
-  "Nathalie",
-  "Aur\xE9lie",
-  "\xC9milie"
-];
-var NOMS = [
-  "Bernard",
-  "Blanc",
-  "Bonnet",
-  "Chevalier",
-  "Deschamps",
-  "Dubois",
-  "Dumont",
-  "Durand",
-  "Faure",
-  "Fournier",
-  "Garnier",
-  "Gauthier",
-  "Girard",
-  "Lambert",
-  "Lefebvre",
-  "Legrand",
-  "Lemaire",
-  "Mercier",
-  "Moreau",
-  "Morel",
-  "Petit",
-  "Renard",
-  "Richard",
-  "Robin",
-  "Rousseau",
-  "Roux",
-  "Simon",
-  "Barbier",
-  "Boyer",
-  "Brun",
-  "Colin",
-  "Denis",
-  "Leroy",
-  "Perrin"
-];
-var VILLES = [
-  "Paris",
-  "Lyon",
-  "Marseille",
-  "Toulouse",
-  "Bordeaux",
-  "Lille",
-  "Nantes",
-  "Strasbourg",
-  "Nice",
-  "Montpellier",
-  "Rennes",
-  "Reims",
-  "Grenoble",
-  "Dijon",
-  "Angers",
-  "Tours",
-  "Orl\xE9ans",
-  "Metz"
-];
-var ORGS = [
-  "Nordis Conseil",
-  "Alphatec",
-  "Groupe Verti\xE8re",
-  "Solunea",
-  "Castel & Fils",
-  "Novaris SARL",
-  "Ateliers Brossard",
-  "Delmont Industries",
-  "Cabinet Ferrand",
-  "Tessalis",
-  "Ormeau Digital",
-  "Clavier & Associ\xE9s",
-  "Sequoia Services",
-  "Baltane",
-  "Comptoir Lorrain",
-  "Studio Amarante"
-];
-var RUES = [
-  "rue des Acacias",
-  "avenue des Peupliers",
-  "boulevard Saint-Michel",
-  "rue de la Fontaine",
-  "impasse des Lilas",
-  "chemin des Vignes",
-  "place du March\xE9",
-  "rue des \xC9coles",
-  "avenue de la R\xE9publique",
-  "rue du Moulin",
-  "all\xE9e des Charmes",
-  "quai des Brumes"
-];
-var EMAIL_DOMAINS = [
-  "exemple-mail.fr",
-  "courriel-temp.fr",
-  "boite-anonyme.fr",
-  "pseudo-mail.fr"
-];
+var LOCALES = {
+  fr: {
+    prenoms: [
+      "Alexandre",
+      "Antoine",
+      "Baptiste",
+      "Cl\xE9ment",
+      "\xC9tienne",
+      "Gabriel",
+      "Hugo",
+      "Jules",
+      "Louis",
+      "Lucas",
+      "Maxime",
+      "Nathan",
+      "Paul",
+      "Rapha\xEBl",
+      "Romain",
+      "Thomas",
+      "Victor",
+      "Julien",
+      "Quentin",
+      "Vincent",
+      "Am\xE9lie",
+      "Camille",
+      "Charlotte",
+      "Chlo\xE9",
+      "\xC9lise",
+      "Emma",
+      "In\xE8s",
+      "Juliette",
+      "L\xE9a",
+      "Louise",
+      "Lucie",
+      "Manon",
+      "Mathilde",
+      "No\xE9mie",
+      "Pauline",
+      "Marion",
+      "H\xE9l\xE8ne",
+      "Nathalie",
+      "Aur\xE9lie",
+      "\xC9milie"
+    ],
+    noms: [
+      "Bernard",
+      "Blanc",
+      "Bonnet",
+      "Chevalier",
+      "Deschamps",
+      "Dubois",
+      "Dumont",
+      "Durand",
+      "Faure",
+      "Fournier",
+      "Garnier",
+      "Gauthier",
+      "Girard",
+      "Lambert",
+      "Lefebvre",
+      "Legrand",
+      "Lemaire",
+      "Mercier",
+      "Moreau",
+      "Morel",
+      "Petit",
+      "Renard",
+      "Richard",
+      "Robin",
+      "Rousseau",
+      "Roux",
+      "Simon",
+      "Barbier",
+      "Boyer",
+      "Brun",
+      "Colin",
+      "Denis",
+      "Leroy",
+      "Perrin"
+    ],
+    villes: [
+      "Paris",
+      "Lyon",
+      "Marseille",
+      "Toulouse",
+      "Bordeaux",
+      "Lille",
+      "Nantes",
+      "Strasbourg",
+      "Nice",
+      "Montpellier",
+      "Rennes",
+      "Reims",
+      "Grenoble",
+      "Dijon",
+      "Angers",
+      "Tours",
+      "Orl\xE9ans",
+      "Metz"
+    ],
+    orgs: [
+      "Nordis Conseil",
+      "Alphatec",
+      "Groupe Verti\xE8re",
+      "Solunea",
+      "Castel & Fils",
+      "Novaris SARL",
+      "Ateliers Brossard",
+      "Delmont Industries",
+      "Cabinet Ferrand",
+      "Tessalis",
+      "Ormeau Digital",
+      "Clavier & Associ\xE9s",
+      "Sequoia Services",
+      "Baltane",
+      "Comptoir Lorrain",
+      "Studio Amarante"
+    ],
+    rues: [
+      "rue des Acacias",
+      "avenue des Peupliers",
+      "boulevard Saint-Michel",
+      "rue de la Fontaine",
+      "impasse des Lilas",
+      "chemin des Vignes",
+      "place du March\xE9",
+      "rue des \xC9coles",
+      "avenue de la R\xE9publique",
+      "rue du Moulin",
+      "all\xE9e des Charmes",
+      "quai des Brumes"
+    ],
+    emailDomains: ["exemple-mail.fr", "courriel-temp.fr", "boite-anonyme.fr", "pseudo-mail.fr"],
+    phone: (h2, i) => {
+      const digitsAt = (hh, n) => String(hh % 10 ** n).padStart(n, "0");
+      const d = digitsAt(h2 + i * 104729 >>> 0, 8);
+      const prefix = (h2 + i) % 2 === 0 ? "06" : "07";
+      return `${prefix} ${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 6)} ${d.slice(6, 8)}`;
+    }
+  },
+  en: {
+    prenoms: [
+      "James",
+      "John",
+      "Robert",
+      "Michael",
+      "William",
+      "David",
+      "Daniel",
+      "Matthew",
+      "Andrew",
+      "Joseph",
+      "Henry",
+      "Samuel",
+      "Benjamin",
+      "Oliver",
+      "Jack",
+      "Thomas",
+      "Charles",
+      "George",
+      "Edward",
+      "Nathan",
+      "Mary",
+      "Jennifer",
+      "Elizabeth",
+      "Susan",
+      "Jessica",
+      "Sarah",
+      "Karen",
+      "Emma",
+      "Olivia",
+      "Emily",
+      "Charlotte",
+      "Grace",
+      "Hannah",
+      "Alice",
+      "Rachel",
+      "Laura",
+      "Amy",
+      "Claire",
+      "Victoria",
+      "Sophie"
+    ],
+    noms: [
+      "Smith",
+      "Johnson",
+      "Williams",
+      "Brown",
+      "Jones",
+      "Miller",
+      "Davis",
+      "Wilson",
+      "Anderson",
+      "Taylor",
+      "Thomas",
+      "Moore",
+      "Jackson",
+      "Martin",
+      "Lee",
+      "Walker",
+      "Hall",
+      "Allen",
+      "Young",
+      "King",
+      "Wright",
+      "Scott",
+      "Green",
+      "Baker",
+      "Adams",
+      "Nelson",
+      "Carter",
+      "Mitchell",
+      "Roberts",
+      "Turner",
+      "Phillips",
+      "Campbell",
+      "Parker"
+    ],
+    villes: [
+      "London",
+      "Manchester",
+      "Birmingham",
+      "Leeds",
+      "Bristol",
+      "Liverpool",
+      "New York",
+      "Boston",
+      "Chicago",
+      "Austin",
+      "Seattle",
+      "Denver",
+      "Toronto",
+      "Vancouver",
+      "Dublin",
+      "Edinburgh",
+      "Cardiff",
+      "Glasgow"
+    ],
+    orgs: [
+      "Northbridge Consulting",
+      "Alphatech Ltd",
+      "Verti\xE8re Group",
+      "Solunea Inc",
+      "Castel & Co",
+      "Novaris Partners",
+      "Brossard Studios",
+      "Delmont Industries",
+      "Ferrand Associates",
+      "Tessalis",
+      "Ormeau Digital",
+      "Sequoia Services",
+      "Baltane Corp",
+      "Amarante Studio",
+      "Fenwick & Partners",
+      "Harlow Digital"
+    ],
+    rues: [
+      "Acacia Street",
+      "Poplar Avenue",
+      "Saint Michael Boulevard",
+      "Fountain Road",
+      "Lilac Court",
+      "Vineyard Lane",
+      "Market Square",
+      "School Street",
+      "Republic Avenue",
+      "Mill Road",
+      "Elm Way",
+      "Harbour Drive"
+    ],
+    emailDomains: ["example-mail.com", "temp-inbox.com", "anon-mailbox.com", "pseudo-mail.com"],
+    phone: (h2, i) => {
+      const digitsAt = (hh, n) => String(hh % 10 ** n).padStart(n, "0");
+      const area = 200 + (h2 + i) % 700;
+      const d = digitsAt(h2 + i * 104729 >>> 0, 7);
+      return `(${area}) ${d.slice(0, 3)}-${d.slice(3, 7)}`;
+    }
+  }
+};
 var REALISTIC_TYPES = /* @__PURE__ */ new Set([
   "PER",
   "ORG",
@@ -251,7 +394,8 @@ var REALISTIC_TYPES = /* @__PURE__ */ new Set([
   "DATE_NAISSANCE"
 ]);
 var stripAccents = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
-function createPseudonymizer({ seed = "clarence", avoid = () => false } = {}) {
+function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = "fr" } = {}) {
+  const L = LOCALES[locale] || LOCALES.fr;
   const used = /* @__PURE__ */ new Set();
   const fnv = (str) => {
     let h = 2166136261;
@@ -262,7 +406,6 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false } = {}) {
     return h;
   };
   const pick = (arr, h, i = 0) => arr[(h + i * 13) % arr.length];
-  const digits = (h, n) => String(h % 10 ** n).padStart(n, "0");
   function unique(gen, h) {
     for (let i = 0; i < 300; i++) {
       const v = gen(h, i);
@@ -274,20 +417,16 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false } = {}) {
     return null;
   }
   const generators = {
-    PER: (h) => unique((h2, i) => `${pick(PRENOMS, h2, i)} ${pick(NOMS, (h2 >>> 5) + i, i)}`, h),
-    ORG: (h) => unique((h2, i) => pick(ORGS, h2, i), h),
-    LOC: (h) => unique((h2, i) => pick(VILLES, h2, i), h),
-    ADRESSE: (h) => unique((h2, i) => `${(h2 + i * 7) % 98 + 1} ${pick(RUES, h2 >>> 3, i)}`, h),
+    PER: (h) => unique((h2, i) => `${pick(L.prenoms, h2, i)} ${pick(L.noms, (h2 >>> 5) + i, i)}`, h),
+    ORG: (h) => unique((h2, i) => pick(L.orgs, h2, i), h),
+    LOC: (h) => unique((h2, i) => pick(L.villes, h2, i), h),
+    ADRESSE: (h) => unique((h2, i) => `${(h2 + i * 7) % 98 + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
     EMAIL: (h) => unique((h2, i) => {
-      const prenom = stripAccents(pick(PRENOMS, h2, i));
-      const nom = stripAccents(pick(NOMS, (h2 >>> 7) + i, i));
-      return `${prenom}.${nom}@${pick(EMAIL_DOMAINS, h2 >>> 11, i)}`;
+      const prenom = stripAccents(pick(L.prenoms, h2, i));
+      const nom = stripAccents(pick(L.noms, (h2 >>> 7) + i, i));
+      return `${prenom}.${nom}@${pick(L.emailDomains, h2 >>> 11, i)}`;
     }, h),
-    TELEPHONE: (h) => unique((h2, i) => {
-      const d = digits(h2 + i * 104729 >>> 0, 8);
-      const prefix = (h2 + i) % 2 === 0 ? "06" : "07";
-      return `${prefix} ${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 6)} ${d.slice(6, 8)}`;
-    }, h),
+    TELEPHONE: (h) => unique((h2, i) => L.phone(h2, i), h),
     DATE_NAISSANCE: (h, original) => unique((h2, i) => {
       const j = (h2 + i) % 28 + 1;
       const m = ((h2 >>> 4) + i) % 12 + 1;
@@ -577,7 +716,8 @@ function maskOptions() {
     pseudonymize: createPseudonymizer({
       seed: pseudoSeed,
       // anti-collision : jamais un pseudo déjà présent dans le texte réel
-      avoid: (v) => currentText.includes(v)
+      avoid: (v) => currentText.includes(v),
+      locale: $("pseudoLocale")?.value || "fr"
     })
   };
 }
@@ -996,7 +1136,7 @@ function invalidateFileResult() {
   $("dragCard").hidden = true;
   fileSetStatus("Options modifi\xE9es \u2014 relance l\u2019anonymisation.");
 }
-for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle"]) {
+for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle", "filePseudoLocale"]) {
   $(id)?.addEventListener("change", invalidateFileResult);
 }
 for (const id of ["fileAlwaysMask", "fileAlwaysKeep"]) {
@@ -1037,13 +1177,14 @@ function setChosenFile(file) {
   $("fileResults").hidden = true;
   fileSetStatus("");
 }
-function fileMaskOptions(units) {
+function fileMaskOptions(units = []) {
   if (!$("fileRealisticToggle")?.checked) return {};
   const joined = units.map((u) => u.text).join("\n");
   return {
     pseudonymize: createPseudonymizer({
       seed: pseudoSeed,
-      avoid: (v) => joined.includes(v)
+      avoid: (v) => joined.includes(v),
+      locale: $("filePseudoLocale")?.value || "fr"
     })
   };
 }
@@ -1421,6 +1562,9 @@ async function processFile() {
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
         onProgress: nerProgress,
+        // Manquait entièrement : le PDF reconstruit ignorait la case
+        // Pseudonymes, contrairement aux autres formats. Toujours [TYPE_N].
+        maskOpts: fileMaskOptions(units),
         forceTerms: [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()],
         disabledTypes: fileDisabledTypes,
         keepValues: parseLines($("fileAlwaysKeep")?.value),

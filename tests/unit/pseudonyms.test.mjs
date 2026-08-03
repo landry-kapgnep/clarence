@@ -69,3 +69,30 @@ test('téléphone pseudo au format FR mobile', () => {
   const p = createPseudonymizer({ seed: 's1' });
   assert.match(p('TELEPHONE', '06 12 34 56 78'), /^0[67](?: \d{2}){4}$/);
 });
+
+// --- Locale des pseudonymes (constaté : toujours franco-français, même sur
+// un document rédigé en anglais — ça casse l'illusion de cohérence).
+test('locale par défaut = fr (non-régression)', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  assert.match(p('TELEPHONE', '06 12 34 56 78'), /^0[67](?: \d{2}){4}$/);
+});
+
+test('locale "en" produit des noms/villes/téléphones anglophones', () => {
+  const p = createPseudonymizer({ seed: 's1', locale: 'en' });
+  const nom = p('PER', 'Jean Dupont');
+  assert.ok(!/[éèêàçÀ-ÿ]/.test(nom), 'accent français dans un pseudo anglophone : ' + nom);
+  assert.match(p('TELEPHONE', '555-1234'), /^\(\d{3}\) \d{3}-\d{4}$/);
+  const email = p('EMAIL', 'jean@exemple.fr');
+  assert.match(email, /@.+\.com$/);
+});
+
+test('une locale inconnue retombe silencieusement sur fr (jamais de plantage)', () => {
+  const p = createPseudonymizer({ seed: 's1', locale: 'xx' });
+  assert.match(p('TELEPHONE', '06 12 34 56 78'), /^0[67](?: \d{2}){4}$/);
+});
+
+test('déterminisme préservé PAR locale (même seed+valeur+locale → même pseudo)', () => {
+  const a = createPseudonymizer({ seed: 's1', locale: 'en' });
+  const b = createPseudonymizer({ seed: 's1', locale: 'en' });
+  assert.equal(a('PER', 'Jean Dupont'), b('PER', 'Jean Dupont'));
+});

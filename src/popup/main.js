@@ -48,7 +48,8 @@ function maskOptions() {
     pseudonymize: createPseudonymizer({
       seed: pseudoSeed,
       // anti-collision : jamais un pseudo déjà présent dans le texte réel
-      avoid: v => currentText.includes(v)
+      avoid: v => currentText.includes(v),
+      locale: $('pseudoLocale')?.value || 'fr'
     })
   };
 }
@@ -583,7 +584,7 @@ function invalidateFileResult() {
 }
 
 // Toutes les options qui changent la SORTIE invalident le résultat.
-for (const id of ['pdfModeLight', 'pdfModePreserve', 'fileRealisticToggle']) {
+for (const id of ['pdfModeLight', 'pdfModePreserve', 'fileRealisticToggle', 'filePseudoLocale']) {
   $(id)?.addEventListener('change', invalidateFileResult);
 }
 for (const id of ['fileAlwaysMask', 'fileAlwaysKeep']) {
@@ -634,13 +635,17 @@ function setChosenFile(file) {
   fileSetStatus('');
 }
 
-function fileMaskOptions(units) {
+// units optionnel : le chemin PDF « Préserver » (reconstructPdf) extrait ses
+// propres unités en interne, on ne les a pas encore ici — la vérification
+// anti-collision porte alors sur une chaîne vide (dégradé, pas cassé).
+function fileMaskOptions(units = []) {
   if (!$('fileRealisticToggle')?.checked) return {};
   const joined = units.map(u => u.text).join('\n');
   return {
     pseudonymize: createPseudonymizer({
       seed: pseudoSeed,
-      avoid: v => joined.includes(v)
+      avoid: v => joined.includes(v),
+      locale: $('filePseudoLocale')?.value || 'fr'
     })
   };
 }
@@ -1133,6 +1138,9 @@ async function processFile() {
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
         onProgress: nerProgress,
+        // Manquait entièrement : le PDF reconstruit ignorait la case
+        // Pseudonymes, contrairement aux autres formats. Toujours [TYPE_N].
+        maskOpts: fileMaskOptions(units),
         forceTerms: [...parseLines($('fileAlwaysMask')?.value), ...identityForceTerms()],
         disabledTypes: fileDisabledTypes,
         keepValues: parseLines($('fileAlwaysKeep')?.value),

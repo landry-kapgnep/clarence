@@ -1,51 +1,102 @@
 // Pseudonymes réalistes (option) — port JS du PseudonymGenerator Python :
-// listes FR curées + choix déterministe par hachage de la valeur d'origine.
+// listes curées + choix déterministe par hachage de la valeur d'origine.
 // 100% local, zéro dépendance. Les types structurés critiques (IBAN, carte,
 // NIR, SIRET…) ne sont JAMAIS pseudonymisés en réaliste : générer de faux
 // numéros plausibles risque de collisionner avec de vrais — ils restent en
 // placeholders [TYPE_N], honnêtes et sans ambiguïté.
+//
+// Deux locales (FR par défaut, EN) : un document rédigé en anglais recevait
+// jusqu'ici des pseudonymes français (« Julien Marchand » dans un texte 100%
+// anglophone), ce qui casse l'illusion de cohérence que l'option promet.
+// `locale` est un paramètre du moteur, pas encore choisi automatiquement —
+// il faut le brancher explicitement (voir main.js) tant qu'il n'y a pas de
+// détection de langue du document.
 
-const PRENOMS = [
-  'Alexandre', 'Antoine', 'Baptiste', 'Clément', 'Étienne', 'Gabriel',
-  'Hugo', 'Jules', 'Louis', 'Lucas', 'Maxime', 'Nathan', 'Paul', 'Raphaël',
-  'Romain', 'Thomas', 'Victor', 'Julien', 'Quentin', 'Vincent',
-  'Amélie', 'Camille', 'Charlotte', 'Chloé', 'Élise', 'Emma', 'Inès',
-  'Juliette', 'Léa', 'Louise', 'Lucie', 'Manon', 'Mathilde', 'Noémie',
-  'Pauline', 'Marion', 'Hélène', 'Nathalie', 'Aurélie', 'Émilie'
-];
-
-const NOMS = [
-  'Bernard', 'Blanc', 'Bonnet', 'Chevalier', 'Deschamps', 'Dubois',
-  'Dumont', 'Durand', 'Faure', 'Fournier', 'Garnier', 'Gauthier',
-  'Girard', 'Lambert', 'Lefebvre', 'Legrand', 'Lemaire', 'Mercier',
-  'Moreau', 'Morel', 'Petit', 'Renard', 'Richard', 'Robin', 'Rousseau',
-  'Roux', 'Simon', 'Barbier', 'Boyer', 'Brun', 'Colin', 'Denis',
-  'Leroy', 'Perrin'
-];
-
-const VILLES = [
-  'Paris', 'Lyon', 'Marseille', 'Toulouse', 'Bordeaux', 'Lille', 'Nantes',
-  'Strasbourg', 'Nice', 'Montpellier', 'Rennes', 'Reims', 'Grenoble',
-  'Dijon', 'Angers', 'Tours', 'Orléans', 'Metz'
-];
-
-const ORGS = [
-  'Nordis Conseil', 'Alphatec', 'Groupe Vertière', 'Solunea', 'Castel & Fils',
-  'Novaris SARL', 'Ateliers Brossard', 'Delmont Industries', 'Cabinet Ferrand',
-  'Tessalis', 'Ormeau Digital', 'Clavier & Associés', 'Sequoia Services',
-  'Baltane', 'Comptoir Lorrain', 'Studio Amarante'
-];
-
-const RUES = [
-  'rue des Acacias', 'avenue des Peupliers', 'boulevard Saint-Michel',
-  'rue de la Fontaine', 'impasse des Lilas', 'chemin des Vignes',
-  'place du Marché', 'rue des Écoles', 'avenue de la République',
-  'rue du Moulin', 'allée des Charmes', 'quai des Brumes'
-];
-
-const EMAIL_DOMAINS = [
-  'exemple-mail.fr', 'courriel-temp.fr', 'boite-anonyme.fr', 'pseudo-mail.fr'
-];
+const LOCALES = {
+  fr: {
+    prenoms: [
+      'Alexandre', 'Antoine', 'Baptiste', 'Clément', 'Étienne', 'Gabriel',
+      'Hugo', 'Jules', 'Louis', 'Lucas', 'Maxime', 'Nathan', 'Paul', 'Raphaël',
+      'Romain', 'Thomas', 'Victor', 'Julien', 'Quentin', 'Vincent',
+      'Amélie', 'Camille', 'Charlotte', 'Chloé', 'Élise', 'Emma', 'Inès',
+      'Juliette', 'Léa', 'Louise', 'Lucie', 'Manon', 'Mathilde', 'Noémie',
+      'Pauline', 'Marion', 'Hélène', 'Nathalie', 'Aurélie', 'Émilie'
+    ],
+    noms: [
+      'Bernard', 'Blanc', 'Bonnet', 'Chevalier', 'Deschamps', 'Dubois',
+      'Dumont', 'Durand', 'Faure', 'Fournier', 'Garnier', 'Gauthier',
+      'Girard', 'Lambert', 'Lefebvre', 'Legrand', 'Lemaire', 'Mercier',
+      'Moreau', 'Morel', 'Petit', 'Renard', 'Richard', 'Robin', 'Rousseau',
+      'Roux', 'Simon', 'Barbier', 'Boyer', 'Brun', 'Colin', 'Denis',
+      'Leroy', 'Perrin'
+    ],
+    villes: [
+      'Paris', 'Lyon', 'Marseille', 'Toulouse', 'Bordeaux', 'Lille', 'Nantes',
+      'Strasbourg', 'Nice', 'Montpellier', 'Rennes', 'Reims', 'Grenoble',
+      'Dijon', 'Angers', 'Tours', 'Orléans', 'Metz'
+    ],
+    orgs: [
+      'Nordis Conseil', 'Alphatec', 'Groupe Vertière', 'Solunea', 'Castel & Fils',
+      'Novaris SARL', 'Ateliers Brossard', 'Delmont Industries', 'Cabinet Ferrand',
+      'Tessalis', 'Ormeau Digital', 'Clavier & Associés', 'Sequoia Services',
+      'Baltane', 'Comptoir Lorrain', 'Studio Amarante'
+    ],
+    rues: [
+      'rue des Acacias', 'avenue des Peupliers', 'boulevard Saint-Michel',
+      'rue de la Fontaine', 'impasse des Lilas', 'chemin des Vignes',
+      'place du Marché', 'rue des Écoles', 'avenue de la République',
+      'rue du Moulin', 'allée des Charmes', 'quai des Brumes'
+    ],
+    emailDomains: ['exemple-mail.fr', 'courriel-temp.fr', 'boite-anonyme.fr', 'pseudo-mail.fr'],
+    phone: (h2, i) => {
+      const digitsAt = (hh, n) => String(hh % 10 ** n).padStart(n, '0');
+      const d = digitsAt((h2 + i * 104729) >>> 0, 8);
+      const prefix = (h2 + i) % 2 === 0 ? '06' : '07';
+      return `${prefix} ${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 6)} ${d.slice(6, 8)}`;
+    }
+  },
+  en: {
+    prenoms: [
+      'James', 'John', 'Robert', 'Michael', 'William', 'David', 'Daniel',
+      'Matthew', 'Andrew', 'Joseph', 'Henry', 'Samuel', 'Benjamin', 'Oliver',
+      'Jack', 'Thomas', 'Charles', 'George', 'Edward', 'Nathan',
+      'Mary', 'Jennifer', 'Elizabeth', 'Susan', 'Jessica', 'Sarah', 'Karen',
+      'Emma', 'Olivia', 'Emily', 'Charlotte', 'Grace', 'Hannah', 'Alice',
+      'Rachel', 'Laura', 'Amy', 'Claire', 'Victoria', 'Sophie'
+    ],
+    noms: [
+      'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis',
+      'Wilson', 'Anderson', 'Taylor', 'Thomas', 'Moore', 'Jackson', 'Martin',
+      'Lee', 'Walker', 'Hall', 'Allen', 'Young', 'King', 'Wright', 'Scott',
+      'Green', 'Baker', 'Adams', 'Nelson', 'Carter', 'Mitchell', 'Roberts',
+      'Turner', 'Phillips', 'Campbell', 'Parker'
+    ],
+    villes: [
+      'London', 'Manchester', 'Birmingham', 'Leeds', 'Bristol', 'Liverpool',
+      'New York', 'Boston', 'Chicago', 'Austin', 'Seattle', 'Denver',
+      'Toronto', 'Vancouver', 'Dublin', 'Edinburgh', 'Cardiff', 'Glasgow'
+    ],
+    orgs: [
+      'Northbridge Consulting', 'Alphatech Ltd', 'Vertière Group', 'Solunea Inc',
+      'Castel & Co', 'Novaris Partners', 'Brossard Studios', 'Delmont Industries',
+      'Ferrand Associates', 'Tessalis', 'Ormeau Digital', 'Sequoia Services',
+      'Baltane Corp', 'Amarante Studio', 'Fenwick & Partners', 'Harlow Digital'
+    ],
+    rues: [
+      'Acacia Street', 'Poplar Avenue', 'Saint Michael Boulevard',
+      'Fountain Road', 'Lilac Court', 'Vineyard Lane',
+      'Market Square', 'School Street', 'Republic Avenue',
+      'Mill Road', 'Elm Way', 'Harbour Drive'
+    ],
+    emailDomains: ['example-mail.com', 'temp-inbox.com', 'anon-mailbox.com', 'pseudo-mail.com'],
+    phone: (h2, i) => {
+      const digitsAt = (hh, n) => String(hh % 10 ** n).padStart(n, '0');
+      const area = 200 + ((h2 + i) % 700);
+      const d = digitsAt((h2 + i * 104729) >>> 0, 7);
+      return `(${area}) ${d.slice(0, 3)}-${d.slice(3, 7)}`;
+    }
+  }
+};
 
 // Types éligibles au réalisme ; tout le reste garde son placeholder [TYPE_N].
 const REALISTIC_TYPES = new Set([
@@ -55,12 +106,14 @@ const REALISTIC_TYPES = new Set([
 const stripAccents = s =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 
-// createPseudonymizer({ seed, avoid }) → fn(type, value) → pseudo | null.
+// createPseudonymizer({ seed, avoid, locale }) → fn(type, value) → pseudo | null.
 // - seed : stabilité au sein d'une session d'analyse ;
 // - avoid(v) : refuse un pseudo présent dans le texte d'origine (collision
 //   avec une vraie valeur) ;
+// - locale : 'fr' (défaut) ou 'en' — locale inconnue retombe sur 'fr' ;
 // - unicité garantie entre pseudos d'une même session.
-export function createPseudonymizer({ seed = 'clarence', avoid = () => false } = {}) {
+export function createPseudonymizer({ seed = 'clarence', avoid = () => false, locale = 'fr' } = {}) {
+  const L = LOCALES[locale] || LOCALES.fr;
   const used = new Set();
 
   const fnv = str => {
@@ -72,7 +125,6 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false } =
     return h;
   };
   const pick = (arr, h, i = 0) => arr[(h + i * 13) % arr.length];
-  const digits = (h, n) => String(h % 10 ** n).padStart(n, '0');
 
   function unique(gen, h) {
     for (let i = 0; i < 300; i++) {
@@ -83,20 +135,16 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false } =
   }
 
   const generators = {
-    PER: h => unique((h2, i) => `${pick(PRENOMS, h2, i)} ${pick(NOMS, (h2 >>> 5) + i, i)}`, h),
-    ORG: h => unique((h2, i) => pick(ORGS, h2, i), h),
-    LOC: h => unique((h2, i) => pick(VILLES, h2, i), h),
-    ADRESSE: h => unique((h2, i) => `${((h2 + i * 7) % 98) + 1} ${pick(RUES, h2 >>> 3, i)}`, h),
+    PER: h => unique((h2, i) => `${pick(L.prenoms, h2, i)} ${pick(L.noms, (h2 >>> 5) + i, i)}`, h),
+    ORG: h => unique((h2, i) => pick(L.orgs, h2, i), h),
+    LOC: h => unique((h2, i) => pick(L.villes, h2, i), h),
+    ADRESSE: h => unique((h2, i) => `${((h2 + i * 7) % 98) + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
     EMAIL: h => unique((h2, i) => {
-      const prenom = stripAccents(pick(PRENOMS, h2, i));
-      const nom = stripAccents(pick(NOMS, (h2 >>> 7) + i, i));
-      return `${prenom}.${nom}@${pick(EMAIL_DOMAINS, h2 >>> 11, i)}`;
+      const prenom = stripAccents(pick(L.prenoms, h2, i));
+      const nom = stripAccents(pick(L.noms, (h2 >>> 7) + i, i));
+      return `${prenom}.${nom}@${pick(L.emailDomains, h2 >>> 11, i)}`;
     }, h),
-    TELEPHONE: h => unique((h2, i) => {
-      const d = digits((h2 + i * 104729) >>> 0, 8);
-      const prefix = (h2 + i) % 2 === 0 ? '06' : '07';
-      return `${prefix} ${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 6)} ${d.slice(6, 8)}`;
-    }, h),
+    TELEPHONE: h => unique((h2, i) => L.phone(h2, i), h),
     DATE_NAISSANCE: (h, original) => unique((h2, i) => {
       const j = ((h2 + i) % 28) + 1;
       const m = ((h2 >>> 4) + i) % 12 + 1;

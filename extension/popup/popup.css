@@ -622,3 +622,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 
 /* Tout le contenu de la coquille passe au-dessus de la grille. */
 .wrap > *:not(#letterBg) { position: relative; z-index: 1; }
+
+/* Sélecteur de langue des pseudonymes : discret, sous la case à cocher. */
+.pseudo-locale {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pseudo-locale select { font-size: 12px; padding: 2px 6px; }
