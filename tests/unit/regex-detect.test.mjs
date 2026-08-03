@@ -215,3 +215,12 @@ test('INE et numéro étudiant captés par leur libellé', () => {
 test('une suite de chiffres SANS libellé étudiant n\'est pas un identifiant', () => {
   assert.equal(find('le total atteint 12201603 unités', 'ID_NATIONAL').length, 0);
 });
+
+test('identifiant interne séparé de son libellé par un verbe (trouvé par le banc)', () => {
+  // « His employee identifier IS EMP-4471-KD » : le motif exigeait que la
+  // valeur suive immédiatement le libellé, donc il échouait sur une phrase
+  // rédigée tout en marchant sur un libellé collé.
+  assert.equal(find('His employee identifier is EMP-4471-KD and his card', 'REFERENCE')[0].value, 'EMP-4471-KD');
+  // Non-régression : la forme collée marche toujours.
+  assert.equal(find('account identifier CUST-849204-X to reflect', 'REFERENCE')[0].value, 'CUST-849204-X');
+});

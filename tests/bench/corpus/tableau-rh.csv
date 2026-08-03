@@ -1,0 +1,6 @@
+Matricule,Nom,Prénom,Date de naissance,Email,Téléphone,Ville,Service,Poste,Salaire
+EMP-0012,Rousseau,Amandine,1988-03-14,a.rousseau@korrigane-labs.example,06 12 34 56 78,Nantes,Data,Analyste,38000
+EMP-0013,Belkacem,Nadia,1991-07-23,n.belkacem@korrigane-labs.example,06 98 76 54 32,Rennes,Tech,Ingénieure,45000
+EMP-0014,Vaquier,Sébastien,1979-11-02,s.vaquier@korrigane-labs.example,06 55 44 33 22,Nantes,Direction,Fondateur,52000
+EMP-0015,Nerval,Thibault,1995-01-30,t.nerval@korrigane-labs.example,07 11 22 33 44,Bordeaux,Marketing,Chargé,34000
+EMP-0016,Brassard,Hélène,1983-06-17,h.brassard@korrigane-labs.example,07 88 99 00 11,Lyon,Data,Scientifique,47000

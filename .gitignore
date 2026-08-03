@@ -1,2 +1,5 @@
 node_modules/
 *.log
+
+# Modèles du banc d'essai (183 Mo, téléchargés à la demande)
+tests/bench/.modeles/

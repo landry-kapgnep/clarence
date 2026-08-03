@@ -1,0 +1,24 @@
+From: eleanor.vance@northbridge.example
+To: payroll@northbridge.example
+Subject: Onboarding file for the new hire
+
+Hi team,
+
+Please find below the details for our new analyst, Marcus Whitfield, who joins
+the Boston office on March 3.
+
+He was born on March 14, 1988. His social security number is 900-12-3456 and
+his personal phone is +1 617 555 0142. He currently lives at 1841 Fountain Road,
+Springfield, Oregon, 97477, United States.
+
+His employee identifier is EMP-4471-KD and his corporate card ends in 4242.
+The reimbursement account is GB29 NWBK 6016 1331 9268 19.
+
+Marcus previously worked at Halloway Freight and studied at the University of
+Vermont. He is of Canadian nationality.
+
+Please keep this message confidential.
+
+Best regards,
+Eleanor Vance
+Head of People Operations

@@ -38,6 +38,35 @@ Le nom du propriétaire du CV **fuit à 3 endroits** — c'est le pire cas possi
 
 ---
 
+## Ligne de base mesurée — 03/08/2026 (`npm run bench`)
+
+Premier chiffrage reproductible, sur 5 documents synthétiques couvrant les cas
+réellement rencontrés (CV multi-colonnes en PDF reconstruit, rapport avec
+sommaire, certificat administratif, tableau RH, email anglophone).
+
+| | Résultat | Exigence |
+|---|---|---|
+| Rappel **structuré** | **100 %** (17/17) | 100 % — non négociable |
+| Rappel **contextuel** | **92 %** (23/25) | mesuré, jamais promis |
+| Termes **préservés** | **77 %** (24/31) | utilisabilité |
+
+**Le blocage n'est pas la fuite, c'est le sur-masquage.** Les deux seuls ratés
+contextuels sont un nom TOUT-MAJUSCULE isolé sur un certificat et une date en
+cellule nue. En face, 7 termes qui devaient survivre ont été masqués — et le
+pire cas est le tableau RH : **43 masques pour 62 mots**, avec les en-têtes de
+colonnes (`Matricule`, `Service`, `Salaire`, `Date de naissance`) masqués. Un
+CSV dans cet état est illisible pour un LLM : c'est « sûr » et sans valeur.
+
+Conclusion produit : le travail restant avant une première version n'est pas
+d'attraper plus, c'est **d'attraper moins mais mieux**. Priorité au
+sur-masquage (P2/P2bis) devant tout le reste.
+
+Fuite corrigée grâce à ce premier passage : `employee identifier IS EMP-4471-KD`
+— le motif exigeait que la valeur suive immédiatement son libellé, un simple
+verbe de liaison le mettait en échec.
+
+---
+
 ## ~~P0bis — La propagation ne franchissait pas la frontière fichier~~ ✅ CORRIGÉ (03/08/2026)
 
 Constaté sur un **vrai rapport de stage de 26 pages**. Le nom du tuteur était
