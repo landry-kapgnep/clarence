@@ -115,3 +115,53 @@ test('sans nerDetect, le moteur BERT historique reste utilisé (non-régression)
   );
   assert.equal(results[0].maskedText, 'Contact : [PERSONNE_1]');
 });
+
+// --- Propagation dans les ENTITÉS, pas seulement dans la chaîne masquée.
+// Régression réelle (rapport de stage, 26 pages) : le nom du tuteur était
+// détecté dans un paragraphe rédigé mais restait EN CLAIR en page de garde,
+// où il n'apparaît qu'après un libellé, sans phrase autour. L'aperçu le
+// montrait masqué ; le PDF reconstruit, qui repart des entités et non de
+// maskedText, le laissait lisible. C'est une fuite, pas une imperfection.
+test('une occurrence rattrapée par propagation est présente dans les ENTITÉS', async () => {
+  const pipe = async (t) => t.includes('Le tuteur Stéphane Ureña encadre')
+    ? [{ entity: 'B-PER', word: 'Stéphane', score: 0.99 },
+       { entity: 'I-PER', word: 'Ureña', score: 0.98 }]
+    : [];
+  const { results } = await anonymizeUnits([
+    { id: 'garde', text: 'Tuteur entreprise : Stéphane Ureña' },
+    { id: 'corps', text: 'Le tuteur Stéphane Ureña encadre le stage.' }
+  ], { nerPipeline: pipe });
+
+  const garde = results.find(r => r.id === 'garde');
+  assert.equal(garde.maskedText, 'Tuteur entreprise : [PERSONNE_1]');
+  // Le point qui manquait : l'entité doit exister pour que PDF/DOCX la réécrivent.
+  assert.equal(garde.entities.length, 1, 'occurrence propagée absente des entités');
+  assert.equal(garde.text.slice(garde.entities[0].start, garde.entities[0].end), 'Stéphane Ureña');
+  assert.equal(garde.entities[0].placeholder, '[PERSONNE_1]');
+});
+
+test('la propagation ignore la casse (même entité écrite différemment)', async () => {
+  // Cas réel : « meteojob » détecté dans une URL était masqué, « Meteojob »
+  // en début de ligne restait en clair — la même valeur, dans le même document.
+  const pipe = async (t) => t.includes('www.meteojob.com')
+    ? [{ entity: 'B-ORG', word: 'meteojob', score: 0.95 }]
+    : [];
+  const { results } = await anonymizeUnits([
+    { id: 'url', text: 'source https://www.meteojob.com/blog' },
+    { id: 'titre', text: 'Meteojob reste une source publique.' }
+  ], { nerPipeline: pipe });
+
+  const titre = results.find(r => r.id === 'titre');
+  assert.ok(titre.maskedText.startsWith('[ENTREPRISE_1]'), 'casse différente non propagée');
+  assert.equal(titre.entities.length, 1);
+});
+
+test('la propagation ne double JAMAIS une entité déjà détectée', async () => {
+  const pipe = async (t) => t.includes('Rose Fontaine')
+    ? [{ entity: 'B-PER', word: 'Rose', score: 0.99 },
+       { entity: 'I-PER', word: 'Fontaine', score: 0.98 }]
+    : [];
+  const { results } = await anonymizeUnits(
+    [{ id: 'a', text: 'Rose Fontaine signe.' }], { nerPipeline: pipe });
+  assert.equal(results[0].entities.length, 1, 'entité dupliquée par la propagation');
+});

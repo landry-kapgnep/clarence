@@ -250,7 +250,7 @@ function createNerWorker() {
     const msg = ev.data || {};
     if (msg.type === 'progress' && msg.total) {
       const pct = Math.round((msg.loaded / msg.total) * 100);
-      setStatus(`Téléchargement du modèle de détection… ${pct} % (une seule fois, mis en cache ensuite)`);
+      setStatus(`Téléchargement du modèle… ${pct} % (une seule fois)`);
       // Le premier vrai temps d'attente, c'est ce téléchargement (~180 Mo) :
       // la barre du mode actif le montre aussi.
       const ratio = msg.loaded / msg.total;
@@ -301,7 +301,7 @@ function startEngine(engine) {
 async function ensureNER() {
   if (nerPipe || nerLoading) return;
   nerLoading = true;
-  setStatus('Chargement du modèle de détection des noms (~180 Mo au premier usage, mis en cache ensuite)…');
+  setStatus('Chargement du modèle… (~180 Mo au premier usage)');
   try {
     let worker = null;
     try {
@@ -349,7 +349,7 @@ async function analyze() {
   const text = $('input').value;
   if (!text.trim()) return;
   if (text.length > MAX_INPUT) {
-    setStatus(`Texte trop long (${text.length.toLocaleString('fr-FR')} caractères, plafond ${MAX_INPUT.toLocaleString('fr-FR')}). Découpe-le en plusieurs passages.`, 'error');
+    setStatus(`Texte trop long (${text.length.toLocaleString('fr-FR')} caractères, max ${MAX_INPUT.toLocaleString('fr-FR')}). Découpe-le.`, 'error');
     return;
   }
   if (text !== currentText) { manualEntities = []; removedKeys = new Set(); }
@@ -379,7 +379,7 @@ async function analyze() {
     // qu'il croit analysé.
     console.error(err);
     $('results').hidden = true;
-    setStatus('L’analyse a échoué — rien n’a été masqué, ne colle pas ce texte tel quel. Détail dans la console.', 'error');
+    setStatus('Analyse échouée — rien n’a été masqué, ne colle pas ce texte. Détail dans la console.', 'error');
   } finally {
     setProcessing(false);
     setTextProgress(null);
@@ -391,7 +391,7 @@ function maskSelection() {
   const ta = $('input');
   const s = ta.selectionStart, e = ta.selectionEnd;
   if (ta.value !== currentText) {
-    setStatus('Lance d’abord Analyser, puis sélectionne le passage à masquer.', 'error');
+    setStatus('Lance Analyser d’abord, puis sélectionne le passage.', 'error');
     return;
   }
   if (s === e) {
@@ -412,7 +412,7 @@ function maskSelection() {
 async function copyClean() {
   const { masked } = maskText(currentText, activeEntities(), maskOptions());
   await navigator.clipboard.writeText(masked);
-  $('copyStatus').textContent = 'Copié — vérifie une dernière fois avant de coller.';
+  $('copyStatus').textContent = 'Copié — relis avant de coller.';
   $('copyStatus').className = 'status active';
   setTimeout(() => { $('copyStatus').textContent = ''; }, 4000);
 }
@@ -484,7 +484,7 @@ $('reinjectBtn').addEventListener('click', () => {
   if (!txt.trim()) return;
   const st = $('reinjectStatus');
   if (!lastMapping.length) {
-    st.textContent = 'Aucune table de correspondance en mémoire — analyse un texte d’abord.';
+    st.textContent = 'Aucune correspondance en mémoire — analyse un texte d’abord.';
     st.className = 'status error';
     return;
   }
@@ -579,7 +579,7 @@ function invalidateFileResult() {
   fileOutName = '';
   $('fileResults').hidden = true;
   $('dragCard').hidden = true;
-  fileSetStatus('Options modifiées — relance l’anonymisation pour obtenir le fichier correspondant.');
+  fileSetStatus('Options modifiées — relance l’anonymisation.');
 }
 
 // Toutes les options qui changent la SORTIE invalident le résultat.
@@ -610,11 +610,11 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus('Format non pris en charge. Formats acceptés : CSV, Excel (.xlsx), Word (.docx), PDF (→ .md), images .jpg/.png (métadonnées).', 'error');
+    fileSetStatus('Format non pris en charge. Accepté : CSV, XLSX, DOCX, PDF, JPG/PNG.', 'error');
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
-    fileSetStatus(`Fichier trop volumineux (${humanSize(file.size)}, plafond ${humanSize(MAX_FILE_BYTES)}).`, 'error');
+    fileSetStatus(`Fichier trop lourd (${humanSize(file.size)}, max ${humanSize(MAX_FILE_BYTES)}).`, 'error');
     return;
   }
   chosenFile = file;
@@ -693,9 +693,389 @@ const nerProgress = ({ done, total }) => {
   return new Promise(r => setTimeout(r, 0));
 };
 
-// Fond animé : marque l'état « ça travaille » sur toute la surface, pas
-// seulement dans un bouton. Purement CSS (transform/opacity, composé GPU) —
-// aucun coût sur le thread principal pendant la détection.
+// ===== Grille de lettres (fond de toute la popup) =====
+// Des blobs de lampe à lave (champ de métaballs) remplissent la popup ; ils
+// dérivent, fusionnent et se séparent. Deux garde-fous rendent le fond
+// compatible avec une UI dense, parce qu'un motif à fort contraste placé
+// derrière du texte le rend illisible :
+//   1. AUCUNE case n'est peinte derrière un élément d'interface. Les boîtes
+//      des éléments porteurs de contenu sont relevées et converties en une
+//      grille d'occupation ; le blob coule autour, comme si l'UI était
+//      découpée dedans. C'est ce qui règle « les carrés recouvrent des
+//      éléments » — les masquer par transparence seule ne suffisait pas.
+//   2. La couche entière est atténuée en CSS (--letter-bg-opacity) : même
+//      dans les vides, le motif doit rester une texture, pas un sujet.
+// Le pattern est tiré UNE fois, pour une hauteur virtuelle large : la popup
+// grandit (résultats qui s'affichent) sans jamais rejouer le tirage, elle
+// révèle simplement une portion déjà décidée du motif.
+const LETTER_GRID_LETTERS = ['c', 'l', 'a', 'r', 'e', 'n'];
+const LETTER_GRID_CELL = 16;
+const LETTER_GRID_FONT_PX = 9;
+const LETTER_GRID_TICK_MS = 300;
+const LETTER_GRID_VIRTUAL_PX = 1800;    // hauteur de motif générée d'avance, en px
+const LETTER_GRID_ROWS_PER_BLOB = 4.5;  // densité : une boule toutes les N lignes de cases
+const LETTER_GRID_R = [2.4, 4.6];       // rayon d'une boule, en cases
+const LETTER_GRID_THRESHOLD = 0.34;     // seuil du champ : au-delà, la case est dans un blob
+const LETTER_GRID_JITTER = 0.22;        // irrégularité du bord — assez pour être rongé, pas pour détacher des cases
+const LETTER_GRID_STRAY_COUNT = [4, 7];
+const LETTER_GRID_DRIFT_MAX = 0.10;     // cases / tick, vitesse plafond pendant le traitement
+const LETTER_GRID_DRIFT_ACCEL = 0.03;   // cases / tick², bruit appliqué à la vitesse (pas à la position)
+const LETTER_GRID_DRIFT_RANGE = 1.40;   // cases, écart max à la maison
+const LETTER_GRID_EASE = 0.22;          // fraction de l'écart comblée par tick, au repos
+// Marge d'évidement autour du texte, en px. À 0 le motif vient au contact :
+// toute valeur > 0 dessine un liseré vide régulier autour de chaque ligne, qui
+// se lit comme une bordure soulignant l'UI — exactement ce qu'on ne veut pas.
+const LETTER_GRID_CLEAR_PAD = 0;
+
+const LETTER_GRID_OPAQUE_A = 0.85;      // alpha à partir duquel un fond masque déjà le motif
+
+// Coloration passagère : toutes les ~3 s (intervalle irrégulier), quelques
+// cases prennent une couleur d'accent du thème puis reviennent. Les teintes
+// sont lues dans le CSS, pas codées en dur : le fond suit la palette si elle
+// change.
+const LETTER_GRID_TINT_VARS = ['--seal-lit', '--moss', '--tan', '--paper-dim'];
+const LETTER_GRID_TINT_TARGET = 'cell'; // 'cell' = le fond de la case, 'letter' = la lettre
+const LETTER_GRID_TINT_EVERY_MS = [1600, 4400];
+const LETTER_GRID_TINT_CELLS = [1, 3];
+const LETTER_GRID_TINT_LIFE_MS = [600, 1800];
+// Pendant le traitement la coloration s'emballe : plus fréquente, plus de
+// cases, qui tiennent plus longtemps — donc elles se chevauchent au lieu de
+// se succéder. Le plafond MAX_SHARE garde malgré tout le noir majoritaire :
+// sans lui les teintes finissent par se cumuler jusqu'à recouvrir le motif,
+// et l'effet « lettres qui s'allument » devient un aplat de couleur.
+const LETTER_GRID_TINT_BUSY_EVERY_MS = [280, 900];
+const LETTER_GRID_TINT_BUSY_CELLS = [3, 7];
+const LETTER_GRID_TINT_BUSY_LIFE_MS = [900, 2400];
+const LETTER_GRID_TINT_MAX_SHARE = 0.3;  // part maximale de cases colorées
+
+let letterGridCanvas = null;
+let letterGridCtx = null;
+let letterGridTimer = null;
+let letterGridCols = 0;
+let letterGridRows = 0;        // lignes actuellement visibles
+let letterGridSeed = 0;
+let letterGridBalls = null;    // [{ x0, y0, x, y, vx, vy, r }] — (x0,y0) = position maison
+let letterGridStrays = null;   // [{ col, row, letter }], positions fixes pour la session
+let letterGridBlocked = null;  // Set de "col,row" occupés par l'UI
+let letterGridCellFill = '#000105';
+let letterGridLetterFill = '#FFFFFF';
+let letterGridPalette = [];    // teintes d'accent relues dans le CSS
+let letterGridTints = new Map(); // "col,row" -> { color, until }
+let letterGridPainted = [];    // cases peintes au dernier rendu, pour y tirer les teintes
+let letterGridNextTint = 0;
+
+function letterGridRandLetter(exclude) {
+  let l;
+  do { l = LETTER_GRID_LETTERS[(Math.random() * LETTER_GRID_LETTERS.length) | 0]; }
+  while (l === exclude);
+  return l;
+}
+
+function letterGridHash(x, y, seed) {
+  let h = (x * 374761393 + y * 668265263 + seed * 2147483647) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  h = h ^ (h >>> 16);
+  return ((h >>> 0) / 4294967295) * 2 - 1; // [-1, 1]
+}
+
+// Vrai si la case est dans la matière à l'instant courant. Noyau à support
+// compact (k²) plutôt que le 1/d² habituel des métaballs : la traîne infinie
+// du 1/d² fait que des boules qui se recouvrent saturent toute la surface —
+// on obtenait un pavé plein quel que soit le seuil. Ici l'influence d'une
+// boule s'arrête net à son rayon, donc la silhouette est pilotable.
+function letterGridMask(cx, cy) {
+  let field = 0;
+  for (const b of letterGridBalls) {
+    const dx = (cx - b.x) / b.r, dy = (cy - b.y) / b.r;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < 1) { const k = 1 - d2; field += k * k; }
+  }
+  return field + letterGridHash(cx, cy, letterGridSeed) * LETTER_GRID_JITTER > LETTER_GRID_THRESHOLD;
+}
+
+function letterGridBuildBalls(cols, rowsVirtual) {
+  const n = Math.max(3, Math.round(rowsVirtual / LETTER_GRID_ROWS_PER_BLOB));
+  const [rmin, rmax] = LETTER_GRID_R;
+  const balls = [];
+  for (let i = 0; i < n; i++) {
+    const x0 = Math.random() * cols;
+    const y0 = Math.random() * rowsVirtual;
+    balls.push({ x0, y0, x: x0, y: y0, vx: 0, vy: 0, r: rmin + Math.random() * (rmax - rmin) });
+  }
+  return balls;
+}
+
+// Un point dissident occupe une case hors matière ET à l'écart de celle-ci :
+// une case simplement accolée au bord se lirait comme une aspérité du contour,
+// pas comme un point détaché.
+function letterGridStrayIsFree(col, row, strays) {
+  if (letterGridMask(col, row)) return false;
+  if (strays.some(s => s.col === col && s.row === row)) return false;
+  for (let dc = -2; dc <= 2; dc++) {
+    for (let dr = -2; dr <= 2; dr++) {
+      if (letterGridMask(col + dc, row + dr)) return false;
+    }
+  }
+  return true;
+}
+
+function letterGridBuildStrays(cols, rowsVirtual) {
+  const [min, max] = LETTER_GRID_STRAY_COUNT;
+  const target = min + ((Math.random() * (max - min + 1)) | 0);
+  const strays = [];
+  let attempts = 0;
+  while (strays.length < target && attempts < target * 120) {
+    attempts++;
+    const col = (Math.random() * cols) | 0;
+    const row = (Math.random() * rowsVirtual) | 0;
+    if (!letterGridStrayIsFree(col, row, strays)) continue;
+    strays.push({ col, row, letter: letterGridRandLetter() });
+  }
+  return strays;
+}
+
+function letterGridIsOpaque(el) {
+  const m = /^rgba?\(([^)]+)\)/.exec(getComputedStyle(el).backgroundColor);
+  if (!m) return false;
+  const parts = m[1].split(',').map(parseFloat);
+  return (parts.length > 3 ? parts[3] : 1) >= LETTER_GRID_OPAQUE_A;
+}
+
+// Marque les cases où le motif nuirait à la lecture. On ne protège QUE l'encre
+// posée sur fond transparent : un élément au fond opaque (textarea, panneau,
+// bouton plein) est au-dessus du canvas et masque déjà le motif — le bloquer
+// en plus ne gagnerait rien et coûterait de la surface.
+//
+// Et on relève les rectangles du TEXTE, pas les boîtes des éléments. La popup
+// est une pile de blocs pleine largeur : bloquer les boîtes revenait à évincer
+// le motif de 99 % de la surface (mesuré), alors qu'une ligne de texte courte
+// n'occupe qu'une fraction de sa boîte. C'est ce qui laisse au blob de quoi
+// exister entre et autour des lignes.
+//
+// Recalculé au changement de gabarit seulement (cf. ResizeObserver) : c'est
+// une lecture de layout, hors de question de la refaire à chaque tick.
+function letterGridComputeBlocked(host, cellCss) {
+  const blocked = new Set();
+  const wrap = document.querySelector('.wrap');
+  if (!wrap) return blocked;
+  const base = host.getBoundingClientRect();
+  const pad = LETTER_GRID_CLEAR_PAD;
+
+  const add = r => {
+    if (r.width <= 0 || r.height <= 0) return;
+    const c0 = Math.floor((r.left - base.left - pad) / cellCss);
+    const c1 = Math.ceil((r.right - base.left + pad) / cellCss);
+    const r0 = Math.floor((r.top - base.top - pad) / cellCss);
+    const r1 = Math.ceil((r.bottom - base.top + pad) / cellCss);
+    for (let col = c0; col < c1; col++) {
+      for (let row = r0; row < r1; row++) blocked.add(col + ',' + row);
+    }
+  };
+
+  // On s'arrête AVANT .wrap : son fond à elle est peint sous le canvas, il ne
+  // masque donc rien, contrairement à celui d'un élément de contenu.
+  const opaque = new Map();
+  const hidden = node => {
+    for (let el = node.parentElement; el && el !== wrap; el = el.parentElement) {
+      if (el.id === 'letterBg') return true;
+      let v = opaque.get(el);
+      if (v === undefined) { v = letterGridIsOpaque(el); opaque.set(el, v); }
+      if (v) return true;
+    }
+    return false;
+  };
+
+  const walker = document.createTreeWalker(wrap, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (!n.nodeValue.trim() || hidden(n)) continue;
+    range.selectNodeContents(n);
+    for (const r of range.getClientRects()) add(r);
+  }
+  // Le logo et les pictos : graphiques à fond transparent, donc à protéger
+  // comme du texte.
+  for (const img of wrap.querySelectorAll('img')) {
+    if (!hidden(img)) add(img.getBoundingClientRect());
+  }
+  return blocked;
+}
+
+function letterGridPaintCell(col, row, letter, cellPx, tint) {
+  const ctx = letterGridCtx;
+  const x = col * cellPx, y = row * cellPx;
+  ctx.fillStyle = tint && LETTER_GRID_TINT_TARGET === 'cell' ? tint : letterGridCellFill;
+  ctx.fillRect(x, y, cellPx, cellPx);
+  ctx.fillStyle = tint && LETTER_GRID_TINT_TARGET === 'letter' ? tint : letterGridLetterFill;
+  ctx.fillText(letter, x + cellPx / 2, y + cellPx / 2 + 1);
+}
+
+function letterGridTintOf(key, now) {
+  const t = letterGridTints.get(key);
+  return t && t.until > now ? t.color : null;
+}
+
+// Tire les prochaines cases colorées quand l'échéance est atteinte, puis fixe
+// l'échéance suivante. L'intervalle est retiré à chaque fois : un setInterval
+// donnerait une pulsation régulière, or c'est justement l'irrégularité qui
+// fait que l'œil ne l'anticipe pas. On pioche dans les cases réellement
+// peintes au rendu précédent — colorer une case vide ne se verrait pas.
+function letterGridScheduleTints(now, processing) {
+  if (now < letterGridNextTint) return;
+  const [every0, every1] = processing ? LETTER_GRID_TINT_BUSY_EVERY_MS : LETTER_GRID_TINT_EVERY_MS;
+  letterGridNextTint = now + every0 + Math.random() * (every1 - every0);
+
+  for (const [key, t] of letterGridTints) {
+    if (t.until <= now) letterGridTints.delete(key);
+  }
+  if (!letterGridPainted.length || !letterGridPalette.length) return;
+
+  const [cmin, cmax] = processing ? LETTER_GRID_TINT_BUSY_CELLS : LETTER_GRID_TINT_CELLS;
+  const [life0, life1] = processing ? LETTER_GRID_TINT_BUSY_LIFE_MS : LETTER_GRID_TINT_LIFE_MS;
+  const room = Math.floor(letterGridPainted.length * LETTER_GRID_TINT_MAX_SHARE) - letterGridTints.size;
+  const n = Math.min(cmin + ((Math.random() * (cmax - cmin + 1)) | 0), room);
+  for (let i = 0; i < n; i++) {
+    letterGridTints.set(letterGridPainted[(Math.random() * letterGridPainted.length) | 0], {
+      color: letterGridPalette[(Math.random() * letterGridPalette.length) | 0],
+      until: now + life0 + Math.random() * (life1 - life0),
+    });
+  }
+}
+
+function letterGridRedraw() {
+  const cellPx = letterGridCanvas.width / letterGridCols;
+  const now = performance.now();
+  letterGridCtx.clearRect(0, 0, letterGridCanvas.width, letterGridCanvas.height);
+  letterGridPainted.length = 0;
+  for (let col = 0; col < letterGridCols; col++) {
+    for (let row = 0; row < letterGridRows; row++) {
+      const key = col + ',' + row;
+      if (letterGridBlocked.has(key)) continue;
+      if (!letterGridMask(col, row)) continue;
+      letterGridPainted.push(key);
+      letterGridPaintCell(col, row, letterGridRandLetter(), cellPx, letterGridTintOf(key, now));
+    }
+  }
+  for (const s of letterGridStrays) {
+    if (s.row >= letterGridRows) continue;
+    const key = s.col + ',' + s.row;
+    if (letterGridBlocked.has(key)) continue;
+    letterGridPainted.push(key);
+    s.letter = letterGridRandLetter(s.letter);
+    letterGridPaintCell(s.col, s.row, s.letter, cellPx, letterGridTintOf(key, now));
+  }
+}
+
+// Déplace une boule d'un tick. Pendant le traitement : la vitesse dérive par
+// petits pas (accélération aléatoire bornée), jamais la position directement
+// — c'est ce qui donne un mouvement continu plutôt que des sauts. Chaque boule
+// reste tenue en laisse autour de sa maison (DRIFT_RANGE, avec rebond sur la
+// limite), sinon elles finiraient toutes par se rassembler ou sortir du cadre.
+// Au repos : retour exponentiel vers la maison, jusqu'à s'y superposer pile.
+function letterGridStepBall(b, processing) {
+  if (processing) {
+    b.vx += (Math.random() * 2 - 1) * LETTER_GRID_DRIFT_ACCEL;
+    b.vy += (Math.random() * 2 - 1) * LETTER_GRID_DRIFT_ACCEL;
+    const speed = Math.hypot(b.vx, b.vy);
+    if (speed > LETTER_GRID_DRIFT_MAX) {
+      b.vx = (b.vx / speed) * LETTER_GRID_DRIFT_MAX;
+      b.vy = (b.vy / speed) * LETTER_GRID_DRIFT_MAX;
+    }
+    b.x += b.vx;
+    b.y += b.vy;
+    const R = LETTER_GRID_DRIFT_RANGE;
+    if (b.x < b.x0 - R) { b.x = b.x0 - R; b.vx = Math.abs(b.vx); }
+    if (b.x > b.x0 + R) { b.x = b.x0 + R; b.vx = -Math.abs(b.vx); }
+    if (b.y < b.y0 - R) { b.y = b.y0 - R; b.vy = Math.abs(b.vy); }
+    if (b.y > b.y0 + R) { b.y = b.y0 + R; b.vy = -Math.abs(b.vy); }
+  } else {
+    b.vx = 0; b.vy = 0;
+    b.x += (b.x0 - b.x) * LETTER_GRID_EASE;
+    b.y += (b.y0 - b.y) * LETTER_GRID_EASE;
+    if (Math.abs(b.x0 - b.x) < 0.02 && Math.abs(b.y0 - b.y) < 0.02) { b.x = b.x0; b.y = b.y0; }
+  }
+}
+
+function letterGridTick() {
+  const processing = document.body.classList.contains('processing');
+  for (const b of letterGridBalls) letterGridStepBall(b, processing);
+  letterGridScheduleTints(performance.now(), processing);
+  letterGridRedraw();
+}
+
+// Redimensionne le canvas sur la boîte courante de .wrap et relit l'occupation
+// de l'UI. Le motif lui-même n'est PAS rejoué : les boules gardent leur
+// position maison, on découvre seulement plus (ou moins) de lignes.
+function letterGridResize() {
+  const host = $('letterBg');
+  if (!host || !letterGridCanvas) return;
+  const w = host.clientWidth, h = host.clientHeight;
+  if (!w || !h) return;
+
+  // Tout se calcule en pixels device : dpr fractionnaire (1.25, 1.5…) sinon
+  // les cases retombent sur des pixels device fractionnaires malgré des
+  // coordonnées CSS entières, ce qui laisse un interstice d'un sous-pixel
+  // entre cases adjacentes (constaté à l'écran).
+  const dpr = window.devicePixelRatio || 1;
+  const cellPx = Math.round(LETTER_GRID_CELL * dpr);
+  letterGridCols = Math.ceil((w * dpr) / cellPx);
+  letterGridRows = Math.ceil((h * dpr) / cellPx);
+  letterGridCanvas.width = letterGridCols * cellPx;
+  letterGridCanvas.height = letterGridRows * cellPx;
+  letterGridCanvas.style.width = letterGridCanvas.width / dpr + 'px';
+  letterGridCanvas.style.height = letterGridCanvas.height / dpr + 'px';
+
+  // Redimensionner un canvas réinitialise son contexte : police et alignement
+  // sont à reposer, sinon le texte repart en 10px sans-serif calé en haut à
+  // gauche.
+  const css = getComputedStyle(document.body);
+  letterGridCtx.textAlign = 'center';
+  letterGridCtx.textBaseline = 'middle';
+  letterGridCtx.font = `${Math.round(LETTER_GRID_FONT_PX * dpr)}px ${css.fontFamily}`;
+  letterGridCellFill = css.getPropertyValue('--seal').trim() || '#000105';
+  letterGridLetterFill = css.getPropertyValue('--paper').trim() || '#FFFFFF';
+  letterGridPalette = LETTER_GRID_TINT_VARS
+    .map(v => css.getPropertyValue(v).trim())
+    .filter(Boolean);
+
+  letterGridBlocked = letterGridComputeBlocked(host, cellPx / dpr);
+  letterGridRedraw();
+}
+
+function letterGridMount() {
+  const host = $('letterBg');
+  if (!host || !host.clientWidth) return;
+
+  letterGridCanvas = document.createElement('canvas');
+  host.appendChild(letterGridCanvas);
+  letterGridCtx = letterGridCanvas.getContext('2d');
+
+  const dpr = window.devicePixelRatio || 1;
+  const cellPx = Math.round(LETTER_GRID_CELL * dpr);
+  const cols = Math.ceil((host.clientWidth * dpr) / cellPx);
+  const rowsVirtual = Math.ceil(LETTER_GRID_VIRTUAL_PX / LETTER_GRID_CELL);
+
+  letterGridSeed = (Math.random() * 1e6) | 0;
+  letterGridBalls = letterGridBuildBalls(cols, rowsVirtual);
+  letterGridStrays = letterGridBuildStrays(cols, rowsVirtual);
+  letterGridResize();
+
+  // La popup change de gabarit sans arrêt (résultats, <details>, bascule de
+  // mode) : sans ça le canvas garderait la taille d'ouverture et l'évidement
+  // pointerait sur des éléments qui ont bougé.
+  let resizeT = null;
+  new ResizeObserver(() => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(letterGridResize, 120);
+  }).observe(document.querySelector('.wrap'));
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    letterGridTimer = setInterval(letterGridTick, LETTER_GRID_TICK_MS);
+  }
+}
+letterGridMount();
+
+// Ne fait plus que marquer l'état pour letterGridTick ci-dessus — le bandeau
+// tourne en continu, indépendamment du traitement.
 function setProcessing(on) {
   document.body.classList.toggle('processing', !!on);
 }
@@ -745,7 +1125,7 @@ async function processFile() {
     // chemin indépendant de l'extraction Markdown. Une seule passe de détection
     // à l'intérieur de reconstructPdf. Sortie binaire .pdf (pas copiable texte).
     if (ext === 'pdf' && $('pdfModePreserve')?.checked) {
-      fileSetStatus('Chargement du modèle et reconstruction du PDF…');
+      fileSetStatus('Reconstruction du PDF…');
       await ensureNER();
       const { reconstructPdf } = await import('../files/pdf-reconstruct.js');
       const pdflib = await import('pdf-lib');
@@ -781,7 +1161,7 @@ async function processFile() {
       return;
     }
 
-    fileSetStatus('Chargement du modèle et détection en cours…');
+    fileSetStatus('Détection en cours…');
     await ensureNER();
     const { results, mapping } = await anonymizeUnits(units, {
       nerPipeline: nerPipe,
@@ -816,7 +1196,7 @@ async function processFile() {
     fileOutBlob = null;
     $('fileResults').hidden = true;
     $('dragCard').hidden = true;
-    fileSetStatus('Le traitement a échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
+    fileSetStatus('Traitement échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
   } finally {
     setProcessing(false);
     setFileProgress(null);
@@ -892,7 +1272,7 @@ $('fileCopyBtn').addEventListener('click', async () => {
 $('dragCard').addEventListener('click', () => {
   if (!fileOutBlob) return;
   window.parent.postMessage({ clarenceDeliverFile: { blob: fileOutBlob, name: fileOutName } }, '*');
-  fileSetStatus('Tentative de livraison dans la page…');
+  fileSetStatus('Envoi dans la page…');
 });
 
 window.addEventListener('message', ev => {

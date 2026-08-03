@@ -188,6 +188,21 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
+    // Identifiants ÉTUDIANTS français, constatés sur un vrai certificat de
+    // scolarité. Deux formats voisins sur le même document :
+    //   « Id. National : 080924167CD »  (INE : 9 chiffres + 2 lettres, ou 11
+    //                                    chiffres pour l'ancien format BEA)
+    //   « N° Etudiant : 12201603 »      (numéro propre à l'établissement)
+    // Ces valeurs suivent un élève toute sa scolarité et servent de clé de
+    // rapprochement entre fichiers : elles identifient aussi sûrement qu'un nom.
+    // Le libellé est indispensable — « 12201603 » nu est une suite de chiffres
+    // banale qu'on ne masquerait pas sans lui.
+    type: 'ID_NATIONAL',
+    re: /(?:id\.?\s*national|(?:num[ée]ro|n[°º]|no\.?)\s*(?:national\s*d?['’]?\s*)?[ée]tudiant|national\s*d['’]\s*[ée]tudiant|\bINE\b|\bBEA\b)\s*[:=]?\s*(\d{8,11}[A-Z]{0,2})\b/gi,
+    extract: 1,
+    validate: null
+  },
+  {
     // Identifiant interne ALPHANUMÉRIQUE annoncé par un libellé — le cas
     // qu'aucun catalogue de motifs ne peut deviner (« account identifier
     // CUST-849204-X » : la forme est propre à l'organisation, seul le libellé

@@ -194,6 +194,21 @@ var REGEX_PATTERNS = [
     validate: null
   },
   {
+    // Identifiants ÉTUDIANTS français, constatés sur un vrai certificat de
+    // scolarité. Deux formats voisins sur le même document :
+    //   « Id. National : 080924167CD »  (INE : 9 chiffres + 2 lettres, ou 11
+    //                                    chiffres pour l'ancien format BEA)
+    //   « N° Etudiant : 12201603 »      (numéro propre à l'établissement)
+    // Ces valeurs suivent un élève toute sa scolarité et servent de clé de
+    // rapprochement entre fichiers : elles identifient aussi sûrement qu'un nom.
+    // Le libellé est indispensable — « 12201603 » nu est une suite de chiffres
+    // banale qu'on ne masquerait pas sans lui.
+    type: "ID_NATIONAL",
+    re: /(?:id\.?\s*national|(?:num[ée]ro|n[°º]|no\.?)\s*(?:national\s*d?['’]?\s*)?[ée]tudiant|national\s*d['’]\s*[ée]tudiant|\bINE\b|\bBEA\b)\s*[:=]?\s*(\d{8,11}[A-Z]{0,2})\b/gi,
+    extract: 1,
+    validate: null
+  },
+  {
     // Identifiant interne ALPHANUMÉRIQUE annoncé par un libellé — le cas
     // qu'aucun catalogue de motifs ne peut deviner (« account identifier
     // CUST-849204-X » : la forme est propre à l'organisation, seul le libellé
@@ -4003,15 +4018,35 @@ function maskText(text, entities, opts = {}) {
     cursor = e.end;
   }
   out += text.slice(cursor);
-  const ordered = [...mapping].sort((a, b) => b.value.length - a.value.length);
-  for (const { placeholder, value } of ordered) {
-    const re = new RegExp(
-      "(?<![\\p{L}\\p{N}_])" + escapeRe(value) + "(?![\\p{L}\\p{N}_])",
-      "gu"
-    );
-    out = out.replace(re, placeholder);
+  const spans = propagatedSpans(out, mapping);
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const s = spans[i];
+    out = out.slice(0, s.start) + s.placeholder + out.slice(s.end);
   }
   return { masked: out, mapping };
+}
+function propagatedSpans(text, mapping, occupied = []) {
+  const spans = [];
+  const taken = occupied.map((o) => ({ start: o.start, end: o.end }));
+  const ordered = [...mapping].sort((a, b) => b.value.length - a.value.length);
+  for (const { placeholder, value } of ordered) {
+    if (!value) continue;
+    const re = new RegExp(
+      "(?<![\\p{L}\\p{N}_])" + escapeRe(value) + "(?![\\p{L}\\p{N}_])",
+      "giu"
+    );
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const start = m.index;
+      const end = start + m[0].length;
+      if (!taken.some((t) => start < t.end && end > t.start)) {
+        spans.push({ start, end, placeholder });
+        taken.push({ start, end });
+      }
+      if (re.lastIndex === m.index) re.lastIndex++;
+    }
+  }
+  return spans.sort((a, b) => a.start - b.start);
 }
 function reinject(text, mapping) {
   if (!mapping.length) return text;
@@ -4034,5 +4069,6 @@ export {
   forcedMasks,
   filterByRules,
   maskText,
+  propagatedSpans,
   reinject
 };

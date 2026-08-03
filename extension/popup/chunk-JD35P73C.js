@@ -6,8 +6,9 @@ import {
   forcedMasks,
   maskText,
   mergeEntities,
+  propagatedSpans,
   selectActive
-} from "./chunk-RB6ZNCL6.js";
+} from "./chunk-GNBP3IMQ.js";
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\n\uE000\uE004\uE000\n";
@@ -63,6 +64,13 @@ async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTe
       end: e.end - range.start,
       placeholder: placeholderByEntity.get(`${e.type}|${e.value}`)
     });
+  }
+  for (let i = 0; i < nonEmpty.length; i++) {
+    const dejaVues = entitiesByUnitId.get(ranges[i].id);
+    for (const s of propagatedSpans(nonEmpty[i].text, mapping, dejaVues)) {
+      dejaVues.push(s);
+    }
+    dejaVues.sort((a, b) => a.start - b.start);
   }
   const maskedParts = masked.split(UNIT_SEP);
   const results = nonEmpty.map((u, i) => ({

@@ -55,20 +55,58 @@ export function maskText(text, entities, opts = {}) {
   }
   out += text.slice(cursor);
 
-  // Passe 2 — propagation : toute occurrence restante d'une valeur déjà mappée
-  // est masquée aussi (rattrape les ratés de détection sur les répétitions).
-  // Valeurs les plus longues d'abord ("Rose Fontaine" avant "Rose") ;
-  // frontières Unicode incluant "_" pour ne jamais matcher à l'intérieur
-  // d'un placeholder déjà posé ([NIR_1], etc.) ni en milieu de mot (Lyonnais).
-  const ordered = [...mapping].sort((a, b) => b.value.length - a.value.length);
-  for (const { placeholder, value } of ordered) {
-    const re = new RegExp(
-      '(?<![\\p{L}\\p{N}_])' + escapeRe(value) + '(?![\\p{L}\\p{N}_])', 'gu'
-    );
-    out = out.replace(re, placeholder);
+  // Passe 2 — propagation (voir propagatedSpans). Appliquée de droite à gauche
+  // pour que les positions calculées restent valides pendant la substitution.
+  const spans = propagatedSpans(out, mapping);
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const s = spans[i];
+    out = out.slice(0, s.start) + s.placeholder + out.slice(s.end);
   }
 
   return { masked: out, mapping };
+}
+
+// Propagation : toute occurrence d'une valeur DÉJÀ mappée est masquée aussi,
+// même là où la détection l'a ratée (répétition sans contexte, titre de page…).
+//
+// Partagé entre maskText et anonymizeUnits, et c'est le POINT CRITIQUE : les
+// adaptateurs qui réécrivent un fichier (PDF reconstruit, DOCX) ne repartent
+// pas de la chaîne masquée mais de la liste d'entités. Tant que la propagation
+// ne vivait que dans maskText, ces occurrences fuyaient dans le fichier final
+// alors qu'elles étaient bien masquées dans l'aperçu — constaté sur un vrai
+// rapport de stage, où un nom de tuteur détecté page 5 restait en clair
+// page 1. Une seule implémentation, donc, qui ne peut plus diverger.
+//
+// - valeurs les plus longues d'abord (« Rose Fontaine » avant « Rose ») ;
+// - frontières Unicode incluant « _ » : jamais de match à l'intérieur d'un
+//   placeholder déjà posé ([NIR_1]) ni en milieu de mot (Lyonnais) ;
+// - INSENSIBLE À LA CASSE : « Meteojob » et « meteojob » dans une URL sont la
+//   même entité. Sans ça, la seconde était masquée et la première laissée en
+//   clair dans le même document (constaté).
+//
+// occupied : spans déjà couverts, à ne pas re-masquer (entités détectées).
+// Retourne [{ start, end, placeholder }] trié, sans chevauchement.
+export function propagatedSpans(text, mapping, occupied = []) {
+  const spans = [];
+  const taken = occupied.map(o => ({ start: o.start, end: o.end }));
+  const ordered = [...mapping].sort((a, b) => b.value.length - a.value.length);
+  for (const { placeholder, value } of ordered) {
+    if (!value) continue;
+    const re = new RegExp(
+      '(?<![\\p{L}\\p{N}_])' + escapeRe(value) + '(?![\\p{L}\\p{N}_])', 'giu'
+    );
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const start = m.index;
+      const end = start + m[0].length;
+      if (!taken.some(t => start < t.end && end > t.start)) {
+        spans.push({ start, end, placeholder });
+        taken.push({ start, end });
+      }
+      if (re.lastIndex === m.index) re.lastIndex++; // garde-fou anti-boucle
+    }
+  }
+  return spans.sort((a, b) => a.start - b.start);
 }
 
 // Désanonymisation : substitution en UN SEUL passage — une valeur restituée

@@ -8,7 +8,7 @@ import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER } from '../engine/ner.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, forcedMasks, filterByRules } from '../engine/selection.js';
-import { maskText } from '../engine/masking.js';
+import { maskText, propagatedSpans } from '../engine/masking.js';
 
 // Séparateur entre unités : caractères de la zone d'usage privé Unicode,
 // jamais présents dans un vrai document, encadrés de retours à la ligne.
@@ -115,6 +115,22 @@ export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, 
       end: e.end - range.start,
       placeholder: placeholderByEntity.get(`${e.type}|${e.value}`)
     });
+  }
+
+  // Complément INDISPENSABLE : les occurrences rattrapées par la propagation.
+  // Les adaptateurs qui réécrivent un fichier (PDF reconstruit, DOCX) partent
+  // de cette liste d'entités, PAS de maskedText. Sans ce complément, une valeur
+  // détectée dans une unité mais répétée sans contexte dans une autre restait
+  // EN CLAIR dans le fichier produit, tout en apparaissant masquée dans
+  // l'aperçu — divergence constatée sur un vrai rapport de stage (nom du
+  // tuteur masqué page 5, en clair page 1). C'était la limite « connue et
+  // assumée » documentée ici ; elle ne l'est plus, parce que c'est une fuite.
+  for (let i = 0; i < nonEmpty.length; i++) {
+    const dejaVues = entitiesByUnitId.get(ranges[i].id);
+    for (const s of propagatedSpans(nonEmpty[i].text, mapping, dejaVues)) {
+      dejaVues.push(s);
+    }
+    dejaVues.sort((a, b) => a.start - b.start);
   }
 
   const maskedParts = masked.split(UNIT_SEP);

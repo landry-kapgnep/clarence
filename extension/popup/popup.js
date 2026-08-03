@@ -13,7 +13,7 @@ import {
   reinject,
   selectActive,
   snapToWordBoundaries
-} from "./chunk-RB6ZNCL6.js";
+} from "./chunk-GNBP3IMQ.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -714,7 +714,7 @@ function createNerWorker() {
     const msg = ev.data || {};
     if (msg.type === "progress" && msg.total) {
       const pct = Math.round(msg.loaded / msg.total * 100);
-      setStatus(`T\xE9l\xE9chargement du mod\xE8le de d\xE9tection\u2026 ${pct} % (une seule fois, mis en cache ensuite)`);
+      setStatus(`T\xE9l\xE9chargement du mod\xE8le\u2026 ${pct} % (une seule fois)`);
       const ratio = msg.loaded / msg.total;
       if (!$("fileMode")?.hidden) setFileProgress(ratio);
       else setTextProgress(ratio);
@@ -760,7 +760,7 @@ function startEngine(engine) {
 async function ensureNER() {
   if (nerPipe || nerLoading) return;
   nerLoading = true;
-  setStatus("Chargement du mod\xE8le de d\xE9tection des noms (~180 Mo au premier usage, mis en cache ensuite)\u2026");
+  setStatus("Chargement du mod\xE8le\u2026 (~180 Mo au premier usage)");
   try {
     let worker = null;
     try {
@@ -794,7 +794,7 @@ async function analyze() {
   const text = $("input").value;
   if (!text.trim()) return;
   if (text.length > MAX_INPUT) {
-    setStatus(`Texte trop long (${text.length.toLocaleString("fr-FR")} caract\xE8res, plafond ${MAX_INPUT.toLocaleString("fr-FR")}). D\xE9coupe-le en plusieurs passages.`, "error");
+    setStatus(`Texte trop long (${text.length.toLocaleString("fr-FR")} caract\xE8res, max ${MAX_INPUT.toLocaleString("fr-FR")}). D\xE9coupe-le.`, "error");
     return;
   }
   if (text !== currentText) {
@@ -821,7 +821,7 @@ async function analyze() {
   } catch (err) {
     console.error(err);
     $("results").hidden = true;
-    setStatus("L\u2019analyse a \xE9chou\xE9 \u2014 rien n\u2019a \xE9t\xE9 masqu\xE9, ne colle pas ce texte tel quel. D\xE9tail dans la console.", "error");
+    setStatus("Analyse \xE9chou\xE9e \u2014 rien n\u2019a \xE9t\xE9 masqu\xE9, ne colle pas ce texte. D\xE9tail dans la console.", "error");
   } finally {
     setProcessing(false);
     setTextProgress(null);
@@ -832,7 +832,7 @@ function maskSelection() {
   const ta = $("input");
   const s = ta.selectionStart, e = ta.selectionEnd;
   if (ta.value !== currentText) {
-    setStatus("Lance d\u2019abord Analyser, puis s\xE9lectionne le passage \xE0 masquer.", "error");
+    setStatus("Lance Analyser d\u2019abord, puis s\xE9lectionne le passage.", "error");
     return;
   }
   if (s === e) {
@@ -855,7 +855,7 @@ function maskSelection() {
 async function copyClean() {
   const { masked } = maskText(currentText, activeEntities(), maskOptions());
   await navigator.clipboard.writeText(masked);
-  $("copyStatus").textContent = "Copi\xE9 \u2014 v\xE9rifie une derni\xE8re fois avant de coller.";
+  $("copyStatus").textContent = "Copi\xE9 \u2014 relis avant de coller.";
   $("copyStatus").className = "status active";
   setTimeout(() => {
     $("copyStatus").textContent = "";
@@ -918,7 +918,7 @@ $("reinjectBtn").addEventListener("click", () => {
   if (!txt.trim()) return;
   const st = $("reinjectStatus");
   if (!lastMapping.length) {
-    st.textContent = "Aucune table de correspondance en m\xE9moire \u2014 analyse un texte d\u2019abord.";
+    st.textContent = "Aucune correspondance en m\xE9moire \u2014 analyse un texte d\u2019abord.";
     st.className = "status error";
     return;
   }
@@ -994,7 +994,7 @@ function invalidateFileResult() {
   fileOutName = "";
   $("fileResults").hidden = true;
   $("dragCard").hidden = true;
-  fileSetStatus("Options modifi\xE9es \u2014 relance l\u2019anonymisation pour obtenir le fichier correspondant.");
+  fileSetStatus("Options modifi\xE9es \u2014 relance l\u2019anonymisation.");
 }
 for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle"]) {
   $(id)?.addEventListener("change", invalidateFileResult);
@@ -1019,11 +1019,11 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus("Format non pris en charge. Formats accept\xE9s : CSV, Excel (.xlsx), Word (.docx), PDF (\u2192 .md), images .jpg/.png (m\xE9tadonn\xE9es).", "error");
+    fileSetStatus("Format non pris en charge. Accept\xE9 : CSV, XLSX, DOCX, PDF, JPG/PNG.", "error");
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
-    fileSetStatus(`Fichier trop volumineux (${humanSize(file.size)}, plafond ${humanSize(MAX_FILE_BYTES)}).`, "error");
+    fileSetStatus(`Fichier trop lourd (${humanSize(file.size)}, max ${humanSize(MAX_FILE_BYTES)}).`, "error");
     return;
   }
   chosenFile = file;
@@ -1080,6 +1080,299 @@ var nerProgress = ({ done, total }) => {
   setFileProgress(total ? done / total : null);
   return new Promise((r) => setTimeout(r, 0));
 };
+var LETTER_GRID_LETTERS = ["c", "l", "a", "r", "e", "n"];
+var LETTER_GRID_CELL = 16;
+var LETTER_GRID_FONT_PX = 9;
+var LETTER_GRID_TICK_MS = 300;
+var LETTER_GRID_VIRTUAL_PX = 1800;
+var LETTER_GRID_ROWS_PER_BLOB = 4.5;
+var LETTER_GRID_R = [2.4, 4.6];
+var LETTER_GRID_THRESHOLD = 0.34;
+var LETTER_GRID_JITTER = 0.22;
+var LETTER_GRID_STRAY_COUNT = [4, 7];
+var LETTER_GRID_DRIFT_MAX = 0.1;
+var LETTER_GRID_DRIFT_ACCEL = 0.03;
+var LETTER_GRID_DRIFT_RANGE = 1.4;
+var LETTER_GRID_EASE = 0.22;
+var LETTER_GRID_CLEAR_PAD = 0;
+var LETTER_GRID_OPAQUE_A = 0.85;
+var LETTER_GRID_TINT_VARS = ["--seal-lit", "--moss", "--tan", "--paper-dim"];
+var LETTER_GRID_TINT_TARGET = "cell";
+var LETTER_GRID_TINT_EVERY_MS = [1600, 4400];
+var LETTER_GRID_TINT_CELLS = [1, 3];
+var LETTER_GRID_TINT_LIFE_MS = [600, 1800];
+var LETTER_GRID_TINT_BUSY_EVERY_MS = [280, 900];
+var LETTER_GRID_TINT_BUSY_CELLS = [3, 7];
+var LETTER_GRID_TINT_BUSY_LIFE_MS = [900, 2400];
+var LETTER_GRID_TINT_MAX_SHARE = 0.3;
+var letterGridCanvas = null;
+var letterGridCtx = null;
+var letterGridTimer = null;
+var letterGridCols = 0;
+var letterGridRows = 0;
+var letterGridSeed = 0;
+var letterGridBalls = null;
+var letterGridStrays = null;
+var letterGridBlocked = null;
+var letterGridCellFill = "#000105";
+var letterGridLetterFill = "#FFFFFF";
+var letterGridPalette = [];
+var letterGridTints = /* @__PURE__ */ new Map();
+var letterGridPainted = [];
+var letterGridNextTint = 0;
+function letterGridRandLetter(exclude) {
+  let l;
+  do {
+    l = LETTER_GRID_LETTERS[Math.random() * LETTER_GRID_LETTERS.length | 0];
+  } while (l === exclude);
+  return l;
+}
+function letterGridHash(x, y, seed) {
+  let h = x * 374761393 + y * 668265263 + seed * 2147483647 | 0;
+  h = (h ^ h >>> 13) * 1274126177;
+  h = h ^ h >>> 16;
+  return (h >>> 0) / 4294967295 * 2 - 1;
+}
+function letterGridMask(cx, cy) {
+  let field = 0;
+  for (const b of letterGridBalls) {
+    const dx = (cx - b.x) / b.r, dy = (cy - b.y) / b.r;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < 1) {
+      const k = 1 - d2;
+      field += k * k;
+    }
+  }
+  return field + letterGridHash(cx, cy, letterGridSeed) * LETTER_GRID_JITTER > LETTER_GRID_THRESHOLD;
+}
+function letterGridBuildBalls(cols, rowsVirtual) {
+  const n = Math.max(3, Math.round(rowsVirtual / LETTER_GRID_ROWS_PER_BLOB));
+  const [rmin, rmax] = LETTER_GRID_R;
+  const balls = [];
+  for (let i = 0; i < n; i++) {
+    const x0 = Math.random() * cols;
+    const y0 = Math.random() * rowsVirtual;
+    balls.push({ x0, y0, x: x0, y: y0, vx: 0, vy: 0, r: rmin + Math.random() * (rmax - rmin) });
+  }
+  return balls;
+}
+function letterGridStrayIsFree(col, row, strays) {
+  if (letterGridMask(col, row)) return false;
+  if (strays.some((s) => s.col === col && s.row === row)) return false;
+  for (let dc = -2; dc <= 2; dc++) {
+    for (let dr = -2; dr <= 2; dr++) {
+      if (letterGridMask(col + dc, row + dr)) return false;
+    }
+  }
+  return true;
+}
+function letterGridBuildStrays(cols, rowsVirtual) {
+  const [min, max] = LETTER_GRID_STRAY_COUNT;
+  const target = min + (Math.random() * (max - min + 1) | 0);
+  const strays = [];
+  let attempts = 0;
+  while (strays.length < target && attempts < target * 120) {
+    attempts++;
+    const col = Math.random() * cols | 0;
+    const row = Math.random() * rowsVirtual | 0;
+    if (!letterGridStrayIsFree(col, row, strays)) continue;
+    strays.push({ col, row, letter: letterGridRandLetter() });
+  }
+  return strays;
+}
+function letterGridIsOpaque(el) {
+  const m = /^rgba?\(([^)]+)\)/.exec(getComputedStyle(el).backgroundColor);
+  if (!m) return false;
+  const parts = m[1].split(",").map(parseFloat);
+  return (parts.length > 3 ? parts[3] : 1) >= LETTER_GRID_OPAQUE_A;
+}
+function letterGridComputeBlocked(host, cellCss) {
+  const blocked = /* @__PURE__ */ new Set();
+  const wrap = document.querySelector(".wrap");
+  if (!wrap) return blocked;
+  const base = host.getBoundingClientRect();
+  const pad = LETTER_GRID_CLEAR_PAD;
+  const add = (r) => {
+    if (r.width <= 0 || r.height <= 0) return;
+    const c0 = Math.floor((r.left - base.left - pad) / cellCss);
+    const c1 = Math.ceil((r.right - base.left + pad) / cellCss);
+    const r0 = Math.floor((r.top - base.top - pad) / cellCss);
+    const r1 = Math.ceil((r.bottom - base.top + pad) / cellCss);
+    for (let col = c0; col < c1; col++) {
+      for (let row = r0; row < r1; row++) blocked.add(col + "," + row);
+    }
+  };
+  const opaque = /* @__PURE__ */ new Map();
+  const hidden = (node) => {
+    for (let el = node.parentElement; el && el !== wrap; el = el.parentElement) {
+      if (el.id === "letterBg") return true;
+      let v = opaque.get(el);
+      if (v === void 0) {
+        v = letterGridIsOpaque(el);
+        opaque.set(el, v);
+      }
+      if (v) return true;
+    }
+    return false;
+  };
+  const walker = document.createTreeWalker(wrap, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (!n.nodeValue.trim() || hidden(n)) continue;
+    range.selectNodeContents(n);
+    for (const r of range.getClientRects()) add(r);
+  }
+  for (const img of wrap.querySelectorAll("img")) {
+    if (!hidden(img)) add(img.getBoundingClientRect());
+  }
+  return blocked;
+}
+function letterGridPaintCell(col, row, letter, cellPx, tint) {
+  const ctx = letterGridCtx;
+  const x = col * cellPx, y = row * cellPx;
+  ctx.fillStyle = tint && LETTER_GRID_TINT_TARGET === "cell" ? tint : letterGridCellFill;
+  ctx.fillRect(x, y, cellPx, cellPx);
+  ctx.fillStyle = tint && LETTER_GRID_TINT_TARGET === "letter" ? tint : letterGridLetterFill;
+  ctx.fillText(letter, x + cellPx / 2, y + cellPx / 2 + 1);
+}
+function letterGridTintOf(key, now) {
+  const t = letterGridTints.get(key);
+  return t && t.until > now ? t.color : null;
+}
+function letterGridScheduleTints(now, processing) {
+  if (now < letterGridNextTint) return;
+  const [every0, every1] = processing ? LETTER_GRID_TINT_BUSY_EVERY_MS : LETTER_GRID_TINT_EVERY_MS;
+  letterGridNextTint = now + every0 + Math.random() * (every1 - every0);
+  for (const [key, t] of letterGridTints) {
+    if (t.until <= now) letterGridTints.delete(key);
+  }
+  if (!letterGridPainted.length || !letterGridPalette.length) return;
+  const [cmin, cmax] = processing ? LETTER_GRID_TINT_BUSY_CELLS : LETTER_GRID_TINT_CELLS;
+  const [life0, life1] = processing ? LETTER_GRID_TINT_BUSY_LIFE_MS : LETTER_GRID_TINT_LIFE_MS;
+  const room = Math.floor(letterGridPainted.length * LETTER_GRID_TINT_MAX_SHARE) - letterGridTints.size;
+  const n = Math.min(cmin + (Math.random() * (cmax - cmin + 1) | 0), room);
+  for (let i = 0; i < n; i++) {
+    letterGridTints.set(letterGridPainted[Math.random() * letterGridPainted.length | 0], {
+      color: letterGridPalette[Math.random() * letterGridPalette.length | 0],
+      until: now + life0 + Math.random() * (life1 - life0)
+    });
+  }
+}
+function letterGridRedraw() {
+  const cellPx = letterGridCanvas.width / letterGridCols;
+  const now = performance.now();
+  letterGridCtx.clearRect(0, 0, letterGridCanvas.width, letterGridCanvas.height);
+  letterGridPainted.length = 0;
+  for (let col = 0; col < letterGridCols; col++) {
+    for (let row = 0; row < letterGridRows; row++) {
+      const key = col + "," + row;
+      if (letterGridBlocked.has(key)) continue;
+      if (!letterGridMask(col, row)) continue;
+      letterGridPainted.push(key);
+      letterGridPaintCell(col, row, letterGridRandLetter(), cellPx, letterGridTintOf(key, now));
+    }
+  }
+  for (const s of letterGridStrays) {
+    if (s.row >= letterGridRows) continue;
+    const key = s.col + "," + s.row;
+    if (letterGridBlocked.has(key)) continue;
+    letterGridPainted.push(key);
+    s.letter = letterGridRandLetter(s.letter);
+    letterGridPaintCell(s.col, s.row, s.letter, cellPx, letterGridTintOf(key, now));
+  }
+}
+function letterGridStepBall(b, processing) {
+  if (processing) {
+    b.vx += (Math.random() * 2 - 1) * LETTER_GRID_DRIFT_ACCEL;
+    b.vy += (Math.random() * 2 - 1) * LETTER_GRID_DRIFT_ACCEL;
+    const speed = Math.hypot(b.vx, b.vy);
+    if (speed > LETTER_GRID_DRIFT_MAX) {
+      b.vx = b.vx / speed * LETTER_GRID_DRIFT_MAX;
+      b.vy = b.vy / speed * LETTER_GRID_DRIFT_MAX;
+    }
+    b.x += b.vx;
+    b.y += b.vy;
+    const R = LETTER_GRID_DRIFT_RANGE;
+    if (b.x < b.x0 - R) {
+      b.x = b.x0 - R;
+      b.vx = Math.abs(b.vx);
+    }
+    if (b.x > b.x0 + R) {
+      b.x = b.x0 + R;
+      b.vx = -Math.abs(b.vx);
+    }
+    if (b.y < b.y0 - R) {
+      b.y = b.y0 - R;
+      b.vy = Math.abs(b.vy);
+    }
+    if (b.y > b.y0 + R) {
+      b.y = b.y0 + R;
+      b.vy = -Math.abs(b.vy);
+    }
+  } else {
+    b.vx = 0;
+    b.vy = 0;
+    b.x += (b.x0 - b.x) * LETTER_GRID_EASE;
+    b.y += (b.y0 - b.y) * LETTER_GRID_EASE;
+    if (Math.abs(b.x0 - b.x) < 0.02 && Math.abs(b.y0 - b.y) < 0.02) {
+      b.x = b.x0;
+      b.y = b.y0;
+    }
+  }
+}
+function letterGridTick() {
+  const processing = document.body.classList.contains("processing");
+  for (const b of letterGridBalls) letterGridStepBall(b, processing);
+  letterGridScheduleTints(performance.now(), processing);
+  letterGridRedraw();
+}
+function letterGridResize() {
+  const host = $("letterBg");
+  if (!host || !letterGridCanvas) return;
+  const w = host.clientWidth, h = host.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cellPx = Math.round(LETTER_GRID_CELL * dpr);
+  letterGridCols = Math.ceil(w * dpr / cellPx);
+  letterGridRows = Math.ceil(h * dpr / cellPx);
+  letterGridCanvas.width = letterGridCols * cellPx;
+  letterGridCanvas.height = letterGridRows * cellPx;
+  letterGridCanvas.style.width = letterGridCanvas.width / dpr + "px";
+  letterGridCanvas.style.height = letterGridCanvas.height / dpr + "px";
+  const css = getComputedStyle(document.body);
+  letterGridCtx.textAlign = "center";
+  letterGridCtx.textBaseline = "middle";
+  letterGridCtx.font = `${Math.round(LETTER_GRID_FONT_PX * dpr)}px ${css.fontFamily}`;
+  letterGridCellFill = css.getPropertyValue("--seal").trim() || "#000105";
+  letterGridLetterFill = css.getPropertyValue("--paper").trim() || "#FFFFFF";
+  letterGridPalette = LETTER_GRID_TINT_VARS.map((v) => css.getPropertyValue(v).trim()).filter(Boolean);
+  letterGridBlocked = letterGridComputeBlocked(host, cellPx / dpr);
+  letterGridRedraw();
+}
+function letterGridMount() {
+  const host = $("letterBg");
+  if (!host || !host.clientWidth) return;
+  letterGridCanvas = document.createElement("canvas");
+  host.appendChild(letterGridCanvas);
+  letterGridCtx = letterGridCanvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const cellPx = Math.round(LETTER_GRID_CELL * dpr);
+  const cols = Math.ceil(host.clientWidth * dpr / cellPx);
+  const rowsVirtual = Math.ceil(LETTER_GRID_VIRTUAL_PX / LETTER_GRID_CELL);
+  letterGridSeed = Math.random() * 1e6 | 0;
+  letterGridBalls = letterGridBuildBalls(cols, rowsVirtual);
+  letterGridStrays = letterGridBuildStrays(cols, rowsVirtual);
+  letterGridResize();
+  let resizeT = null;
+  new ResizeObserver(() => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(letterGridResize, 120);
+  }).observe(document.querySelector(".wrap"));
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    letterGridTimer = setInterval(letterGridTick, LETTER_GRID_TICK_MS);
+  }
+}
+letterGridMount();
 function setProcessing(on) {
   document.body.classList.toggle("processing", !!on);
 }
@@ -1120,9 +1413,9 @@ async function processFile() {
       return;
     }
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
-      fileSetStatus("Chargement du mod\xE8le et reconstruction du PDF\u2026");
+      fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-RIUDGJGT.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-SIDHVBWK.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -1140,14 +1433,14 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-AP32PJVB.js");
+    const { anonymizeUnits } = await import("./anonymize-units-EJ7CLJ6B.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
       fileSetStatus("Aucun texte \xE0 analyser dans ce fichier.", "error");
       return;
     }
-    fileSetStatus("Chargement du mod\xE8le et d\xE9tection en cours\u2026");
+    fileSetStatus("D\xE9tection en cours\u2026");
     await ensureNER();
     const { results, mapping } = await anonymizeUnits(units, {
       nerPipeline: nerPipe,
@@ -1173,7 +1466,7 @@ async function processFile() {
     fileOutBlob = null;
     $("fileResults").hidden = true;
     $("dragCard").hidden = true;
-    fileSetStatus("Le traitement a \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
+    fileSetStatus("Traitement \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
   } finally {
     setProcessing(false);
     setFileProgress(null);
@@ -1229,7 +1522,7 @@ $("fileCopyBtn").addEventListener("click", async () => {
 $("dragCard").addEventListener("click", () => {
   if (!fileOutBlob) return;
   window.parent.postMessage({ clarenceDeliverFile: { blob: fileOutBlob, name: fileOutName } }, "*");
-  fileSetStatus("Tentative de livraison dans la page\u2026");
+  fileSetStatus("Envoi dans la page\u2026");
 });
 window.addEventListener("message", (ev) => {
   const result = ev.data && ev.data.clarenceDeliverResult;

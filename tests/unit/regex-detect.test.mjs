@@ -204,3 +204,14 @@ test('BIC détecté (8 et 11 caractères), mot en majuscules rejeté', () => {
   assert.equal(findMerged('virement via SOGEFRPP hier', 'BIC').length, 1, 'BIC nu à pays connu, sans libellé');
   assert.equal(findMerged('MOT PASSWORD ici', 'BIC').length, 0, 'PASSWORD ne doit pas matcher (pays "WO" inconnu, pas de libellé)');
 });
+
+// --- Identifiants étudiants FR (constatés sur un vrai certificat de scolarité).
+test('INE et numéro étudiant captés par leur libellé', () => {
+  assert.equal(find('Id. National : 080924167CD', 'ID_NATIONAL')[0].value, '080924167CD');
+  assert.equal(find('N° Etudiant : 12201603', 'ID_NATIONAL')[0].value, '12201603');
+  assert.equal(find('INE 1234567890A', 'ID_NATIONAL')[0].value, '1234567890A');
+});
+
+test('une suite de chiffres SANS libellé étudiant n\'est pas un identifiant', () => {
+  assert.equal(find('le total atteint 12201603 unités', 'ID_NATIONAL').length, 0);
+});

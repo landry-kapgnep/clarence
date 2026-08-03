@@ -9,14 +9,13 @@
 <body>
   <div class="popup-shell">
     <div class="wrap">
-      <!-- Fond animé pendant le traitement (body.processing). Décoratif :
-           aria-hidden, et statique si l'utilisateur a demandé moins de
-           mouvement. Placé DANS .wrap car son fond est opaque. -->
-      <div id="waveBg" aria-hidden="true">
-        <span class="wave wave-1"></span>
-        <span class="wave wave-2"></span>
-        <span class="wave wave-3"></span>
-      </div>
+      <!-- Bandeau permanent en haut de la popup : grille de lettres
+           (c/l/a/r/e/n), peuplée en JS (voir main.js). Le pattern est tiré
+           une fois à l'ouverture et ne bouge plus jusqu'à la fermeture ; seul
+           le traitement (body.processing) le fait onduler temporairement.
+           Décoratif : aria-hidden, et coupé si l'utilisateur a demandé moins
+           de mouvement. Placé DANS .wrap car son fond est opaque. -->
+      <div id="letterBg" aria-hidden="true"></div>
       <header>
         <img class="logo" src="img/ClarenceLogoW.png" alt="Clarence">
         <div>
@@ -25,8 +24,8 @@
       </header>
 
       <div class="mode-switch">
-        <button class="mode-btn txtmode active" id="modeTextBtn" data-mode="text"><img src="img/ClarenceTxt.png"></button>
-        <button class="mode-btn filemode" id="modeFileBtn" data-mode="file"><img src="img/ClarenceFl.png"></button>
+        <button class="mode-btn txtmode active" id="modeTextBtn" data-mode="text"><img src="img/ClarenceTxtW.png"></button>
+        <button class="mode-btn filemode" id="modeFileBtn" data-mode="file"><img src="img/ClarenceW.png"></button>
       </div>
 
       <div id="textMode">
@@ -35,7 +34,7 @@
 
       <div class="controls">
         <button class="btn-primary" id="analyzeBtn">Analyser</button>
-        <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage dans la zone de texte puis clique ici">Masquer la sélection</button>
+        <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage, puis clique ici">Masquer la sélection</button>
       </div>
       <div id="textOptions" hidden>
       <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
@@ -48,11 +47,11 @@
         <div class="custom-body">
           <div class="profile-bar">
             <select id="profileSelect" class="profile-select"></select>
-            <button class="btn-ghost profile-btn" id="profileSaveBtn" title="Enregistrer les réglages actuels dans ce profil">Enregistrer</button>
-            <button class="btn-ghost profile-btn" id="profileNewBtn" title="Créer un nouveau profil à partir des réglages actuels">Nouveau</button>
+            <button class="btn-ghost profile-btn" id="profileSaveBtn" title="Enregistrer dans ce profil">Enregistrer</button>
+            <button class="btn-ghost profile-btn" id="profileNewBtn" title="Nouveau profil depuis ces réglages">Nouveau</button>
             <button class="btn-ghost profile-btn" id="profileDeleteBtn" title="Supprimer ce profil">Suppr.</button>
           </div>
-          <div class="field-label">Types à masquer <span class="hint">(décoche pour garder visible)</span></div>
+          <div class="field-label">Types à masquer <span class="hint">(décoche pour garder)</span></div>
           <div id="typeToggles" class="type-toggles"></div>
           <label class="field-label" for="alwaysMask">Toujours masquer <span class="hint">(un terme par ligne)</span></label>
           <textarea id="alwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
@@ -93,7 +92,7 @@
         <div class="dropzone" id="dropzone">
           <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf,.jpg,.jpeg,.png" hidden>
           <p class="dropzone-main">Glisse ou <button class="link-btn" id="filePickBtn">parcours tes fichiers</button></p>
-          <p class="hint">CSV, .xlsx, .docx, .pdf (→ .md), images .jpg/.png (métadonnées)</p>
+          <p class="hint">CSV, XLSX, DOCX, PDF, JPG/PNG</p>
         </div>
 
         <div id="fileOptions" hidden>
@@ -101,11 +100,11 @@
           <div class="field-label">Sortie PDF</div>
           <label class="hint" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModeLight" value="md" checked>
-            Alléger (Markdown, texte seul — moins de tokens, images perdues)
+            Alléger — Markdown, sans les images
           </label>
           <label class="hint" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModePreserve" value="pdf">
-            Préserver mise en page + images (PDF reconstruit — rendu approximatif ; le contenu des images n'est pas anonymisé)
+            Garder la mise en page — rendu approximatif, le texte dans les images reste visible
           </label>
         </div>
         <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
@@ -118,11 +117,11 @@
           <div class="custom-body">
             <div class="profile-bar">
               <select id="fileProfileSelect" class="profile-select"></select>
-              <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer les réglages actuels dans ce profil">Enregistrer</button>
-              <button class="btn-ghost profile-btn" id="fileProfileNewBtn" title="Créer un nouveau profil à partir des réglages actuels">Nouveau</button>
+              <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer dans ce profil">Enregistrer</button>
+              <button class="btn-ghost profile-btn" id="fileProfileNewBtn" title="Nouveau profil depuis ces réglages">Nouveau</button>
               <button class="btn-ghost profile-btn" id="fileProfileDeleteBtn" title="Supprimer ce profil">Suppr.</button>
             </div>
-            <div class="field-label">Types à masquer <span class="hint">(décoche pour garder visible)</span></div>
+            <div class="field-label">Types à masquer <span class="hint">(décoche pour garder)</span></div>
             <div id="fileTypeToggles" class="type-toggles"></div>
             <label class="field-label" for="fileAlwaysMask">Toujours masquer <span class="hint">(un terme par ligne)</span></label>
             <textarea id="fileAlwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
@@ -135,8 +134,8 @@
         <div id="fileChosen" hidden>
           <p class="file-chosen-line"><strong id="fileName"></strong> <span class="hint" id="fileSize"></span></p>
           <div class="controls">
-            <button class="btn-primary" id="fileAnalyzeBtn">Anonymiser le fichier</button>
-            <button class="btn-ghost" id="fileResetBtn">Choisir un autre fichier</button>
+            <button class="btn-primary" id="fileAnalyzeBtn">Anonymiser</button>
+            <button class="btn-ghost" id="fileResetBtn">Changer de fichier</button>
           </div>
         </div>
 
@@ -149,20 +148,20 @@
         <section id="fileResults" hidden>
           <h2>Fichier anonymisé</h2>
           <div class="controls">
-            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png">Télécharger le fichier propre</button>
+            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png">Télécharger</button>
             <button class="btn-ghost" id="fileCopyBtn" hidden>Copier le texte</button>
             <span class="status" id="fileCopyStatus"></span>
           </div>
           <button id="dragCard" class="drag-card" hidden>
             <span class="drag-card-icon">⇢</span>
-            <span>Envoyer directement dans la page (expérimental)</span>
+            <span>Envoyer dans la page (expérimental)</span>
           </button>
           <p class="status" id="fileSummary"></p>
           <details>
             <summary>Données masquées</summary>
             <div id="fileMappingWrap"></div>
           </details>
-          <p class="hint">⚠ Relisez le fichier téléchargé avant de l'utiliser</p>
+          <p class="hint">⚠ Relis le fichier avant de l'utiliser</p>
         </section>
       </div>
 
@@ -171,8 +170,8 @@
           <button class="btn-ghost" id="toggleReinjectBtn">Désanonymiser une réponse…</button>
         </div>
         <div id="reinjectZone" hidden>
-          <h2>Désanonymiser <span class="hint">- Les vrais noms et valeurs sont restitués</span></h2>
-          <textarea id="reinjectInput" placeholder="Colle ici la réponse contenant [PERSONNE_1], [EMAIL_1]…"></textarea>
+          <h2>Désanonymiser <span class="hint">— les vraies valeurs sont restituées</span></h2>
+          <textarea id="reinjectInput" placeholder="Colle la réponse contenant [PERSONNE_1], [EMAIL_1]…"></textarea>
           <div class="controls">
             <button class="btn-primary" id="reinjectBtn">Désanonymiser</button>
             <button class="btn-ghost" id="copyReinjectBtn" hidden>Copier le résultat</button>
@@ -184,8 +183,8 @@
       </section>
 
       <footer>
-        ⚠ Vérifiez toujours le rendu anonymisé avant de l'utiliser. La détection n'est pas infaillible.
-        Vous pouvez ajouter un masque manuellement en sélectionnant un passage du texte.
+        ⚠ Relis le rendu avant de l'utiliser : la détection n'est pas infaillible.
+        Sélectionne un passage pour le masquer à la main.
         <button class="link-btn" id="identityOpenBtn">Mon identité</button>
       </footer>
     </div>
@@ -209,13 +208,11 @@
   <div class="overlay" id="identityOverlay" hidden>
     <div class="overlay-card">
       <div class="overlay-head">
-        <strong>Ton identité, masquée une bonne fois pour toutes</strong>
+        <strong>Ton identité, masquée une fois pour toutes</strong>
       </div>
       <div class="overlay-body identity-body">
-        <p class="hint">Déclare ici ce qui t'identifie : ces valeurs seront <strong>toujours masquées</strong>,
-        dans chaque texte et chaque fichier — sans dépendre de la détection automatique.
-        Tout reste <strong>sur cette machine</strong> (stockage local du navigateur), rien n'est jamais envoyé nulle part,
-        et tu peux tout effacer d'un clic.</p>
+        <p class="hint">Ces valeurs seront <strong>toujours masquées</strong>, sans dépendre de la détection.
+        Tout reste <strong>sur cette machine</strong> — rien n'est envoyé nulle part, et tu peux tout effacer d'un clic.</p>
         <div id="identityFields" class="identity-fields"></div>
         <div class="controls identity-actions">
           <button class="btn-primary" id="identitySaveBtn">Enregistrer</button>

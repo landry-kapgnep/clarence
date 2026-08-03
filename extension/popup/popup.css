@@ -8,12 +8,12 @@
 
   /* Surfaces */
   --bg-page: #050506;          /* fond hors coquille */
-  --bg-shell: #0A0A0D;         /* .wrap */
+  --bg-shell: linear-gradient(180deg, var(--seal), rgba(19, 19, 29, 0.5));        /* .wrap */
   --bg-field: #0F1014;         /* champs, panneaux */
   --bg-raised: #171A22;        /* segment actif, chips */
 
   /* Sceau : la teinte du projet, + une version éclaircie lisible sur noir */
-  --seal: #252A41;
+  --seal: #000105;
   --seal-lit: #8D93D6;
   --moss: #8CA882;             /* détections modèle */
   --tan: #C2A06A;              /* masques manuels, actions expérimentales */
@@ -31,9 +31,51 @@
   --control-hover-bg: rgba(237, 230, 211, 0.10);
 
   --font-body: 'Syne Mono', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Motif de coin réutilisable pour les surfaces de l’UI. */
+  --ui-corner-size: 10px;
+  --ui-corner-color: var(--seal-lit);
+  --ui-corner-opacity: 0.7;
+  --ui-corner-mark: "";      /* ex. "•", "✕", "+", "·" */
+  --ui-corner-mark-size: 10px;
+  --ui-corner-mark-weight: 500;
 }
 
 * { box-sizing: border-box; }
+
+* , *::before, *::after {
+  border-radius: 0 !important;
+}
+
+:is(.wrap, .panel, .overlay-card, .dropzone, .drag-card, .mode-switch, .profile-select, textarea, select, button, .type-chip, .engine-badge, .profile-bar) {
+  position: relative;
+  isolation: isolate;
+}
+
+:is(.wrap, .panel, .overlay-card, .dropzone, .drag-card, .mode-switch, .profile-select, textarea, select, button, .type-chip, .engine-badge, .profile-bar)::before,
+:is(.wrap, .panel, .overlay-card, .dropzone, .drag-card, .mode-switch, .profile-select, textarea, select, button, .type-chip, .engine-badge, .profile-bar)::after {
+  content: var(--ui-corner-mark);
+  position: absolute;
+  top: 4px;
+  width: auto;
+  height: auto;
+  color: color-mix(in srgb, var(--ui-corner-color) 70%, transparent);
+  font-size: var(--ui-corner-mark-size);
+  font-weight: var(--ui-corner-mark-weight);
+  line-height: 1;
+  opacity: var(--ui-corner-opacity);
+  pointer-events: none;
+  z-index: 0;
+}
+
+:is(.wrap, .panel, .overlay-card, .dropzone, .drag-card, .mode-switch, .profile-select, textarea, select, button, .type-chip, .engine-badge, .profile-bar)::before {
+  left: 4px;
+}
+
+:is(.wrap, .panel, .overlay-card, .dropzone, .drag-card, .mode-switch, .profile-select, textarea, select, button, .type-chip, .engine-badge, .profile-bar)::after {
+  right: 4px;
+  transform: rotate(90deg);
+}
 
 html, body { margin: 0; padding: 0; }
 html { background: transparent; }
@@ -75,10 +117,9 @@ body {
 
 .wrap {
   padding: 16px;
-  border-radius: 22px;
+  border-radius: 22 px;
   background: var(--bg-shell);
   /* Trame d'impression en blanc : la sensation papier passe par elle. */
-  background-image: url("img/PrintGridTransparentW.png");
   background-size: contain;
   background-repeat: no-repeat;
   position: relative;
@@ -288,7 +329,7 @@ body.panel-mode .popup-shell {
   display: flex;
   flex-direction: column;
   background: var(--bg-shell);
-  background-image: url("img/PrintGridTransparentW.png");
+  /*background-image: url("img/PrintGridTransparentW.png");*/
   background-size: contain;
   background-repeat: no-repeat;
   border: 1px solid var(--line);
@@ -370,7 +411,7 @@ body.panel-mode .popup-shell {
   padding: 22px 14px;
   text-align: center;
   background: var(--bg-field);
-  background-image: url("img/PrintGridTransparentW.png");
+  /*background-image: url("img/PrintGridTransparentW.png");*/
   background-size: 22px;
   transition: border-color .18s ease, background-color .18s ease;
 }
@@ -551,70 +592,33 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   transition: transform .18s ease-out;
 }
 
-/* ===== Fond animé pendant le traitement =====
-   Vagues aériennes, en fond de toute la popup. Uniquement transform et
-   opacity : ces deux propriétés sont composées par le GPU, donc l'animation
-   ne dispute PAS le thread principal, déjà occupé par la détection — c'est
-   exactement le moment où une animation mal faite se mettrait à saccader. */
-/* Vit DANS .wrap (déjà position:relative) : le fond de .wrap est opaque, des
-   vagues placées derrière lui seraient purement et simplement invisibles. */
-#waveBg {
+/* ===== Fond permanent : grille de lettres =====
+   Grille de lettres (c/l/a/r/e/n) sur toute la surface de la popup, en blobs
+   de lampe à lave. Toujours visible, pas seulement pendant le traitement :
+   c'est le traitement (body.processing, voir main.js) qui met les blobs en
+   dérive, le reste du temps ils tiennent le pattern tiré à l'ouverture.
+   Peinte sur un unique <canvas> (posé par main.js), pas des <div> par case :
+   des cases jointives en DOM laissent un interstice d'un sous-pixel dès que
+   l'échelle d'affichage n'est pas entière, ce qu'un seul bitmap ne peut pas
+   faire. La taille du canvas est fixée en JS (pixels device exacts, pas de
+   pourcentage) pour la même raison — un étirement CSS réintroduirait du
+   flou/sous-pixel.
+
+   LISIBILITÉ. Deux réglages, à ajuster ensemble :
+   - --letter-bg-opacity ci-dessous, l'atténuation d'ensemble. Le motif doit
+     rester une texture ; au-delà de ~0.35 il concurrence le contenu.
+   - LETTER_GRID_CLEAR_PAD dans main.js, la marge d'évidement autour des
+     éléments d'UI — le motif ne se dessine jamais derrière eux. */
+/* Vit DANS .wrap (déjà position:relative) : le fond de .wrap est opaque, une
+   grille placée derrière lui serait purement et simplement invisible. */
+#letterBg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  border-radius: 22px;
   overflow: hidden;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity .6s ease;
-}
-body.processing #waveBg { opacity: 1; }
-
-/* Tout le contenu de la coquille passe au-dessus des vagues. */
-.wrap > *:not(#waveBg) { position: relative; z-index: 1; }
-
-#waveBg .wave {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 150%;
-  aspect-ratio: 1;
-  border-radius: 42% 58% 55% 45% / 48% 44% 56% 52%;
-  filter: blur(34px);
-  will-change: transform;
-  transform: translate(-50%, -50%);
-}
-#waveBg .wave-1 {
-  background: radial-gradient(circle at 35% 40%, var(--seal-lit), transparent 68%);
-  opacity: .22;
-  animation: wave-drift-a 13s ease-in-out infinite;
-}
-#waveBg .wave-2 {
-  background: radial-gradient(circle at 65% 55%, var(--moss), transparent 66%);
-  opacity: .16;
-  animation: wave-drift-b 17s ease-in-out infinite;
-}
-#waveBg .wave-3 {
-  background: radial-gradient(circle at 50% 70%, var(--seal), transparent 72%);
-  opacity: .3;
-  animation: wave-drift-c 21s ease-in-out infinite;
+  opacity: var(--letter-bg-opacity, 0.28);
 }
 
-@keyframes wave-drift-a {
-  0%, 100% { transform: translate(-58%, -54%) rotate(0deg) scale(1); }
-  50%      { transform: translate(-44%, -46%) rotate(140deg) scale(1.14); }
-}
-@keyframes wave-drift-b {
-  0%, 100% { transform: translate(-44%, -48%) rotate(0deg) scale(1.08); }
-  50%      { transform: translate(-56%, -56%) rotate(-120deg) scale(.94); }
-}
-@keyframes wave-drift-c {
-  0%, 100% { transform: translate(-50%, -42%) rotate(20deg) scale(.96); }
-  50%      { transform: translate(-50%, -60%) rotate(200deg) scale(1.2); }
-}
-
-/* Accessibilité : mouvement supprimé si l'utilisateur l'a demandé au système.
-   La présence visuelle reste (dégradé statique), l'agitation disparaît. */
-@media (prefers-reduced-motion: reduce) {
-  #waveBg .wave { animation: none; }
-}
+/* Tout le contenu de la coquille passe au-dessus de la grille. */
+.wrap > *:not(#letterBg) { position: relative; z-index: 1; }

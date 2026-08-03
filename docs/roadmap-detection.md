@@ -38,6 +38,62 @@ Le nom du propriétaire du CV **fuit à 3 endroits** — c'est le pire cas possi
 
 ---
 
+## ~~P0bis — La propagation ne franchissait pas la frontière fichier~~ ✅ CORRIGÉ (03/08/2026)
+
+Constaté sur un **vrai rapport de stage de 26 pages**. Le nom du tuteur était
+masqué dans les paragraphes rédigés mais restait **EN CLAIR en page de garde**,
+où il n'apparaît qu'après un libellé (`Tuteur entreprise : <nom>`), sans phrase
+autour. Symptôme trompeur : « parfois masqué, parfois pas », pour la même
+valeur dans le même document.
+
+**Cause** : `maskText` propage bien toute valeur déjà mappée sur ses autres
+occurrences — mais uniquement dans la CHAÎNE `masked`. `anonymizeUnits`
+construisait la liste `entities` à partir des seules entités *détectées*. Or
+les adaptateurs qui réécrivent un fichier (PDF reconstruit, DOCX) repartent de
+`entities`, pas de `maskedText`. Les occurrences propagées fuyaient donc dans
+le fichier produit tout en apparaissant masquées dans l'aperçu — le pire cas :
+l'utilisateur a la preuve visuelle que c'est masqué.
+
+C'était la limite « connue et assumée » documentée dans `anonymize-units.js`.
+Elle ne l'est plus : sur un document réel c'est une fuite.
+
+Corrigé : la propagation est extraite dans `propagatedSpans` (`masking.js`),
+**une seule implémentation** partagée par `maskText` et `anonymizeUnits`, qui
+complète désormais les entités par unité. Rendue **insensible à la casse** au
+passage — dans le même rapport, `meteojob` (dans une URL) était masqué alors
+que `Meteojob` en début de ligne restait en clair.
+
+---
+
+## P2bis — Sur-masquage sur les pages à faible contexte (constaté, non corrigé)
+
+Même rapport, page de sommaire :
+`[PERSONNE_10] INTRODUCTION… 1) L'[SANTE_1]… 1.3 [LIEU_2] F… 3.2 La Vérité [LIEU_4]`
+
+« Terrain » pris pour un LIEU, un titre de section pour une donnée de SANTÉ.
+Ailleurs dans le même document, « la vérité terrain » en contexte rédigé est
+correctement laissée intacte. Confirme P1bis en l'élargissant : le phénomène
+touche TOUS les groupes de labels, et les sommaires/légendes d'annexes sont
+les pires cas (fragments courts, aucune phrase).
+
+Ne pas traiter par les seuils (cf. P1bis). La piste utile est en amont :
+ne pas soumettre au modèle les unités qui n'ont pas de structure de phrase
+(ligne de sommaire avec points de suite, légende numérotée), ou les traiter
+avec un jeu de labels réduit.
+
+---
+
+## P2ter — Lacunes de couverture constatées sur documents réels (non corrigé)
+
+- **Adresse mal typée** : `99 Av. [PERSONNE_4], [CODE_POSTAL_1] Villetaneuse` —
+  le nom de voie est étiqueté PERSONNE au lieu d'ADRESSE, et le numéro reste
+  en clair. Le motif ADRESSE ne couvre pas la forme abrégée « Av. ».
+- **Noms de produits/plateformes tiers jamais détectés** : « OSCAR CRM »,
+  « Scholaro ». Ni technos génériques (qu'on garde volontairement), ni noms
+  d'entreprise reconnaissables — angle mort réel du modèle.
+
+---
+
 ## P1bis — La fragmentation PDF empoisonne la détection (MESURÉ, 02/08/2026)
 
 Constaté en soumettant un **vrai CV multi-colonnes** au moteur GLiNER. Le
