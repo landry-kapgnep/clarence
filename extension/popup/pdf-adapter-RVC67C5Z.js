@@ -4,11 +4,12 @@ import {
   applyMask,
   extractTextUnits,
   groupIntoLines,
+  isLineWrapHyphen,
   median,
   needsSpace,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-7H3FO5ON.js";
+} from "./chunk-USBZ7MNC.js";
 import "./chunk-PIRHQTI4.js";
 export {
   HEADING_SIZE_RATIO,
@@ -16,6 +17,7 @@ export {
   applyMask,
   extractTextUnits,
   groupIntoLines,
+  isLineWrapHyphen,
   median,
   needsSpace,
   splitIntoColumns,

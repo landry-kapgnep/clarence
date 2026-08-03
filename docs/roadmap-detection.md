@@ -156,7 +156,58 @@ avec un jeu de labels réduit.
 
 ---
 
-## P1bis — La fragmentation PDF empoisonne la détection (MESURÉ, 02/08/2026)
+## ~~P1bis — La fragmentation PDF empoisonne la détection~~ ✅ CORRIGÉ (03/08/2026)
+
+**Testé sur le vrai fichier qui avait servi à la mesure initiale.** Diagnostic
+en trois temps :
+
+1. Extraction brute (`groupIntoLines`, sans regroupement en paragraphes) : le
+   split de colonnes (`splitIntoColumns`) fonctionne correctement sur ce CV —
+   aucune fusion « CLÉSEXPÉRIENCES » constatée. Une seule anomalie de colonnage
+   relevée (l'intro pleine largeur isolée dans une 3e « colonne » à 2 lignes),
+   cosmétique, non traitée ici.
+2. Le vrai mécanisme, confirmé sur **8 occurrences réelles** dans ce document :
+   un mot coupé en FIN DE LIGNE par la justification typographique d'une
+   colonne étroite — `auto-` / `matisée`, `Fas-` / `tify`, `ap-` / `plicative`,
+   `ba-` / `ckend`, `détermi-` / `niste`, `n-` / `grammes`, `ex-` / `posant`,
+   `ali-` / `mentation`. **Ce n'est ni un problème de colonnage ni un problème
+   d'écart intra-ligne (`needsSpace`, déjà corrigé en P1)** — c'est une
+   troisième cause, jamais isolée jusqu'ici : la coupure survient ENTRE deux
+   lignes d'un même paragraphe, jamais traitée par la jointure existante.
+3. Signal fiable pour la détecter sans ambiguïté : un trait d'union COLLÉ à la
+   dernière lettre d'une ligne (`isLineWrapHyphen`, `pdf-adapter.js`), la ligne
+   suivante commençant par une minuscule. Un tiret de séparation réel est
+   toujours entouré d'espaces en français (« Anglais - C1 ») — il ne déclenche
+   jamais ce motif, donc aucune ambiguïté avec un tiret légitime.
+
+Corrigé dans les DEUX chemins qui construisent des paragraphes à partir de
+lignes (`groupIntoParagraphs` pour le Markdown, `paragraphToRuns` pour la
+reconstruction PDF) — ils avaient chacun leur propre logique de jointure et
+auraient pu diverger sans un point de correction partagé.
+
+**Vérifié sur le fichier réel après correctif** : les 8 mots ressortent
+recollés (« applicative », « automatisée », « Fastify », « backend »,
+« déterministe », « n-grammes », « exposant », « alimentation »). Le nom du
+candidat continue d'être masqué en entier (`[PERSONNE_1]`) — géré séparément
+par le seuil abaissé du groupe identité (P0), sans lien avec ce correctif.
+Reste du bruit résiduel sur ce document (« Sankey » en personne à 0,77,
+« donateurs » à 0,78, « espace public » à 0,83) : classe de défaut différente
+(mots ordinaires mal classés en contexte court), pas traitée ici.
+
+**Étendu au banc d'essai** : `cv-fr.pdf` reproduit désormais ce mécanisme
+précis (mot coupé sur deux lignes rapprochées), pour qu'une régression future
+soit détectée automatiquement par `npm run bench` plutôt que redécouverte sur
+un vrai fichier. A aussi révélé un angle mort du banc lui-même : sa relecture
+du PDF reconstruit joignait les fragments pdfjs avec un espace systématique,
+ce qui aurait signalé à tort le mot recollé comme manquant (la reconstruction
+dessine chaque fragment à sa position d'origine — limite de fidélité déjà
+documentée — donc un mot recollé pour la détection reste deux objets texte
+séparés dans le PDF final). Comparaison du banc rendue insensible aux espaces
+pour ne pas confondre un artefact de relecture avec une vraie régression.
+
+---
+
+## P1bis (historique) — mesure initiale, 02/08/2026
 
 Constaté en soumettant un **vrai CV multi-colonnes** au moteur GLiNER. Le
 modèle étiquette confiamment des fragments de mots **avec des scores plus

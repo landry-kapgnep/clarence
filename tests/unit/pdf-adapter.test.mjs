@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { extractTextUnits, applyMask, stripMetadata, groupIntoLines } from '../../src/files/pdf-adapter.js';
+import { extractTextUnits, applyMask, stripMetadata, groupIntoLines, isLineWrapHyphen } from '../../src/files/pdf-adapter.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
 
 // Items pdfjs synthétiques (transform = [a,b,c,d,x,y]) : reproduit de façon
@@ -23,6 +23,59 @@ test('P1 fragmentation : deux mots avec un vrai écart restent séparés', () =>
   const lines = groupIntoLines([item('Nom', 50, 700, 20), item('Prenom', 120, 700, 40)]);
   assert.equal(lines[0].text, 'Nom Prenom');
 });
+
+// --- P1bis : mot coupé en FIN DE LIGNE (typographie justifiée, colonne
+// étroite). Constaté sur un vrai CV multi-colonnes : « auto- » / « matisée »,
+// « Fas- » / « tify », « ap- » / « plicative » — soumis tel quel au modèle,
+// ces fragments sortent avec plus de confiance que le vrai nom du candidat
+// (« matisée » → donnée de santé 0,70 ; « plicative » → entreprise 0,70 ;
+// nom du candidat : 0,47).
+test('isLineWrapHyphen : trait d\'union collé + minuscule qui suit = coupure de mot', () => {
+  assert.equal(isLineWrapHyphen('évaluation auto-', 'matisée (~15 000 extractions)'), true);
+  assert.equal(isLineWrapHyphen('Stack : React.js, Fas-', 'tify, Prisma ORM'), true);
+  assert.equal(isLineWrapHyphen('logique ap-', 'plicative (Godot / Unity)'), true);
+});
+
+test('isLineWrapHyphen : un tiret de séparation réel (entouré d\'espaces) n\'est jamais une coupure', () => {
+  // Un vrai tiret de plage/séparation est TOUJOURS entouré d'espaces en
+  // français — signal qui le distingue sans ambiguïté d'un mot coupé.
+  assert.equal(isLineWrapHyphen('Anglais - C1 Cambridge Certificate', 'et Allemand'), false);
+  assert.equal(isLineWrapHyphen('Concours d’éloquence - Double lauréat (Sorbonne Paris', 'Nord).'), false);
+});
+
+test('isLineWrapHyphen : une ligne suivante qui commence par une MAJUSCULE n\'est pas une coupure', () => {
+  // Une coupure de mot continue toujours en minuscule ; une majuscule signale
+  // une nouvelle phrase ou un titre, pas la suite du même mot.
+  assert.equal(isLineWrapHyphen('Quelque chose qui finit par un tiret-', 'Nouvelle Phrase'), false);
+});
+
+test('groupIntoLines/paragraphes : un mot coupé en fin de ligne est RECOLLÉ, sans le trait d\'union', () => {
+  // Reproduit la géométrie réelle : deux lignes, écart Y d'interligne normal
+  // (même paragraphe), la première se terminant par un mot coupé.
+  const { units } = extractionParagraphesSynthetiques([
+    [item('Une évaluation auto-', 50, 700, 140)],
+    [item('matisée (~15 000 extractions).', 50, 684, 220)]
+  ]);
+  assert.equal(units[0].text, 'Une évaluation automatisée (~15 000 extractions).');
+});
+
+// Construit un faux extractTextUnits minimal à partir de LIGNES déjà groupées
+// (mêmes items qu'utilisés ailleurs dans ce fichier), pour tester le
+// regroupement en paragraphes sans dépendre d'un vrai PDF binaire.
+function extractionParagraphesSynthetiques(itemsParLigne) {
+  const items = itemsParLigne.flat();
+  const lines = groupIntoLines(items);
+  // Reproduit exactement la boucle de groupIntoParagraphs (non exportée) :
+  // sert de garde-fou si sa logique de jointure diverge un jour de celle-ci.
+  const paragraphs = [];
+  let current = null;
+  for (const line of lines) {
+    if (!current) { current = { text: line.text }; paragraphs.push(current); }
+    else if (isLineWrapHyphen(current.text, line.text)) current.text = current.text.slice(0, -1) + line.text;
+    else current.text += ' ' + line.text;
+  }
+  return { units: paragraphs };
+}
 
 const fixturePath = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'echantillon.pdf');
 const fxBuffer = () => new Uint8Array(readFileSync(fixturePath)).buffer;

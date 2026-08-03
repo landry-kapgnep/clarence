@@ -11,7 +11,7 @@
 // pdf-lib est injecté (deps) — comme DOMParser pour DOCX — pour rester testable
 // en Node. Le ré-encodage canvas des images (Stage B) est navigateur-only.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { groupIntoLines, splitIntoColumns, median, needsSpace, PARAGRAPH_GAP_RATIO, HEADING_SIZE_RATIO } from './pdf-adapter.js';
+import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, PARAGRAPH_GAP_RATIO, HEADING_SIZE_RATIO } from './pdf-adapter.js';
 import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { anonymizeUnits } from './anonymize-units.js';
 
@@ -61,11 +61,21 @@ function paragraphToRuns(para, id) {
   let n = 0;
   para.lines.forEach((line, li) => {
     line.parts.forEach((p, pi) => {
-      // Séparateur ' ' entre fragments : toujours entre deux lignes (frontière
-      // de mot), mais entre fragments d'UNE MÊME ligne uniquement s'il y a un
-      // vrai écart (needsSpace) — sinon on recolle les morceaux d'un même mot
-      // pour que la détection voie le mot entier (fix fuite partielle P1).
-      if (li > 0 && pi === 0) runs.push({ id: `s${n++}`, text: ' ', draw: false });
+      // Séparateur ' ' entre fragments : entre deux lignes (frontière de mot),
+      // SAUF si la ligne précédente se termine par un mot coupé en fin de
+      // ligne (isLineWrapHyphen) — le trait d'union collé au dernier fragment
+      // déjà poussé est alors retiré et les deux morceaux recollés sans
+      // espace, exactement comme pour needsSpace au sein d'une même ligne
+      // (fix fuite partielle P1/P1bis : sans ça, la détection voit « auto- »
+      // et « matisée » séparément au lieu d'« automatisée »).
+      if (li > 0 && pi === 0) {
+        const precedent = runs[runs.length - 1];
+        if (precedent && isLineWrapHyphen(precedent.text, p.str)) {
+          precedent.text = precedent.text.slice(0, -1);
+        } else {
+          runs.push({ id: `s${n++}`, text: ' ', draw: false });
+        }
+      }
       else if (pi > 0 && needsSpace(line.parts[pi - 1], p)) runs.push({ id: `s${n++}`, text: ' ', draw: false });
       runs.push({ id: `r${n++}`, text: p.str, draw: true, x: p.x, y: p.y, size: p.size });
     });

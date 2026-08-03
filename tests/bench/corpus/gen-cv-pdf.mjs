@@ -59,7 +59,13 @@ put('Git - GitHub - GitLab', G, 650, 8);
 put('Encadree par Sebastien Vaquier.', D, 650, 8);
 
 put('Linux - Bash', G, 638, 8);
-put('Stage chez Wobix Labs', D, 638, 8);
+put('Stage chez Wobix Labs, developpement d’une interface inno-', D, 638, 8);
+// Lignes RAPPROCHÉES (12pt d'écart, sous le seuil PARAGRAPH_GAP_RATIO*taille
+// comme les autres lignes de cette colonne) : même paragraphe, mot coupé en
+// fin de ligne — reproduit le mécanisme réel de P1bis (« auto- »/« matisée »
+// sur un vrai CV). Sans le correctif, « vante » isolée est soumise telle
+// quelle au modèle contextuel.
+put('vante pour la gestion des donnees clients.', D, 626, 8);
 
 put('FORMATION', G, 612, 10, true);
 put('Juin 2023 - Aout 2023', D, 612, 8);

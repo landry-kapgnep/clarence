@@ -72,3 +72,39 @@ test('reconstruction : caractères typographiques hors WinAnsi ne font pas plant
   assert.match(text, /\[EMAIL_1\]/);
   assert.ok(text.length > 0, 'la page a bien été reconstruite malgré les caractères spéciaux');
 });
+
+// --- P1bis : mot coupé en fin de ligne (typographie justifiée). Constaté sur
+// un vrai CV : « auto- » / « matisée » soumis séparément au modèle sortait à
+// 0,70 comme donnée de santé — AU-DESSUS du score du vrai nom du candidat
+// (0,47). Le chemin de RECONSTRUCTION a sa propre logique de jointure
+// (paragraphToRuns, positionnée) — testée ici séparément de groupIntoLines/
+// groupIntoParagraphs (pdf-adapter.test.mjs), qui ne couvrent que le Markdown.
+//
+// Lignes RAPPROCHÉES (14pt, sous le seuil PARAGRAPH_GAP_RATIO×taille) pour
+// rester dans le MÊME paragraphe — makePdf() espace ses lignes de 28pt,
+// volontairement large ailleurs dans ce fichier, ce qui déclencherait un
+// NOUVEAU paragraphe et ne testerait jamais la jointure inter-lignes.
+async function makePdfParagrapheSerre(lines) {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const page = doc.addPage([420, 320]);
+  let y = 280;
+  for (const l of lines) { page.drawText(l, { x: 40, y, size: 12, font }); y -= 14; }
+  return (await doc.save()).buffer;
+}
+
+test('reconstruction : un mot coupé en fin de ligne est recollé AVANT détection', async () => {
+  const inBuf = await makePdfParagrapheSerre([
+    'Une evaluation auto-',
+    'matisee des resultats.'
+  ]);
+  const fakePipe = async chunk => chunk.includes('automatisee')
+    ? [{ entity: 'B-MISC', word: 'chose', score: 0 }] // jamais déclenché : juste vérifier le texte vu par le pipeline
+    : [];
+  let texteRecu = null;
+  const espion = async chunk => { texteRecu = (texteRecu || '') + chunk; return fakePipe(chunk); };
+
+  await reconstructPdf(inBuf, { deps, nerPipeline: espion });
+  assert.match(texteRecu, /\bautomatisee\b/, 'le mot coupé n\'a pas été recollé avant détection : ' + JSON.stringify(texteRecu));
+  assert.doesNotMatch(texteRecu, /\bmatisee\b/, 'le fragment isolé "matisee" est encore soumis tel quel au modèle');
+});

@@ -31648,6 +31648,10 @@ function needsSpace(a, b) {
   const gap = b.x - (a.x + (a.width || 0));
   return gap > Math.max(1, (a.size || 10) * 0.2);
 }
+var FIN_DE_MOT_COUPE = new RegExp("\\p{L}-$", "u");
+function isLineWrapHyphen(texteAvant, texteApres) {
+  return FIN_DE_MOT_COUPE.test(texteAvant) && new RegExp("^\\p{Ll}", "u").test(texteApres);
+}
 function joinParts(parts) {
   let out = "";
   parts.forEach((p, i) => {
@@ -31693,6 +31697,8 @@ function groupIntoParagraphs(lines, dominantSize) {
     if (isNewParagraph) {
       current = { text: line.text, isHeading };
       paragraphs.push(current);
+    } else if (isLineWrapHyphen(current.text, line.text)) {
+      current.text = current.text.slice(0, -1) + line.text;
     } else {
       current.text += " " + line.text;
     }
@@ -31777,6 +31783,7 @@ export {
   PARAGRAPH_GAP_RATIO,
   HEADING_SIZE_RATIO,
   needsSpace,
+  isLineWrapHyphen,
   groupIntoLines,
   median,
   splitIntoColumns,

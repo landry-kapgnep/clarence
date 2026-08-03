@@ -106,7 +106,11 @@ export const CORPUS = [
     ],
     aGarder: [
       'Python', 'Docker', 'PostgreSQL', 'Git', 'Linux', 'FastAPI',
-      'BUT Informatique'
+      'BUT Informatique',
+      // Mot volontairement coupé en fin de ligne dans le PDF généré (voir
+      // gen-cv-pdf.mjs) : reproduit le mécanisme réel de P1bis. Doit ressortir
+      // RECOLLÉ ; s'il reste fragmenté (« vante » isolée), ce test le signale.
+      'innovante'
     ]
   }
 ];

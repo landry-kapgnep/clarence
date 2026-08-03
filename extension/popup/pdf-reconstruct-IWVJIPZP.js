@@ -9,10 +9,11 @@ import {
   PARAGRAPH_GAP_RATIO,
   getDocument,
   groupIntoLines,
+  isLineWrapHyphen,
   median,
   needsSpace,
   splitIntoColumns
-} from "./chunk-7H3FO5ON.js";
+} from "./chunk-USBZ7MNC.js";
 import {
   anonymizeUnits
 } from "./chunk-YUOU4GEP.js";
@@ -47,8 +48,14 @@ function paragraphToRuns(para, id) {
   let n = 0;
   para.lines.forEach((line, li) => {
     line.parts.forEach((p, pi) => {
-      if (li > 0 && pi === 0) runs.push({ id: `s${n++}`, text: " ", draw: false });
-      else if (pi > 0 && needsSpace(line.parts[pi - 1], p)) runs.push({ id: `s${n++}`, text: " ", draw: false });
+      if (li > 0 && pi === 0) {
+        const precedent = runs[runs.length - 1];
+        if (precedent && isLineWrapHyphen(precedent.text, p.str)) {
+          precedent.text = precedent.text.slice(0, -1);
+        } else {
+          runs.push({ id: `s${n++}`, text: " ", draw: false });
+        }
+      } else if (pi > 0 && needsSpace(line.parts[pi - 1], p)) runs.push({ id: `s${n++}`, text: " ", draw: false });
       runs.push({ id: `r${n++}`, text: p.str, draw: true, x: p.x, y: p.y, size: p.size });
     });
   });

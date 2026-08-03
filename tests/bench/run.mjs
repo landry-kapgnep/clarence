@@ -163,8 +163,19 @@ async function texteDuPdf(buffer) {
 }
 
 // Une valeur est « fuitée » si elle subsiste dans la sortie. Comparaison
-// insensible à la casse, comme la propagation du moteur.
-const presente = (sortie, valeur) => sortie.toLowerCase().includes(valeur.toLowerCase());
+// insensible à la casse ET aux espaces.
+//
+// Pourquoi insensible aux espaces : la reconstruction PDF dessine chaque
+// fragment à sa position D'ORIGINE (limite de fidélité déjà documentée et
+// acceptée) — un mot recollé par isLineWrapHyphen (« inno-» + « vante » →
+// « innovante ») reste donc deux OBJETS TEXTE séparés dans le PDF final,
+// à leurs positions de lignes respectives. Relu naïvement via
+// `items.map(i=>i.str).join(' ')`, ça redonne « inno vante » — un faux
+// négatif du BANC, pas une régression du produit (vérifié : le texte soumis
+// à la détection contient bien « innovante » d'un seul tenant). Sans cette
+// normalisation, le banc aurait crié au bug sur un correctif qui marche.
+const normalise = s => s.toLowerCase().replace(/\s+/g, '');
+const presente = (sortie, valeur) => normalise(sortie).includes(normalise(valeur));
 
 const pct = (n, d) => (d === 0 ? 100 : (n / d) * 100);
 const fmt = v => `${v.toFixed(0)}%`.padStart(4);
