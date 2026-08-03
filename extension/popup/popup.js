@@ -1655,7 +1655,11 @@ async function processFile() {
         onProgress: nerProgress,
         // Manquait entièrement : le PDF reconstruit ignorait la case
         // Pseudonymes, contrairement aux autres formats. Toujours [TYPE_N].
-        maskOpts: fileMaskOptions(units),
+        // SANS argument : `units` n'existe pas encore sur ce chemin (il est
+        // déclaré plus bas, pour l'autre branche) — le lui passer plantait en
+        // « Cannot access 'units' before initialization ». reconstructPdf
+        // extrait ses propres unités en interne.
+        maskOpts: fileMaskOptions(),
         forceTerms: [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()],
         disabledTypes: fileDisabledTypes,
         keepValues: parseLines($("fileAlwaysKeep")?.value),
