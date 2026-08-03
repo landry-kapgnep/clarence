@@ -32,6 +32,90 @@ function nirCheck(nirRaw) {
   return Number(97n - n % 97n) === key;
 }
 
+// src/engine/honorifics.js
+var TERMES = [
+  // français
+  "m",
+  "mme",
+  "mlle",
+  "monsieur",
+  "madame",
+  "mademoiselle",
+  "maitre",
+  "ma\xEEtre",
+  "docteur",
+  "professeur",
+  // anglais
+  "mr",
+  "mrs",
+  "ms",
+  "miss",
+  "mister",
+  "madam",
+  "sir",
+  "dr",
+  "prof",
+  "doctor",
+  // espagnol / portugais
+  "sr",
+  "sra",
+  "srta",
+  "senor",
+  "se\xF1or",
+  "senora",
+  "se\xF1ora",
+  "senorita",
+  "se\xF1orita",
+  "senhor",
+  "senhora",
+  "senhorita",
+  // allemand / néerlandais
+  "herr",
+  "frau",
+  "fraulein",
+  "fr\xE4ulein",
+  "dhr",
+  "mevr",
+  "mevrouw",
+  // italien
+  "sig",
+  "sigra",
+  "signor",
+  "signora",
+  "signorina",
+  "dott",
+  "dottore",
+  "dottssa",
+  // autre
+  "pr"
+];
+var POINT_OBLIGATOIRE = /* @__PURE__ */ new Set([
+  "m",
+  "pr",
+  "sr",
+  "sra",
+  "srta",
+  "sig",
+  "sigra",
+  "dott",
+  "dottssa",
+  "dhr",
+  "mevr"
+]);
+var HONORIFICS = new Set(TERMES);
+var normalizeHonorific = (token) => String(token).toLowerCase().replace(/\./g, "").trim();
+function isHonorificAt(token, rang, total) {
+  if (total < 2 || rang >= total - 1) return false;
+  return HONORIFICS.has(normalizeHonorific(token));
+}
+var anyCase = (terme) => terme.split("").map((c) => {
+  const haut = c.toUpperCase();
+  const bas = c.toLowerCase();
+  return haut === bas ? c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : `[${haut}${bas}]`;
+}).join("");
+var avecPoint = (terme) => anyCase(terme) + (POINT_OBLIGATOIRE.has(terme) ? "\\." : "\\.?");
+var HONORIFIC_ALT = [...TERMES].sort((a, b) => b.length - a.length).map(avecPoint).join("|");
+
 // src/engine/regex-detect.js
 var STOP_NOMS_CIVILITE = /* @__PURE__ */ new Set([
   "pr\xE9sident",
@@ -268,8 +352,14 @@ var REGEX_PATTERNS = [
   },
   {
     // Civilité + nom : rattrape en déterministe des noms que le NER peut rater.
+    // Civilités multilingues via la liste partagée (honorifics.js) : le motif
+    // ne connaissait que le français, donc « Mr Smith » n'était détecté que si
+    // le modèle contextuel le voyait — aucun filet déterministe en anglais.
     type: "PER",
-    re: /\b(?:Monsieur|Madame|Mademoiselle|M\.|Mme|Mlle|Dr|Me|Pr)\s+((?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})(?:\s+(?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})){0,2})/g,
+    re: new RegExp(
+      `\\b(?:${HONORIFIC_ALT})\\s+((?:[A-Z\xC0-\xDC][a-z\xE0-\xFF]+(?:[-'][A-Z\xC0-\xDC]?[a-z\xE0-\xFF]+)*|[A-Z\xC0-\xDC]{2,})(?:\\s+(?:[A-Z\xC0-\xDC][a-z\xE0-\xFF]+(?:[-'][A-Z\xC0-\xDC]?[a-z\xE0-\xFF]+)*|[A-Z\xC0-\xDC]{2,})){0,2})`,
+      "g"
+    ),
     extract: 1,
     validate: (m) => !STOP_NOMS_CIVILITE.has(m.split(/\s+/)[0].toLowerCase())
   }
@@ -4056,6 +4146,7 @@ function reinject(text, mapping) {
 }
 
 export {
+  isHonorificAt,
   detectRegex,
   detectPhonesIntl,
   NER_MODEL,

@@ -8,12 +8,13 @@ import {
   entityKey,
   filterByRules,
   forcedMasks,
+  isHonorificAt,
   maskText,
   mergeEntities,
   reinject,
   selectActive,
   snapToWordBoundaries
-} from "./chunk-GNBP3IMQ.js";
+} from "./chunk-3AZMLSIQ.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -459,34 +460,14 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
     "l'",
     "del",
     "bin",
-    "ben",
-    "m",
-    "mr",
-    "mrs",
-    "ms",
-    "miss",
-    "mister",
-    "madam",
-    "sir",
-    "mme",
-    "mlle",
-    "monsieur",
-    "madame",
-    "mademoiselle",
-    "dr",
-    "doctor",
-    "docteur",
-    "pr",
-    "prof",
-    "professeur",
-    "me",
-    "maitre",
-    "ma\xEEtre"
+    "ben"
   ]);
+  const estConserve = (token, rang, total) => total > 1 && rang < total - 1 && PARTICULES.has(token.toLowerCase()) || isHonorificAt(token, rang, total);
   const applyCase = (pseudo, original) => original === original.toUpperCase() && new RegExp("\\p{L}{2}", "u").test(original) ? pseudo.toUpperCase() : pseudo;
-  function pseudoToken(token, isLast, total) {
+  function pseudoToken(token, rang, total) {
+    const isLast = rang === total - 1;
+    if (estConserve(token, rang, total)) return token;
     const key = token.toLowerCase();
-    if (PARTICULES.has(key)) return token;
     if (tokenMap.has(key)) return applyCase(tokenMap.get(key), token);
     const estPatronyme = total > 1 ? isLast : token === token.toUpperCase() && new RegExp("\\p{L}{2}", "u").test(token);
     const pool = estPatronyme ? L.noms : L.prenoms;
@@ -511,7 +492,7 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
           continue;
         }
         if (!parts[i]) continue;
-        const p = pseudoToken(parts[i], rang === mots.length - 1, mots.length);
+        const p = pseudoToken(parts[i], rang, mots.length);
         if (!p) return null;
         out += p;
         rang++;
@@ -1666,7 +1647,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-SIDHVBWK.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-HPWUXYRL.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -1687,7 +1668,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-EJ7CLJ6B.js");
+    const { anonymizeUnits } = await import("./anonymize-units-32GIXP32.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

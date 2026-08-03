@@ -12,6 +12,8 @@
 // il faut le brancher explicitement (voir main.js) tant qu'il n'y a pas de
 // détection de langue du document.
 
+import { isHonorificAt } from './honorifics.js';
+
 const LOCALES = {
   fr: {
     prenoms: [
@@ -158,18 +160,22 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   //
   // Particules nobiliaires : « de La Villardière » doit rester lisible.
   //
-  // Civilités : le modèle contextuel inclut souvent le titre dans l'entité
-  // (« miss Deva » détecté d'un bloc). Traité comme un prénom, « miss »
-  // devenait « Amélie » — si bien que « Priya Deva » → « Clément Faure » et
-  // « miss Deva » → « Amélie Faure » désignaient deux personnes de genres
-  // différents dans le même texte, alors qu'il s'agit de la même. Constaté
-  // en usage réel. Le titre n'est pas une donnée identifiante : on le garde.
+  // Civilités (liste partagée, honorifics.js) : le modèle contextuel inclut
+  // souvent le titre dans l'entité (« miss Deva » détecté d'un bloc). Traité
+  // comme un prénom, « miss » devenait « Amélie » — si bien que
+  // « Priya Deva » → « Clément Faure » et « miss Deva » → « Amélie Faure »
+  // désignaient deux personnes de genres différents dans le même texte.
+  //
+  // Dans les DEUX cas la décision dépend de la POSITION, jamais de la seule
+  // appartenance à une liste : un composant n'est une particule ou une
+  // civilité que s'il précède un autre composant. Sinon « Miss » ou « Le »
+  // employés comme vrais patronymes fuiraient tels quels.
   const PARTICULES = new Set([
-    'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben',
-    'm', 'mr', 'mrs', 'ms', 'miss', 'mister', 'madam', 'sir',
-    'mme', 'mlle', 'monsieur', 'madame', 'mademoiselle',
-    'dr', 'doctor', 'docteur', 'pr', 'prof', 'professeur', 'me', 'maitre', 'maître'
+    'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben'
   ]);
+  const estConserve = (token, rang, total) =>
+    (total > 1 && rang < total - 1 && PARTICULES.has(token.toLowerCase())) ||
+    isHonorificAt(token, rang, total);
 
   // Reproduit la casse de l'original : un patronyme en TOUT-MAJUSCULE (usage
   // courant sur un CV français) reste en majuscules dans le pseudo.
@@ -178,9 +184,10 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
       ? pseudo.toUpperCase()
       : pseudo;
 
-  function pseudoToken(token, isLast, total) {
+  function pseudoToken(token, rang, total) {
+    const isLast = rang === total - 1;
+    if (estConserve(token, rang, total)) return token;
     const key = token.toLowerCase();
-    if (PARTICULES.has(key)) return token;
     if (tokenMap.has(key)) return applyCase(tokenMap.get(key), token);
 
     // Choix du vivier : dans un nom composé, le premier mot est un prénom et
@@ -212,7 +219,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
       for (let i = 0; i < parts.length; i++) {
         if (i % 2 === 1) { out += parts[i]; continue; } // séparateur
         if (!parts[i]) continue;
-        const p = pseudoToken(parts[i], rang === mots.length - 1, mots.length);
+        const p = pseudoToken(parts[i], rang, mots.length);
         if (!p) return null; // jamais renvoyer le vrai composant : ce serait une fuite
         out += p;
         rang++;

@@ -1,6 +1,7 @@
 // Passe 1 — détection structurée déterministe (portée du prototype validé,
 // enrichie des patterns contextuels issus du pseudonymiseur Python).
 import { luhnCheck, ibanCheck, nirCheck } from './validators.js';
+import { HONORIFIC_ALT } from './honorifics.js';
 
 // Premiers mots interdits pour un nom capté par civilité (titres, fonctions).
 const STOP_NOMS_CIVILITE = new Set([
@@ -262,8 +263,16 @@ export const REGEX_PATTERNS = [
   },
   {
     // Civilité + nom : rattrape en déterministe des noms que le NER peut rater.
+    // Civilités multilingues via la liste partagée (honorifics.js) : le motif
+    // ne connaissait que le français, donc « Mr Smith » n'était détecté que si
+    // le modèle contextuel le voyait — aucun filet déterministe en anglais.
     type: 'PER',
-    re: /\b(?:Monsieur|Madame|Mademoiselle|M\.|Mme|Mlle|Dr|Me|Pr)\s+((?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})(?:\s+(?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})){0,2})/g,
+    re: new RegExp(
+      `\\b(?:${HONORIFIC_ALT})\\s+` +
+      `((?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})` +
+      `(?:\\s+(?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})){0,2})`,
+      'g'
+    ),
     extract: 1,
     validate: m => !STOP_NOMS_CIVILITE.has(m.split(/\s+/)[0].toLowerCase())
   }
