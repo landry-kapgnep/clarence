@@ -134,8 +134,75 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
     return null; // aucune variante libre → l'appelant retombe en placeholder
   }
 
+  // --- Cohérence AU NIVEAU DU COMPOSANT DE NOM ------------------------------
+  // Le cache de maskText porte sur la valeur entière : « Priya Deva » revu à
+  // l'identique redonnait bien le même pseudo, mais « Priya » seule était
+  // traitée comme une personne distincte et recevait un nom sans aucun
+  // rapport. Sur un document réel, la même personne se retrouvait sous trois
+  // identités — ce qui détruit la cohérence que l'option promet, et rend le
+  // texte incompréhensible pour le LLM à qui on le donne.
+  //
+  // On mémorise donc chaque COMPOSANT : « Priya » → « Chloé », « Deva » →
+  // « Lemaire », une fois pour toutes. « Priya Deva », « Priya » et « Deva »
+  // deviennent alors respectivement « Chloé Lemaire », « Chloé » et
+  // « Lemaire ». C'est l'identifiant stable demandé.
+  const tokenMap = new Map(); // composant réel (minuscule) → composant pseudo
+
+  // Particules gardées telles quelles : elles n'identifient personne et leur
+  // substitution rendrait le résultat illisible (« de La Villardière »).
+  const PARTICULES = new Set([
+    'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben'
+  ]);
+
+  // Reproduit la casse de l'original : un patronyme en TOUT-MAJUSCULE (usage
+  // courant sur un CV français) reste en majuscules dans le pseudo.
+  const applyCase = (pseudo, original) =>
+    original === original.toUpperCase() && /\p{L}{2}/u.test(original)
+      ? pseudo.toUpperCase()
+      : pseudo;
+
+  function pseudoToken(token, isLast, total) {
+    const key = token.toLowerCase();
+    if (PARTICULES.has(key)) return token;
+    if (tokenMap.has(key)) return applyCase(tokenMap.get(key), token);
+
+    // Choix du vivier : dans un nom composé, le premier mot est un prénom et
+    // le dernier un patronyme. Pour un composant VU SEUL on ne peut pas
+    // savoir : le tout-majuscule signale un patronyme (convention CV FR),
+    // sinon on suppose un prénom. Le choix est arbitraire mais définitif —
+    // c'est la stabilité qui compte, pas la justesse du vivier.
+    const estPatronyme = total > 1
+      ? isLast
+      : token === token.toUpperCase() && /\p{L}{2}/u.test(token);
+    const pool = estPatronyme ? L.noms : L.prenoms;
+
+    const v = unique((h2, i) => pick(pool, h2, i), fnv('PER_TOKEN:' + key));
+    if (!v) return null; // vivier épuisé → l'appelant retombe en placeholder
+    tokenMap.set(key, v);
+    return applyCase(v, token);
+  }
+
   const generators = {
-    PER: h => unique((h2, i) => `${pick(L.prenoms, h2, i)} ${pick(L.noms, (h2 >>> 5) + i, i)}`, h),
+    // Composition composant par composant (voir tokenMap ci-dessus). Les
+    // séparateurs d'origine (espaces, traits d'union) sont préservés pour que
+    // « Marc-Antoine » reste un composé à trait d'union.
+    PER: (h, original) => {
+      const parts = String(original).split(/([\s\-]+)/);
+      const mots = parts.filter((p, i) => i % 2 === 0 && p);
+      if (!mots.length) return null;
+      let out = '';
+      let rang = 0;
+      for (let i = 0; i < parts.length; i++) {
+        if (i % 2 === 1) { out += parts[i]; continue; } // séparateur
+        if (!parts[i]) continue;
+        const p = pseudoToken(parts[i], rang === mots.length - 1, mots.length);
+        if (!p) return null; // jamais renvoyer le vrai composant : ce serait une fuite
+        out += p;
+        rang++;
+      }
+      // Le nom composé complet doit rester unique et absent du texte réel.
+      return !avoid(out) ? out : null;
+    },
     ORG: h => unique((h2, i) => pick(L.orgs, h2, i), h),
     LOC: h => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: h => unique((h2, i) => `${((h2 + i * 7) % 98) + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),

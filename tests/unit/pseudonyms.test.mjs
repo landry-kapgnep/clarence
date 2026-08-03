@@ -96,3 +96,56 @@ test('déterminisme préservé PAR locale (même seed+valeur+locale → même ps
   const b = createPseudonymizer({ seed: 's1', locale: 'en' });
   assert.equal(a('PER', 'Jean Dupont'), b('PER', 'Jean Dupont'));
 });
+
+// --- Cohérence AU NIVEAU DU COMPOSANT (constaté : « Priya Deva » → « Chloé
+// Lemaire » mais « Priya » seule → « Thomas Fournier », sans aucun rapport.
+// La même personne portait trois identités dans le même document.)
+test('un composant de nom garde son pseudo, seul ou dans le nom complet', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  const complet = p('PER', 'Priya Deva');
+  const [prenom, nom] = complet.split(' ');
+  assert.equal(p('PER', 'Priya'), prenom, 'le prénom seul doit reprendre le même pseudo');
+  assert.equal(p('PER', 'Deva'), nom, 'le patronyme seul doit reprendre le même pseudo');
+});
+
+test('l\'ordre de première rencontre n\'a pas d\'importance', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  const prenomSeul = p('PER', 'Priya');           // vu SEUL en premier
+  const complet = p('PER', 'Priya Deva');
+  assert.ok(complet.startsWith(prenomSeul), `${complet} devrait commencer par ${prenomSeul}`);
+});
+
+test('les particules nobiliaires sont conservées (lisibilité, non identifiantes)', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  const v = p('PER', 'Sébastien De La Villardière');
+  assert.match(v, / De La /, 'particules perdues : ' + v);
+  assert.equal(v.includes('Villardière'), false, 'le vrai patronyme a fuité');
+  assert.equal(v.includes('Sébastien'), false, 'le vrai prénom a fuité');
+});
+
+test('la casse TOUT-MAJUSCULE du patronyme est reproduite (convention CV FR)', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  const v = p('PER', 'LANDRY KAPGNEP');
+  assert.equal(v, v.toUpperCase(), 'casse non reproduite : ' + v);
+  // et le composant seul reste cohérent avec le nom complet
+  assert.equal(p('PER', 'KAPGNEP'), v.split(' ')[1]);
+});
+
+test('un nom à trait d\'union reste composé, et ses parties restent cohérentes', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  const v = p('PER', 'Marc-Antoine');
+  assert.match(v, /^[^\s-]+-[^\s-]+$/, 'trait d\'union perdu : ' + v);
+  assert.equal(p('PER', 'Marc'), v.split('-')[0]);
+});
+
+test('AUCUN composant réel ne subsiste dans le pseudo (anti-fuite)', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  for (const vrai of ['Priya Deva', 'LANDRY KAPGNEP', 'Marc-Antoine De La Villardière']) {
+    const faux = p('PER', vrai);
+    for (const mot of vrai.split(/[\s-]+/)) {
+      if (['De', 'La'].includes(mot)) continue; // particules gardées volontairement
+      assert.equal(faux.toLowerCase().includes(mot.toLowerCase()), false,
+        `« ${mot} » a fuité dans « ${faux} »`);
+    }
+  }
+});

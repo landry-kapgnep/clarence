@@ -416,8 +416,58 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
     }
     return null;
   }
+  const tokenMap = /* @__PURE__ */ new Map();
+  const PARTICULES = /* @__PURE__ */ new Set([
+    "de",
+    "du",
+    "des",
+    "la",
+    "le",
+    "von",
+    "van",
+    "da",
+    "di",
+    "d'",
+    "l'",
+    "del",
+    "bin",
+    "ben"
+  ]);
+  const applyCase = (pseudo, original) => original === original.toUpperCase() && new RegExp("\\p{L}{2}", "u").test(original) ? pseudo.toUpperCase() : pseudo;
+  function pseudoToken(token, isLast, total) {
+    const key = token.toLowerCase();
+    if (PARTICULES.has(key)) return token;
+    if (tokenMap.has(key)) return applyCase(tokenMap.get(key), token);
+    const estPatronyme = total > 1 ? isLast : token === token.toUpperCase() && new RegExp("\\p{L}{2}", "u").test(token);
+    const pool = estPatronyme ? L.noms : L.prenoms;
+    const v = unique((h2, i) => pick(pool, h2, i), fnv("PER_TOKEN:" + key));
+    if (!v) return null;
+    tokenMap.set(key, v);
+    return applyCase(v, token);
+  }
   const generators = {
-    PER: (h) => unique((h2, i) => `${pick(L.prenoms, h2, i)} ${pick(L.noms, (h2 >>> 5) + i, i)}`, h),
+    // Composition composant par composant (voir tokenMap ci-dessus). Les
+    // séparateurs d'origine (espaces, traits d'union) sont préservés pour que
+    // « Marc-Antoine » reste un composé à trait d'union.
+    PER: (h, original) => {
+      const parts = String(original).split(/([\s\-]+)/);
+      const mots = parts.filter((p, i) => i % 2 === 0 && p);
+      if (!mots.length) return null;
+      let out = "";
+      let rang = 0;
+      for (let i = 0; i < parts.length; i++) {
+        if (i % 2 === 1) {
+          out += parts[i];
+          continue;
+        }
+        if (!parts[i]) continue;
+        const p = pseudoToken(parts[i], rang === mots.length - 1, mots.length);
+        if (!p) return null;
+        out += p;
+        rang++;
+      }
+      return !avoid(out) ? out : null;
+    },
     ORG: (h) => unique((h2, i) => pick(L.orgs, h2, i), h),
     LOC: (h) => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: (h) => unique((h2, i) => `${(h2 + i * 7) % 98 + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
