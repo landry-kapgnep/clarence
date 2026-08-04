@@ -14,11 +14,11 @@
 
   /* Sceau : la teinte du projet, + une version éclaircie lisible sur noir */
   --seal: #000105;
-  --seal-lit: #8D93D6;
+  --seal-lit: #8D93D6; /*8D93D6 93d68d*/
   --moss: #8CA882;             /* détections modèle */
   --tan: #C2A06A;              /* masques manuels, actions expérimentales */
 
-  --line: rgba(237, 230, 211, 0.14);
+  --line: rgb(0, 0, 0);
   --line-soft: rgba(237, 230, 211, 0.10);
 
   --control-weight: 400;
@@ -110,7 +110,7 @@ body {
 .popup-shell::-webkit-scrollbar-thumb {
   background: rgba(237, 230, 211, 0.24);
   border-radius: 8px;
-  border: 2px solid transparent;
+  border: 0px solid transparent;
   background-clip: padding-box;
 }
 .popup-shell::-webkit-scrollbar-thumb:hover { background: rgba(237, 230, 211, 0.4); }
@@ -146,7 +146,7 @@ textarea {
   min-height: 110px;
   max-height: 260px;
   background: var(--bg-field);
-  border: 1px solid var(--line);
+  border: 0px solid var(--line);
   border-radius: 12px;
   padding: 10px;
   font: var(--control-size)/1.5 var(--font-body);
@@ -169,7 +169,7 @@ button {
   font-family: var(--font-body);
   font-weight: var(--control-weight);
   font-size: var(--control-size);
-  border: 1px solid transparent;
+  border: 0px solid transparent;
   border-radius: 6px;
   padding: 6px 12px;
   cursor: pointer;
@@ -193,7 +193,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .btn-ghost {
   background: var(--control-ghost-bg);
-  border: 1px solid var(--control-border);
+  border: 0px solid var(--control-border);
   color: var(--paper);
 }
 .btn-ghost:hover:not(:disabled) { background: var(--control-ghost-hover-bg); }
@@ -204,7 +204,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .panel {
   background: var(--bg-field);
-  border: 1px solid var(--line-soft);
+  border: 0px solid var(--line-soft);
   border-radius: 12px;
   padding: 12px;
   white-space: pre-wrap;
@@ -286,7 +286,7 @@ body.panel-mode::-webkit-scrollbar-track { background: transparent; }
 body.panel-mode::-webkit-scrollbar-thumb {
   background: rgba(237, 230, 211, 0.24);
   border-radius: 8px;
-  border: 2px solid transparent;
+  border: 0px solid transparent;
   background-clip: padding-box;
 }
 body.panel-mode .popup-shell {
@@ -332,7 +332,7 @@ body.panel-mode .popup-shell {
   /*background-image: url("img/PrintGridTransparentW.png");*/
   background-size: contain;
   background-repeat: no-repeat;
-  border: 1px solid var(--line);
+  border: 0px solid var(--line);
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
   overflow: hidden;
@@ -372,8 +372,6 @@ body.panel-mode .popup-shell {
   flex: 1;
   background: transparent;
   color: var(--paper-dim);
-  border: 1px solid transparent;
-  border-radius: 8px;
   padding: 6px 10px;
   opacity: 0.55;
 }
@@ -476,7 +474,7 @@ body.panel-mode .popup-shell {
   min-width: 90px;
   padding: 5px 8px;
   border-radius: 8px;
-  border: 1px solid var(--line);
+  border: 0px solid var(--line);
   background: var(--bg-field);
   color: var(--paper);
   cursor: pointer;
