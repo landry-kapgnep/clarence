@@ -63,7 +63,7 @@ if (!document.getElementById(HOST_ID)) {
     }
     .btn {
       position: fixed; bottom: 22px; right: 22px; z-index: 2147483647;
-      width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer;
+      width: 48px; height: 48px; border-radius: 0%; border: none; cursor: pointer;
       background: #ffffff; color: #EDE6D3; font: 600 20px/1 system-ui;
       box-shadow: 0 4px 14px rgba(0,0,0,.3);
       animation: clarence-pop .55s cubic-bezier(.34,1.56,.64,1) .3s both;
@@ -88,7 +88,7 @@ if (!document.getElementById(HOST_ID)) {
       position: fixed; bottom: 82px; right: 22px; z-index: 2147483647;
       width: 560px; height: 480px; max-height: calc(100vh - 110px);
       max-width: calc(100vw - 44px);
-      border: none; border-radius: 20px;
+      border: none; border-radius: 0px;
       box-shadow: 0 24px 60px rgba(0,0,0,.35);
       background: transparent;
       display: block; visibility: hidden; opacity: 0; pointer-events: none;
@@ -133,8 +133,8 @@ img.addEventListener('error', () => {
 
 btn.appendChild(img);
 
-btn.style.borderRadius = '45%';
-btn.style.border = '3px solid #252a41';
+btn.style.borderRadius = '0%';
+btn.style.border = '0px solid #252a41';
 btn.style.cursor = 'pointer';
 
 
