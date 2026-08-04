@@ -14,7 +14,7 @@ import {
   reinject,
   selectActive,
   snapToWordBoundaries
-} from "./chunk-46KJSGB2.js";
+} from "./chunk-52CH5O3L.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -1647,7 +1647,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-Y5P35WRO.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-C5IQCTYG.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -1672,7 +1672,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-TBNWRCXP.js");
+    const { anonymizeUnits } = await import("./anonymize-units-3QIY34XJ.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

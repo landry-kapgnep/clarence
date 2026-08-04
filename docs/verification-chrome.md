@@ -11,6 +11,17 @@
 > fonctionner dans un Chrome chargé en mode développeur.** Ce document est
 > l'outil de cette règle.
 
+## Le document piégé
+
+`tests/manuel/tous-defauts.pdf` empile **tous** les défauts listés ici dans un
+seul fichier : charge-le en mode Fichier et la plupart des lignes ci-dessous se
+vérifient d'un coup. Sa carte de lecture (quoi regarder, quoi attendre, ce qui
+est encore cassé) est dans `tests/manuel/README.md`.
+
+Il a trouvé une fuite structurée dès son premier passage — `Réf. interne :
+EMP-4471-KD` restait en clair, le motif d'identifiant interne étant
+intégralement anglophone.
+
 ## Comment s'installer
 
 1. `npm run build`

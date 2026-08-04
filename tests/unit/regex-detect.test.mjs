@@ -242,3 +242,19 @@ test('un nom coupé par un retour à la ligne SIMPLE reste recollé', () => {
   const per = find('signé Monsieur Thibault\nNerval, directeur', 'PER');
   assert.equal(per[0].value, 'Thibault\nNerval');
 });
+
+// --- Identifiant interne annoncé par un libellé FRANÇAIS. Le motif était
+// intégralement anglophone : « employee identifier is EMP-4471-KD » passait,
+// « Réf. interne : EMP-4471-KD » fuyait. Trouvé par le document de test manuel.
+test('identifiant interne à libellé français (fuite structurée)', () => {
+  assert.equal(find('Réf. interne : EMP-4471-KD', 'REFERENCE')[0].value, 'EMP-4471-KD');
+  assert.equal(find('Référence : CUST-849204-X', 'REFERENCE')[0].value, 'CUST-849204-X');
+  assert.equal(find('Matricule EMP-0012 du service', 'REFERENCE')[0].value, 'EMP-0012');
+  assert.equal(find('Identifiant unique : AB-1234-CD', 'REFERENCE')[0].value, 'AB-1234-CD');
+  // Non-régression des libellés anglais.
+  assert.equal(find('His employee identifier is EMP-4471-KD.', 'REFERENCE')[0].value, 'EMP-4471-KD');
+});
+
+test('un mot quelconque suivi d\'un code n\'est pas une référence', () => {
+  assert.equal(find('le train TGV-INOUI-2024 part', 'REFERENCE').length, 0);
+});

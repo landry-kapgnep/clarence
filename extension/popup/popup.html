@@ -29,7 +29,7 @@
       </div>
 
       <div id="textMode">
-      <label class="field-label" for="input"></label> Anonymiser texte
+      <label class="field-label" for="input"></label> Anonymisation texte
       <textarea id="input" placeholder="..."></textarea>
 
       <div class="controls">
@@ -95,23 +95,23 @@
       </div>
 
       <div id="fileMode" hidden>
-        <label class="field-label" for="input"></label> Anonymiser fichier
+        <label class="field-label" for="input"></label> Anonymisation fichier
         <div class="dropzone" id="dropzone">
           <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf,.jpg,.jpeg,.png" hidden>
-          <p class="dropzone-main">Glisse ou <button class="link-btn" id="filePickBtn">parcours tes fichiers</button></p>
-          <p class="hint">CSV, XLSX, DOCX, PDF, JPG/PNG</p>
+          <p class="dropzone-main"><button class="link-btn" id="filePickBtn"><img src="img/ClarenceFlW.png" class ="cpbtn"></button></p>
+          <p class="hint">CSV, XLSX, DOCX, PDF, JPG, PNG</p>
         </div>
 
         <div id="fileOptions" hidden>
         <div id="pdfModeChoice" hidden>
-          <div class="field-label">Sortie PDF</div>
+          <div class="field-label"></div>
           <label class="hint" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModeLight" value="md" checked>
-            Alléger — Markdown, sans les images
+            Format allégé (.md)
           </label>
           <label class="hint" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModePreserve" value="pdf">
-            Garder la mise en page — rendu approximatif, le texte dans les images reste visible
+            Format original
           </label>
         </div>
         <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
@@ -197,8 +197,7 @@
       </section>
 
       <footer>
-        ⚠ Relis le rendu avant de l'utiliser : la détection n'est pas infaillible.
-        Sélectionne un passage pour le masquer à la main.
+        ⚠ Relire systématiquement le rendu avant utilisation : la détection n'est pas infaillible.
         <button class="link-btn" id="identityOpenBtn">Mon identité</button>
       </footer>
     </div>

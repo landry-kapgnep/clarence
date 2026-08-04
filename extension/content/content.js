@@ -64,7 +64,7 @@ if (!document.getElementById(HOST_ID)) {
     .btn {
       position: fixed; bottom: 22px; right: 22px; z-index: 2147483647;
       width: 48px; height: 48px; border-radius: 0%; border: none; cursor: pointer;
-      background: #ffffff; color: #EDE6D3; font: 600 20px/1 system-ui;
+      background: #020202; color: #252a41; font: 600 20px/1 system-ui;
       box-shadow: 0 4px 14px rgba(0,0,0,.3);
       animation: clarence-pop .55s cubic-bezier(.34,1.56,.64,1) .3s both;
       transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease;
@@ -113,10 +113,10 @@ if (!document.getElementById(HOST_ID)) {
 
 const btn = document.createElement('button');
 btn.className = 'btn';
-btn.title = 'Clarence — anonymisez vos données';
+btn.title = 'Clarence';
 
 const img = document.createElement('img');
-img.src = chrome.runtime.getURL('popup/img/ClarenceLogoSimple.png');
+img.src = chrome.runtime.getURL('popup/img/ClarenceLogoSimpleW.png');
 img.alt = '';
 img.loading = 'eager';
 img.decoding = 'async';
@@ -134,7 +134,7 @@ img.addEventListener('error', () => {
 btn.appendChild(img);
 
 btn.style.borderRadius = '0%';
-btn.style.border = '0px solid #252a41';
+btn.style.border = '2px solid #0b0e1a';
 btn.style.cursor = 'pointer';
 
 

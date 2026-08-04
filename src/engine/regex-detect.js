@@ -227,7 +227,17 @@ export const REGEX_PATTERNS = [
     // fuite trouvée par le banc d'essai sur un email professionnel anglais.
     // Volontairement limité à un seul mot de liaison : au-delà, on relierait
     // un libellé à une valeur trop lointaine et sans rapport.
-    re: /\b(?:account|customer|client|member|employee|patient|policy|subscriber|user|order|invoice|badge|case|file)\s*(?:identifier|number|no\.?|id|#)?\s*(?:\s(?:is|was|est|était|sera)\b)?\s*[:=]?\s*([A-Z][A-Z0-9]*(?:[-_\/][A-Z0-9]+)+)\b/gi,
+    // Libellés FRANÇAIS ajoutés après coup : le motif était intégralement
+    // anglophone, donc « Réf. interne : EMP-4471-KD » fuyait alors que
+    // « employee identifier is EMP-4471-KD » était bien attrapé. Pendant exact
+    // du défaut i18n déjà connu, dans l'autre sens. Trouvé au premier passage
+    // du document de test manuel (tests/manuel/).
+    //
+    // Le qualificatif optionnel (« Réf. INTERNE : ») est une liste fermée et
+    // volontairement courte : élargir reviendrait à relier un libellé à une
+    // valeur trop lointaine, ce que le commentaire ci-dessus proscrit déjà
+    // pour les mots de liaison.
+    re: /\b(?:account|customer|client|member|employee|patient|policy|subscriber|user|order|invoice|badge|case|file|r[ée]f[ée]rence|r[ée]f\.?|matricule|identifiant|dossier|adh[ée]rent)\s*(?:identifier|number|no\.?|id|#)?\s*(?:\s+(?:interne|externe|unique))?\s*(?:\s(?:is|was|est|était|sera)\b)?\s*[:=]?\s*([A-Z][A-Z0-9]*(?:[-_\/][A-Z0-9]+)+)\b/gi,
     extract: 1,
     validate: null
   },
