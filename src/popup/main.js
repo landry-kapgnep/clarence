@@ -620,7 +620,23 @@ function setChosenFile(file) {
   }
   chosenFile = file;
   fileOutBlob = null;
-  $('fileName').textContent = file.name;
+  const fileNameEl = $('fileName');
+  const fileMainEl = fileNameEl?.querySelector('.file-name-main');
+  const fileExtEl = fileNameEl?.querySelector('.file-name-ext');
+  const lastDot = file.name.lastIndexOf('.');
+  if (fileMainEl && fileExtEl) {
+    if (lastDot > 0 && lastDot < file.name.length - 1) {
+      fileMainEl.textContent = file.name.slice(0, lastDot);
+      fileExtEl.textContent = `.${file.name.slice(lastDot + 1).toLowerCase()}`;
+      fileExtEl.hidden = false;
+    } else {
+      fileMainEl.textContent = file.name;
+      fileExtEl.textContent = '';
+      fileExtEl.hidden = true;
+    }
+  } else {
+    fileNameEl.textContent = file.name;
+  }
   $('fileSize').textContent = humanSize(file.size);
   $('fileChosen').hidden = false;
   // Options (pseudonymes/personnaliser) : révélées dès qu'un fichier est

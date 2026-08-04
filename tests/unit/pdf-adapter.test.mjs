@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { extractTextUnits, applyMask, stripMetadata, groupIntoLines, isLineWrapHyphen } from '../../src/files/pdf-adapter.js';
+import { extractTextUnits, applyMask, stripMetadata, groupIntoLines, isLineWrapHyphen, paragraphGapThreshold } from '../../src/files/pdf-adapter.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
 
 // Items pdfjs synthétiques (transform = [a,b,c,d,x,y]) : reproduit de façon
@@ -183,4 +183,49 @@ test("le buffer d'entrée reste réutilisable après extractTextUnits (pas de d�
   await extractTextUnits(buf); // pdfjs détache sa PROPRE copie, pas celle-ci
   const { units } = await extractTextUnits(buf); // doit encore fonctionner
   assert.ok(units.length > 0);
+});
+
+// --- Interligne : le seuil de paragraphe doit se calibrer sur le DOCUMENT.
+// Trouvé sur un vrai mémoire de 75 pages en interligne 1,5 : police 11, écart
+// réel 19,0 contre un seuil `police × 1.6 = 17,7` — donc UN PARAGRAPHE PAR
+// LIGNE. 1 782 unités de 91 caractères médians dont 52 % coupaient une phrase,
+// 39 % du document masqué, 11 minutes de traitement.
+const ligneFictive = (y, size = 11) => ({ y, size, text: 'x' });
+
+test('interligne 1,5 : le seuil dépasse l\'écart entre lignes (plus de paragraphe par ligne)', () => {
+  // 12 lignes espacées de 19 pt en police 11 — le cas exact du mémoire.
+  const lines = Array.from({ length: 12 }, (_, i) => ligneFictive(700 - i * 19));
+  const seuil = paragraphGapThreshold(lines, 11);
+  assert.ok(seuil > 19, `un écart d'interligne (19) doit rester SOUS le seuil, obtenu ${seuil}`);
+  assert.ok(seuil < 38, `un vrai saut de paragraphe (38) doit rester AU-DESSUS, obtenu ${seuil}`);
+});
+
+test('le seuil ne DESCEND jamais sous l\'ancien : le correctif ne peut que fusionner', () => {
+  // Interligne serré (8 pt) en police 11 : la médiane × 1.3 vaut 10,4, sous
+  // l'ancien seuil de 17,6 — c'est l'ancien qui doit gagner.
+  const lines = Array.from({ length: 12 }, (_, i) => ligneFictive(700 - i * 8));
+  assert.equal(paragraphGapThreshold(lines, 11), 11 * 1.6);
+});
+
+test('trop peu de lignes : repli sur l\'ancien seuil', () => {
+  // Sur 5 lignes, la médiane des écarts tombe sur l'écart de PARAGRAPHE et non
+  // sur l'interligne (mesuré sur tests/fixtures/echantillon.pdf) — d'où la garde.
+  const lines = [ligneFictive(700), ligneFictive(684), ligneFictive(668), ligneFictive(634), ligneFictive(618)];
+  assert.equal(paragraphGapThreshold(lines, 11), 11 * 1.6);
+});
+
+test('un vrai saut de paragraphe reste détecté malgré le calibrage', async () => {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const page = doc.addPage([420, 700]);
+  let y = 650;
+  // 10 lignes en interligne 1,5 (19 pt), puis un vrai saut (40 pt), puis 4 lignes.
+  for (let i = 0; i < 10; i++) { page.drawText(`ligne numero ${i} du premier bloc`, { x: 40, y, size: 11, font }); y -= 19; }
+  y -= 21;
+  for (let i = 0; i < 4; i++) { page.drawText(`ligne numero ${i} du second bloc`, { x: 40, y, size: 11, font }); y -= 19; }
+
+  const { units } = await extractTextUnits((await doc.save()).buffer);
+  assert.equal(units.length, 2, 'deux paragraphes attendus, obtenu : ' + JSON.stringify(units.map(u => u.text)));
+  assert.match(units[0].text, /premier bloc.*premier bloc/s, 'les 10 lignes du 1er bloc doivent être fusionnées');
+  assert.match(units[1].text, /second bloc/);
 });

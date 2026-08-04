@@ -29,7 +29,19 @@ if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
 // Un écart vertical supérieur à ce multiple de la taille de police de la
 // ligne précédente marque un nouveau paragraphe (ligne vide en Markdown) ;
 // en dessous, c'est un simple retour à la ligne dans le même paragraphe.
+//
+// Ne sert plus que de REPLI : ce ratio compare l'écart à la taille de POLICE,
+// alors que l'interligne est une propriété de la mise en page. Voir
+// paragraphGapThreshold ci-dessous.
 export const PARAGRAPH_GAP_RATIO = 1.6;
+// Nombre d'écarts minimum pour que la médiane du document soit fiable.
+const MIN_ECARTS_CALIBRAGE = 8;
+// Au-delà de ce multiple de l'interligne du document, c'est un vrai saut de
+// paragraphe. Mesuré, borné des DEUX côtés : à 1.5 la colonne droite du CV du
+// banc s'effondre de 6 à 2 unités (médiane 369 caractères), ce qui est
+// exactement la régression déjà mesurée dans anonymize-units.js en groupant
+// les unités. Ne pas monter sans re-mesurer sur cv-fr.pdf.
+const ECART_PARAGRAPHE_RATIO = 1.3;
 // Une ligne dont la police dépasse ce ratio par rapport à la taille
 // dominante de la page est traitée comme un titre (heuristique best-effort,
 // jamais bloquante si elle se trompe).
@@ -113,13 +125,15 @@ export function groupIntoLines(items) {
 function groupIntoParagraphs(lines, dominantSize) {
   const paragraphs = [];
   let current = null;
-  let prevY = null, prevSize = null;
+  let prevY = null;
+  // Seuil calibré sur l'interligne de CETTE colonne (voir paragraphGapThreshold).
+  const seuilEcart = paragraphGapThreshold(lines, dominantSize);
   for (const line of lines) {
     const isHeading = line.size >= dominantSize * HEADING_SIZE_RATIO;
     const gap = prevY === null ? Infinity : prevY - line.y;
     const isNewParagraph = isHeading || !current ||
       current.isHeading !== isHeading ||
-      gap > (prevSize || line.size) * PARAGRAPH_GAP_RATIO;
+      gap > seuilEcart;
     if (isNewParagraph) {
       current = { text: line.text, isHeading };
       paragraphs.push(current);
@@ -129,7 +143,6 @@ function groupIntoParagraphs(lines, dominantSize) {
       current.text += ' ' + line.text;
     }
     prevY = line.y;
-    prevSize = line.size;
   }
   return paragraphs;
 }
@@ -137,6 +150,44 @@ function groupIntoParagraphs(lines, dominantSize) {
 export function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   return s[Math.floor(s.length / 2)] || 11;
+}
+
+// Seuil d'écart vertical au-delà duquel deux lignes appartiennent à des
+// paragraphes DIFFÉRENTS — calibré sur le document lui-même.
+//
+// POURQUOI. Le seuil historique (`taille de police × 1.6`) mesurait la mauvaise
+// grandeur : l'interligne dépend de la mise en page, pas du corps du texte. Sur
+// un vrai mémoire en interligne 1,5 — police 11, écart réel 19,0 contre un
+// seuil à 17,7 — CHAQUE LIGNE devenait un paragraphe. Conséquences mesurées sur
+// 75 pages : 1 782 « paragraphes » de 91 caractères médians dont 52 % coupaient
+// une phrase en cours, 8 088 placeholders (39 % du document masqué, articles
+// compris) et 11 minutes de traitement. Le modèle recevait des demi-phrases
+// sans contexte et étiquetait au hasard. Tout document en interligne 1,5 ou
+// double était touché ; le corpus du banc, en interligne simple, ne pouvait pas
+// le voir.
+//
+// COMMENT. La médiane des écarts d'une colonne EST son interligne (c'est la
+// valeur la plus fréquente, les sauts de paragraphe étant minoritaires). On
+// compare donc à elle.
+//
+// Deux garde-fous, chacun issu d'une mesure :
+//  - `Math.max` avec l'ancien seuil : le seuil ne peut que CROÎTRE. Le
+//    changement peut donc uniquement fusionner des lignes, jamais fragmenter
+//    davantage qu'avant. Protège les pages à interligne irrégulier
+//    (bibliographies, tableaux), où la médiane est basse et l'ancien repli
+//    reprend la main.
+//  - `MIN_ECARTS_CALIBRAGE` : sur peu de lignes la médiane tombe sur l'écart de
+//    PARAGRAPHE au lieu de l'interligne. Mesuré sur tests/fixtures/echantillon.pdf
+//    (4 et 2 écarts) : sans cette garde tout fusionnait en une seule unité.
+export function paragraphGapThreshold(lines, dominantSize) {
+  const repli = dominantSize * PARAGRAPH_GAP_RATIO;
+  const ecarts = [];
+  for (let i = 1; i < lines.length; i++) {
+    const gap = lines[i - 1].y - lines[i].y;
+    if (gap > 0) ecarts.push(gap);
+  }
+  if (ecarts.length < MIN_ECARTS_CALIBRAGE) return repli;
+  return Math.max(median(ecarts) * ECART_PARAGRAPHE_RATIO, repli);
 }
 
 // Détection de mise en page à 2 colonnes (fréquent sur les CV/rapports). Sans

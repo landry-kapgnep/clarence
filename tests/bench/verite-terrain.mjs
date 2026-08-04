@@ -98,6 +98,26 @@ export const CORPUS = [
   },
 
   {
+    fichier: 'rapport-interligne.pdf',
+    quoi: 'PROSE en INTERLIGNE 1,5 — le réglage de tout mémoire/rapport académique',
+    aMasquer: [
+      { valeur: 'Korrigane Labs', type: 'ORG' },
+      { valeur: 'Sebastien Vaquier', type: 'PER' },
+      { valeur: 'Amandine Rousseau', type: 'PER' },
+      { valeur: 'Nantes', type: 'LOC' },
+      { valeur: 'recherche@korrigane-labs.example', type: 'EMAIL' },
+      { valeur: '02 40 11 22 33', type: 'TELEPHONE' }
+    ],
+    // Mots ordinaires que le modèle masquait quand il recevait des DEMI-PHRASES
+    // (un paragraphe par ligne). Ce sont eux qui font de ce document une garde :
+    // s'ils repartent, c'est que le regroupement en paragraphes a régressé.
+    aGarder: [
+      'industrie', 'leadership', 'protagoniste', 'compagnons', 'culture',
+      'Python', 'PostgreSQL', 'Docker'
+    ]
+  },
+
+  {
     fichier: 'cv-fr.pdf',
     quoi: 'CV MULTI-COLONNES : fragmentation PDF (P1bis), nom TOUT-MAJUSCULE isolé',
     aMasquer: [

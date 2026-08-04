@@ -11,7 +11,7 @@
 // pdf-lib est injecté (deps) — comme DOMParser pour DOCX — pour rester testable
 // en Node. Le ré-encodage canvas des images (Stage B) est navigateur-only.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, PARAGRAPH_GAP_RATIO, HEADING_SIZE_RATIO } from './pdf-adapter.js';
+import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, HEADING_SIZE_RATIO } from './pdf-adapter.js';
 import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { anonymizeUnits } from './anonymize-units.js';
 
@@ -39,15 +39,18 @@ function sanitizeForWinAnsi(str) {
 // Un paragraphe = une unité de détection ; ses parts = les "runs" à redessiner.
 function paragraphsWithParts(lines, dominantSize) {
   const paragraphs = [];
-  let current = null, prevY = null, prevSize = null;
+  let current = null, prevY = null;
+  // MÊME seuil que groupIntoParagraphs (Markdown) : les deux chemins ont déjà
+  // divergé une fois sur la jointure des lignes (P1bis), d'où le helper partagé.
+  const seuilEcart = paragraphGapThreshold(lines, dominantSize);
   for (const line of lines) {
     const isHeading = line.size >= dominantSize * HEADING_SIZE_RATIO;
     const gap = prevY === null ? Infinity : prevY - line.y;
     const isNew = isHeading || !current || current.isHeading !== isHeading ||
-      gap > (prevSize || line.size) * PARAGRAPH_GAP_RATIO;
+      gap > seuilEcart;
     if (isNew) { current = { isHeading, lines: [line] }; paragraphs.push(current); }
     else current.lines.push(line);
-    prevY = line.y; prevSize = line.size;
+    prevY = line.y;
   }
   return paragraphs;
 }

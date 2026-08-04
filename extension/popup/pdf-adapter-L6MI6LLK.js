@@ -7,9 +7,10 @@ import {
   isLineWrapHyphen,
   median,
   needsSpace,
+  paragraphGapThreshold,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-USBZ7MNC.js";
+} from "./chunk-MN45A56O.js";
 import "./chunk-PIRHQTI4.js";
 export {
   HEADING_SIZE_RATIO,
@@ -20,6 +21,7 @@ export {
   isLineWrapHyphen,
   median,
   needsSpace,
+  paragraphGapThreshold,
   splitIntoColumns,
   stripMetadata
 };

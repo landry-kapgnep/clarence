@@ -6,14 +6,14 @@ import {
   GlobalWorkerOptions,
   HEADING_SIZE_RATIO,
   OPS,
-  PARAGRAPH_GAP_RATIO,
   getDocument,
   groupIntoLines,
   isLineWrapHyphen,
   median,
   needsSpace,
+  paragraphGapThreshold,
   splitIntoColumns
-} from "./chunk-USBZ7MNC.js";
+} from "./chunk-MN45A56O.js";
 import {
   anonymizeUnits
 } from "./chunk-WJQYGZYI.js";
@@ -29,17 +29,17 @@ function sanitizeForWinAnsi(str) {
 }
 function paragraphsWithParts(lines, dominantSize) {
   const paragraphs = [];
-  let current = null, prevY = null, prevSize = null;
+  let current = null, prevY = null;
+  const seuilEcart = paragraphGapThreshold(lines, dominantSize);
   for (const line of lines) {
     const isHeading = line.size >= dominantSize * HEADING_SIZE_RATIO;
     const gap = prevY === null ? Infinity : prevY - line.y;
-    const isNew = isHeading || !current || current.isHeading !== isHeading || gap > (prevSize || line.size) * PARAGRAPH_GAP_RATIO;
+    const isNew = isHeading || !current || current.isHeading !== isHeading || gap > seuilEcart;
     if (isNew) {
       current = { isHeading, lines: [line] };
       paragraphs.push(current);
     } else current.lines.push(line);
     prevY = line.y;
-    prevSize = line.size;
   }
   return paragraphs;
 }

@@ -31640,6 +31640,8 @@ if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
   GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("vendor/pdf.worker.min.mjs");
 }
 var PARAGRAPH_GAP_RATIO = 1.6;
+var MIN_ECARTS_CALIBRAGE = 8;
+var ECART_PARAGRAPHE_RATIO = 1.3;
 var HEADING_SIZE_RATIO = 1.3;
 function fontSizeOf(item) {
   return item.height || Math.abs(item.transform?.[3]) || 1;
@@ -31689,11 +31691,12 @@ function groupIntoLines(items) {
 function groupIntoParagraphs(lines, dominantSize) {
   const paragraphs = [];
   let current = null;
-  let prevY = null, prevSize = null;
+  let prevY = null;
+  const seuilEcart = paragraphGapThreshold(lines, dominantSize);
   for (const line of lines) {
     const isHeading = line.size >= dominantSize * HEADING_SIZE_RATIO;
     const gap = prevY === null ? Infinity : prevY - line.y;
-    const isNewParagraph = isHeading || !current || current.isHeading !== isHeading || gap > (prevSize || line.size) * PARAGRAPH_GAP_RATIO;
+    const isNewParagraph = isHeading || !current || current.isHeading !== isHeading || gap > seuilEcart;
     if (isNewParagraph) {
       current = { text: line.text, isHeading };
       paragraphs.push(current);
@@ -31703,13 +31706,22 @@ function groupIntoParagraphs(lines, dominantSize) {
       current.text += " " + line.text;
     }
     prevY = line.y;
-    prevSize = line.size;
   }
   return paragraphs;
 }
 function median(nums) {
   const s = [...nums].sort((a, b) => a - b);
   return s[Math.floor(s.length / 2)] || 11;
+}
+function paragraphGapThreshold(lines, dominantSize) {
+  const repli = dominantSize * PARAGRAPH_GAP_RATIO;
+  const ecarts = [];
+  for (let i = 1; i < lines.length; i++) {
+    const gap = lines[i - 1].y - lines[i].y;
+    if (gap > 0) ecarts.push(gap);
+  }
+  if (ecarts.length < MIN_ECARTS_CALIBRAGE) return repli;
+  return Math.max(median(ecarts) * ECART_PARAGRAPHE_RATIO, repli);
 }
 function splitIntoColumns(items) {
   const withGeom = items.filter((i) => i.str && i.str.trim()).map((i) => ({
@@ -31786,6 +31798,7 @@ export {
   isLineWrapHyphen,
   groupIntoLines,
   median,
+  paragraphGapThreshold,
   splitIntoColumns,
   extractTextUnits,
   applyMask,

@@ -108,3 +108,43 @@ test('reconstruction : un mot coupé en fin de ligne est recollé AVANT détecti
   assert.match(texteRecu, /\bautomatisee\b/, 'le mot coupé n\'a pas été recollé avant détection : ' + JSON.stringify(texteRecu));
   assert.doesNotMatch(texteRecu, /\bmatisee\b/, 'le fragment isolé "matisee" est encore soumis tel quel au modèle');
 });
+
+// --- Le chemin de RECONSTRUCTION a sa propre construction de paragraphes
+// (paragraphsWithParts). Il doit recevoir le même seuil calibré que le chemin
+// Markdown, sinon les deux divergent — ils l'ont déjà fait une fois (P1bis).
+test('reconstruction : interligne 1,5 → un seul paragraphe soumis au modèle', async () => {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const page = doc.addPage([460, 700]);
+  let y = 650;
+  // Interligne 19 pt en police 11 : au-dessus de l'ancien seuil (17,6), donc
+  // AVANT correctif chaque ligne partait en unité séparée.
+  const phrases = [
+    'Le rapport porte sur la localisation des jeux',
+    'video et sur les echanges entre studios. Il',
+    'analyse le role des editeurs dans la diffusion',
+    'des oeuvres a l international, en prenant pour',
+    'exemple plusieurs titres recents et leurs',
+    'adaptations successives sur differents marches',
+    'ainsi que les choix operes par les equipes',
+    'de traduction au fil des annees ecoulees',
+    'depuis la sortie initiale du premier volet',
+    'de la serie etudiee dans ce present travail'
+  ];
+  for (const p of phrases) { page.drawText(p, { x: 40, y, size: 11, font }); y -= 19; }
+
+  const recus = [];
+  const espion = async chunk => { recus.push(chunk); return []; };
+  await reconstructPdf((await doc.save()).buffer, { deps, nerPipeline: espion });
+
+  // Une seule unité de détection. On compare en minuscules : detectNER fait
+  // DEUX passes par unité (texte naturel + casse boostée), donc deux chaînes
+  // distinctes pour un même paragraphe.
+  const distincts = new Set(recus.map(t => t.toLowerCase()));
+  assert.equal(distincts.size, 1,
+    'le modèle doit recevoir UN paragraphe, pas une ligne à la fois : ' +
+    JSON.stringify([...distincts].slice(0, 3)));
+  const [texte] = [...distincts];
+  assert.match(texte, /localisation des jeux video/, 'les lignes doivent être recollées');
+  assert.match(texte, /present travail$/, 'jusqu\'à la dernière');
+});

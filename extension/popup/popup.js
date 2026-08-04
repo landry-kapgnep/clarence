@@ -1198,7 +1198,7 @@ var FILE_TYPES = {
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-RVC67C5Z.js"), outExt: ".md" },
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-L6MI6LLK.js"), outExt: ".md" },
   // Images : metadataOnly → processFile() court-circuite le pipeline de
   // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
   // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
@@ -1259,7 +1259,23 @@ function setChosenFile(file) {
   }
   chosenFile = file;
   fileOutBlob = null;
-  $("fileName").textContent = file.name;
+  const fileNameEl = $("fileName");
+  const fileMainEl = fileNameEl?.querySelector(".file-name-main");
+  const fileExtEl = fileNameEl?.querySelector(".file-name-ext");
+  const lastDot = file.name.lastIndexOf(".");
+  if (fileMainEl && fileExtEl) {
+    if (lastDot > 0 && lastDot < file.name.length - 1) {
+      fileMainEl.textContent = file.name.slice(0, lastDot);
+      fileExtEl.textContent = `.${file.name.slice(lastDot + 1).toLowerCase()}`;
+      fileExtEl.hidden = false;
+    } else {
+      fileMainEl.textContent = file.name;
+      fileExtEl.textContent = "";
+      fileExtEl.hidden = true;
+    }
+  } else {
+    fileNameEl.textContent = file.name;
+  }
   $("fileSize").textContent = humanSize(file.size);
   $("fileChosen").hidden = false;
   $("fileOptions").hidden = !!FILE_TYPES[ext].metadataOnly;
@@ -1693,7 +1709,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-C5IQCTYG.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-JDRIFIUI.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,

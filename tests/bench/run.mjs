@@ -286,7 +286,7 @@ async function main() {
   } else {
     console.log('\n  ✔ Aucune fuite sur le structuré.');
   }
-  console.log('\n  Rappel : 5 documents synthétiques ne prédisent PAS le fichier d\'un inconnu.');
+  console.log(`\n  Rappel : ${CORPUS.length} documents synthétiques ne prédisent PAS le fichier d'un inconnu.`);
   console.log('  Ce banc empêche les régressions et donne un plancher — il ne remplace pas');
   console.log('  un test sur de vrais fichiers de gens qui ne sont pas nous.\n');
 }

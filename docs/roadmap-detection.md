@@ -307,7 +307,63 @@ jamais être coupé, puisque la coupure casse la réversibilité en silence.
 
 ---
 
-## P8 — La TAILLE D'UNITÉ n'a jamais été réglée, et elle cause TOUT (mesuré 04/08/2026)
+## ~~P8 — La taille d'unité~~ ✅ CAUSE TROUVÉE ET CORRIGÉE (04/08/2026)
+
+**Ce n'était pas un hyperparamètre à régler, c'était un bug de calibrage.**
+
+`PARAGRAPH_GAP_RATIO` comparait l'écart entre deux lignes à la **taille de
+police**, alors que l'interligne est une propriété de la mise en page. Sur le
+mémoire : police 11, écart réel **19,0**, seuil `11 × 1.6 = 17,7` → **chaque
+ligne devenait un paragraphe**. Tout document en interligne 1,5 ou double était
+touché — mémoires, rapports, articles. Le corpus du banc, en interligne simple,
+ne pouvait structurellement pas le voir.
+
+Corrigé par `paragraphGapThreshold` (`pdf-adapter.js`, partagé avec
+`pdf-reconstruct.js`) : le seuil se calibre sur **l'écart médian entre lignes de
+la colonne courante**, avec deux gardes mesurées — `Math.max` avec l'ancien
+seuil (il ne peut que croître, donc le correctif ne peut que fusionner, jamais
+fragmenter davantage) et un minimum de 8 écarts (sous ce seuil la médiane tombe
+sur l'écart de *paragraphe*, ce qui cassait deux tests sur `echantillon.pdf`).
+
+### Mesuré sur le mémoire réel, avant / après
+
+| | Avant | Après |
+|---|---|---|
+| Unités soumises | 1 782 | **686** |
+| Taille médiane | 91 c. | **153 c.** |
+| Phrases coupées en deux unités | 52 % | **17 %** |
+| Inférences | 5 346 | **2 124** |
+| Placeholders | 8 088 | **5 367** |
+| **Document masqué** | **39,1 %** | **22,0 %** |
+| Placeholders tronqués (P7) | 758 / 4081 | 428 / 4112 |
+
+Temps estimé en navigateur : **11 min → ~4,4 min**. Le banc est inchangé sur
+les documents existants (structuré 100 %, contextuel 84 %, préservé 97 %) — la
+propriété « le seuil ne peut que croître » se vérifie donc dans les chiffres.
+
+### Le corpus a gagné le document qui manquait
+
+`tests/bench/corpus/rapport-interligne.pdf` : prose en interligne 1,5, le
+réglage de tout mémoire académique. Son absence est **la** raison pour laquelle
+ce bug a vécu si longtemps. Nouveaux totaux du banc, sur 6 documents :
+structuré **100 %** (19/19), contextuel **86 %** (25/29), préservé **90 %**
+(36/40).
+
+La baisse du « préservé » (97 % → 90 %) **n'est pas une régression** : le
+nouveau document apporte 8 termes à préserver dont 3 échouent (`leadership`,
+`protagoniste`, `compagnons`). Le banc devient plus honnête sur un cas qu'il ne
+couvrait pas.
+
+### Ce qui reste, et c'est P6
+
+Ces trois ratés sont exactement la classe P6 : des **expressions référant à une
+personne**, que le label `person` capte légitimement. À 22 % de masquage, un
+mémoire reste inexploitable — le correctif de calibrage était nécessaire, il
+n'est pas suffisant. La suite se joue sur P6, pas sur le découpage.
+
+---
+
+## P8 (diagnostic initial) — la piste « taille d'unité », mesurée le 04/08/2026
 
 Le constat le plus important de la session. Mesuré sur un **vrai mémoire de
 75 pages** (175 652 caractères), traité en mode « Préserver » : **11 minutes**

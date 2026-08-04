@@ -42,6 +42,8 @@
   --ui-corner-mark-weight: 500;
 }
 
+/*e53935 POUR LE ROUGE PLUS PALE*/
+
 * { box-sizing: border-box; }
 
 * , *::before, *::after {
@@ -471,7 +473,22 @@ body.panel-mode .popup-shell {
 .link-btn:hover:not(:disabled) { transform: none; filter: brightness(1.15); }
 
 .file-chosen-line { margin: 12px 0 0; word-break: break-all; color: var(--paper); }
-.file-chosen-line strong { font-size: var(--control-size); font-weight: 400; }
+.file-name-pill { display: inline-flex; align-items: center; flex-wrap: wrap; font-size: var(--control-size); font-weight: 400; }
+.file-name-main {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(237, 230, 211, 0.06);
+  color: #f7f7f2;
+  line-height: 1.4;
+}
+.file-name-ext {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #ff0400;
+  color: #ffffff;
+  line-height: 1.4;
+  margin-left: 0;
+}
 
 /* Carte glissable (mode panneau) */
 .drag-card {
@@ -640,7 +657,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   opacity: 0;
 }
 .pdf-radio input[type="radio"]:checked + .square-radio::after {
-  background: #e53935; /* rouge pour les radios de format */
+  background: #8D93D6; /* rouge pour les radios de format */
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
@@ -689,7 +706,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   opacity: 0;
 }
 .pseudo-toggle input[type="checkbox"]:checked + .square-checkbox::after {
-  background: #e53935;
+  background: #8D93D6;
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }

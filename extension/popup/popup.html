@@ -155,7 +155,7 @@
         </div>
 
         <div id="fileChosen" hidden>
-          <p class="file-chosen-line"><strong id="fileName"></strong> <span class="hint" id="fileSize"></span></p>
+          <p class="file-chosen-line"><strong class="file-name-pill" id="fileName"><span class="file-name-main"></span><span class="file-name-ext" hidden></span></strong> <span class="hint" id="fileSize"></span></p>
           <div class="controls">
             <button class="btn-primary" id="fileAnalyzeBtn">Anonymiser</button>
             <button class="btn-ghost" id="fileResetBtn">Changer de fichier</button>
@@ -171,7 +171,7 @@
         <section id="fileResults" hidden>
           <h2>Fichier anonymisé</h2>
           <div class="controls">
-            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png">Télécharger</button>
+            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png"></button>
             <button class="btn-ghost" id="fileCopyBtn" hidden>Copier le texte</button>
             <span class="status" id="fileCopyStatus"></span>
           </div>
