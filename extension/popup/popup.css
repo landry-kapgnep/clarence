@@ -484,11 +484,16 @@ body.panel-mode .popup-shell {
 .file-name-ext {
   display: inline-block;
   padding: 2px 8px;
-  background: #ff0400;
   color: #ffffff;
   line-height: 1.4;
   margin-left: 0;
 }
+.file-name-ext--pdf { background: #ff0400; }
+.file-name-ext--csv { background: #a855f7; }
+.file-name-ext--xlsx { background: #22c55e; }
+.file-name-ext--docx { background: #0ea5e9; }
+.file-name-ext--jpg { background: #f59e0b; }
+.file-name-ext--png { background: #ec4899; }
 
 /* Carte glissable (mode panneau) */
 .drag-card {

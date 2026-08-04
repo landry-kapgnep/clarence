@@ -79,3 +79,43 @@ test('reinject en un seul passage : une valeur restituée contenant un motif [TY
   const out = reinject('Réf : [PERSONNE_1] et [EMAIL_1].', mapping);
   assert.equal(out, 'Réf : voir [EMAIL_1] et jean@acme.fr.');
 });
+
+// --- Fuite trouvée par le banc : la propagation ne travaillait que sur la
+// valeur ENTIÈRE. « Marcus Whitfield » masqué à sa première occurrence, mais
+// « Marcus » réutilisé seul plus loin restait EN CLAIR — forme d'usage très
+// courante dans un mail ou un rapport.
+test('un prénom réutilisé SEUL plus loin est masqué aussi', () => {
+  const texte = 'Please welcome Marcus Whitfield to the team.\n'
+    + 'Marcus previously worked at another company.';
+  const per = { type: 'PER', value: 'Marcus Whitfield', start: 15, end: 31, source: 'ner' };
+  const { masked } = maskText(texte, [per]);
+  assert.doesNotMatch(masked, /\bMarcus\b/, 'le prénom seul fuit : ' + masked);
+  assert.equal((masked.match(/\[PERSONNE_1\]/g) || []).length, 2);
+});
+
+test('la propagation par composant est SENSIBLE À LA CASSE', () => {
+  // Sans cette garde, « Rose Fontaine » ferait disparaître toutes les « rose »
+  // du document — le sur-masquage qu'on passe la session à combattre.
+  const texte = 'Rose Fontaine cultive une rose ancienne dans son jardin.';
+  const per = { type: 'PER', value: 'Rose Fontaine', start: 0, end: 13, source: 'ner' };
+  const { masked } = maskText(texte, [per]);
+  assert.match(masked, /une rose ancienne/, 'le nom commun en minuscules doit survivre');
+});
+
+test('particules et civilités ne sont jamais propagées seules', () => {
+  const texte = 'Madame de La Villardière parle. Le rapport de la commission de ce mois.';
+  const per = { type: 'PER', value: 'Madame de La Villardière', start: 0, end: 24, source: 'ner' };
+  const { masked } = maskText(texte, [per]);
+  assert.match(masked, /Le rapport de la commission de ce mois/,
+    'particules propagées à tort : ' + masked);
+});
+
+test('avec pseudonymes, le composant reçoit SON pseudonyme, pas le nom complet', () => {
+  const texte = 'Contact : Marcus Whitfield. Marcus rappellera demain.';
+  const per = { type: 'PER', value: 'Marcus Whitfield', start: 10, end: 26, source: 'ner' };
+  const { masked } = maskText(texte, [per], {
+    pseudonymize: (type, v) => (v === 'Marcus Whitfield' ? 'Noémie Rousseau' : null)
+  });
+  assert.match(masked, /Contact : Noémie Rousseau\./);
+  assert.match(masked, /Noémie rappellera demain/, 'attendu « Noémie » seul, obtenu : ' + masked);
+});

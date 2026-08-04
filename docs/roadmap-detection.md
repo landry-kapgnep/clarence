@@ -1,8 +1,59 @@
 # Roadmap — qualité de détection & reconstruction PDF
 
 Backlog des défauts **observés sur de vrais fichiers** (pas des idées théoriques).
-Constaté le 21/07/2026 sur un CV réel (PDF, mode « Préserver / reconstruction »).
 Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
+
+> **Ce fichier est le tableau de bord vivant de la détection.** Le bloc ci-dessous
+> se met à jour à chaque séance ; les sections P0→P8 gardent le détail et
+> l'historique. Règle : on n'écrit ici que ce qui a été **mesuré**, jamais une
+> impression — et on garde les pistes **rejetées** avec leur chiffre, pour ne pas
+> les retenter.
+
+## Tableau de bord — 05/08/2026
+
+### Les trois chiffres (`npm run bench`, 6 documents)
+
+| Critère | Valeur | Exigence | Tendance |
+|---|---|---|---|
+| Rappel **structuré** | **100 %** (19/19) | 100 %, non négociable | stable |
+| Rappel **contextuel** | **90 %** (26/29) | mesuré, jamais promis | 84 → 86 → **90** |
+| Termes **préservés** | **95 %** (38/40) | bloque le payant | 90 → **95** |
+
+Sur un vrai mémoire de 75 pages : **21,1 %** du document masqué (39,1 % avant),
+**9 min** de traitement (11 min avant), vérifié en Chrome.
+
+### Ce qui reste ouvert, par gravité
+
+| # | Défaut | État | Où |
+|---|---|---|---|
+| — | **Aucune fuite structurée ni partielle** au banc | ✅ | — |
+| P2bis | Sur-masquage des unités courtes : titres de section (`COMPÉTENCES`→SANTE, `FORMATION`→LIEU), `BUT Informatique` | ouvert | bloque le payant |
+| P6 | Bruit résiduel typé **POSTE** (`dossier`, `stratégie`, `vendor`, `representative`) | partiel | idem |
+| — | `KAROLINE ANSELME` raté sur document administratif court | ouvert | rappel |
+| — | `1988-03-14` raté en cellule nue | ouvert | rappel |
+| P7 | Placeholders **tronqués** (422/4118 sur le mémoire) — casse la réversibilité, pas une fuite | ouvert, cause non isolée | réversibilité |
+| P2ter | Adresse abrégée (« Av. ») mal typée ; produits tiers jamais détectés | ouvert | couverture |
+| — | Régression assumée : `IUT` ne survit plus (fusionné avec « Informatique ») | connu | cosmétique |
+| P5 | i18n de la couche structurée (codes postaux, IDs non-FR) | partiel | couverture |
+
+### Pistes TESTÉES et REJETÉES — ne pas les refaire
+
+| Piste | Verdict mesuré |
+|---|---|
+| Reformuler les labels en `person name` / `company name` | contextuel **84 → 72 %**, 8 tests cassés |
+| Traitement par **lot** (`inference({texts:[…]})`) | **2,5× plus LENT** (padding) et change les résultats (0/60 identiques) |
+| **Cache** par texte d'unité | 0 % de doublons sur un vrai mémoire |
+| Donner le libellé de colonne comme **contexte** à une cellule | fait CHUTER la détection (0,57 → 0,32 = fuite) |
+| Checkpoint **multilingue** `gliner_multi-v2.1` | 2× plus lourd, quasi rien trouvé |
+| Regrouper les unités en lots de 150/300/600 caractères | le nom du CV n'est plus trouvé |
+
+### Le modèle de coût, à ne pas se retromper dessus
+
+`coût ≈ 37 ms fixes + k × longueur du texte`, **par groupe de labels**.
+Conséquence : réduire le NOMBRE d'inférences ne rapporte presque rien (mesuré :
+−60 % d'inférences → −18 % de temps). Les vrais leviers sont de réduire les
+**caractères traités** (décocher un groupe ≈ ×3) ou de rendre chaque inférence
+moins chère (WebGPU, modèle plus petit).
 
 ---
 

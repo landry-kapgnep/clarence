@@ -3,7 +3,17 @@
   "name": "Clarence — anonymiseur local",
   "version": "0.1.0",
   "description": "Anonymise les données sensibles avant de les coller dans ChatGPT, Claude ou Gemini. Tout reste dans votre navigateur.",
+  "icons": {
+    "16": "popup/img/ClarenceFairySimpleLogo.png",
+    "48": "popup/img/ClarenceFairySimpleLogo.png",
+    "128": "popup/img/ClarenceFairySimpleLogo.png"
+  },
   "action": {
+    "default_icon": {
+      "16": "popup/img/ClarenceFairySimpleLogo.png",
+      "48": "popup/img/ClarenceFairySimpleLogo.png",
+      "128": "popup/img/ClarenceFairySimpleLogo.png"
+    },
     "default_popup": "popup/popup.html",
     "default_title": "Clarence — préparer un texte"
   },

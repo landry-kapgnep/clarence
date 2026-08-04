@@ -14,7 +14,7 @@ import {
   reinject,
   selectActive,
   snapToWordBoundaries
-} from "./chunk-52CH5O3L.js";
+} from "./chunk-6SRQ32UP.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -1271,13 +1271,16 @@ function setChosenFile(file) {
   const lastDot = file.name.lastIndexOf(".");
   if (fileMainEl && fileExtEl) {
     if (lastDot > 0 && lastDot < file.name.length - 1) {
+      const ext2 = file.name.slice(lastDot + 1).toLowerCase();
       fileMainEl.textContent = file.name.slice(0, lastDot);
-      fileExtEl.textContent = `.${file.name.slice(lastDot + 1).toLowerCase()}`;
+      fileExtEl.textContent = `.${ext2}`;
       fileExtEl.hidden = false;
+      fileExtEl.className = `file-name-ext file-name-ext--${ext2}`;
     } else {
       fileMainEl.textContent = file.name;
       fileExtEl.textContent = "";
       fileExtEl.hidden = true;
+      fileExtEl.className = "file-name-ext";
     }
   } else {
     fileNameEl.textContent = file.name;
@@ -1715,7 +1718,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-JDRIFIUI.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-VSWCJ2VL.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -1740,7 +1743,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-3QIY34XJ.js");
+    const { anonymizeUnits } = await import("./anonymize-units-KJCHGZAJ.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

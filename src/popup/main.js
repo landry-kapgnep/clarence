@@ -626,13 +626,16 @@ function setChosenFile(file) {
   const lastDot = file.name.lastIndexOf('.');
   if (fileMainEl && fileExtEl) {
     if (lastDot > 0 && lastDot < file.name.length - 1) {
+      const ext = file.name.slice(lastDot + 1).toLowerCase();
       fileMainEl.textContent = file.name.slice(0, lastDot);
-      fileExtEl.textContent = `.${file.name.slice(lastDot + 1).toLowerCase()}`;
+      fileExtEl.textContent = `.${ext}`;
       fileExtEl.hidden = false;
+      fileExtEl.className = `file-name-ext file-name-ext--${ext}`;
     } else {
       fileMainEl.textContent = file.name;
       fileExtEl.textContent = '';
       fileExtEl.hidden = true;
+      fileExtEl.className = 'file-name-ext';
     }
   } else {
     fileNameEl.textContent = file.name;

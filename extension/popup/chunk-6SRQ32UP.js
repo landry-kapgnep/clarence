@@ -4136,15 +4136,47 @@ function maskText(text, entities, opts = {}) {
   }
   return { masked: out, mapping };
 }
+var PARTICULES = /* @__PURE__ */ new Set([
+  "de",
+  "du",
+  "des",
+  "la",
+  "le",
+  "les",
+  "van",
+  "von",
+  "da",
+  "di",
+  "bin",
+  "al",
+  "ben"
+]);
+function composantsDeNoms(mapping) {
+  const out = [];
+  for (const m of mapping) {
+    if (m.type !== "PER" || !m.value) continue;
+    const parts = m.value.split(/\s+/).filter(Boolean);
+    if (parts.length < 2) continue;
+    const subs = m.realistic ? String(m.placeholder).split(/\s+/).filter(Boolean) : null;
+    if (subs && subs.length !== parts.length) continue;
+    parts.forEach((p, i) => {
+      if (p.length < 4) return;
+      const bas = p.toLowerCase();
+      if (PARTICULES.has(bas) || HONORIFICS.has(bas)) return;
+      out.push({ placeholder: subs ? subs[i] : m.placeholder, value: p, exactCase: true });
+    });
+  }
+  return out;
+}
 function propagatedSpans(text, mapping, occupied = []) {
   const spans = [];
   const taken = occupied.map((o) => ({ start: o.start, end: o.end }));
-  const ordered = [...mapping].sort((a, b) => b.value.length - a.value.length);
-  for (const { placeholder, value } of ordered) {
+  const ordered = [...mapping, ...composantsDeNoms(mapping)].sort((a, b) => b.value.length - a.value.length);
+  for (const { placeholder, value, exactCase } of ordered) {
     if (!value) continue;
     const re = new RegExp(
       "(?<![\\p{L}\\p{N}_])" + escapeRe(value) + "(?![\\p{L}\\p{N}_])",
-      "giu"
+      exactCase ? "gu" : "giu"
     );
     let m;
     while ((m = re.exec(text)) !== null) {

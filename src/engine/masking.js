@@ -6,6 +6,8 @@
 //   occurrences que la détection aurait ratées (propagation par valeur).
 // - La table de mapping vit uniquement en mémoire, jamais persistée/transmise.
 
+import { HONORIFICS } from './honorifics.js';
+
 const TYPE_LABELS = {
   PER: 'PERSONNE', ORG: 'ENTREPRISE', LOC: 'LIEU', MISC: 'DIVERS',
   EMAIL: 'EMAIL', TELEPHONE: 'TELEPHONE', IBAN: 'IBAN',
@@ -84,16 +86,64 @@ export function maskText(text, entities, opts = {}) {
 //   même entité. Sans ça, la seconde était masquée et la première laissée en
 //   clair dans le même document (constaté).
 //
+// Particules et titres : jamais identifiants seuls, et propager « de » ou
+// « Monsieur » masquerait la moitié d'un document. Classe FERMÉE, donc une
+// liste est ici légitime (même raisonnement que honorifics.js).
+const PARTICULES = new Set([
+  'de', 'du', 'des', 'la', 'le', 'les', 'van', 'von', 'da', 'di', 'bin', 'al', 'ben'
+]);
+
+// Composants d'un NOM propagés séparément — la fuite que le banc a révélée.
+//
+// La propagation ne travaillait que sur la valeur ENTIÈRE : « Marcus Whitfield »
+// masqué à sa première occurrence, mais « Marcus » réutilisé seul dix lignes
+// plus bas restait EN CLAIR. C'est une forme d'usage très courante dans un mail
+// ou un rapport, et un prénom accolé au reste du document désigne la personne
+// aussi sûrement que le nom complet.
+//
+// Trois garde-fous, chacun contre un sur-masquage identifié :
+//  - SENSIBLE À LA CASSE, contrairement à la propagation normale : sans ça,
+//    « Rose Fontaine » ferait disparaître toutes les « rose » du document, et
+//    « Pierre Martin » toutes les « pierre ». Un prénom réel porte sa majuscule.
+//  - composants d'au moins 4 caractères : en dessous, trop de collisions avec
+//    des mots courants.
+//  - particules et civilités écartées (voir PARTICULES / HONORIFICS).
+//
+// Pseudonymes : le substitut est un nom complet (« Noémie Rousseau »), pas un
+// [PERSONNE_n]. On associe alors les composants DEUX À DEUX dans l'ordre
+// (« Marcus »→« Noémie »), ce qui est exact puisque pseudonyms.js construit le
+// nom complet À PARTIR de ses composants, dans l'ordre. Si les deux comptes
+// diffèrent, on s'abstient plutôt que de risquer un substitut incohérent.
+function composantsDeNoms(mapping) {
+  const out = [];
+  for (const m of mapping) {
+    if (m.type !== 'PER' || !m.value) continue;
+    const parts = m.value.split(/\s+/).filter(Boolean);
+    if (parts.length < 2) continue;
+    const subs = m.realistic ? String(m.placeholder).split(/\s+/).filter(Boolean) : null;
+    if (subs && subs.length !== parts.length) continue;
+    parts.forEach((p, i) => {
+      if (p.length < 4) return;
+      const bas = p.toLowerCase();
+      if (PARTICULES.has(bas) || HONORIFICS.has(bas)) return;
+      out.push({ placeholder: subs ? subs[i] : m.placeholder, value: p, exactCase: true });
+    });
+  }
+  return out;
+}
+
 // occupied : spans déjà couverts, à ne pas re-masquer (entités détectées).
 // Retourne [{ start, end, placeholder }] trié, sans chevauchement.
 export function propagatedSpans(text, mapping, occupied = []) {
   const spans = [];
   const taken = occupied.map(o => ({ start: o.start, end: o.end }));
-  const ordered = [...mapping].sort((a, b) => b.value.length - a.value.length);
-  for (const { placeholder, value } of ordered) {
+  const ordered = [...mapping, ...composantsDeNoms(mapping)]
+    .sort((a, b) => b.value.length - a.value.length);
+  for (const { placeholder, value, exactCase } of ordered) {
     if (!value) continue;
     const re = new RegExp(
-      '(?<![\\p{L}\\p{N}_])' + escapeRe(value) + '(?![\\p{L}\\p{N}_])', 'giu'
+      '(?<![\\p{L}\\p{N}_])' + escapeRe(value) + '(?![\\p{L}\\p{N}_])',
+      exactCase ? 'gu' : 'giu'
     );
     let m;
     while ((m = re.exec(text)) !== null) {
