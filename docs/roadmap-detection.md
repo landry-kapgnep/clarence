@@ -307,6 +307,87 @@ jamais être coupé, puisque la coupure casse la réversibilité en silence.
 
 ---
 
+## P8 — La TAILLE D'UNITÉ n'a jamais été réglée, et elle cause TOUT (mesuré 04/08/2026)
+
+Le constat le plus important de la session. Mesuré sur un **vrai mémoire de
+75 pages** (175 652 caractères), traité en mode « Préserver » : **11 minutes**
+et **8 088 placeholders pour 20 668 mots — 39 % du document masqué**.
+
+La sortie est du charabia : les **articles et mots outils** sont masqués.
+
+> `[PERSONNE_75] [POSTE_9] [PERSONNE_225] [NATIONALITE_30] [LIEU_4…`
+> `[PERSONNE_97] ([DATE_NAISSANCE_25]), introduit [PERSONNE_75] concept…`
+
+où `[PERSONNE_75]` = « le », `[PERSONNE_70]` = « son », `[PERSONNE_35]` = « où ».
+
+### Ce n'est ni le modèle, ni le découpeur de mots
+
+Vérifié : la même page passée **d'un seul tenant** dans Node ne sort que
+2 entités. Le correctif du découpeur français n'est pas en cause non plus (le
+motif d'origine de la lib donne 1 entité, le corrigé 2 — même ordre de
+grandeur). Le coupable est la **taille des unités soumises** : le chemin PDF
+envoie un paragraphe à la fois, **médiane 91 caractères**.
+
+Un fragment de 91 caractères d'une prose académique n'est pas une unité
+sémantique : c'est une coupe arbitraire au milieu d'une phrase. Le modèle n'a
+plus de quoi décider, et il étiquette.
+
+### La mesure, sur 2 987 caractères réels de ce mémoire
+
+Deux vraies entités s'y trouvent (`Square Enix`, `Consalvo`).
+
+| Taille visée | Unités | Inférences | Masques | Vraies entités |
+|---|---|---|---|---|
+| **90 (actuel)** | 34 | 102 | **77** | les 2 |
+| 250 | 15 | 45 | 48 | les 2 |
+| 500 | 7 | 21 | 21 | les 2 |
+| **1 000** | 4 | **12** | **12** | **les 2** |
+| 2 000 | 2 | 6 | 3 | `Consalvo` PERDUE |
+| 4 000 | 1 | 3 | 0 | les 2 PERDUES |
+
+**À 1 000 caractères : 6× moins de bruit, 8× moins d'inférences, aucune perte.**
+Au-delà de 2 000, des entités réelles disparaissent — l'optimum est borné des
+deux côtés, ce n'est pas « plus grand = mieux ».
+
+Et 1 000, c'est déjà la taille de fenêtre de `chunkText` : la constante existe.
+
+### Pourquoi ça règle AUSSI les 11 minutes
+
+Le coût est **par inférence**, pas par caractère : 1 782 unités × 3 groupes =
+**5 346 inférences**, soit 123 ms chacune en WASM navigateur (21 ms en Node
+natif — l'écart WASM/natif du cadrage §8). Diviser les inférences par 8 divise
+le temps d'autant. **Un seul changement pour les deux symptômes.**
+
+### La nuance à ne PAS écraser
+
+Le projet a mesuré l'inverse pour les **cellules** de tableau : l'isolement y
+est un ATOUT (CLAUDE.md, « donner du contexte à une cellule DÉGRADE la
+détection »). Il n'y a pas contradiction : une cellule CSV est une unité
+sémantiquement complète, un fragment de paragraphe est une coupe arbitraire.
+Le regroupement doit donc viser les chemins de **prose** (PDF, DOCX), jamais
+les chemins **cellulaires** (CSV, XLSX).
+
+### Deux pistes de performance TESTÉES ET ÉCARTÉES
+
+- **Le traitement par lot est plus LENT**, pas plus rapide : `inference({ texts:
+  [...] })` complète toutes les entrées à la longueur de la plus longue, donc
+  les paragraphes courts paient pour le plus long. Mesuré : 59 ms/unité en lot
+  contre 21 ms un par un (×0,4). Il **change** en plus les résultats (0/60
+  identiques, scores décalés de 0,58 à 0,41) — le remplissage modifie
+  l'attention. À ne pas retenter.
+- **Un cache par texte d'unité ne sert à rien** : 0 % de doublons sur ce
+  document (1 782 unités, 1 782 distinctes).
+
+### Avant d'implémenter
+
+Le regroupement demande de **remapper les offsets** vers les unités d'origine
+pour la reconstruction. Et il doit passer le banc complet : deux corrections
+« évidentes » sont mortes à cette étape dans la même session (labels
+reformulés, P6). Ne pas livrer sur la seule foi du tableau ci-dessus, qui ne
+porte que sur un extrait d'un document.
+
+---
+
 ## P2ter — Lacunes de couverture constatées sur documents réels (non corrigé)
 
 - **Adresse mal typée** : `99 Av. [PERSONNE_4], [CODE_POSTAL_1] Villetaneuse` —

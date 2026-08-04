@@ -640,7 +640,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   opacity: 0;
 }
 .pdf-radio input[type="radio"]:checked + .square-radio::after {
-  background: var(--seal-lit); /* violet : « coché » = protection active, pas alarme */
+  background: #e53935; /* rouge pour les radios de format */
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
@@ -689,7 +689,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   opacity: 0;
 }
 .pseudo-toggle input[type="checkbox"]:checked + .square-checkbox::after {
-  background: var(--seal-lit);
+  background: #e53935;
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }

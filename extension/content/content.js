@@ -77,8 +77,8 @@ if (!document.getElementById(HOST_ID)) {
     .btn.open-state:hover { transform: rotate(45deg) scale(1.1); }
     .btn img {
       display: block;
-      width: 22px;
-      height: 22px;
+      width: 40px;
+      height: 40px;
       object-fit: contain;
       pointer-events: none;
       transform: translate(0, 0);
@@ -116,7 +116,7 @@ btn.className = 'btn';
 btn.title = 'Clarence';
 
 const img = document.createElement('img');
-img.src = chrome.runtime.getURL('popup/img/ClarenceLogoSimpleW.png');
+img.src = chrome.runtime.getURL('popup/img/ClarenceFairySimpleLogo.png');
 img.alt = '';
 img.loading = 'eager';
 img.decoding = 'async';
