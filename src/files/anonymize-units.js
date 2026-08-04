@@ -59,12 +59,30 @@ export const UNIT_SEP = '\n\u{E000}\u{E004}\u{E000}\n';
 //     « Date de naissance : 1988-03-14 »      → 0,74 sur le LIBELLÉ, 0,15 sur
 //                                               la vraie date (FUITE)
 // L'isolement de la cellule est donc un ATOUT du zero-shot, pas un manque.
+// Date nue, sans le moindre mot autour : 1988-03-14, 14/03/1988, 1988/03/14.
+const DATE_NUE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/;
+
+// Faut-il payer une inférence sur cette unité ?
+//
+// Le garde-fou d'origine exigeait DEUX LETTRES consécutives — pensé pour ne pas
+// payer une passe modèle sur les milliers de cellules numériques d'un CSV. Il
+// avait un angle mort grave : une cellule contenant UNIQUEMENT une date de
+// naissance n'a aucune lettre, donc elle n'était JAMAIS soumise au modèle.
+//
+// C'est précisément le cas que le zero-shot est censé débloquer, et qui sert
+// d'exemple de référence dans CLAUDE.md : « 1988-03-14 » seul sort à 0,59,
+// au-dessus du seuil. Le modèle savait le faire ; on ne le lui demandait pas.
+// Le banc le comptait comme un raté du modèle — c'était un raté du filtre.
+function meriteUnePasseContextuelle(text) {
+  return /\p{L}{2}/u.test(text) || DATE_NUE.test(text);
+}
+
 async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
   const out = [];
   const cache = new Map();
   for (let i = 0; i < units.length; i++) {
     const { text, structurel } = units[i];
-    if (!structurel && /\p{L}{2}/u.test(text)) {
+    if (!structurel && meriteUnePasseContextuelle(text)) {
       if (!cache.has(text)) cache.set(text, await detect(text, nerPipeline, { disabledTypes }));
       const base = ranges[i].start;
       for (const e of cache.get(text)) {

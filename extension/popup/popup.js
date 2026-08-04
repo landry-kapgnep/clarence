@@ -57,9 +57,10 @@ var GROUPES = [
 var TYPES_PEU_FIABLES = ["POSTE", "NATIONALITE", "ETABLISSEMENT", "SANTE"];
 var typesDuGroupe = (g) => Object.values(g.types);
 var TYPES_NOMS_PROPRES = /* @__PURE__ */ new Set(["PER", "ORG", "LOC"]);
-function estNomPropreplausible(type, valeur) {
-  if (!TYPES_NOMS_PROPRES.has(type)) return true;
-  return new RegExp("\\p{Lu}", "u").test(valeur);
+function estPlausiblePourLeType(type, valeur) {
+  if (TYPES_NOMS_PROPRES.has(type)) return new RegExp("\\p{Lu}", "u").test(valeur);
+  if (type === "DATE_NAISSANCE") return /\d/.test(valeur);
+  return true;
 }
 async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: disabledTypes2 } = {}) {
   if (!glinerPipeline) return [];
@@ -78,7 +79,7 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
       for (const s of spans || []) {
         const type = groupe.types[s.label];
         if (!type || s.score < seuil) continue;
-        if (!estNomPropreplausible(type, chunk.slice(s.start, s.end))) continue;
+        if (!estPlausiblePourLeType(type, chunk.slice(s.start, s.end))) continue;
         duChunk.push({
           type,
           value: chunk.slice(s.start, s.end),
@@ -1719,7 +1720,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-VSWCJ2VL.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-AV5HDMYJ.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -1744,7 +1745,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-KJCHGZAJ.js");
+    const { anonymizeUnits } = await import("./anonymize-units-KYVHZQDK.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

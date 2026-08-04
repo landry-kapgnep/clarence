@@ -122,9 +122,15 @@ const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
 // (c) « toujours masquer » reste disponible, et (d) le sur-masquage mesuré
 // rendait les documents inexploitables, ce qui est l'autre façon de perdre
 // l'utilisateur. Réévaluer si un cas réel de nom en minuscules apparaît.
-function estNomPropreplausible(type, valeur) {
-  if (!TYPES_NOMS_PROPRES.has(type)) return true;
-  return /\p{Lu}/u.test(valeur);
+// Une DATE DE NAISSANCE porte toujours au moins un chiffre — au minimum
+// l'année. Sans cette garde, le modèle sortait « trimestre » à 0,74 et
+// « Sept. 2024 - Aout 2025 » comme dates de naissance. Même raisonnement que
+// pour les noms propres : une exigence de FORME propre au type, déterministe,
+// là où le score ne sépare rien.
+function estPlausiblePourLeType(type, valeur) {
+  if (TYPES_NOMS_PROPRES.has(type)) return /\p{Lu}/u.test(valeur);
+  if (type === 'DATE_NAISSANCE') return /\d/.test(valeur);
+  return true;
 }
 
 // glinerPipeline : fonction INJECTÉE (text, labels) → [{ spanText, start, end,
@@ -155,7 +161,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
         // Un label inconnu ne doit jamais devenir une entité sans type : mieux
         // vaut l'ignorer que produire un placeholder [undefined_1].
         if (!type || s.score < seuil) continue;
-        if (!estNomPropreplausible(type, chunk.slice(s.start, s.end))) continue;
+        if (!estPlausiblePourLeType(type, chunk.slice(s.start, s.end))) continue;
         duChunk.push({
           type,
           value: chunk.slice(s.start, s.end),

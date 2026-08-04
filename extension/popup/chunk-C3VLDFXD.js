@@ -12,12 +12,16 @@ import {
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\n\uE000\uE004\uE000\n";
+var DATE_NUE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/;
+function meriteUnePasseContextuelle(text) {
+  return new RegExp("\\p{L}{2}", "u").test(text) || DATE_NUE.test(text);
+}
 async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
   const out = [];
   const cache = /* @__PURE__ */ new Map();
   for (let i = 0; i < units.length; i++) {
     const { text, structurel } = units[i];
-    if (!structurel && new RegExp("\\p{L}{2}", "u").test(text)) {
+    if (!structurel && meriteUnePasseContextuelle(text)) {
       if (!cache.has(text)) cache.set(text, await detect(text, nerPipeline, { disabledTypes }));
       const base = ranges[i].start;
       for (const e of cache.get(text)) {

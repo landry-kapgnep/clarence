@@ -39,9 +39,12 @@ test('les labels des trois groupes sont mappés vers les bons types', async () =
     ['nationality', 'NATIONALITE'], ['school', 'ETABLISSEMENT'],
     ['medical condition', 'SANTE']
   ];
+  // La valeur factice doit être plausible pour TOUS les types testés (voir
+  // estPlausiblePourLeType) : une majuscule pour PER/ORG/LIEU, un chiffre pour
+  // DATE_NAISSANCE. Ce test porte sur le mapping label→type, pas sur la forme.
   for (const [label, type] of cas) {
-    const pipe = fakePipe({ CIBLE: [{ label, len: 5, score: 0.9 }] });
-    const [e] = await detectGliner('valeur CIBLE ici', pipe);
+    const pipe = fakePipe({ Cib88: [{ label, len: 5, score: 0.9 }] });
+    const [e] = await detectGliner('valeur Cib88 ici', pipe);
     assert.ok(e, `aucune entité pour le label ${label}`);
     assert.equal(e.type, type, `mauvais type pour ${label}`);
   }
@@ -246,4 +249,20 @@ test('le filtre ne s\'applique PAS aux types qui sont des noms communs par natur
     'française': [{ label: 'nationality', len: 9, score: 0.9 }]
   }));
   assert.deepEqual(spans.map(e => e.type).sort(), ['NATIONALITE', 'POSTE']);
+});
+
+test('une date de naissance sans le moindre chiffre est écartée', async () => {
+  // Le modèle sortait « trimestre » en date de naissance à 0,74 sur un compte
+  // rendu RH. Une date porte toujours au moins l'année.
+  const spans = await detectGliner('avant la fin du trimestre prochain', fakePipe({
+    trimestre: [{ label: 'date of birth', len: 9, score: 0.9 }]
+  }));
+  assert.deepEqual(spans, []);
+});
+
+test('une vraie date nue reste détectée', async () => {
+  const spans = await detectGliner('1988-03-14', fakePipe({
+    '1988-03-14': [{ label: 'date of birth', len: 10, score: 0.59 }]
+  }));
+  assert.deepEqual(spans.map(e => [e.type, e.value]), [['DATE_NAISSANCE', '1988-03-14']]);
 });

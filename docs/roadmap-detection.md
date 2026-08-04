@@ -16,8 +16,31 @@ Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
 | Critère | Valeur | Exigence | Tendance |
 |---|---|---|---|
 | Rappel **structuré** | **100 %** (20/20) | 100 %, non négociable | stable |
-| Rappel **contextuel** | **75 %** (27/36) | mesuré, jamais promis | voir note |
-| Termes **préservés** | **96 %** (44/46) | bloque le payant | 90 → 95 → **96** |
+| Rappel **contextuel** | **78 %** (28/36) | mesuré, jamais promis | voir note |
+| Termes **préservés** | **98 %** (45/46) | bloque le payant | 90 → 95 → 96 → **98** |
+
+### Le pré-filtre existait déjà, et il tuait le cas phare
+
+`detectNerPerUnit` sautait toute unité sans **deux lettres consécutives** —
+garde-fou de performance pour ne pas payer une inférence sur les milliers de
+cellules numériques d'un CSV. Angle mort : une cellule ne contenant qu'une
+**date de naissance** n'a aucune lettre, donc n'était **jamais soumise au
+modèle**. C'est précisément le cas que le zero-shot est censé débloquer, et
+l'exemple de référence de `CLAUDE.md` (« 1988-03-14 » seul → 0,59, au-dessus du
+seuil). Le modèle savait le faire ; on ne le lui demandait pas — et le banc
+comptait ça comme un raté du modèle.
+
+Corrigé : `tableau-rh.csv` passe à **100 % de rappel contextuel et 100 % de
+termes préservés**.
+
+### Une exigence de FORME par type, là où le score ne sépare rien
+
+Deux gardes déterministes, chacune traduisant ce que le type est par nature :
+
+| Type | Exigence | Faux positifs éliminés |
+|---|---|---|
+| PER / ORG / LOC | au moins une **majuscule** (ce sont des noms propres) | `vendor`, `candidate`, `dossier`, `protagoniste`, `leadership` |
+| DATE_NAISSANCE | au moins un **chiffre** | `trimestre` (0,74), `Sept. 2024 - Aout 2025` |
 
 > **Le contextuel a BAISSÉ de 90 % à 75 % sans aucune régression** : le corpus a
 > gagné `dossier-rh.txt`, seul document portant de vraies données de santé, de
