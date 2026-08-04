@@ -211,3 +211,39 @@ test('les groupes sans seuil propre gardent le défaut', async () => {
   // 0,47 passerait le seuil du groupe identité, mais PAS celui du groupe date.
   assert.equal((await detectGliner('1988-03-14', pipe)).length, 0);
 });
+
+// --- P6 : le label zero-shot « person » désigne toute expression RÉFÉRANT à
+// une personne (« vendor », « candidate », « le protagoniste »), pas seulement
+// un nom. Mesuré sur un vrai formulaire de consentement : 797 placeholders sur
+// un document quasi vierge de données. PERSONNE/ENTREPRISE/LIEU étant par
+// définition des noms PROPRES, un span sans la moindre majuscule est écarté.
+test('un nom commun en minuscules n\'est pas une PERSONNE/ENTREPRISE/LIEU', async () => {
+  const texte = 'Le protagoniste et ses compagnons quittent le vendor.';
+  const spans = await detectGliner(texte, fakePipe({
+    protagoniste: [{ label: 'person', len: 12, score: 0.9 }],
+    compagnons: [{ label: 'person', len: 10, score: 0.9 }],
+    vendor: [{ label: 'company', len: 6, score: 0.9 }]
+  }));
+  assert.deepEqual(spans, [], 'des noms communs en minuscules ne doivent pas être masqués');
+});
+
+test('un vrai nom propre passe toujours, y compris TOUT-MAJUSCULE', async () => {
+  const texte = 'Encadré par Sébastien Vaquier chez KORRIGANE à Nantes.';
+  const spans = await detectGliner(texte, fakePipe({
+    'Sébastien Vaquier': [{ label: 'person', len: 17, score: 0.9 }],
+    KORRIGANE: [{ label: 'company', len: 9, score: 0.9 }],
+    Nantes: [{ label: 'location', len: 6, score: 0.9 }]
+  }));
+  assert.deepEqual(spans.map(e => e.value), ['Sébastien Vaquier', 'KORRIGANE', 'Nantes']);
+});
+
+test('le filtre ne s\'applique PAS aux types qui sont des noms communs par nature', async () => {
+  // « développeur », « diabète », « française » sont légitimement en minuscules :
+  // les filtrer comme des noms propres les ferait tous fuir.
+  const texte = 'Poste : développeur. Origine : française.';
+  const spans = await detectGliner(texte, fakePipe({
+    'développeur': [{ label: 'job title', len: 11, score: 0.9 }],
+    'française': [{ label: 'nationality', len: 9, score: 0.9 }]
+  }));
+  assert.deepEqual(spans.map(e => e.type).sort(), ['NATIONALITE', 'POSTE']);
+});

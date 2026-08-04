@@ -72,6 +72,34 @@ export const GROUPES = [
 // l'utilisateur a désactivé tous les types (on ne paie que ce qu'on demande).
 const typesDuGroupe = g => Object.values(g.types);
 
+// PERSONNE / ENTREPRISE / LIEU sont par définition des NOMS PROPRES : en
+// français comme en anglais, ils portent une majuscule. Les autres types
+// produits par le modèle sont des noms COMMUNS par nature (« développeur »,
+// « diabète », « française ») et ne peuvent pas être filtrés ainsi.
+const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
+
+// Écarte les spans sans la moindre majuscule quand le type exige un nom propre.
+//
+// POURQUOI (P6). Le label zero-shot « person » désigne toute expression qui
+// RÉFÈRE à une personne, pas seulement un nom : le modèle sort donc « vendor »,
+// « candidate », « dossier », « adresse », « leadership », « protagoniste ».
+// Il a raison linguistiquement ; c'est notre besoin qui porte sur les entités
+// NOMMÉES. Le filtre traduit cette exigence de la façon la plus simple et la
+// plus déterministe possible.
+//
+// LIMITE ASSUMÉE, à ne pas découvrir plus tard : un nom écrit tout en
+// minuscules (« jean dupont » tapé à la volée) n'est plus détecté par cette
+// couche. C'est un recul sur la priorité zéro-fuite, accepté ici parce que
+// (a) la couche déterministe (email, téléphone, IBAN…) n'est pas concernée,
+// (b) le profil d'identité masque le nom de l'utilisateur quoi qu'il arrive,
+// (c) « toujours masquer » reste disponible, et (d) le sur-masquage mesuré
+// rendait les documents inexploitables, ce qui est l'autre façon de perdre
+// l'utilisateur. Réévaluer si un cas réel de nom en minuscules apparaît.
+function estNomPropreplausible(type, valeur) {
+  if (!TYPES_NOMS_PROPRES.has(type)) return true;
+  return /\p{Lu}/u.test(valeur);
+}
+
 // glinerPipeline : fonction INJECTÉE (text, labels) → [{ spanText, start, end,
 // label, score }]. Injectée pour la même raison que dans ner.js : le moteur
 // reste testable en Node avec un pipeline simulé, sans charger 183 Mo.
@@ -100,6 +128,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
         // Un label inconnu ne doit jamais devenir une entité sans type : mieux
         // vaut l'ignorer que produire un placeholder [undefined_1].
         if (!type || s.score < seuil) continue;
+        if (!estNomPropreplausible(type, chunk.slice(s.start, s.end))) continue;
         duChunk.push({
           type,
           value: chunk.slice(s.start, s.end),

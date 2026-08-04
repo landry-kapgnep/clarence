@@ -209,7 +209,84 @@ en tête de CV (2 mots) et les cellules de tableau.
 
 ---
 
-## P6 — Un document QUI PARLE de données personnelles est le pire cas (mesuré 04/08/2026, non corrigé)
+## Vérification en VRAI CHROME — 04/08/2026
+
+Les correctifs du jour rejoués dans une extension chargée, sur le mémoire réel
+et sur `tests/manuel/tous-defauts.pdf`.
+
+**La qualité tient exactement ce que la mesure Node annonçait** : mémoire à
+**21,1 %** de document masqué (Node prédisait 22,0 %), 5 204 placeholders
+(5 367), 422 tronqués (428). Le correctif de calibrage est confirmé en réel.
+
+**Mon modèle de TEMPS était faux, lui.** Prédiction : 4,4 min. Réel : **9 min**
+(contre 11 avant). J'avais posé « temps ∝ nombre d'inférences » ; le vrai
+modèle est `coût = surcoût_fixe + k × longueur`. Le document contient le même
+nombre de caractères qu'avant : regrouper les lignes n'économise que le
+surcoût fixe. Vérification par le calcul : 3 222 inférences en moins ont fait
+gagner 2 minutes, soit ≈ **37 ms de coût fixe** par inférence, le reste étant
+proportionnel à la longueur.
+
+→ **Conséquence pour toute optimisation future** : réduire le NOMBRE
+d'inférences ne rapportera plus grand-chose. Les leviers réels sont de réduire
+les CARACTÈRES traités (décocher un groupe de labels ≈ ×3, puisque chaque
+groupe relit tout le texte) ou de rendre chaque inférence moins chère (WebGPU,
+modèle plus petit).
+
+Deux autres constats du passage en Chrome :
+
+- **Petite régression causée par le correctif de calibrage** : sur le CV piégé,
+  « BUT Informatique » et « IUT de Villetaneuse » sont désormais dans le même
+  paragraphe, et le modèle prend « Informatique IUT » pour une seule entité —
+  `IUT` ne survit plus. Prix assumé du regroupement sur ce cas précis.
+- **Écart Node/navigateur sur le comptage d'unités** : 686 en Node contre 782
+  affichées en Chrome. Node n'a pas les métriques de police standard
+  (avertissements `standardFontDataUrl`), ce qui décale le groupement de
+  lignes. Les mesures Node sont fiables en ordre de grandeur, pas au chiffre
+  près.
+
+---
+
+## P6 — Un document QUI PARLE de données personnelles (partiellement corrigé 04/08/2026)
+
+### ✅ Correctif retenu : PERSONNE/ENTREPRISE/LIEU exigent une majuscule
+
+Ces trois types sont par définition des **noms propres** ; en français comme en
+anglais ils portent une majuscule. Les autres types produits par le modèle sont
+des noms **communs** par nature (« développeur », « diabète », « française ») et
+ne peuvent pas être filtrés ainsi. `estNomPropreplausible` (`gliner.js`) écarte
+donc les spans PER/ORG/LOC sans la moindre majuscule.
+
+Mesuré au banc — **premier correctif P6 qui passe** :
+
+| | Avant | Après |
+|---|---|---|
+| Rappel structuré | 100 % | **100 %** |
+| Rappel contextuel | 86 % | **86 % — inchangé** |
+| Termes préservés | 90 % | **95 %** |
+
+Aucune vraie entité perdue. Sur `rapport-interligne.pdf`, `protagoniste` et
+`compagnons` sont récupérés (préservé 63 % → 88 %). Sur le document piégé,
+`address` et `candidate` cessent d'être masqués dans la clause type anglaise.
+
+**Limite assumée, écrite dans le code** : un nom tapé tout en minuscules
+(« jean dupont ») n'est plus vu par cette couche. Recul sur la priorité
+zéro-fuite, accepté parce que la couche déterministe n'est pas concernée, que
+le profil d'identité masque le nom de l'utilisateur quoi qu'il arrive, que
+« toujours masquer » reste disponible, et qu'un document illisible est l'autre
+façon de perdre l'utilisateur. À réévaluer si un cas réel apparaît.
+
+### Ce qui reste
+
+Le bruit restant est majoritairement typé **POSTE** (`dossier`, `stratégie`,
+`vendor`, `representative`) ou porte une majuscule (titres de section :
+`COMPÉTENCES` → SANTE, `FORMATION` → LIEU, `LANGUES` → NATIONALITE). Le filtre
+de casse ne peut rien pour eux — c'est P2bis, et la question « POSTE mérite-t-il
+d'être actif par défaut ? » reste ouverte (zéro vrai positif sur tout le corpus,
+mais aucun document ne l'éprouve positivement).
+
+---
+
+## P6 (diagnostic initial) — mesure sur le formulaire de consentement
 
 Constaté sur un **vrai formulaire de consentement** de 18 pages (Checkr,
 anglais + français), soumis en mode « Préserver ». Ce document ne contient

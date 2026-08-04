@@ -55,6 +55,11 @@ var GROUPES = [
   }
 ];
 var typesDuGroupe = (g) => Object.values(g.types);
+var TYPES_NOMS_PROPRES = /* @__PURE__ */ new Set(["PER", "ORG", "LOC"]);
+function estNomPropreplausible(type, valeur) {
+  if (!TYPES_NOMS_PROPRES.has(type)) return true;
+  return new RegExp("\\p{Lu}", "u").test(valeur);
+}
 async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: disabledTypes2 } = {}) {
   if (!glinerPipeline) return [];
   const desactives = disabledTypes2 || /* @__PURE__ */ new Set();
@@ -72,6 +77,7 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
       for (const s of spans || []) {
         const type = groupe.types[s.label];
         if (!type || s.score < seuil) continue;
+        if (!estNomPropreplausible(type, chunk.slice(s.start, s.end))) continue;
         duChunk.push({
           type,
           value: chunk.slice(s.start, s.end),
