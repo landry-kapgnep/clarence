@@ -183,14 +183,27 @@ export function snapToWordBoundaries(text, entities) {
 // Recollage déterministe, TOUJOURS ancré sur une détection existante (jamais
 // de nom créé de zéro). Tradeoff assumé (priorité zéro-fuite) : peut
 // sur-masquer un lieu précédé d'un mot capitalisé + particule ("Voyage De La
-// Rochelle"), cas rare et sans gravité (sur-masquage, pas fuite).
+// Rochelle").
+//
+// Ce tradeoff était annoncé « cas rare » — le banc a montré que c'est FAUX
+// pour une forme précise : « SIGLE de Ville » est le squelette de la moitié
+// des noms d'établissements français (« IUT de Villetaneuse », « CHU de
+// Nantes », « ENS de Lyon »). Le pontage en faisait des PERSONNE, donc un
+// placeholder [PERSONNE_n] avalait le sigle — l'information « c'est un
+// institut universitaire », que le LLM doit garder, disparaissait avec la
+// ville. Un prénom ne s'écrit pas en sigle : on exige donc du mot absorbé
+// qu'il contienne une minuscule (« Sébastien de … » oui, « IUT de … » non).
+// La ville reste masquée par ailleurs, en LIEU — ce qui est le comportement
+// voulu, identique à « Sarcelles » dans le même document.
 // Modifie les entités EN PLACE et les retourne.
 const PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['’]|[Ll]['’]|von|van|[Dd]a|[Dd]i)";
 const CAPWORD = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*";
+// Comme CAPWORD, mais avec AU MOINS UNE MINUSCULE : exclut les sigles.
+const CAPWORD_MIXTE = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*[a-zà-ÿ][A-Za-zÀ-ÿ'’-]*";
 const ALLCAPS = "[A-ZÀ-Ü]{2,}(?:[-'’][A-ZÀ-Ü]+)*";
 const FWD_PARTICLE = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
 const FWD_ALLCAPS = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-zÀ-ÿ])`);
-const BACK_PARTICLE = new RegExp(`(${CAPWORD}(?:\\s+${PARTICLE})+\\s+)$`);
+const BACK_PARTICLE = new RegExp(`(${CAPWORD_MIXTE}(?:\\s+${PARTICLE})+\\s+)$`);
 export function bridgeNameParts(text, entities) {
   for (const e of entities) {
     // (a) extension AVANT depuis un PER : " De La Rochefoucauld", " KAPGNEP".

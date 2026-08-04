@@ -3,6 +3,18 @@
 import { luhnCheck, ibanCheck, nirCheck } from './validators.js';
 import { HONORIFIC_ALT } from './honorifics.js';
 
+// Séparateur entre les composants d'un nom capté par civilité : espaces
+// horizontaux, ou UN SEUL retour à la ligne — jamais une ligne vide.
+//
+// `\s+` (l'ancien séparateur) traverse tout, y compris un saut de paragraphe :
+// « Tuteur pédagogique : Madame Hélène Brassard\n\nSOMMAIRE » produisait une
+// entité PER « Hélène Brassard\n\nSOMMAIRE », donc le titre de section masqué
+// avec le nom. Mesuré sur le banc : c'était l'un des trois sur-masquages.
+// Un titre de section ne suit jamais un nom sans ligne vide, alors qu'un nom
+// coupé par un retour à la ligne simple (« Sébastien\nVaquier ») est courant
+// dans un texte au fil de l'eau — d'où le newline unique toléré.
+const SEP_NOM = '(?:[^\\S\\r\\n]+|[^\\S\\r\\n]*\\r?\\n[^\\S\\r\\n]*)';
+
 // Premiers mots interdits pour un nom capté par civilité (titres, fonctions).
 const STOP_NOMS_CIVILITE = new Set([
   'président', 'présidente', 'directeur', 'directrice', 'professeur',
@@ -274,9 +286,9 @@ export const REGEX_PATTERNS = [
     // le modèle contextuel le voyait — aucun filet déterministe en anglais.
     type: 'PER',
     re: new RegExp(
-      `\\b(?:${HONORIFIC_ALT})\\s+` +
+      `\\b(?:${HONORIFIC_ALT})${SEP_NOM}` +
       `((?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})` +
-      `(?:\\s+(?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})){0,2})`,
+      `(?:${SEP_NOM}(?:[A-ZÀ-Ü][a-zà-ÿ]+(?:[-'][A-ZÀ-Ü]?[a-zà-ÿ]+)*|[A-ZÀ-Ü]{2,})){0,2})`,
       'g'
     ),
     extract: 1,

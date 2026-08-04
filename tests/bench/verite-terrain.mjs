@@ -52,7 +52,12 @@ export const CORPUS = [
       { valeur: '16 octobre 2004', type: 'DATE_NAISSANCE' },
       { valeur: 'Sarcelles', type: 'LOC' }
     ],
-    aGarder: ['CERTIFICAT DE SCOLARITE', 'BUT Informatique', 'IUT de Villetaneuse']
+    // « IUT » et non « IUT de Villetaneuse » : la ville est masquée en LIEU,
+    // exactement comme « Sarcelles » deux lignes plus haut dans le même
+    // document — attendre l'inverse ici serait se contredire. Ce qui doit
+    // survivre, c'est le SIGLE : sans lui le LLM ne sait plus qu'il s'agit
+    // d'un institut universitaire.
+    aGarder: ['CERTIFICAT DE SCOLARITE', 'BUT Informatique', 'IUT']
   },
 
   {

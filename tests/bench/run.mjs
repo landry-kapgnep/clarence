@@ -177,6 +177,39 @@ async function texteDuPdf(buffer) {
 const normalise = s => s.toLowerCase().replace(/\s+/g, '');
 const presente = (sortie, valeur) => normalise(sortie).includes(normalise(valeur));
 
+// FUITE PARTIELLE — le trou que ce banc avait dans sa propre vérité terrain.
+//
+// Chercher la valeur ENTIÈRE ne suffit pas : « Amandine ROUSSEAU » comptait
+// comme masquée alors que la sortie disait « Amandine [BIC_1] » — le prénom
+// en clair trois fois dans le document, à côté du placeholder qui désigne son
+// propre patronyme. Du point de vue de l'utilisateur c'est une fuite entière :
+// dans un rapport de stage, un prénom accolé à un identifiant suffit
+// largement à désigner la personne. Le banc affichait pourtant 100 %.
+//
+// Un nom est le seul type dont CHAQUE composant identifie séparément (un
+// numéro tronqué, une adresse tronquée, non). On ne vérifie donc les
+// composants que pour les PER — ailleurs, « rue » ou « des » déclencheraient
+// des fausses alertes en cascade.
+const PARTICULES = new Set([
+  'de', 'du', 'des', 'la', 'le', 'van', 'von', 'da', 'di', 'bin', 'al',
+  'monsieur', 'madame', 'mademoiselle', 'docteur', 'mr', 'mrs', 'miss', 'dr'
+]);
+
+function composantsIdentifiants(valeur) {
+  return valeur
+    .split(/[\s'’]+/)
+    .filter(m => m.length >= 4 && !PARTICULES.has(m.toLowerCase()));
+}
+
+// Retourne les composants d'un nom restés en clair dans la sortie.
+function fuitePartielle(sortie, entree) {
+  if (entree.type !== 'PER') return [];
+  const parts = composantsIdentifiants(entree.valeur);
+  // Un nom d'un seul composant n'a pas de « partiel » : `presente` suffit.
+  if (parts.length < 2) return [];
+  return parts.filter(p => presente(sortie, p));
+}
+
 const pct = (n, d) => (d === 0 ? 100 : (n / d) * 100);
 const fmt = v => `${v.toFixed(0)}%`.padStart(4);
 
@@ -190,7 +223,17 @@ async function main() {
   for (const doc of CORPUS) {
     const sortie = await anonymiser(doc.fichier, glinerPipe);
 
-    const fuites = doc.aMasquer.filter(v => presente(sortie, v.valeur));
+    // Une valeur est fuitée si elle subsiste ENTIÈRE, ou — pour un nom — si un
+    // seul de ses composants reste en clair (voir fuitePartielle).
+    const partielles = new Map();
+    for (const v of doc.aMasquer) {
+      // Si la valeur ENTIÈRE subsiste, ce n'est pas une fuite « partielle »
+      // mais un raté complet — ne pas brouiller les deux dans l'affichage.
+      if (presente(sortie, v.valeur)) continue;
+      const restes = fuitePartielle(sortie, v);
+      if (restes.length) partielles.set(v, restes);
+    }
+    const fuites = doc.aMasquer.filter(v => presente(sortie, v.valeur) || partielles.has(v));
     const struct = doc.aMasquer.filter(v => TYPES_STRUCTURES.has(v.type));
     const ctx = doc.aMasquer.filter(v => !TYPES_STRUCTURES.has(v.type));
     const fuitesStruct = fuites.filter(v => TYPES_STRUCTURES.has(v.type));
@@ -217,7 +260,12 @@ async function main() {
                 `   préservé   ${fmt(pct(doc.aGarder.length - perdus.length, doc.aGarder.length))}` +
                 `   (${placeholders} masques / ${mots} mots)`);
     for (const v of fuitesStruct) console.log(`   ✘ FUITE STRUCTURÉE  ${v.type} « ${v.valeur} »`);
-    for (const v of fuitesCtx) console.log(`   ~ raté contextuel    ${v.type} « ${v.valeur} »`);
+    for (const v of fuitesCtx) {
+      const restes = partielles.get(v);
+      console.log(restes
+        ? `   ✘ FUITE PARTIELLE   ${v.type} « ${v.valeur} » → en clair : ${restes.map(r => `« ${r} »`).join(', ')}`
+        : `   ~ raté contextuel    ${v.type} « ${v.valeur} »`);
+    }
     for (const t of perdus) console.log(`   ~ sur-masqué         « ${t} »`);
     console.log('');
   }

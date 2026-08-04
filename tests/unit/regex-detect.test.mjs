@@ -224,3 +224,21 @@ test('identifiant interne séparé de son libellé par un verbe (trouvé par le 
   // Non-régression : la forme collée marche toujours.
   assert.equal(find('account identifier CUST-849204-X to reflect', 'REFERENCE')[0].value, 'CUST-849204-X');
 });
+
+// --- Civilité + nom : le motif ne doit pas franchir une ligne VIDE.
+// Trouvé par le banc (sur-masquage) : « Madame Hélène Brassard\n\nSOMMAIRE »
+// produisait une seule entité PER incluant le titre de section, parce que le
+// séparateur entre composants était `\s+` — qui traverse tout.
+test('un nom capté par civilité s\'arrête à la ligne vide', () => {
+  const t = 'Tuteur pédagogique : Madame Hélène Brassard\n\nSOMMAIRE\nIntroduction';
+  const per = find(t, 'PER');
+  assert.equal(per.length, 1);
+  assert.equal(per[0].value, 'Hélène Brassard');
+});
+
+test('un nom coupé par un retour à la ligne SIMPLE reste recollé', () => {
+  // Cas courant en texte au fil de l'eau : on ne veut pas perdre le patronyme
+  // (ce serait une fuite), seule la ligne vide est un séparateur.
+  const per = find('signé Monsieur Thibault\nNerval, directeur', 'PER');
+  assert.equal(per[0].value, 'Thibault\nNerval');
+});

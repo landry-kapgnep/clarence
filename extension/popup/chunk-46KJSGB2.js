@@ -117,6 +117,7 @@ var avecPoint = (terme) => anyCase(terme) + (POINT_OBLIGATOIRE.has(terme) ? "\\.
 var HONORIFIC_ALT = [...TERMES].sort((a, b) => b.length - a.length).map(avecPoint).join("|");
 
 // src/engine/regex-detect.js
+var SEP_NOM = "(?:[^\\S\\r\\n]+|[^\\S\\r\\n]*\\r?\\n[^\\S\\r\\n]*)";
 var STOP_NOMS_CIVILITE = /* @__PURE__ */ new Set([
   "pr\xE9sident",
   "pr\xE9sidente",
@@ -363,7 +364,7 @@ var REGEX_PATTERNS = [
     // le modèle contextuel le voyait — aucun filet déterministe en anglais.
     type: "PER",
     re: new RegExp(
-      `\\b(?:${HONORIFIC_ALT})\\s+((?:[A-Z\xC0-\xDC][a-z\xE0-\xFF]+(?:[-'][A-Z\xC0-\xDC]?[a-z\xE0-\xFF]+)*|[A-Z\xC0-\xDC]{2,})(?:\\s+(?:[A-Z\xC0-\xDC][a-z\xE0-\xFF]+(?:[-'][A-Z\xC0-\xDC]?[a-z\xE0-\xFF]+)*|[A-Z\xC0-\xDC]{2,})){0,2})`,
+      `\\b(?:${HONORIFIC_ALT})${SEP_NOM}((?:[A-Z\xC0-\xDC][a-z\xE0-\xFF]+(?:[-'][A-Z\xC0-\xDC]?[a-z\xE0-\xFF]+)*|[A-Z\xC0-\xDC]{2,})(?:${SEP_NOM}(?:[A-Z\xC0-\xDC][a-z\xE0-\xFF]+(?:[-'][A-Z\xC0-\xDC]?[a-z\xE0-\xFF]+)*|[A-Z\xC0-\xDC]{2,})){0,2})`,
       "g"
     ),
     extract: 1,
@@ -3919,10 +3920,11 @@ function snapToWordBoundaries(text, entities) {
 }
 var PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['\u2019]|[Ll]['\u2019]|von|van|[Dd]a|[Dd]i)";
 var CAPWORD = "[A-Z\xC0-\xDC][A-Za-z\xC0-\xFF'\u2019-]*";
+var CAPWORD_MIXTE = "[A-Z\xC0-\xDC][A-Za-z\xC0-\xFF'\u2019-]*[a-z\xE0-\xFF][A-Za-z\xC0-\xFF'\u2019-]*";
 var ALLCAPS = "[A-Z\xC0-\xDC]{2,}(?:[-'\u2019][A-Z\xC0-\xDC]+)*";
 var FWD_PARTICLE = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
 var FWD_ALLCAPS = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-z\xC0-\xFF])`);
-var BACK_PARTICLE = new RegExp(`(${CAPWORD}(?:\\s+${PARTICLE})+\\s+)$`);
+var BACK_PARTICLE = new RegExp(`(${CAPWORD_MIXTE}(?:\\s+${PARTICLE})+\\s+)$`);
 function bridgeNameParts(text, entities) {
   for (const e of entities) {
     if (e.type === "PER") {
@@ -4022,9 +4024,12 @@ function resolveOverlaps(entities) {
   }
   return kept.sort((a, b) => a.start - b.start);
 }
+var contient = (ext, int) => ext.start <= int.start && ext.end >= int.end && ext.end - ext.start > int.end - int.start;
 function mergeEntities(regexEntities, nerEntities) {
   const nerKept = nerEntities.filter(
-    (ne) => !regexEntities.some((re) => ne.start < re.end && ne.end > re.start)
+    (ne) => !regexEntities.some(
+      (re) => ne.start < re.end && ne.end > re.start && !contient(ne, re)
+    )
   );
   return resolveOverlaps([...regexEntities, ...nerKept]);
 }

@@ -71,6 +71,36 @@ donc un ATOUT du zero-shot, pas un manque à combler.** Ne pas refaire.
 
 ---
 
+## Le banc comptait une fuite comme un succès — corrigé (04/08/2026)
+
+Défaut de la **vérité terrain elle-même**, pas du moteur. Le banc cherchait la
+valeur ENTIÈRE dans la sortie : « Amandine ROUSSEAU » était comptée masquée
+alors que la sortie disait « Amandine [BIC_1] » — le prénom en clair trois
+fois dans le rapport, juste à côté du placeholder qui annonce son patronyme.
+Dans un rapport de stage, ça désigne la personne aussi sûrement que le nom
+complet.
+
+Le banc vérifie désormais aussi les **composants** d'un nom (`fuitePartielle`
+dans `run.mjs`). Limité au type PER : c'est le seul dont chaque morceau
+identifie séparément — vérifier les composants d'une adresse ferait crier au
+loup sur « rue » ou « des ».
+
+Effet immédiat : le rappel contextuel réel n'était pas 92 % mais **84 %**.
+Trois fuites partielles apparaissent, dont deux qu'aucune métrique ne montrait :
+
+| Document | En clair | Cause |
+|---|---|---|
+| `rapport-fr.txt` | « Amandine » | nom non détecté dans le bloc de titre (0,07) |
+| `email-pro-en.txt` | « Marcus » | prénom réutilisé SEUL plus loin, non propagé |
+| `certificat-fr.txt` | « KAROLINE », « ANSELME » | raté complet déjà connu |
+
+Le cas « Marcus » est le plus instructif et n'était couvert nulle part : le nom
+complet est masqué à la première occurrence, mais le prénom employé seul dix
+lignes plus bas ne l'est pas — la propagation travaille sur la valeur entière.
+C'est une forme d'usage très courante dans un vrai mail.
+
+---
+
 ## Ligne de base mesurée — 03/08/2026 (`npm run bench`)
 
 Premier chiffrage reproductible, sur 5 documents synthétiques couvrant les cas
@@ -142,6 +172,40 @@ Ne pas traiter par les seuils (cf. P1bis). La piste utile est en amont :
 ne pas soumettre au modèle les unités qui n'ont pas de structure de phrase
 (ligne de sommaire avec points de suite, légende numérotée), ou les traiter
 avec un jeu de labels réduit.
+
+### Mesuré précisément le 04/08/2026 — et pourquoi le correctif n'est PAS parti
+
+Le sur-masquage `BUT Informatique` du banc est un cas de P2bis. Deux mesures
+qui cadrent le chantier :
+
+1. **Le bruit vient de la TAILLE DE L'UNITÉ, pas du jeu de labels.** Sur le
+   texte du CV soumis d'un seul tenant, le 3e groupe
+   (POSTE/NATIONALITE/ETABLISSEMENT/SANTE) ne sort **rien**. Soumis
+   paragraphe par paragraphe — ce que fait le chemin PDF — il sort 6
+   détections, **toutes fausses** : `COMPETENCES` (poste 0,51),
+   `PROFESSIONNELLES` (0,68), `LANGUES` (nationalité 0,79), `Francais`
+   (0,82), `Informatique` (0,85), `IUT` (0,59).
+2. **Le seuil de coupure sauterait aux yeux… sur UN seul document.**
+   Détections du groupe 3 par taille d'unité : 1 mot → 2, 2 mots → 1,
+   7 mots → 1, 8 mots → 2, **9 mots et plus → 0**.
+
+La tentation est de filtrer sous ~9 mots. Refusé pour l'instant, et c'est le
+point à retenir : **aucun document du corpus n'éprouve ce groupe
+POSITIVEMENT** (pas de dossier médical, pas de document où le poste est la
+donnée sensible). Un filtre calé uniquement sur des faux positifs ne peut pas
+dire ce qu'il détruit — on remplacerait un sur-masquage visible par une fuite
+invisible sur les données de l'article 9 du RGPD, ce qui est le mauvais sens
+de l'échange.
+
+**Préalable au chantier** : ajouter au corpus un document où POSTE / SANTE /
+ETABLISSEMENT sont de vraies valeurs à masquer. Le filtre se mesurera alors
+des deux côtés.
+
+À noter aussi, visible dans la même mesure : le bruit des unités courtes
+touche AUSSI le groupe identité (`internes` en lieu à 0,94, `FORMATION` 0,50,
+`Photographie argentique` en personne 0,54). Celui-là ne peut pas être filtré
+par la taille — c'est justement sur les unités courtes que se trouvent le nom
+en tête de CV (2 mots) et les cellules de tableau.
 
 ---
 

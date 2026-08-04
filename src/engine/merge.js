@@ -40,9 +40,32 @@ export function resolveOverlaps(entities) {
   return kept.sort((a, b) => a.start - b.start);
 }
 
+// Le filtre ci-dessous applique la règle 1 (le déterministe prime), MAIS avec
+// une exception non négociable : une entité contextuelle qui DÉBORDE de
+// l'entité regex ne doit jamais être supprimée — sinon la partie non couverte
+// reste en clair. C'est une FUITE, pas une question de libellé.
+//
+// Cas réel mesuré par le banc : le patronyme « ROUSSEAU » (8 lettres
+// majuscules dont « SE » en position 5-6) matche le motif BIC, et annulait
+// « Amandine ROUSSEAU » détecté à 0,64. La sortie disait « Amandine [BIC_1] »
+// — le prénom en clair trois fois dans le rapport, à côté d'un placeholder
+// qui annonce son propre patronyme. Le banc comptait pourtant la valeur comme
+// masquée (il ne cherchait que la chaîne entière).
+//
+// Quand l'entité contextuelle CONTIENT l'entité regex, on garde donc la plus
+// large : tout est masqué, seul le libellé du placeholder est moins précis.
+// Arbitrage explicite et conforme à la priorité du projet — zéro-fuite avant
+// finesse de typage. À span identique ou en simple chevauchement partiel, le
+// déterministe garde la main comme avant.
+const contient = (ext, int) =>
+  ext.start <= int.start && ext.end >= int.end &&
+  (ext.end - ext.start) > (int.end - int.start);
+
 export function mergeEntities(regexEntities, nerEntities) {
-  const nerKept = nerEntities.filter(
-    ne => !regexEntities.some(re => ne.start < re.end && ne.end > re.start)
+  const nerKept = nerEntities.filter(ne =>
+    !regexEntities.some(re =>
+      ne.start < re.end && ne.end > re.start && !contient(ne, re)
+    )
   );
   return resolveOverlaps([...regexEntities, ...nerKept]);
 }
