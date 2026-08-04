@@ -68,6 +68,33 @@ export const GROUPES = [
   }
 ];
 
+// Types que le modèle ne détecte PAS de façon fiable — proposés dans l'UI mais
+// DÉCOCHÉS par défaut. Mesuré, pas supposé.
+//
+// Le banc ne contenait longtemps aucun document portant réellement ces
+// données, donc le groupe ne pouvait être jugé que sur son bruit. Un compte
+// rendu RH (`dossier-rh.txt`) a levé le doute — et le verdict est sans appel :
+//
+//   « diabète de type 2 »   → étiqueté JOB TITLE          à 0,04
+//   « aide-soignante »      → étiqueté MEDICAL CONDITION  à 0,08
+//   « portugaise »          → nationalité                 à 0,02
+//   « suivi psychologique » → donnée de santé             à 0,28
+//   « Camille-Claudel »     → établissement               à 0,31
+//
+// Le modèle INVERSE poste et donnée de santé en français, et place les vraies
+// valeurs entre 0,02 et 0,31 — très en dessous du plancher de bruit mesuré à
+// 0,4-0,7 sur du texte fragmenté. Aucun seuil ne peut les séparer.
+//
+// Effet mesuré au banc en les désactivant : rappel contextuel INCHANGÉ (75 %,
+// zéro vrai positif perdu sur 7 documents), termes préservés 93 % → 96 %.
+// Autrement dit ce groupe ne rapportait que du sur-masquage.
+//
+// Les laisser actifs serait de la FAUSSE CONFIANCE — précisément ce que le
+// cadrage §5 interdit : l'utilisateur croirait ses données de santé protégées
+// alors qu'elles ne le sont pas. Décochés, l'UI le montre, et il peut les
+// activer en connaissance de cause.
+export const TYPES_PEU_FIABLES = ['POSTE', 'NATIONALITE', 'ETABLISSEMENT', 'SANTE'];
+
 // Types qu'un groupe peut produire — sert à sauter entièrement une passe dont
 // l'utilisateur a désactivé tous les types (on ne paie que ce qu'on demande).
 const typesDuGroupe = g => Object.values(g.types);

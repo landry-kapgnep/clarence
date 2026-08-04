@@ -118,6 +118,40 @@ export const CORPUS = [
   },
 
   {
+    fichier: 'dossier-rh.txt',
+    quoi: 'Le SEUL document qui éprouve POSITIVEMENT poste/santé/établissement',
+    // Ce document manquait, et son absence bloquait une décision : le 3e groupe
+    // de labels (POSTE/NATIONALITE/ETABLISSEMENT/SANTE) ne produisait que du
+    // bruit sur tout le corpus — mais AUCUN document ne contenait de vraie
+    // valeur de ces types. Impossible de dire si le désactiver par défaut
+    // coûterait quelque chose. Il le dit maintenant.
+    //
+    // Les données de santé relèvent de l'article 9 du RGPD : une fuite ici est
+    // la plus grave que le produit puisse commettre.
+    //
+    // POSTE/SANTE/NATIONALITE/ETABLISSEMENT restent listés ici alors qu'ils sont
+    // DÉCOCHÉS par défaut (TYPES_PEU_FIABLES) : décider de ne pas chercher une
+    // donnée ne la rend pas moins sensible. Le banc doit continuer à afficher
+    // qu'on ne les attrape pas — c'est le même refus de fausse confiance qu'on
+    // applique à l'utilisateur, appliqué à notre propre métrique.
+    aMasquer: [
+      { valeur: 'Nadia Belkacem', type: 'PER' },
+      { valeur: 'Thibault Nerval', type: 'PER' },
+      { valeur: 'aide-soignante de nuit', type: 'POSTE' },
+      { valeur: 'diabète de type 2', type: 'SANTE' },
+      { valeur: 'suivi psychologique', type: 'SANTE' },
+      { valeur: 'portugaise', type: 'NATIONALITE' },
+      { valeur: 'Camille-Claudel', type: 'ETABLISSEMENT' },
+      { valeur: 'rh@clinique-lesorme.example', type: 'EMAIL' }
+    ],
+    // Vocabulaire RH ordinaire : sans lui le compte rendu n'a plus de sens.
+    aGarder: [
+      'entretien annuel', 'ressources humaines', 'commission paritaire',
+      'budget formation', 'trimestre', 'documents'
+    ]
+  },
+
+  {
     fichier: 'cv-fr.pdf',
     quoi: 'CV MULTI-COLONNES : fragmentation PDF (P1bis), nom TOUT-MAJUSCULE isolé',
     aMasquer: [

@@ -54,6 +54,7 @@ var GROUPES = [
     }
   }
 ];
+var TYPES_PEU_FIABLES = ["POSTE", "NATIONALITE", "ETABLISSEMENT", "SANTE"];
 var typesDuGroupe = (g) => Object.values(g.types);
 var TYPES_NOMS_PROPRES = /* @__PURE__ */ new Set(["PER", "ORG", "LOC"]);
 function estNomPropreplausible(type, valeur) {
@@ -771,7 +772,7 @@ var currentText = "";
 var autoEntities = [];
 var manualEntities = [];
 var removedKeys = /* @__PURE__ */ new Set();
-var disabledTypes = /* @__PURE__ */ new Set();
+var disabledTypes = new Set(TYPES_PEU_FIABLES);
 var TYPE_DISPLAY = {
   PER: "Noms",
   ORG: "Entreprises",
@@ -1215,7 +1216,7 @@ var FILE_TYPES = {
 var chosenFile = null;
 var fileOutBlob = null;
 var fileOutName = "";
-var fileDisabledTypes = /* @__PURE__ */ new Set();
+var fileDisabledTypes = new Set(TYPES_PEU_FIABLES);
 renderTypeChips("fileTypeToggles", fileDisabledTypes);
 $("fileTypeToggles")?.addEventListener("change", (ev) => {
   const cb = ev.target.closest("input[data-type]");

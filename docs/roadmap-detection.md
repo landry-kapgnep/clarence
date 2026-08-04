@@ -11,30 +11,66 @@ Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
 
 ## Tableau de bord — 05/08/2026
 
-### Les trois chiffres (`npm run bench`, 6 documents)
+### Les trois chiffres (`npm run bench`, 7 documents, **configuration livrée**)
 
 | Critère | Valeur | Exigence | Tendance |
 |---|---|---|---|
-| Rappel **structuré** | **100 %** (19/19) | 100 %, non négociable | stable |
-| Rappel **contextuel** | **90 %** (26/29) | mesuré, jamais promis | 84 → 86 → **90** |
-| Termes **préservés** | **95 %** (38/40) | bloque le payant | 90 → **95** |
+| Rappel **structuré** | **100 %** (20/20) | 100 %, non négociable | stable |
+| Rappel **contextuel** | **75 %** (27/36) | mesuré, jamais promis | voir note |
+| Termes **préservés** | **96 %** (44/46) | bloque le payant | 90 → 95 → **96** |
+
+> **Le contextuel a BAISSÉ de 90 % à 75 % sans aucune régression** : le corpus a
+> gagné `dossier-rh.txt`, seul document portant de vraies données de santé, de
+> poste et d'établissement — que le moteur ne trouve pas. Le chiffre d'hier
+> flattait parce que rien ne l'éprouvait. Sur les 6 documents précédents, le
+> rappel reste à 90 %.
 
 Sur un vrai mémoire de 75 pages : **21,1 %** du document masqué (39,1 % avant),
 **9 min** de traitement (11 min avant), vérifié en Chrome.
+
+### Décision tranchée le 05/08 : POSTE / SANTE / NATIONALITE / ETABLISSEMENT décochés par défaut
+
+Question reportée deux fois faute de document pour l'éprouver. `dossier-rh.txt`
+l'a tranchée : le modèle **inverse les étiquettes en français** et place les
+vraies valeurs très en dessous du plancher de bruit.
+
+| Valeur réelle | Étiquette rendue | Score |
+|---|---|---|
+| `diabète de type 2` | **job title** | 0,04 |
+| `aide-soignante` | **medical condition** | 0,08 |
+| `portugaise` | nationality | 0,02 |
+| `suivi psychologique` | medical condition | 0,28 |
+| `Camille-Claudel` | school | 0,31 |
+
+Plancher de bruit mesuré sur texte fragmenté : **0,4-0,7**. Aucun seuil ne peut
+les séparer. Les désactiver ne coûte **aucun vrai positif** (rappel contextuel
+identique) et fait gagner 3 points d'utilisabilité. Les laisser actifs serait de
+la fausse confiance sur des données de l'article 9 — l'utilisateur croirait ses
+données de santé protégées alors qu'elles ne le sont pas. Ils restent proposés
+dans l'UI, décochés.
 
 ### Ce qui reste ouvert, par gravité
 
 | # | Défaut | État | Où |
 |---|---|---|---|
 | — | **Aucune fuite structurée ni partielle** au banc | ✅ | — |
-| P2bis | Sur-masquage des unités courtes : titres de section (`COMPÉTENCES`→SANTE, `FORMATION`→LIEU), `BUT Informatique` | ouvert | bloque le payant |
-| P6 | Bruit résiduel typé **POSTE** (`dossier`, `stratégie`, `vendor`, `representative`) | partiel | idem |
-| — | `KAROLINE ANSELME` raté sur document administratif court | ouvert | rappel |
+| — | Données de l'**article 9** (santé) non détectées — décochées par défaut, dit honnêtement | limite du modèle | le plus grave restant |
+| P2bis | Sur-masquage des unités courtes : titres de section, `BUT Informatique`, `trimestre` | ouvert | bloque le payant |
+| — | `KAROLINE ANSELME` / `Nadia Belkacem` ratées sur documents courts et formulaires | ouvert | rappel |
 | — | `1988-03-14` raté en cellule nue | ouvert | rappel |
 | P7 | Placeholders **tronqués** (422/4118 sur le mémoire) — casse la réversibilité, pas une fuite | ouvert, cause non isolée | réversibilité |
 | P2ter | Adresse abrégée (« Av. ») mal typée ; produits tiers jamais détectés | ouvert | couverture |
 | — | Régression assumée : `IUT` ne survit plus (fusionné avec « Informatique ») | connu | cosmétique |
 | P5 | i18n de la couche structurée (codes postaux, IDs non-FR) | partiel | couverture |
+
+### Fragilité de fond à garder en tête
+
+Les scores du modèle **dépendent de la longueur du contexte**, pas seulement du
+texte. `Nadia Belkacem` sort à 0,60 sur le document entier, et passe sous le
+seuil une fois le texte découpé en fenêtres de 1000 caractères. Ce n'est pas un
+bug du code : c'est une instabilité du modèle, et elle explique pourquoi les
+sondages sur extraits mentent (trois fois dans ce projet). **Seul le banc
+complet tranche.**
 
 ### Pistes TESTÉES et REJETÉES — ne pas les refaire
 

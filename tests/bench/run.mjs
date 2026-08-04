@@ -23,7 +23,7 @@ import { dirname, join, extname } from 'node:path';
 
 import { detectRegex } from '../../src/engine/regex-detect.js';
 import { detectPhonesIntl } from '../../src/engine/phone-intl.js';
-import { detectGliner, GLINER_MODEL } from '../../src/engine/gliner.js';
+import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES } from '../../src/engine/gliner.js';
 import { mergeEntities } from '../../src/engine/merge.js';
 import { selectActive, filterByRules, forcedMasks } from '../../src/engine/selection.js';
 import { maskText } from '../../src/engine/masking.js';
@@ -106,8 +106,12 @@ async function modeleLocal() {
 async function anonymiser(fichier, glinerPipe) {
   const chemin = join(here, 'corpus', fichier);
   const ext = extname(fichier).toLowerCase();
+  // Le banc mesure ce qui est RÉELLEMENT LIVRÉ : les types que la popup
+  // décoche par défaut (TYPES_PEU_FIABLES) ne doivent pas être mesurés comme
+  // actifs, sinon le chiffre décrit un produit que personne n'utilise.
+  const parDefaut = new Set(TYPES_PEU_FIABLES);
   const detecter = glinerPipe
-    ? (t, _pipe, opts) => detectGliner(t, glinerPipe, opts)
+    ? (t, _pipe, opts) => detectGliner(t, glinerPipe, { ...opts, disabledTypes: parDefaut })
     : async () => [];
 
   // PDF : on passe par la RECONSTRUCTION (« Garder la mise en page »), pas par
@@ -141,7 +145,7 @@ async function anonymiser(fichier, glinerPipe) {
 
   const texte = readFileSync(chemin, 'utf8');
   const rx = [...detectRegex(texte), ...detectPhonesIntl(texte)];
-  const ner = glinerPipe ? await detectGliner(texte, glinerPipe) : [];
+  const ner = glinerPipe ? await detectGliner(texte, glinerPipe, { disabledTypes: parDefaut }) : [];
   const actives = filterByRules(
     selectActive(mergeEntities(rx, ner), forcedMasks(texte, []), new Set()),
     {}

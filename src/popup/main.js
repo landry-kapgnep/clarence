@@ -4,7 +4,7 @@
 import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
-import { detectGliner, GLINER_MODEL } from '../engine/gliner.js';
+import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES } from '../engine/gliner.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
 import { createPseudonymizer } from '../engine/pseudonyms.js';
@@ -19,7 +19,9 @@ let currentText = '';
 let autoEntities = [];    // sortie moteur (regex + NER fusionnés)
 let manualEntities = [];  // ajouts manuels de l'utilisateur
 let removedKeys = new Set(); // faux positifs retirés d'un clic
-let disabledTypes = new Set(); // types que l'utilisateur choisit de NE PAS masquer
+// Démarre avec les types PEU FIABLES décochés (voir TYPES_PEU_FIABLES) : le
+// modèle ne les détecte pas, les laisser cochés serait de la fausse confiance.
+let disabledTypes = new Set(TYPES_PEU_FIABLES);
 
 // Libellés lisibles des types pour les puces de personnalisation.
 const TYPE_DISPLAY = {
@@ -553,7 +555,7 @@ const FILE_TYPES = {
 let chosenFile = null;
 let fileOutBlob = null;
 let fileOutName = '';
-let fileDisabledTypes = new Set(); // types que l'utilisateur exclut du masquage fichier
+let fileDisabledTypes = new Set(TYPES_PEU_FIABLES); // idem, mode Fichier
 
 // Puces du mode Fichier : mêmes puces statiques (fonction partagée), cochées
 // par défaut, réglables AVANT de traiter (le flux fichier est en un clic).
