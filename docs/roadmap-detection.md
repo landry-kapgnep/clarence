@@ -209,6 +209,104 @@ en tête de CV (2 mots) et les cellules de tableau.
 
 ---
 
+## P6 — Un document QUI PARLE de données personnelles est le pire cas (mesuré 04/08/2026, non corrigé)
+
+Constaté sur un **vrai formulaire de consentement** de 18 pages (Checkr,
+anglais + français), soumis en mode « Préserver ». Ce document ne contient
+quasiment **aucune donnée personnelle** : c'est un formulaire vierge. Les
+seuls identifiants réels y sont l'adresse publique du siège, une adresse mail
+de DPO et le nom de la société prestataire.
+
+Sortie : **797 placeholders**.
+
+| Type | Nombre |
+|---|---|
+| PERSONNE | 313 |
+| ENTREPRISE | 143 |
+| LIEU | 141 |
+| POSTE | 92 |
+| SANTE | 77 |
+| NATIONALITE | 16 |
+
+Le texte produit est intégralement inexploitable :
+`This [SANTE_4] form asks for [PERSONNE_2] [SANTE_4] to [ENTREPRISE_1]
+collecting … certain [PERSONNE_8] about [PERSONNE_1]`.
+
+### La cause : « person » ≠ « nom de personne »
+
+Ce ne sont pas des scores mal réglés, c'est une **erreur de catégorie**. En
+zero-shot, le label est du langage naturel : « person » désigne toute
+expression qui RÉFÈRE à une personne. Le modèle a donc raison, au sens
+linguistique, de sortir :
+
+- des **pronoms** : `you`, `your`, `me`, `I`, `we`, `here` ;
+- des **noms de rôle** : `vendor`, `representative`, `the candidate`, `company` ;
+- des **noms communs** du champ lexical : `name`, `personal information`,
+  `address`, `consent` (en SANTE), `page`, `sources`, `governmental`.
+
+Pour une anonymisation, c'est catastrophique : masquer « you » détruit le
+texte et ne protège personne. Il faut des entités **nommées**, pas des
+expressions référentielles.
+
+Et le document est le pire cas concevable : **son sujet EST la donnée
+personnelle**, donc son vocabulaire ressemble mot pour mot aux catégories
+cherchées. Ce n'est pas un cas tordu — politiques de confidentialité, CGU,
+formulaires RGPD sont massivement collés dans des LLM.
+
+### Correction ÉVIDENTE, TESTÉE, et REJETÉE par la mesure
+
+Reformuler les labels en `person name` / `company name` / `city or country
+name`. Sur un extrait du formulaire et une phrase témoin écrite à la main, le
+résultat semblait parfait : `you` disparaissait, les 6 vrais noms du témoin
+restaient avec de meilleurs scores.
+
+**Le banc complet a démenti** : rappel contextuel **84 % → 72 %**, et 8 tests
+unitaires en échec. Pertes réelles : `Nantes`, `Eleanor Vance`,
+`1841 Fountain Road`. Reverté.
+
+Leçon à ne pas re-payer : **une phrase témoin écrite à la main ne valide
+rien** — elle contient exactement ce qu'on y a mis. Deux sondages ad hoc ont
+menti dans cette session (un extrait de 400 caractères, puis des textes
+tronqués à 950). Seul le banc complet tranche.
+
+### Piste qui reste ouverte, sans ML
+
+Le taux de masquage est un signal **déterministe et déjà calculé** par le banc
+(« masques / mots »). Ici : ~797 masques pour ~4 500 mots. Un avertissement
+au-delà d'un seuil manifestement absurde — « un mot sur six a été masqué, le
+résultat est probablement inexploitable » — coûte presque rien et joue dans le
+sens de l'anti-fausse-confiance (cadrage §5), qui n'est aujourd'hui formulé
+que dans le sens « on a pu rater quelque chose ».
+
+---
+
+## P7 — Placeholders TRONQUÉS dans le PDF reconstruit (mesuré 04/08/2026, cause non isolée)
+
+Sur le même document : **39 fragments sur 1042** se terminent par un
+placeholder coupé — `[NATIONALIT`, `[ENTRE`, `[PERSONN`, `[PE`…
+
+Vérifié que ce n'est **pas** l'artefact de relecture déjà connu (fragments
+dessinés séparément) : recoller les fragments sans espace donne exactement les
+mêmes chiffres, et aucun fragment ne commence par la suite manquante
+(`PRISE_`, `SONNE_`…). Les caractères ne sont nulle part dans le fichier.
+
+Ce n'est **pas une fuite** — la valeur d'origine a bien disparu. C'est une
+perte de **réversibilité** : la désanonymisation ne peut pas retrouver
+`[PERSONN`, et l'utilisateur lit un jeton corrompu.
+
+La coupure tombe systématiquement en fin de ligne, mais la longueur des
+fragments touchés varie (39 à 88 caractères) : pas de plafond fixe. Lecture du
+code faite sans trouver la cause — `drawText` reçoit le texte entier,
+`distributeEntitiesOverRuns` émet le placeholder d'un bloc dans le run où
+l'entité commence, et `sanitizeForWinAnsi` ne raccourcit pas. **À reprendre
+avec une reproduction minimale**, pas à l'œil.
+
+Correctif à ne PAS retenir quand il sera traité : tronquer plus proprement.
+Un placeholder incomplet doit soit tenir (police réduite), soit déborder —
+jamais être coupé, puisque la coupure casse la réversibilité en silence.
+
+---
+
 ## P2ter — Lacunes de couverture constatées sur documents réels (non corrigé)
 
 - **Adresse mal typée** : `99 Av. [PERSONNE_4], [CODE_POSTAL_1] Villetaneuse` —

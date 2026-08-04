@@ -117,7 +117,7 @@ function renderTypeChips(boxId, disabledSet) {
     .filter(([t]) => t !== 'PERSONNALISE') // les masques manuels/forcés sont intouchables
     .map(([t, label]) => {
       const off = disabledSet.has(t);
-      return `<label class="type-chip ${off ? 'off' : ''}"><input type="checkbox" data-type="${t}" ${off ? '' : 'checked'}>${esc(label)}</label>`;
+      return `<label class="type-chip ${off ? 'off' : ''}"><input type="checkbox" data-type="${t}" ${off ? '' : 'checked'}><span class="square-checkbox" aria-hidden="true"></span><span class="checkbox-label-text">${esc(label)}</span></label>`;
     }).join('');
 }
 renderTypeChips('typeToggles', disabledTypes); // visibles dès l'ouverture, avant toute analyse
@@ -1053,6 +1053,17 @@ function letterGridMount() {
   letterGridCanvas = document.createElement('canvas');
   host.appendChild(letterGridCanvas);
   letterGridCtx = letterGridCanvas.getContext('2d');
+  // Deux couches distinctes AU-DESSUS du canvas, dans cet ordre : les halos
+  // colorés (visibles partout), puis le flou (masqué autour du curseur).
+  // Elles étaient confondues en un seul élément, ce qui rendait impossible de
+  // masquer l'un sans faire disparaître l'autre.
+  for (const id of ['letterBgGlow', 'letterBgBlur']) {
+    if (!host.querySelector('#' + id)) {
+      const couche = document.createElement('div');
+      couche.id = id;
+      host.appendChild(couche);
+    }
+  }
 
   const dpr = window.devicePixelRatio || 1;
   const cellPx = Math.round(LETTER_GRID_CELL * dpr);
@@ -1077,7 +1088,56 @@ function letterGridMount() {
     letterGridTimer = setInterval(letterGridTick, LETTER_GRID_TICK_MS);
   }
 }
+// Rayon du disque net-vers-flou sous le curseur. Assez large pour couvrir un
+// bloc de texte qu'on est en train de lire, assez petit pour qu'on voie que
+// l'effet suit la souris.
+const LETTER_BG_BLUR_RADIUS = 110;
+
+// Le pointeur émet bien plus d'événements que l'écran n'affiche d'images, et
+// chaque mise à jour recompose un backdrop-filter masqué (coûteux). On ne
+// touche donc au style qu'une fois par frame.
+let letterBgBlurPos = null;
+let letterBgBlurRaf = 0;
+
+function applyLetterBgBlur() {
+  letterBgBlurRaf = 0;
+  const blur = document.querySelector('#letterBgBlur');
+  if (!blur || !letterBgBlurPos) return;
+  blur.style.setProperty('--letterBgBlur-x', `${letterBgBlurPos.x}px`);
+  blur.style.setProperty('--letterBgBlur-y', `${letterBgBlurPos.y}px`);
+  blur.style.setProperty('--letterBgBlur-radius', `${LETTER_BG_BLUR_RADIUS}px`);
+}
+
+function updateLetterBgBlur(evt) {
+  const host = document.querySelector('#letterBg');
+  if (!host) return;
+  const rect = host.getBoundingClientRect();
+  letterBgBlurPos = {
+    x: Math.max(0, Math.min(rect.width, evt.clientX - rect.left)),
+    y: Math.max(0, Math.min(rect.height, evt.clientY - rect.top))
+  };
+  if (!letterBgBlurRaf) letterBgBlurRaf = requestAnimationFrame(applyLetterBgBlur);
+}
+
+// Au repos le rayon retombe à 0 : le masque se réduit à son plancher d'alpha,
+// donc un voile uniforme — pas une disparition brutale du flou.
+function resetLetterBgBlur() {
+  const blur = document.querySelector('#letterBgBlur');
+  if (!blur) return;
+  if (letterBgBlurRaf) { cancelAnimationFrame(letterBgBlurRaf); letterBgBlurRaf = 0; }
+  letterBgBlurPos = null;
+  blur.style.setProperty('--letterBgBlur-radius', '0px');
+}
+
+function initLetterBgBlur() {
+  const wrap = document.querySelector('.wrap');
+  if (!wrap) return;
+  wrap.addEventListener('pointermove', updateLetterBgBlur, { passive: true });
+  wrap.addEventListener('pointerleave', resetLetterBgBlur);
+  wrap.addEventListener('pointerenter', updateLetterBgBlur, { passive: true });
+}
 letterGridMount();
+initLetterBgBlur();
 
 // Ne fait plus que marquer l'état pour letterGridTick ci-dessus — le bandeau
 // tourne en continu, indépendamment du traitement.

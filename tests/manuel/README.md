@@ -58,6 +58,7 @@ exact du défaut d'internationalisation déjà connu, dans l'autre sens.
 | `Éléonore a transmis…` | prénom SEUL réutilisé plus loin — la propagation travaille sur la valeur entière | ⚠️ **fuite connue, non corrigée** |
 | `1988-03-14`, `EMP-0012`, `Villetaneuse` | valeurs isolées sans contexte (ce que seul le zero-shot traite) | masquées |
 | `Réunion « stratégie » — cœur…` | caractères hors WinAnsi | ne fait pas planter la reconstruction |
+| `CLAUSE TYPE` (prose sur les données personnelles) | **P6** : un texte dont le SUJET est la donnée personnelle est le pire cas — son vocabulaire ressemble aux catégories cherchées | ⚠️ **cassé** : pronoms (`you`, `I`, `me`, `we`), rôles (`vendor`, `representative`, `candidate`) et noms communs (`name`, `address`, `consent`) masqués. Rien ici ne devrait l'être |
 | Image (figure 1) | ré-embarquement en mode « Préserver » (`ImageBitmap`, navigateur seulement) | image présente en « Préserver », absente en « Alléger » |
 | Métadonnées du PDF | titre/auteur/sujet portent le nom de la candidate | sortie « Préserver » = pages **neuves**, rien n'est recopié |
 

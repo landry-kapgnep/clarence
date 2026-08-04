@@ -853,7 +853,7 @@ function renderTypeChips(boxId, disabledSet) {
   if (!box) return;
   box.innerHTML = Object.entries(TYPE_DISPLAY).filter(([t]) => t !== "PERSONNALISE").map(([t, label]) => {
     const off = disabledSet.has(t);
-    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t}" ${off ? "" : "checked"}>${esc(label)}</label>`;
+    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t}" ${off ? "" : "checked"}><span class="square-checkbox" aria-hidden="true"></span><span class="checkbox-label-text">${esc(label)}</span></label>`;
   }).join("");
 }
 renderTypeChips("typeToggles", disabledTypes);
@@ -1587,6 +1587,13 @@ function letterGridMount() {
   letterGridCanvas = document.createElement("canvas");
   host.appendChild(letterGridCanvas);
   letterGridCtx = letterGridCanvas.getContext("2d");
+  for (const id of ["letterBgGlow", "letterBgBlur"]) {
+    if (!host.querySelector("#" + id)) {
+      const couche = document.createElement("div");
+      couche.id = id;
+      host.appendChild(couche);
+    }
+  }
   const dpr = window.devicePixelRatio || 1;
   const cellPx = Math.round(LETTER_GRID_CELL * dpr);
   const cols = Math.ceil(host.clientWidth * dpr / cellPx);
@@ -1604,7 +1611,46 @@ function letterGridMount() {
     letterGridTimer = setInterval(letterGridTick, LETTER_GRID_TICK_MS);
   }
 }
+var LETTER_BG_BLUR_RADIUS = 110;
+var letterBgBlurPos = null;
+var letterBgBlurRaf = 0;
+function applyLetterBgBlur() {
+  letterBgBlurRaf = 0;
+  const blur = document.querySelector("#letterBgBlur");
+  if (!blur || !letterBgBlurPos) return;
+  blur.style.setProperty("--letterBgBlur-x", `${letterBgBlurPos.x}px`);
+  blur.style.setProperty("--letterBgBlur-y", `${letterBgBlurPos.y}px`);
+  blur.style.setProperty("--letterBgBlur-radius", `${LETTER_BG_BLUR_RADIUS}px`);
+}
+function updateLetterBgBlur(evt) {
+  const host = document.querySelector("#letterBg");
+  if (!host) return;
+  const rect = host.getBoundingClientRect();
+  letterBgBlurPos = {
+    x: Math.max(0, Math.min(rect.width, evt.clientX - rect.left)),
+    y: Math.max(0, Math.min(rect.height, evt.clientY - rect.top))
+  };
+  if (!letterBgBlurRaf) letterBgBlurRaf = requestAnimationFrame(applyLetterBgBlur);
+}
+function resetLetterBgBlur() {
+  const blur = document.querySelector("#letterBgBlur");
+  if (!blur) return;
+  if (letterBgBlurRaf) {
+    cancelAnimationFrame(letterBgBlurRaf);
+    letterBgBlurRaf = 0;
+  }
+  letterBgBlurPos = null;
+  blur.style.setProperty("--letterBgBlur-radius", "0px");
+}
+function initLetterBgBlur() {
+  const wrap = document.querySelector(".wrap");
+  if (!wrap) return;
+  wrap.addEventListener("pointermove", updateLetterBgBlur, { passive: true });
+  wrap.addEventListener("pointerleave", resetLetterBgBlur);
+  wrap.addEventListener("pointerenter", updateLetterBgBlur, { passive: true });
+}
 letterGridMount();
+initLetterBgBlur();
 function setProcessing(on) {
   document.body.classList.toggle("processing", !!on);
 }

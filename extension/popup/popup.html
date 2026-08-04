@@ -16,8 +16,13 @@
            Décoratif : aria-hidden, et coupé si l'utilisateur a demandé moins
            de mouvement. Placé DANS .wrap car son fond est opaque. -->
       <div id="letterBg" aria-hidden="true"></div>
-      <header>
-        <img class="logo" src="img/ClarenceLogoRedSquareWAlt.png" alt="Clarence">
+      <header class="header-stage">
+        <div class="fairy-shell" id="fairyShell">
+          <img class="fairy-icon" id="fairyIcon" src="img/ClarenceFairyW.png" alt="" aria-hidden="true">
+        </div>
+        <div class="logo-shell">
+          <img class="logo" src="img/ClarenceLogoRedSquareWAlt.png" alt="Clarence">
+        </div>
         <div>
           <h1></h1>
         </div>
@@ -37,9 +42,10 @@
         <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage, puis clique ici">Masquer la sélection</button>
       </div>
       <div id="textOptions" hidden>
-      <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
+      <label class="hint pseudo-toggle" style="display:block;margin-top:8px;cursor:pointer;">
         <input type="checkbox" id="realisticToggle">
-        Pseudonymes (lieux, noms, contacts)
+        <span class="square-checkbox" aria-hidden="true"></span>
+        <span class="checkbox-label-text">Pseudonymes (lieux, noms, contacts)</span>
       </label>
       <label class="hint pseudo-locale" style="display:block;cursor:pointer;">
         Langue des pseudonymes
@@ -105,18 +111,21 @@
         <div id="fileOptions" hidden>
         <div id="pdfModeChoice" hidden>
           <div class="field-label"></div>
-          <label class="hint" style="display:block;cursor:pointer;">
+          <label class="hint pdf-radio" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModeLight" value="md" checked>
-            Format allégé (.md)
+            <span class="square-radio" aria-hidden="true"></span>
+            <span class="radio-label-text">Format allégé (.md)</span>
           </label>
-          <label class="hint" style="display:block;cursor:pointer;">
+          <label class="hint pdf-radio" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModePreserve" value="pdf">
-            Format original
+            <span class="square-radio" aria-hidden="true"></span>
+            <span class="radio-label-text">Format original</span>
           </label>
         </div>
-        <label class="hint" style="display:block;margin-top:8px;cursor:pointer;">
+        <label class="hint pseudo-toggle" style="display:block;margin-top:8px;cursor:pointer;">
           <input type="checkbox" id="fileRealisticToggle">
-          Pseudonymes (lieux, noms, contacts)
+          <span class="square-checkbox" aria-hidden="true"></span>
+          <span class="checkbox-label-text">Pseudonymes (lieux, noms, contacts)</span>
         </label>
         <label class="hint pseudo-locale" style="display:block;cursor:pointer;">
           Langue des pseudonymes
@@ -168,7 +177,7 @@
           </div>
           <button id="dragCard" class="drag-card" hidden>
             <span class="drag-card-icon">⇢</span>
-            <span>Envoyer dans la page (expérimental)</span>
+            <span>Envoyer dans la page</span>
           </button>
           <p class="status" id="fileSummary"></p>
           <details>

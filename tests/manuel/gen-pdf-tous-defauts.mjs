@@ -189,6 +189,22 @@ saut();
 ligne('Réunion « stratégie » — cœur du sujet… voir a@b.example');
 saut();
 
+// PROSE QUI PARLE DE DONNÉES PERSONNELLES (P6). Le pire cas mesuré : sur un
+// vrai formulaire de consentement de 18 pages, presque vierge de données,
+// l'extension a posé 797 placeholders — pronoms (you, your, me, I, we),
+// noms de rôle (vendor, representative, candidate) et noms communs du champ
+// lexical (name, address, consent) pris pour des entités. Le sujet du texte
+// EST la donnée personnelle, donc son vocabulaire ressemble mot pour mot aux
+// catégories cherchées. Rien ici ne doit être masqué.
+ligne('CLAUSE TYPE (aucune donnée réelle)', 10, true);
+ligne('This form asks for your consent to our collecting, using and', 8);
+ligne('otherwise processing certain personal information about you. We', 8);
+ligne('may collect your name, address, date of birth and email address.', 8);
+ligne('If I am in the EU, the vendor or its representative will inform', 8);
+ligne('me here about the lawful basis. The candidate must ask the', 8);
+ligne('company for that information.', 8);
+saut();
+
 // Image embarquée : éprouve le ré-embarquement en mode « Préserver » (et sa
 // disparition annoncée en mode « Alléger »). 1×1 rouge, étirée pour être vue.
 const png = await doc.embedPng(Buffer.from(
