@@ -38,8 +38,8 @@
 
   /* Trame du bandeau : assez présente pour se lire, jamais au point de
      concurrencer le titre qui passe par-dessus. */
-  --grille-case: #161923;
-  --grille-lettre: rgba(237, 230, 211, 0.30);
+  --grille-case: #101219;
+  --grille-lettre: rgba(237, 230, 211, 0.20);
 
   --line-soft: rgba(237, 230, 211, 0.10);
   --line-fine: rgba(237, 230, 211, 0.06);
@@ -98,28 +98,27 @@ body {
   justify-content: space-between;
   gap: 24px;
 }
+/* Recadrage du logo. Le PNG est un carré de 2000 px dont le dessin n'occupe
+   qu'une bande utile de 1590×342 à partir de (202, 868) — mesurée sur les
+   pixels non transparents. On l'affiche donc dans une fenêtre au bon rapport,
+   l'image agrandie et décalée pour que seule cette bande soit visible. */
 .marque {
-  font-family: var(--titre);
-  font-weight: 600;
-  font-size: 21px;
-  letter-spacing: -0.01em;
-  color: var(--paper);
+  --logo-h: 26px;
+  display: block;
+  height: var(--logo-h);
+  width: calc(var(--logo-h) * 1590 / 342);
+  position: relative;
+  overflow: hidden;
   text-decoration: none;
-  display: inline-flex;
-  align-items: center;
+  flex: none;
 }
-/* Le « e » dans son carré rouge : la marque, reprise du logo de la popup. */
-.marque-e {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.08em;
-  height: 1.08em;
-  margin-left: 0.06em;
-  background: var(--rouge);
-  color: #fff;
-  font-weight: 700;
-  line-height: 1;
+.marque img {
+  position: absolute;
+  height: calc(var(--logo-h) * 2000 / 342);
+  width: auto;
+  left: calc(var(--logo-h) * -202 / 342);
+  top: calc(var(--logo-h) * -868 / 342);
+  max-width: none;
 }
 .entete-meta {
   margin: 0;
@@ -131,15 +130,16 @@ body {
 }
 
 /* ── Bandeau de lettres ────────────────────────────────────────────────── */
+/* La trame occupe TOUTE la page, fixe derrière le contenu : c'est le fond de
+   l'outil, pas un bandeau décoratif en tête d'article. Le contraste est plus
+   bas qu'en bandeau (--grille-case / --grille-lettre) parce qu'ici du texte
+   passe par-dessus en permanence. */
 .grille {
-  position: relative;
-  z-index: 1;
-  height: 196px;
-  margin-bottom: -64px;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
   overflow: hidden;
-  /* S'efface vers le bas pour glisser sous le titre au lieu de le heurter. */
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 38%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 38%, transparent 100%);
+  pointer-events: none;
 }
 .grille canvas { display: block; }
 
