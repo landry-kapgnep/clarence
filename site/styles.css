@@ -1,0 +1,496 @@
+/* Clarence — site vitrine (prototype).
+   Mêmes jetons de couleur que la popup : le site et l'outil doivent se lire
+   comme un seul objet. Angles droits partout, aucune bordure — le contraste
+   passe par les fonds seuls, exactement comme dans l'extension. */
+
+@font-face {
+  font-family: 'Syne Mono';
+  src: url('fonts/SyneMono.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Stack Sans Text';
+  src: url('fonts/StackSansText.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Stack Sans Headline';
+  src: url('fonts/StackSansHeadline.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --paper: #EDE6D3;
+  --paper-dim: #A39C8C;
+  --muted: #6E6A60;
+
+  --bg-page: #050506;
+  --bg-field: #0F1014;
+  --bg-raised: #171A22;
+  --seal: #000105;
+
+  --seal-lit: #8D93D6;   /* identité directe */
+  --moss: #8CA882;       /* financier / administratif */
+  --tan: #C2A06A;
+  --rouge: #FF2D00;      /* la marque, et rien d'autre */
+
+  /* Trame du bandeau : assez présente pour se lire, jamais au point de
+     concurrencer le titre qui passe par-dessus. */
+  --grille-case: #161923;
+  --grille-lettre: rgba(237, 230, 211, 0.30);
+
+  --line-soft: rgba(237, 230, 211, 0.10);
+  --line-fine: rgba(237, 230, 211, 0.06);
+
+  --mono: 'Syne Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --texte: 'Stack Sans Text', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --titre: 'Stack Sans Headline', 'Stack Sans Text', system-ui, sans-serif;
+
+  --rail: 92px;
+  --gouttiere: 40px;
+  --large: 1180px;
+}
+
+*, *::before, *::after { box-sizing: border-box; border-radius: 0; }
+
+/* L'attribut `hidden` vaut `display: none` dans la feuille du navigateur —
+   donc n'importe quelle règle d'auteur (`display: flex`…) le neutralise. */
+[hidden] { display: none !important; }
+
+html { background: var(--bg-page); }
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--paper);
+  font-family: var(--texte);
+  font-size: 17px;
+  line-height: 1.62;
+  font-weight: 380;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* La fée de la popup, en veilleuse : présente, jamais lisible comme une
+   illustration. Fixe, hors flux, décalée à droite — pas centrée. */
+.fee {
+  position: fixed;
+  right: -60px;
+  top: 8vh;
+  width: min(460px, 40vw);
+  opacity: 0.032;
+  filter: saturate(0.7);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+/* ── En-tête ───────────────────────────────────────────────────────────── */
+.entete {
+  position: relative;
+  z-index: 3;
+  max-width: var(--large);
+  margin: 0 auto;
+  padding: 22px 28px 18px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+}
+.marque {
+  font-family: var(--titre);
+  font-weight: 600;
+  font-size: 21px;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+/* Le « e » dans son carré rouge : la marque, reprise du logo de la popup. */
+.marque-e {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.08em;
+  height: 1.08em;
+  margin-left: 0.06em;
+  background: var(--rouge);
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}
+.entete-meta {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Bandeau de lettres ────────────────────────────────────────────────── */
+.grille {
+  position: relative;
+  z-index: 1;
+  height: 196px;
+  margin-bottom: -64px;
+  overflow: hidden;
+  /* S'efface vers le bas pour glisser sous le titre au lieu de le heurter. */
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 38%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 38%, transparent 100%);
+}
+.grille canvas { display: block; }
+
+/* ── Grille éditoriale : rail de numéros + corps ───────────────────────── */
+main { position: relative; z-index: 2; }
+
+.bloc,
+.pied {
+  max-width: var(--large);
+  margin: 0 auto;
+  padding: 0 28px;
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  gap: var(--gouttiere);
+}
+.bloc { padding-top: 96px; }
+#essayer { padding-top: 34px; }
+
+.rail { position: relative; }
+.rail-num {
+  position: sticky;
+  top: 28px;
+  display: block;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  padding-top: 0.65em;
+}
+/* Le filet part du numéro et descend : c'est lui qui tient la page. */
+.rail-num::after {
+  content: "";
+  position: absolute;
+  left: 0.15em;
+  top: 3.1em;
+  width: 1px;
+  height: 46px;
+  background: var(--line-soft);
+}
+
+.corps { min-width: 0; }
+
+/* ── Typographie ───────────────────────────────────────────────────────── */
+h1 {
+  font-family: var(--titre);
+  font-weight: 500;
+  font-size: clamp(2.5rem, 5.6vw, 4.35rem);
+  line-height: 0.99;
+  letter-spacing: -0.028em;
+  margin: 0 0 26px;
+  max-width: 15ch;
+}
+h2 {
+  font-family: var(--titre);
+  font-weight: 500;
+  font-size: clamp(1.55rem, 2.9vw, 2.3rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+  max-width: 22ch;
+}
+.chapo {
+  margin: 0 0 40px;
+  max-width: 60ch;
+  font-size: 19px;
+  color: var(--paper-dim);
+}
+.chapo strong { color: var(--paper); font-weight: 500; }
+.texte { margin: 0 0 26px; max-width: 62ch; color: var(--paper-dim); }
+.texte-fin { margin-bottom: 0; }
+.mono { font-family: var(--mono); font-size: 0.9em; color: var(--paper); }
+
+.etiquette {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── L'atelier (la démo) ───────────────────────────────────────────────── */
+.atelier { background: var(--bg-field); }
+
+.atelier-corps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line-fine);
+}
+
+.volet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-field);
+}
+.volet > .etiquette { padding: 15px 22px 11px; margin: 0; }
+/* Le champ porte le positionnement : miroir et zone de saisie s'y superposent. */
+.champ { position: relative; flex: 1; min-height: 370px; }
+
+/* Miroir et zone de saisie EXACTEMENT superposés : même police, mêmes
+   métriques, même remplissage. Toute divergence décale le surlignage. */
+.miroir,
+#source,
+#resultat {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.72;
+  padding: 4px 22px 26px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  tab-size: 2;
+}
+.miroir {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: var(--paper-dim);
+  pointer-events: none;
+}
+#source {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  resize: none;
+  background: transparent;
+  color: transparent;         /* le texte visible est celui du miroir */
+  caret-color: var(--paper);
+  outline: none;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(237, 230, 211, 0.2) transparent;
+}
+#source::selection { background: rgba(141, 147, 214, 0.32); }
+
+/* Surlignage — deux familles, distinction sémantique et non décorative :
+   ce qui identifie la personne / ce qui relève du financier ou de
+   l'administratif. */
+.miroir mark {
+  background: transparent;
+  color: var(--paper);
+  box-shadow: inset 0 -1.5px 0 var(--seal-lit);
+}
+.miroir mark[data-type="IBAN"],
+.miroir mark[data-type="CARTE_BANCAIRE"],
+.miroir mark[data-type="NIR"],
+.miroir mark[data-type="SIRET_SIREN"],
+.miroir mark[data-type="REFERENCE"],
+.miroir mark[data-type="MONTANT"],
+.miroir mark[data-type="BIC"],
+.miroir mark[data-type="ID_NATIONAL"] {
+  box-shadow: inset 0 -1.5px 0 var(--moss);
+}
+
+.volet-sortie { background: var(--seal); }
+#resultat {
+  height: 100%;
+  overflow: auto;
+  color: var(--paper-dim);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(237, 230, 211, 0.2) transparent;
+}
+.copier {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border: 0;
+  background: var(--paper);
+  color: var(--bg-field);
+  cursor: pointer;
+  transition: transform .14s cubic-bezier(.34,1.56,.64,1), filter .15s ease;
+}
+.copier:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.copier:active { transform: translateY(0) scale(.97); }
+
+.atelier-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 14px 18px 16px;
+}
+.puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--paper-dim);
+}
+.puces li { display: inline-flex; align-items: center; gap: 7px; }
+.puces b { color: var(--muted); font-weight: 400; }
+.pastille { width: 7px; height: 7px; background: var(--seal-lit); }
+.pastille[data-type="IBAN"],
+.pastille[data-type="CARTE_BANCAIRE"],
+.pastille[data-type="NIR"],
+.pastille[data-type="SIRET_SIREN"],
+.pastille[data-type="REFERENCE"],
+.pastille[data-type="MONTANT"],
+.pastille[data-type="BIC"],
+.pastille[data-type="ID_NATIONAL"] { background: var(--moss); }
+
+.decompte {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.decompte b { color: var(--paper); font-weight: 400; }
+
+/* ── L'aveu : montrer ce que l'outil ne fait pas ───────────────────────── */
+.aveu {
+  margin-top: 22px;
+  padding: 18px 22px;
+  background: var(--bg-raised);
+  border-left: 2px solid var(--tan);
+}
+.aveu p { margin: 0; max-width: 68ch; font-size: 15.5px; color: var(--paper-dim); }
+.aveu-cle { color: var(--paper); font-weight: 500; }
+
+/* ── Compteurs réseau ──────────────────────────────────────────────────── */
+.compteurs { display: flex; flex-wrap: wrap; gap: 1px; margin: 0 0 26px; background: var(--line-fine); }
+.compteur {
+  flex: 1 1 240px;
+  padding: 24px 26px;
+  background: var(--bg-field);
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+.compteur b {
+  font-family: var(--mono);
+  font-size: 44px;
+  line-height: 1;
+  font-weight: 400;
+  color: var(--moss);
+}
+.compteur-second b { color: var(--muted); font-size: 30px; }
+.compteur span { font-size: 14px; color: var(--paper-dim); max-width: 26ch; }
+
+/* ── Tableau de mesures ────────────────────────────────────────────────── */
+.mesures {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 26px;
+  text-align: left;
+}
+.mesures th, .mesures td { padding: 16px 18px 16px 0; vertical-align: top; }
+.mesures thead th {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 400;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.mesures tbody tr { border-bottom: 1px solid var(--line-fine); }
+.mesures tbody th {
+  font-weight: 500;
+  color: var(--paper);
+  width: 34%;
+  font-size: 15.5px;
+}
+.mesures .sous {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 3px;
+}
+.mesures td { color: var(--paper-dim); font-size: 15px; }
+.chiffre {
+  font-family: var(--mono);
+  font-size: 26px;
+  color: var(--paper);
+  width: 16%;
+  white-space: nowrap;
+}
+.chiffre-fort { color: var(--moss); }
+
+/* ── Apports de l'extension ────────────────────────────────────────────── */
+.apports {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1px;
+  margin: 0 0 28px;
+  background: var(--line-fine);
+}
+.apports > div { background: var(--bg-field); padding: 22px 24px; }
+.apports dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--seal-lit);
+  margin-bottom: 9px;
+}
+.apports dd { margin: 0; font-size: 15px; color: var(--paper-dim); }
+
+.statut {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.statut-point { width: 7px; height: 7px; background: var(--tan); flex: none; }
+
+/* ── Pied ──────────────────────────────────────────────────────────────── */
+.pied {
+  margin-top: 110px;
+  padding-top: 26px;
+  padding-bottom: 60px;
+}
+.pied .corps { border-top: 1px solid var(--line-fine); padding-top: 22px; }
+.pied p { margin: 0 0 6px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.pied-note { max-width: 60ch; }
+
+/* ── Adaptation ────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .atelier-corps { grid-template-columns: 1fr; }
+  .champ { min-height: 300px; }
+  .volet-sortie .champ { min-height: 260px; }
+}
+@media (max-width: 720px) {
+  :root { --rail: 0px; --gouttiere: 0px; }
+  .bloc, .pied { grid-template-columns: minmax(0, 1fr); }
+  .rail { display: none; }
+  body { font-size: 16px; }
+  .bloc { padding-top: 64px; }
+  .fee { opacity: 0.04; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

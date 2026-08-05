@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clarence — nettoie ton texte avant de le coller dans une IA</title>
+<meta name="description" content="Anonymiseur de données personnelles qui tourne entièrement dans ton navigateur. Rien n'est envoyé nulle part — et tu peux le vérifier.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<img class="fee" src="img/ClarenceFairyW.png" alt="" aria-hidden="true">
+
+<header class="entete">
+  <a class="marque" href="#">
+    <span class="marque-mot">Clarenc</span><span class="marque-e">e</span>
+  </a>
+  <p class="entete-meta">local · vérifiable · sans compte</p>
+</header>
+
+<!-- Bandeau de lettres : la signature visuelle de l'outil, reprise de la
+     popup. Décoratif, donc masqué aux lecteurs d'écran, et figé si
+     l'utilisateur demande moins de mouvement. -->
+<div class="grille" id="grille" aria-hidden="true"></div>
+
+<main>
+
+  <!-- 01 ─ Le titre et la démo ne sont pas séparés : la démo EST l'argument.
+       Rien à faire défiler pour voir le produit fonctionner. -->
+  <section class="bloc" id="essayer">
+    <div class="rail"><span class="rail-num">01</span></div>
+    <div class="corps">
+
+      <h1>
+        Nettoie ton texte avant
+        de le coller dans une IA.
+      </h1>
+
+      <p class="chapo">
+        Emails, IBAN, numéro de sécu, carte, SIRET, adresses : repérés et
+        remplacés par des étiquettes cohérentes, pour que le modèle garde le
+        sens sans voir les données. <strong>Tout se passe sur cette page.</strong>
+      </p>
+
+      <div class="atelier">
+        <div class="atelier-corps">
+          <!-- Chaque étiquette vit DANS son volet : en une seule colonne
+               (mobile), un bandeau d'en-têtes se retrouverait détaché des
+               champs qu'il décrit. -->
+          <section class="volet">
+            <p class="etiquette">Ton texte</p>
+            <div class="champ">
+            <!-- Le miroir porte le surlignage, le textarea reste éditable
+                 par-dessus : même technique que la popup. -->
+            <div class="miroir" id="miroir" aria-hidden="true"></div>
+            <textarea id="source" spellcheck="false" aria-label="Texte à nettoyer">Objet : dossier de Madame Amandine Rousseau
+
+Bonjour Monsieur Thibault Nerval,
+
+Voici les éléments demandés. La cliente est née le 14 mars 1988.
+Email : a.rousseau@korrigane-labs.example
+Téléphone : 06 12 34 56 78
+Adresse : 42 rue des Cordeliers, 44000 Nantes
+IBAN : FR76 3000 6000 0112 3456 7890 189
+Sécurité sociale : 2 88 03 44 109 019 91
+SIRET employeur : 732 829 320 00074
+Carte (test) : 4242 4242 4242 4242
+Réf. interne : EMP-4471-KD
+
+Le virement de 15 000 € partira avant la fin du mois.</textarea>
+            </div>
+          </section>
+
+          <section class="volet volet-sortie">
+            <p class="etiquette">Ce que l'IA verrait</p>
+            <div class="champ">
+              <pre id="resultat"></pre>
+            </div>
+            <button id="copier" class="copier" type="button">copier</button>
+          </section>
+        </div>
+
+        <div class="atelier-pied">
+          <ul class="puces" id="puces"></ul>
+          <p class="decompte">
+            <b id="compte">0</b> valeurs sur <b id="motsCompte">0</b> mots
+          </p>
+        </div>
+      </div>
+
+      <!-- Le point qui distingue ce produit : on montre ce qu'il NE fait pas. -->
+      <aside class="aveu">
+        <p>
+          <span class="aveu-cle">« Nantes » est encore en clair.</span>
+          Normal : un nom de ville, de personne ou d'entreprise ne se reconnaît
+          pas à sa forme, seulement à son contexte. Ça demande un modèle de
+          183 Mo, qui vit dans l'extension. Cette page fait tourner la couche
+          déterministe — celle qu'on peut vérifier mathématiquement.
+        </p>
+      </aside>
+
+    </div>
+  </section>
+
+  <!-- 02 ─ La preuve, rendue mesurable À L'ÉCRAN plutôt qu'affirmée. -->
+  <section class="bloc" id="preuve">
+    <div class="rail"><span class="rail-num">02</span></div>
+    <div class="corps">
+      <h2>La promesse est vérifiable, pas à croire.</h2>
+      <p class="texte">
+        « Aucune donnée ne quitte votre navigateur » est une phrase que tout le
+        monde écrit. Celle-ci se contrôle : ouvre les outils de développement,
+        onglet <span class="mono">Réseau</span>, et tape dans la zone ci-dessus.
+        Rien ne part. Le compteur ci-dessous lit la même source que ton
+        navigateur — il compte les requêtes sortantes, y compris celles qu'on
+        n'aurait pas voulues.
+      </p>
+
+      <div class="compteurs">
+        <div class="compteur">
+          <b id="reseau">0</b>
+          <span>requête envoyée depuis le chargement</span>
+        </div>
+        <div class="compteur compteur-second">
+          <b id="reseauStatique">0</b>
+          <span>fichiers de la page elle-même (police, style, script)</span>
+        </div>
+      </div>
+
+      <p class="texte texte-fin">
+        Il n'y a pas de serveur à qui envoyer quoi que ce soit. Pas de compte,
+        pas de session, pas d'analytics. Le code du moteur est le même que celui
+        de l'extension.
+      </p>
+    </div>
+  </section>
+
+  <!-- 03 ─ Les vrais chiffres du banc. Le refus de la fausse confiance est
+       le positionnement, donc il est affiché, pas caché. -->
+  <section class="bloc" id="mesures">
+    <div class="rail"><span class="rail-num">03</span></div>
+    <div class="corps">
+      <h2>On mesure. On publie. On ne promet pas.</h2>
+      <p class="texte">
+        Un banc d'essai rejoue sept documents à chaque changement du moteur :
+        CV multi-colonnes, mémoire en interligne 1,5, tableau RH, certificat
+        administratif, courriel anglophone, compte rendu médical. Voici les
+        chiffres du jour, tels quels.
+      </p>
+
+      <table class="mesures">
+        <thead>
+          <tr><th>Couche</th><th>Rappel</th><th>Ce qu'on en dit</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Déterministe<br><span class="sous">IBAN, sécu, carte, SIRET, email…</span></th>
+            <td class="chiffre chiffre-fort">100 %</td>
+            <td>Validé mathématiquement (Luhn, mod-97, clé de contrôle). Un raté
+              n'est pas une limite du produit, c'est un bug.</td>
+          </tr>
+          <tr>
+            <th scope="row">Contextuelle<br><span class="sous">noms, entreprises, lieux</span></th>
+            <td class="chiffre">83 %</td>
+            <td>Dépend d'un modèle. 100 % est hors d'atteinte, et personne ne
+              devrait te promettre le contraire.</td>
+          </tr>
+          <tr>
+            <th scope="row">Lisibilité<br><span class="sous">mots qui doivent survivre</span></th>
+            <td class="chiffre">98 %</td>
+            <td>Un document dont tout est masqué est « sûr » et inutile. On
+              mesure aussi ça.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="texte texte-fin">
+        C'est pour ça que l'outil surligne tout ce qu'il a trouvé, et te laisse
+        retirer un faux positif ou ajouter ce qu'il a raté. Relis toujours avant
+        de coller.
+      </p>
+    </div>
+  </section>
+
+  <!-- 04 ─ La conversion : ce que la page ne peut pas faire. -->
+  <section class="bloc" id="extension">
+    <div class="rail"><span class="rail-num">04</span></div>
+    <div class="corps">
+      <h2>Cette page dépanne. L'extension travaille.</h2>
+
+      <dl class="apports">
+        <div>
+          <dt>Sur la page de l'IA, directement</dt>
+          <dd>Un bouton apparaît dans ChatGPT et Claude. Plus d'aller-retour
+            entre deux onglets.</dd>
+        </div>
+        <div>
+          <dt>Les noms, les entreprises, les lieux</dt>
+          <dd>La couche contextuelle tourne en local, dans un worker. Le modèle
+            se télécharge une fois, puis reste en cache.</dd>
+        </div>
+        <div>
+          <dt>Des fichiers entiers</dt>
+          <dd>PDF, DOCX, XLSX, CSV. Mise en page conservée, ou allégée en
+            Markdown pour économiser des jetons.</dd>
+        </div>
+        <div>
+          <dt>La réinjection</dt>
+          <dd>La réponse de l'IA revient avec les vraies valeurs remises à leur
+            place. La table de correspondance ne quitte jamais la machine.</dd>
+        </div>
+      </dl>
+
+      <p class="statut">
+        <span class="statut-point"></span>
+        Extension en préparation — pas encore publiée sur le Chrome Web Store.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pied">
+  <div class="rail"></div>
+  <div class="corps">
+    <p>Clarence — anonymiseur local. Prototype, rien n'est publié.</p>
+    <p class="pied-note">
+      Aucun cookie, aucun compte, aucune requête. Les valeurs de la démo sont
+      fictives (carte 4242…, domaines <span class="mono">.example</span>).
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="demo.js"></script>
+</body>
+</html>

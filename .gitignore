@@ -3,3 +3,6 @@ node_modules/
 
 # Modèles du banc d'essai (183 Mo, téléchargés à la demande)
 tests/bench/.modeles/
+
+# Sortie de build du site vitrine (prototype, régénérée par `npm run site`)
+site/dist/

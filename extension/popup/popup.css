@@ -498,8 +498,8 @@ body.panel-mode .popup-shell {
 /* Carte glissable (mode panneau) */
 .drag-card {
   margin-top: 10px;
-  width: 100%;
-  display: flex;
+  width: auto;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
@@ -510,6 +510,9 @@ body.panel-mode .popup-shell {
   font-size: 13px;
   color: var(#8CA882);
   text-align: left;
+}
+.controls .drag-card {
+  margin-top: 0;
 }
 .drag-card:hover:not(:disabled) { background: #dcdfdb57; transform: none; }
 .drag-card-icon { font-size: 16px; flex-shrink: 0; }
