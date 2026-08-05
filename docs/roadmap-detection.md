@@ -99,13 +99,43 @@ dans l'UI, décochés.
 |---|---|---|---|
 | — | **Aucune fuite structurée ni partielle** au banc | ✅ | — |
 | — | Données de l'**article 9** (santé) non détectées — décochées par défaut, dit honnêtement | limite du modèle | le plus grave restant |
-| P2bis | Sur-masquage des unités courtes : titres de section, `BUT Informatique`, `trimestre` | ouvert | bloque le payant |
-| — | `KAROLINE ANSELME` / `Nadia Belkacem` ratées sur documents courts et formulaires | ouvert | rappel |
-| — | `1988-03-14` raté en cellule nue | ouvert | rappel |
+| P2bis | `BUT Informatique` sur-masqué (`cv-fr.pdf`) — seul sur-masquage restant au banc (préservé 98 %) | ouvert | bloque le payant |
+| — | `KAROLINE ANSELME` ratée sur `certificat-fr.txt` (contextuel 67 %, pire document du banc) | ouvert | rappel |
+| ~~—~~ | ~~`1988-03-14` raté en cellule nue~~ — corrigé par le pré-filtre (`meriteUnePasseContextuelle`), `tableau-rh.csv` à 100 %/100 % | ✅ | — |
+| ~~—~~ | ~~`Nadia Belkacem` ratée~~ — corrigée par le seuil à 0,38 | ✅ | — |
 | P7 | Placeholders **tronqués** (422/4118 sur le mémoire) — casse la réversibilité, pas une fuite | ouvert, cause non isolée | réversibilité |
 | P2ter | Adresse abrégée (« Av. ») mal typée ; produits tiers jamais détectés | ouvert | couverture |
 | — | Régression assumée : `IUT` ne survit plus (fusionné avec « Informatique ») | connu | cosmétique |
 | P5 | i18n de la couche structurée (codes postaux, IDs non-FR) | partiel | couverture |
+
+### Diagnostiqués le 05/08, non corrigés — l'un par choix, l'autre par mesure
+
+**`BUT Informatique` (sur-masquage, `cv-fr.pdf`).** Le tableau de bord blâmait
+POSTE, ce qui était faux : avec POSTE désactivé (config livrée), c'est le
+**groupe identité lui-même** qui tague `Informatique` en ORG à **0,47**, au-dessus
+du seuil 0,38. `Informatique` est un nom commun de filière, capitalisé par
+convention française (« BUT Informatique », le nom du diplôme), ambigu avec un
+nom d'entreprise pour le modèle. Un seul cas dans tout le corpus. Pas de
+correctif tenté : une exception nommée irait contre le principe du projet
+(pas de liste statique pour une classe ouverte — les filières d'études en sont
+une, au même titre que les entreprises).
+
+**`KAROLINE ANSELME` (raté, `certificat-fr.txt`, pire score du banc : 67 %).**
+Scores mesurés dans le vrai contexte (document de 402 caractères, un seul
+chunk — pas de fenêtrage en jeu) : `KAROLINE` **0,130**, `ANSELME` **0,042**.
+Très en dessous du seuil, et bien plus bas que le cas déjà documenté
+(« LANDRY KAPGNEP », 0,47/0,36) — même forme (nom isolé, TOUT-MAJUSCULE, sur sa
+propre ligne) mais un score 3 à 10× plus faible. Pourquoi : sans indice de
+taille de police (un `.txt` n'en porte pas), le modèle n'a que la ponctuation
+autour (« certifie que\n\nKAROLINE ANSELME\n\n ») pour juger — visiblement
+insuffisant ici.
+
+**Piste testée et REJETÉE, mesurée sur le banc complet : seuil à 0,10.**
+Nécessaire pour dépasser 0,130. Effet : contextuel 83 % → 89 % (+6 points),
+préservé **98 % → 83 %** (`Docker`, `Linux`, `BUT Informatique` en faux
+positifs). Mauvais échange, net. Le seuil est épuisé comme levier pour ce cas ;
+toute amélioration future demanderait un signal déterministe (position en tête
+de document, structure de phrase administrative), pas un réglage de score.
 
 ### Fragilité de fond à garder en tête
 
