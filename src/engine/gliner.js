@@ -36,14 +36,25 @@ export const GLINER_THRESHOLD = 0.5;
 export const GROUPES = [
   {
     // Le cœur : ce que le NER BERT couvrait déjà, en mieux sur les valeurs
-    // isolées. Marge de bruit très confortable (pire faux positif 0,26).
+    // isolées.
     //
-    // Seuil ABAISSÉ à 0,45, mesuré sur un vrai CV : un nom seul sur sa ligne,
-    // en gros, sans rien autour (« LANDRY KAPGNEP », titre du document) ne
-    // sort qu'à 0,47 — un titre de CV est trop court pour donner au modèle de
-    // quoi être sûr. À 0,50 il FUYAIT. Le plancher de bruit du garde-fou étant
-    // à 0,26, la marge reste large. Ne pas remonter sans re-tester ce cas.
-    seuil: 0.45,
+    // Seuil ABAISSÉ à 0,45 une première fois (nom de CV isolé, 0,47), puis à
+    // 0,38 le 05/08/2026 — trouvé sur un vrai rapport (`rapport-fr.txt`) : le
+    // patronyme « ROUSSEAU » matche le motif BIC et annule « Amandine
+    // ROUSSEAU » dans la fusion (voir merge.js), mais le nom lui-même ne
+    // dépassait le seuil sur AUCUNE de ses 3 occurrences (0,364 / 0,398).
+    // « Nadia Belkacem » (`dossier-rh.txt`) était dans le même cas.
+    //
+    // Seuil choisi par balayage sur le banc COMPLET, pas par extrapolation :
+    // 0,45 → 0,40 → 0,38 → 0,36 → 0,35. 0,38 est le point pivot exact où les
+    // deux noms sont trouvés SANS qu'aucun faux positif n'apparaisse. En
+    // dessous (0,36), « CERTIFICAT DE SCOLARITE » (titre en capitales) devient
+    // un faux positif PER et le préservé de `certificat-fr.txt` chute de
+    // 100 % à 67 %. Ne pas descendre sans re-vérifier CE cas précis.
+    //
+    // Effet mesuré : rappel contextuel 78 → 83 %, préservé INCHANGÉ (98 %),
+    // structuré inchangé. Plus aucune fuite partielle sur les 7 documents.
+    seuil: 0.38,
     labels: ['person', 'company', 'location'],
     types: { person: 'PER', company: 'ORG', location: 'LOC' }
   },

@@ -266,3 +266,26 @@ test('une vraie date nue reste détectée', async () => {
   }));
   assert.deepEqual(spans.map(e => [e.type, e.value]), [['DATE_NAISSANCE', '1988-03-14']]);
 });
+
+// --- Seuil abaissé une seconde fois (0,45 → 0,38), trouvé sur un vrai
+// rapport : « Amandine ROUSSEAU » ne dépassait 0,45 sur AUCUNE occurrence
+// (0,364 / 0,398 mesurés), donc jamais proposé comme PER — la fuite ne
+// venait pas de la fusion (merge.js gère déjà le cas ROUSSEAU/BIC) mais du
+// modèle qui ne le franchissait jamais.
+test('un nom réel sous l\'ancien seuil (0,45) mais au-dessus du nouveau (0,38) est masqué', async () => {
+  const texte = 'Amandine ROUSSEAU, c\'est moi.';
+  const pipe = async (t, labels) => labels.includes('person')
+    ? [{ label: 'person', start: 0, end: 17, spanText: 'Amandine ROUSSEAU', score: 0.398 }]
+    : [];
+  const spans = await detectGliner(texte, pipe);
+  assert.deepEqual(spans.map(e => e.value), ['Amandine ROUSSEAU']);
+});
+
+// --- Borne basse : sous 0,38, un titre en capitales devient un faux positif
+// PER sur un vrai document (« CERTIFICAT DE SCOLARITE », 0,36 mesuré). Ce
+// test fige le seuil comme point pivot, pas comme valeur arbitraire.
+test('le seuil ne doit PAS descendre au point de masquer un titre en capitales', async () => {
+  const identite = GROUPES.find(g => g.labels.includes('person'));
+  assert.ok(identite.seuil > 0.36,
+    'à 0,36 ou moins, « CERTIFICAT DE SCOLARITE » (titre) devient un faux positif PER mesuré au banc');
+});

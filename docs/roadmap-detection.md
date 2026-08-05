@@ -16,8 +16,29 @@ Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
 | Critère | Valeur | Exigence | Tendance |
 |---|---|---|---|
 | Rappel **structuré** | **100 %** (20/20) | 100 %, non négociable | stable |
-| Rappel **contextuel** | **78 %** (28/36) | mesuré, jamais promis | voir note |
+| Rappel **contextuel** | **83 %** (30/36) | mesuré, jamais promis | 78 → **83** |
 | Termes **préservés** | **98 %** (45/46) | bloque le payant | 90 → 95 → 96 → **98** |
+
+### Seuil du groupe identité : 0,45 → 0,38, choisi par balayage
+
+Une fuite partielle subsistait sur `rapport-fr.txt` : « Amandine » restait en
+clair. Diagnostic — contrairement à ce qui avait été conclu deux séances plus
+tôt, la cause n'était **pas** la fusion (merge.js gère déjà le cas où le
+patronyme « ROUSSEAU » matche le motif BIC) : le modèle ne franchissait le
+seuil sur **aucune** des 3 occurrences (0,364 et 0,398 mesurés, de façon
+déterministe). « Nadia Belkacem » (`dossier-rh.txt`) était dans le même cas.
+
+Balayage sur le banc **complet**, pas par extrapolation :
+
+| Seuil | Contextuel | Préservé | Effet |
+|---|---|---|---|
+| 0,45 | 78 % | 98 % | fuite « Amandine » |
+| 0,40 | 81 % | 98 % | fuite « Amandine » encore |
+| **0,38** | **83 %** | **98 %** | **les deux noms trouvés, aucun faux positif** |
+| 0,36 | 83 % | 96 % | `CERTIFICAT DE SCOLARITE` devient un faux positif PER |
+| 0,35 | 83 % | 96 % | idem |
+
+0,38 est le **point pivot exact**. Deux tests figent les deux bornes.
 
 ### Le pré-filtre existait déjà, et il tuait le cas phare
 
