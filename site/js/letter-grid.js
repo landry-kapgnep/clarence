@@ -13,10 +13,13 @@ const LETTRES = ['c', 'l', 'a', 'r', 'e', 'n'];
 const CELL = 16;
 const FONT_PX = 9;
 const TICK_MS = 120;          // plus rapide que la popup : ici le motif VIT
-const R = [2.6, 5.2];
-const SEUIL = 0.34;
+// Relevé sur les captures de la popup : la trame y est CLAIRSEMÉE — de petits
+// groupes de 2 à 6 lettres dans les creux, jamais un tapis. À 25 % de
+// couverture le site devenait un damier ; on vise ici ~8 %.
+const R = [1.1, 2.1];
+const SEUIL = 0.50;
 const JITTER = 0.22;
-const CASES_PAR_AMAS = 180;   // densité surfacique visée (~25 % de couverture)
+const CASES_PAR_AMAS = 130;
 
 // Dérive des amas : c'est ELLE qui fait bouger les lettres. Sans elle le motif
 // est figé et seules les teintes changent — ce qui ne se voit pas.
@@ -62,8 +65,14 @@ export function monterGrilleDeLettres(hote) {
 
   const styles = getComputedStyle(document.documentElement);
   const lire = (v, defaut) => styles.getPropertyValue(v).trim() || defaut;
-  const couleurCase = lire('--grille-case', '#12141c');
-  const couleurLettre = lire('--grille-lettre', 'rgba(237,230,211,0.22)');
+  // VALEURS DE L'EXTENSION, relevées dans main.js :
+  //   letterGridCellFill   = --seal  → la couleur du FOND : les cases sont
+  //                                    invisibles, seules les teintes se voient
+  //   letterGridLetterFill = --paper → les lettres sont CRÈME, pleine intensité
+  // J'avais fait l'inverse (cases sombres visibles, lettres à 20 % d'opacité),
+  // ce qui donnait un damier au lieu de lettres qui flottent.
+  const couleurCase = lire('--seal', '#000105');
+  const couleurLettre = lire('--paper', '#EDE6D3');
   const palette = TEINTES.map(v => lire(v, '')).filter(Boolean);
 
   function redimensionner() {
@@ -93,7 +102,7 @@ export function monterGrilleDeLettres(hote) {
   //
   // Le canvas est FIXE, donc les rectangles du DOM (coordonnées viewport) sont
   // directement utilisables — mais il faut recalculer au défilement.
-  const SELECTEUR_TEXTE = 'h1, h2, p, table, dt, dd, li, .etiquette, .decompte';
+  const SELECTEUR_TEXTE = 'h1, h2, p, table, dt, dd, li, .etiquette, .decompte, .marque, .atelier, .aveu, .compteurs, .apports';
   const MARGE = 6; // px de respiration autour du texte
 
   function calculerEvidement() {
@@ -186,9 +195,15 @@ export function monterGrilleDeLettres(hote) {
         const y = Math.round(cy * CELL * dpr) / dpr;
         const k = cle(cx, cy);
         const t = teintes.get(k);
-        ctx.fillStyle = t ? t.couleur : couleurCase;
-        ctx.fillRect(x, y, CELL, CELL);
-        ctx.fillStyle = couleurLettre;
+        // La case n'est peinte QUE si elle est teintée : la remplir de --seal
+        // reviendrait à peindre du fond sur du fond, et sur une page — au
+        // contraire de la popup — les fonds ne sont pas tous identiques.
+        if (t) {
+          ctx.fillStyle = t.couleur;
+          ctx.fillRect(x, y, CELL, CELL);
+        }
+
+        ctx.fillStyle = t ? couleurCase : couleurLettre;
         const alt = lettresAlterees.get(k);
         const base = Math.floor(hash(cx, cy, graine + 7) * LETTRES.length);
         const i = (base + (alt ? alt.decalage : 0)) % LETTRES.length;

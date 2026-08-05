@@ -20,9 +20,14 @@
   <p class="entete-meta">local · vérifiable · sans compte</p>
 </header>
 
-<!-- Bandeau de lettres : la signature visuelle de l'outil, reprise de la
-     popup. Décoratif, donc masqué aux lecteurs d'écran, et figé si
-     l'utilisateur demande moins de mouvement. -->
+<!-- Lueurs colorées du fond, reprises de #letterBgBlur (popup.css) : trois
+     halos violet / mousse / tan, agrandis à l'échelle d'une page. C'est ce qui
+     empêche le noir d'être un aplat mort. -->
+<div class="lueurs" aria-hidden="true"></div>
+
+<!-- Trame de lettres : la signature visuelle de l'outil, reprise de la popup.
+     Décorative, donc masquée aux lecteurs d'écran, et figée si l'utilisateur
+     demande moins de mouvement. -->
 <div class="grille" id="grille" aria-hidden="true"></div>
 
 <main>
