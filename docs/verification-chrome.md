@@ -37,31 +37,55 @@ déclarer un bug de livraison.
 
 ---
 
-## A0. WebGPU — À MESURER EN PRIORITÉ (spike du 05/08/2026)
+## A0. Performance — mesures réelles et protocole (05/08/2026)
 
-Le fournisseur d'exécution passe de `wasm` à **`webgpu`**, avec repli silencieux.
-Node ne peut pas le tester : **aucune** valeur de gain n'est connue tant que ce
-test n'est pas fait en vrai Chrome.
+**Mesuré en vrai Chrome, mémoire de 75 pages :**
 
-1. Ouvrir la console du worker (DevTools de la popup → onglet Sources ou
-   Console). Au premier chargement du modèle, vérifier :
-   - **soit** rien (WebGPU actif) ;
-   - **soit** `[clarence] WebGPU indisponible, repli WASM : …` — le repli
-     fonctionne, mais on mesure alors la vitesse WASM, pas WebGPU.
-2. Confirmer l'accélérateur réellement retenu : le message `ready` du worker
-   porte désormais `accelerateur: 'webgpu' | 'wasm'`.
-3. **Chronométrer un vrai document long.** Référence à battre :
-   `Mémoire_MENAGER Valentine.pdf`, 75 pages — **5 min 45 en WASM**, mesuré le
-   05/08. Objectif produit fixé : **moins de 30 s**.
-4. Vérifier que le résultat est IDENTIQUE entre WebGPU et WASM (même nombre de
-   placeholders sur le même document) : un fournisseur d'exécution ne doit
-   jamais changer la détection. S'il la change, c'est un bug d'ORT à contourner,
-   pas une amélioration à garder.
+| Modèle | Accélérateur | Temps |
+|---|---|---|
+| `model_quantized` (int8, 175 Mo) | `wasm` | **5 min 45** |
+| `model_quantized` (int8, 175 Mo) | `webgpu` | **5 min 36** — aucun gain |
 
-⚠️ `vendor/ort-wasm-simd-threaded.jsep.wasm` (20 Mo) est le binaire qui PORTE
-l'accélération. S'il manque, l'init WebGPU échoue et on retombe en WASM
-silencieusement — donc lent sans que rien ne l'indique. `build.mjs` échoue
-bruyamment s'il est introuvable.
+**Pourquoi WebGPU n'a rien rapporté.** Le fournisseur WebGPU d'ORT supporte mal
+les opérateurs **quantifiés** : avec un modèle int8, la majorité des nœuds
+retombe sur le CPU. La console le dit explicitement —
+`Some nodes were not assigned to the preferred execution providers`. On paie le
+transfert vers le GPU sans profiter du GPU.
+
+**Erreur de méthode à ne pas refaire** : le pré-filtre (−39 % d'inférences,
+−21 % en Node) et WebGPU ont été activés dans la MÊME mesure. Le résultat est
+donc inattribuable — on ne sait pas si le pré-filtre a gagné et si WebGPU a
+perdu autant. **Une variable à la fois.**
+
+### Protocole d'A/B
+
+Deux constantes en tête de `src/popup/main.js`, puis `npm run build` :
+
+```js
+const VARIANTE = 'quantized';   // 'quantized' 175 Mo | 'fp16' 292 Mo | 'fp32' 583 Mo
+const ACCELERATEUR = 'wasm';    // 'wasm' | 'webgpu' | 'auto'
+```
+
+Changer l'URL du modèle réamorce le cache tout seul (la clé, c'est l'URL).
+
+1. Chronométrer le même document à chaque fois, extension rechargée.
+2. Vérifier l'accélérateur RÉELLEMENT retenu : le message `ready` du worker
+   porte `accelerateur: 'webgpu' | 'wasm'`. Un repli silencieux fausserait tout.
+3. Vérifier que le **nombre de placeholders est identique** entre deux
+   configurations : un fournisseur d'exécution ou une précision de modèle ne
+   doit jamais changer la détection. S'il la change, c'est un défaut à
+   contourner, pas un gain à garder.
+
+### Mesures encore à faire
+
+- `quantized` + `wasm` **avec le pré-filtre seul** : isole enfin son gain réel.
+- `fp16` + `webgpu` : la seule combinaison où WebGPU peut réellement accélérer.
+  Coût : 292 Mo au premier chargement contre 175 — arbitrage à trancher sur
+  mesure, pas au raisonnement.
+
+⚠️ `vendor/ort-wasm-simd-threaded.jsep.wasm` (20 Mo) porte l'accélération
+WebGPU. S'il manque, l'init échoue et on retombe en WASM silencieusement —
+donc lent sans que rien ne l'indique. `build.mjs` échoue bruyamment sinon.
 
 ## A. Ce que Node ne peut structurellement PAS attraper
 

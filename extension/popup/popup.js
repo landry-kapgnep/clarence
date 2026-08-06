@@ -963,7 +963,17 @@ function render() {
   refreshOverlayIfOpen();
 }
 var MAX_INPUT = 8e3;
-var GLINER_MODEL_URL = `https://huggingface.co/${GLINER_MODEL}/resolve/main/onnx/model_quantized.onnx`;
+var VARIANTES_MODELE = {
+  quantized: "model_quantized.onnx",
+  // 175 Mo, int8 — défaut
+  fp16: "model_fp16.onnx",
+  // 292 Mo
+  fp32: "model.onnx"
+  // 583 Mo
+};
+var VARIANTE = "quantized";
+var ACCELERATEUR = "wasm";
+var GLINER_MODEL_URL = `https://huggingface.co/${GLINER_MODEL}/resolve/main/onnx/${VARIANTES_MODELE[VARIANTE]}`;
 var nerWorker = null;
 var nerReqId = 0;
 var nerEngine = null;
@@ -1013,7 +1023,8 @@ function startEngine(engine) {
       engine,
       wasmPath: chrome.runtime.getURL("vendor/"),
       model: engine === "gliner" ? GLINER_MODEL : NER_MODEL,
-      modelUrl: engine === "gliner" ? GLINER_MODEL_URL : null
+      modelUrl: engine === "gliner" ? GLINER_MODEL_URL : null,
+      accelerateur: ACCELERATEUR
     });
   });
 }

@@ -66005,9 +66005,9 @@ async function construireGliner({ wasmPath, model, modelBytes, provider }) {
   decoupeur.whitespacePattern = DECOUPEUR_UNICODE;
   return instance;
 }
-async function initGliner({ wasmPath, model, modelUrl }) {
+async function initGliner({ wasmPath, model, modelUrl, accelerateur: demande }) {
   const modelBytes = await chargerModele(modelUrl);
-  if (await webgpuUtilisable()) {
+  if (demande !== "wasm" && await webgpuUtilisable()) {
     try {
       gliner = await construireGliner({ wasmPath, model, modelBytes, provider: "webgpu" });
       accelerateur = "webgpu";

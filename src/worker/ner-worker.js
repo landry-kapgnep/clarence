@@ -128,16 +128,22 @@ async function construireGliner({ wasmPath, model, modelBytes, provider }) {
   return instance;
 }
 
-async function initGliner({ wasmPath, model, modelUrl }) {
+async function initGliner({ wasmPath, model, modelUrl, accelerateur: demande }) {
   // Le modèle n'est téléchargé/lu qu'UNE fois, même si le premier essai
-  // échoue : 183 Mo, on ne les repaie pas pour un repli.
+  // échoue : 175 Mo, on ne les repaie pas pour un repli.
   const modelBytes = await chargerModele(modelUrl);
 
-  // WebGPU d'abord. `gliner` importe statiquement les trois runtimes ORT
-  // (cpu / webgpu / webgl), donc le code est déjà dans le bundle : basculer ne
-  // coûte qu'une option — mais le binaire JSEP doit être dans vendor/ (voir
-  // build.mjs), sinon l'init échoue et on retombe ici sans le savoir.
-  if (await webgpuUtilisable()) {
+  // WebGPU seulement si demandé. Mesuré le 05/08 : avec le modèle int8 il
+  // n'apporte RIEN (5 min 36 contre 5 min 45), parce que le fournisseur WebGPU
+  // d'ORT supporte mal les opérateurs quantifiés et retombe sur le CPU. Le
+  // réglage vit dans main.js (ACCELERATEUR) pour rendre l'A/B possible sans
+  // toucher au worker.
+  //
+  // `gliner` importe statiquement les trois runtimes ORT (cpu / webgpu /
+  // webgl), donc le code est déjà dans le bundle : basculer ne coûte qu'une
+  // option — mais le binaire JSEP doit être dans vendor/ (voir build.mjs),
+  // sinon l'init échoue et on retombe ici sans le savoir.
+  if (demande !== 'wasm' && await webgpuUtilisable()) {
     try {
       gliner = await construireGliner({ wasmPath, model, modelBytes, provider: 'webgpu' });
       accelerateur = 'webgpu';

@@ -225,11 +225,40 @@ function render() {
 // NER fiable et l'interface fluide.
 const MAX_INPUT = 8000;
 
-// Poids du modèle GLiNER (ONNX quantifié). Téléchargé une fois puis conservé
-// dans la Cache API par le worker — ORT n'utilise pas le cache de
-// Transformers.js, il fallait donc le gérer nous-mêmes.
+// --- BANC D'ESSAI PERFORMANCE : les deux seuls réglages à faire varier ------
+//
+// MESURE DU 05/08/2026, en vrai Chrome sur un mémoire de 75 pages :
+//   quantized + wasm    → 5 min 45
+//   quantized + webgpu  → 5 min 36   (≈ aucun gain)
+//
+// Pourquoi WebGPU n'a rien rapporté : le modèle est en int8, et le fournisseur
+// WebGPU d'ORT supporte mal les opérateurs quantifiés. La console le dit —
+// « Some nodes were not assigned to the preferred execution providers » : la
+// majorité des nœuds retombe sur le CPU. On paie le transfert GPU sans profiter
+// du GPU.
+//
+// PROCHAINE EXPÉRIENCE (non faite) : 'fp16' + 'webgpu'. Le fp16 est bien
+// supporté par ce fournisseur, mais pèse 292 Mo au lieu de 175 — arbitrage
+// poids de premier chargement contre vitesse, à trancher SUR MESURE, pas au
+// raisonnement. Ne changer QU'UNE variable à la fois : le passage simultané du
+// pré-filtre et de WebGPU a déjà rendu un résultat inattribuable.
+const VARIANTES_MODELE = {
+  quantized: 'model_quantized.onnx',  // 175 Mo, int8 — défaut
+  fp16: 'model_fp16.onnx',            // 292 Mo
+  fp32: 'model.onnx'                  // 583 Mo
+};
+const VARIANTE = 'quantized';
+
+// 'wasm' | 'webgpu' | 'auto' ('auto' = WebGPU si utilisable, repli WASM sinon).
+// Défaut 'wasm' : WebGPU ne rapporte rien avec le modèle int8 (mesuré), et
+// activer un chemin sans gain ajoute 20 Mo de binaire JSEP pour rien.
+const ACCELERATEUR = 'wasm';
+
+// Téléchargé une fois puis conservé dans la Cache API par le worker — ORT
+// n'utilise pas le cache de Transformers.js, il fallait le gérer nous-mêmes.
+// L'URL change avec la variante, donc le cache se réamorce tout seul.
 const GLINER_MODEL_URL =
-  `https://huggingface.co/${GLINER_MODEL}/resolve/main/onnx/model_quantized.onnx`;
+  `https://huggingface.co/${GLINER_MODEL}/resolve/main/onnx/${VARIANTES_MODELE[VARIANTE]}`;
 
 // --- Worker de détection contextuelle : le modèle tourne hors du thread
 // principal, sinon l'UI gèle pendant toute la détection (menus au contenu
@@ -296,7 +325,8 @@ function startEngine(engine) {
       engine,
       wasmPath: chrome.runtime.getURL('vendor/'),
       model: engine === 'gliner' ? GLINER_MODEL : NER_MODEL,
-      modelUrl: engine === 'gliner' ? GLINER_MODEL_URL : null
+      modelUrl: engine === 'gliner' ? GLINER_MODEL_URL : null,
+      accelerateur: ACCELERATEUR
     });
   });
 }
