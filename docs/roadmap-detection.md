@@ -9,7 +9,7 @@ Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
 > impression — et on garde les pistes **rejetées** avec leur chiffre, pour ne pas
 > les retenter.
 
-## Tableau de bord — 05/08/2026
+## Tableau de bord — 06/08/2026
 
 ### Les trois chiffres (`npm run bench`, 7 documents, **configuration livrée**)
 
@@ -18,6 +18,46 @@ Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
 | Rappel **structuré** | **100 %** (20/20) | 100 %, non négociable | stable |
 | Rappel **contextuel** | **83 %** (30/36) | mesuré, jamais promis | 78 → **83** |
 | Termes **préservés** | **98 %** (45/46) | bloque le payant | 90 → 95 → 96 → **98** |
+
+### Le temps de traitement divisé par 2,8 — et ce que ça a failli coûter
+
+Un mémoire réel de 75 pages passe de **5 min 45 à 2 min 01** en vrai Chrome,
+en changeant la variante de poids (int8 → **fp16**) ET le fournisseur
+d'exécution (wasm → **webgpu**). Détail des trois mesures : `docs/verification-chrome.md` §A0.
+
+**Ce n'est pas WebGPU qui accélère, c'est le couple modèle+fournisseur.** Le
+même WebGPU sur les poids int8 ne rapportait rien (5 min 36) : son fournisseur
+supporte mal les opérateurs quantifiés, la plupart des nœuds retombaient sur le
+CPU. Jugés séparément, ces deux réglages auraient fait abandonner la bonne piste.
+
+**Le piège, et c'est la vraie leçon : un seuil appartient à une variante de
+poids.** Livré tel quel, le fp16 faisait tomber les termes préservés de **98 %
+à 93 %** (`SOMMAIRE` et `Docker` sur-masqués en plus) — le 0,38 avait été calé
+sur l'int8, et le fp16, numériquement plus précis, remonte tous les scores. Un
+gain de vitesse payé en qualité, invisible sans rejouer le banc.
+
+Rebalayage complet en fp16 → seuil du groupe identité **0,38 → 0,46** :
+
+| Seuil (fp16) | Structuré | Contextuel | Préservé |
+|---|---|---|---|
+| 0,38 | 100 % | 83 % | 93 % |
+| 0,42 | 100 % | 83 % | 93 % |
+| 0,45 | 100 % | 83 % | 96 % |
+| **0,46** | **100 %** | **83 %** | **98 %** ← retenu |
+| 0,47 / 0,48 | 100 % | 83 % | 98 % (plateau) |
+| 0,50 | **95 %** ✗ | 83 % | 98 % |
+
+0,46 est le plus BAS du plateau, donc le plus détectant à qualité égale
+(« zéro-fuite > faux positifs »). 0,50 casse le **structuré** : rédhibitoire.
+
+Les scores des cas-bornes ont été re-mesurés, pas extrapolés :
+`Amandine ROUSSEAU` 0,398 → **0,998**, `LANDRY KAPGNEP` 0,47 + 0,36 (deux spans)
+→ **0,494** (un seul span), `CERTIFICAT DE SCOLARITE` 0,36 en PER → **0,469** en
+ORG **isolé** (mais préservé en contexte réel : 100 % sur son document).
+
+**Effet de bord favorable** : `BUT Informatique`, sur-masquage listé plus bas
+comme « diagnostiqué, non corrigé », disparaît à 0,46 — `cv-fr.pdf` passe de
+88 % à **100 %** de termes préservés.
 
 ### Seuil du groupe identité : 0,45 → 0,38, choisi par balayage
 
@@ -99,7 +139,8 @@ dans l'UI, décochés.
 |---|---|---|---|
 | — | **Aucune fuite structurée ni partielle** au banc | ✅ | — |
 | — | Données de l'**article 9** (santé) non détectées — décochées par défaut, dit honnêtement | limite du modèle | le plus grave restant |
-| P2bis | `BUT Informatique` sur-masqué (`cv-fr.pdf`) — seul sur-masquage restant au banc (préservé 98 %) | ouvert | bloque le payant |
+| ~~P2bis~~ | ~~`BUT Informatique` sur-masqué (`cv-fr.pdf`)~~ — disparu au recalibrage fp16 (seuil 0,46) ; `cv-fr.pdf` à **100 %** de préservé | ✅ | — |
+| P2bis | `Docker` sur-masqué (`rapport-interligne.pdf`) — seul sur-masquage restant au banc (préservé 98 %) | ouvert | bloque le payant |
 | — | `KAROLINE ANSELME` ratée sur `certificat-fr.txt` (contextuel 67 %, pire document du banc) | ouvert | rappel |
 | ~~—~~ | ~~`1988-03-14` raté en cellule nue~~ — corrigé par le pré-filtre (`meriteUnePasseContextuelle`), `tableau-rh.csv` à 100 %/100 % | ✅ | — |
 | ~~—~~ | ~~`Nadia Belkacem` ratée~~ — corrigée par le seuil à 0,38 | ✅ | — |
@@ -110,15 +151,20 @@ dans l'UI, décochés.
 
 ### Diagnostiqués le 05/08, non corrigés — l'un par choix, l'autre par mesure
 
-**`BUT Informatique` (sur-masquage, `cv-fr.pdf`).** Le tableau de bord blâmait
-POSTE, ce qui était faux : avec POSTE désactivé (config livrée), c'est le
-**groupe identité lui-même** qui tague `Informatique` en ORG à **0,47**, au-dessus
-du seuil 0,38. `Informatique` est un nom commun de filière, capitalisé par
-convention française (« BUT Informatique », le nom du diplôme), ambigu avec un
-nom d'entreprise pour le modèle. Un seul cas dans tout le corpus. Pas de
-correctif tenté : une exception nommée irait contre le principe du projet
-(pas de liste statique pour une classe ouverte — les filières d'études en sont
-une, au même titre que les entreprises).
+**`BUT Informatique` (sur-masquage, `cv-fr.pdf`) — ✅ RÉSOLU le 06/08 sans
+correctif dédié.** Le tableau de bord blâmait POSTE, ce qui était faux : avec
+POSTE désactivé (config livrée), c'était le **groupe identité lui-même** qui
+taguait `Informatique` en ORG à **0,47** sous les poids int8, au-dessus du seuil
+0,38. `Informatique` est un nom commun de filière, capitalisé par convention
+française (« BUT Informatique », le nom du diplôme), ambigu avec un nom
+d'entreprise pour le modèle. Aucune exception nommée n'avait été tentée : cela
+irait contre le principe du projet (pas de liste statique pour une classe
+ouverte — les filières d'études en sont une, au même titre que les entreprises).
+
+Le passage en fp16 + seuil 0,46 l'a fait disparaître. **À retenir : la bonne
+réponse à un faux positif isolé n'était pas une exception, c'était une meilleure
+calibration.** Avoir refusé la liste statique a évité de porter une exception
+devenue inutile — et qui, elle, aurait masqué le vrai problème.
 
 **`KAROLINE ANSELME` (raté, `certificat-fr.txt`, pire score du banc : 67 %).**
 Scores mesurés dans le vrai contexte (document de 402 caractères, un seul

@@ -37,51 +37,65 @@ déclarer un bug de livraison.
 
 ---
 
-## A0. Performance — mesures réelles et protocole (05/08/2026)
+## A0. Performance — mesures réelles et protocole (06/08/2026)
 
-**Mesuré en vrai Chrome, mémoire de 75 pages :**
+**Mesuré en vrai Chrome, sur le MÊME mémoire de 75 pages à chaque fois :**
 
-| Modèle | Accélérateur | Temps |
-|---|---|---|
-| `model_quantized` (int8, 175 Mo) | `wasm` | **5 min 45** |
-| `model_quantized` (int8, 175 Mo) | `webgpu` | **5 min 36** — aucun gain |
+| Modèle | Accélérateur | Temps | Verdict |
+|---|---|---|---|
+| `model_quantized` (int8, 175 Mo) | `wasm` | 5 min 45 | ligne de base |
+| `model_quantized` (int8, 175 Mo) | `webgpu` | 5 min 36 | aucun gain |
+| `model_fp16` (292 Mo) | `webgpu` | **2 min 01** | **×2,8 — livré** |
 
-**Pourquoi WebGPU n'a rien rapporté.** Le fournisseur WebGPU d'ORT supporte mal
-les opérateurs **quantifiés** : avec un modèle int8, la majorité des nœuds
-retombe sur le CPU. La console le dit explicitement —
-`Some nodes were not assigned to the preferred execution providers`. On paie le
-transfert vers le GPU sans profiter du GPU.
+**La leçon, et elle est contre-intuitive : ce n'est pas WebGPU qui accélère,
+c'est le COUPLE modèle+fournisseur.** Le fournisseur WebGPU d'ORT supporte mal
+les opérateurs **quantifiés** : avec l'int8, la majorité des nœuds retombe sur
+le CPU, on paie le transfert vers le GPU sans profiter du GPU. Le même
+fournisseur avec des poids fp16 divise le temps par 2,8. Conclusion à retenir :
+**ces deux réglages ne se jugent jamais séparément.** Une mesure « WebGPU ne
+sert à rien » prise sur l'int8 aurait fait abandonner la bonne piste.
+
+Le fp16 pèse 292 Mo au lieu de 175. Surcoût payé **une fois** (Cache API), gain
+à **chaque** document : arbitrage tranché par la mesure.
+
+⚠️ **Deux avertissements de console sont NORMAUX en fp16**, ne pas les
+diagnostiquer à nouveau :
+- `Could not find a CPU kernel and hence can't constant fold ReduceMean` — ORT
+  ne sait pas pré-calculer un nœud fp16 côté CPU. Sans effet sur le résultat.
+- `Some nodes were not assigned to the preferred execution providers` — présent
+  aussi en fp16 (les opérations de forme vont toujours au CPU, par conception).
+  **Sa présence ne signifie donc pas que WebGPU est inutile** : c'est le
+  chronomètre qui tranche, pas cette ligne.
 
 **Erreur de méthode à ne pas refaire** : le pré-filtre (−39 % d'inférences,
-−21 % en Node) et WebGPU ont été activés dans la MÊME mesure. Le résultat est
-donc inattribuable — on ne sait pas si le pré-filtre a gagné et si WebGPU a
-perdu autant. **Une variable à la fois.**
+−21 % en Node) et WebGPU ont d'abord été activés dans la MÊME mesure. Résultat
+inattribuable. **Une variable à la fois** — c'est en respectant cette règle
+ensuite que le gain fp16 est apparu proprement.
 
 ### Protocole d'A/B
 
-Deux constantes en tête de `src/popup/main.js`, puis `npm run build` :
+La variante vit dans `src/engine/gliner.js` (`GLINER_VARIANTE`) et **pas** dans
+la popup : le banc `npm run bench` la lit au même endroit, donc il note toujours
+le modèle réellement livré. Tant qu'elle vivait dans `main.js`, le banc mesurait
+`quantized` pendant que la popup chargeait autre chose.
 
-```js
-const VARIANTE = 'quantized';   // 'quantized' 175 Mo | 'fp16' 292 Mo | 'fp32' 583 Mo
-const ACCELERATEUR = 'wasm';    // 'wasm' | 'webgpu' | 'auto'
-```
-
-Changer l'URL du modèle réamorce le cache tout seul (la clé, c'est l'URL).
+Le fournisseur, lui, est propre à la popup (`ACCELERATEUR` dans `main.js`) —
+le banc tourne en Node sur `onnxruntime-node`, sans WebGPU. Puis `npm run build`.
 
 1. Chronométrer le même document à chaque fois, extension rechargée.
 2. Vérifier l'accélérateur RÉELLEMENT retenu : le message `ready` du worker
    porte `accelerateur: 'webgpu' | 'wasm'`. Un repli silencieux fausserait tout.
-3. Vérifier que le **nombre de placeholders est identique** entre deux
-   configurations : un fournisseur d'exécution ou une précision de modèle ne
-   doit jamais changer la détection. S'il la change, c'est un défaut à
-   contourner, pas un gain à garder.
+3. Vérifier que le **nombre de placeholders reste comparable** entre deux
+   configurations, et rejouer `npm run bench` : changer la précision des poids
+   change la numérique du modèle, donc potentiellement les scores. Un gain de
+   vitesse payé en qualité n'est pas un gain.
 
 ### Mesures encore à faire
 
-- `quantized` + `wasm` **avec le pré-filtre seul** : isole enfin son gain réel.
-- `fp16` + `webgpu` : la seule combinaison où WebGPU peut réellement accélérer.
-  Coût : 292 Mo au premier chargement contre 175 — arbitrage à trancher sur
-  mesure, pas au raisonnement.
+- **Pré-filtre seul** (`quantized` + `wasm`, pré-filtre désactivé) : son gain
+  réel en Chrome n'a jamais été isolé — seulement mesuré en Node.
+- **`fp32` + `webgpu`** : plus rapide encore que le fp16 ? 583 Mo, sans doute
+  hors budget de premier chargement, mais la mesure situerait le plafond.
 
 ⚠️ `vendor/ort-wasm-simd-threaded.jsep.wasm` (20 Mo) porte l'accélération
 WebGPU. S'il manque, l'init échoue et on retombe en WASM silencieusement —

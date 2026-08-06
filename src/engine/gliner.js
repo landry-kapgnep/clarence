@@ -14,6 +14,31 @@ import { chunkText, snapToWordBoundaries, bridgeNameParts } from './ner.js';
 
 export const GLINER_MODEL = 'onnx-community/gliner_small-v2';
 
+// VARIANTE DE POIDS — ici et nulle part ailleurs, parce que le banc DOIT noter
+// le modèle réellement livré. Tant que la variante vivait dans main.js, le banc
+// mesurait `quantized` pendant que la popup chargeait autre chose : la porte de
+// qualité notait un modèle qu'on n'expédiait pas.
+//
+// Mesuré sur un mémoire réel de 75 pages, en vrai Chrome, une variable à la
+// fois (voir docs/verification-chrome.md §A0) :
+//   quantized (int8) + wasm   → 5 min 45
+//   quantized (int8) + webgpu → 5 min 36  (aucun gain : le fournisseur WebGPU
+//                                          d'ORT supporte mal l'int8, la
+//                                          plupart des nœuds retombent en CPU)
+//   fp16 + webgpu             → 2 min 01  (×2,8 — le GPU sert enfin)
+//
+// Le fp16 pèse 292 Mo au lieu de 175 : le surcoût est payé UNE fois (Cache
+// API), le gain à chaque document. Arbitrage tranché par la mesure.
+export const VARIANTES_MODELE = {
+  quantized: 'model_quantized.onnx',  // 175 Mo, int8
+  fp16: 'model_fp16.onnx',            // 292 Mo — défaut
+  fp32: 'model.onnx'                  // 583 Mo
+};
+export const GLINER_VARIANTE = 'fp16';
+
+export const glinerModelUrl = (variante = GLINER_VARIANTE) =>
+  `https://huggingface.co/${GLINER_MODEL}/resolve/main/onnx/${VARIANTES_MODELE[variante]}`;
+
 // Seuil par défaut, calé sur les fixtures propres : au-dessus du pire faux
 // positif observé et sous la plus faible vraie valeur à conserver (la cellule
 // de date nue, 0,59). Chaque groupe peut le surcharger — voir GROUPES.
@@ -54,7 +79,23 @@ export const GROUPES = [
     //
     // Effet mesuré : rappel contextuel 78 → 83 %, préservé INCHANGÉ (98 %),
     // structuré inchangé. Plus aucune fuite partielle sur les 7 documents.
-    seuil: 0.38,
+    //
+    // RECALIBRÉ à 0,46 le 06/08/2026 en passant les poids de int8 à fp16.
+    // LEÇON GÉNÉRALE : **un seuil appartient à une variante de poids.** Le fp16
+    // est numériquement plus précis, tous les scores remontent, et le 0,38
+    // calibré sur l'int8 devenait trop bas — préservé 98 % → 93 %
+    // (« SOMMAIRE » et « Docker » sur-masqués en plus). Changer de variante
+    // SANS rebalayer, c'est troquer de la qualité contre de la vitesse sans
+    // s'en apercevoir.
+    //
+    // Balayage sur le banc complet, en fp16 :
+    //   0,38 → 83 % / 93 %      0,42 → 83 % / 93 %
+    //   0,45 → 83 % / 96 %      0,46 → 83 % / **98 %**  ← retenu
+    //   0,47 / 0,48 → identiques à 0,46 (plateau)
+    //   0,50 → casse le STRUCTURÉ (19/20) : rédhibitoire, non négociable
+    // 0,46 est le plus BAS du plateau — donc le plus détectant à qualité égale,
+    // conformément à « zéro-fuite > faux positifs ».
+    seuil: 0.46,
     labels: ['person', 'company', 'location'],
     types: { person: 'PER', company: 'ORG', location: 'LOC' },
     // Voir `pertinent` plus bas : un texte sans la moindre majuscule ne peut

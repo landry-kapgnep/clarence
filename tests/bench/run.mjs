@@ -23,7 +23,9 @@ import { dirname, join, extname } from 'node:path';
 
 import { detectRegex } from '../../src/engine/regex-detect.js';
 import { detectPhonesIntl } from '../../src/engine/phone-intl.js';
-import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES } from '../../src/engine/gliner.js';
+import {
+  detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, GLINER_VARIANTE, glinerModelUrl
+} from '../../src/engine/gliner.js';
 import { mergeEntities } from '../../src/engine/merge.js';
 import { selectActive, filterByRules, forcedMasks } from '../../src/engine/selection.js';
 import { maskText } from '../../src/engine/masking.js';
@@ -84,15 +86,21 @@ async function chargerGliner() {
   };
 }
 
-// Le modèle (183 Mo) est mis en cache hors du dépôt et téléchargé une fois.
+// Le modèle est mis en cache hors du dépôt et téléchargé une fois.
+//
+// La VARIANTE vient de src/engine/gliner.js, jamais codée en dur ici : le banc
+// doit noter le modèle réellement livré. Quand la variante vivait dans main.js,
+// le banc mesurait `quantized` pendant que la popup chargeait autre chose — une
+// porte de qualité qui note un modèle qu'on n'expédie pas ne garantit rien.
+// Le nom de fichier porte la variante, sinon on relirait le cache de l'ancienne.
 async function modeleLocal() {
   const { existsSync, mkdirSync, writeFileSync } = await import('node:fs');
   const cache = join(here, '.modeles');
-  const fichier = join(cache, 'gliner_small-v2.onnx');
+  const fichier = join(cache, `gliner_small-v2-${GLINER_VARIANTE}.onnx`);
   if (!existsSync(fichier)) {
     mkdirSync(cache, { recursive: true });
-    const url = `https://huggingface.co/${GLINER_MODEL}/resolve/main/onnx/model_quantized.onnx`;
-    console.error(`[téléchargement du modèle (~183 Mo), une seule fois…]`);
+    const url = glinerModelUrl();
+    console.error(`[téléchargement du modèle (variante ${GLINER_VARIANTE}), une seule fois…]`);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`téléchargement du modèle : HTTP ${res.status}`);
     writeFileSync(fichier, Buffer.from(await res.arrayBuffer()));

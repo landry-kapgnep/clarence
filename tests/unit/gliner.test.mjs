@@ -218,7 +218,12 @@ test('pipeline absent : aucune entité, aucune exception (repli silencieux)', as
 test('le groupe identité a un seuil PROPRE, plus bas que le défaut', () => {
   const identite = GROUPES.find(g => g.labels.includes('person'));
   assert.ok(identite.seuil < GLINER_THRESHOLD, 'le groupe identité doit surcharger le seuil');
-  assert.ok(identite.seuil <= 0.45, 'un nom de CV isolé sort à 0,47 : le seuil doit passer dessous');
+  // Borne HAUTE, re-mesurée sur les poids fp16 le 06/08/2026 : le titre de CV
+  // isolé « LANDRY KAPGNEP » sort à 0,494 (contre 0,47 + 0,36 en int8 — le fp16
+  // relève le score ET fusionne les deux spans en un seul). C'est la plus basse
+  // vraie valeur du corpus : le seuil doit rester dessous, sinon le nom fuit.
+  assert.ok(identite.seuil < 0.494,
+    'un nom de CV isolé sort à 0,494 en fp16 : le seuil doit passer dessous');
 });
 
 test('un nom de CV isolé à 0,47 est masqué ENTIÈREMENT (seuil + pontage)', async () => {
@@ -295,25 +300,34 @@ test('une vraie date nue reste détectée', async () => {
   assert.deepEqual(spans.map(e => [e.type, e.value]), [['DATE_NAISSANCE', '1988-03-14']]);
 });
 
-// --- Seuil abaissé une seconde fois (0,45 → 0,38), trouvé sur un vrai
-// rapport : « Amandine ROUSSEAU » ne dépassait 0,45 sur AUCUNE occurrence
-// (0,364 / 0,398 mesurés), donc jamais proposé comme PER — la fuite ne
-// venait pas de la fusion (merge.js gère déjà le cas ROUSSEAU/BIC) mais du
-// modèle qui ne le franchissait jamais.
-test('un nom réel sous l\'ancien seuil (0,45) mais au-dessus du nouveau (0,38) est masqué', async () => {
+// --- « Amandine ROUSSEAU » (rapport-fr.txt) : le cas qui avait fait descendre
+// le seuil à 0,38 en int8, où il ne sortait qu'à 0,364 / 0,398 — jamais
+// proposé comme PER, donc fuite (et non un défaut de fusion : merge.js gère
+// déjà le cas où « ROUSSEAU » matche le motif BIC).
+//
+// Re-mesuré en fp16 : **0,998**. Le nom a quitté la zone de bordure, ce qui
+// est précisément ce qui autorise le seuil à remonter à 0,46 sans le reperdre.
+// On garde le score RÉEL plutôt qu'une valeur commode : le test doit dire ce
+// que le modèle livré fait, pas ce qui arrangerait l'assertion.
+test('un nom réel qu\'un seuil trop haut avait déjà fait fuir est masqué', async () => {
   const texte = 'Amandine ROUSSEAU, c\'est moi.';
   const pipe = async (t, labels) => labels.includes('person')
-    ? [{ label: 'person', start: 0, end: 17, spanText: 'Amandine ROUSSEAU', score: 0.398 }]
+    ? [{ label: 'person', start: 0, end: 17, spanText: 'Amandine ROUSSEAU', score: 0.998 }]
     : [];
   const spans = await detectGliner(texte, pipe);
   assert.deepEqual(spans.map(e => e.value), ['Amandine ROUSSEAU']);
 });
 
-// --- Borne basse : sous 0,38, un titre en capitales devient un faux positif
-// PER sur un vrai document (« CERTIFICAT DE SCOLARITE », 0,36 mesuré). Ce
-// test fige le seuil comme point pivot, pas comme valeur arbitraire.
+// --- Borne BASSE, re-mesurée en fp16 : « CERTIFICAT DE SCOLARITE » (titre en
+// capitales de certificat-fr.txt) sort à 0,469 en ORG quand on le soumet SEUL,
+// contre 0,36 en PER sous int8. En contexte réel il reste sous le seuil — le
+// banc donne 100 % de termes préservés sur ce document à 0,46.
+//
+// La marge est donc MINCE (0,469 isolé contre un seuil à 0,46) : ce test fige
+// la borne basse pour qu'une future baisse de seuil ne se fasse pas sans
+// revenir sur CE cas précis.
 test('le seuil ne doit PAS descendre au point de masquer un titre en capitales', async () => {
   const identite = GROUPES.find(g => g.labels.includes('person'));
-  assert.ok(identite.seuil > 0.36,
-    'à 0,36 ou moins, « CERTIFICAT DE SCOLARITE » (titre) devient un faux positif PER mesuré au banc');
+  assert.ok(identite.seuil > 0.42,
+    'sous 0,42, « CERTIFICAT DE SCOLARITE » et « SOMMAIRE » deviennent des faux positifs mesurés au banc (préservé 98 % → 93 %)');
 });
