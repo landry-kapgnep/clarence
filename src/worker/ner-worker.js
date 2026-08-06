@@ -22,6 +22,14 @@
 // masquage restent dans src/engine (purs et testés).
 import { pipeline, env } from '@xenova/transformers';
 import { Gliner } from 'gliner';
+import { serialiser } from '../engine/batch.js';
+
+// ORT n'exécute QU'UNE inférence à la fois : son fournisseur WebGPU pose un
+// marqueur global et lève « Session already started » si un second `run`
+// démarre pendant le premier. Le worker reçoit ses messages en série, mais son
+// gestionnaire est asynchrone — deux `run` rapprochés se chevauchaient donc
+// bel et bien. Mesuré : échec du traitement au bout de deux secondes.
+const enFile = serialiser();
 
 let moteur = null;
 let pipe = null;    // pipeline BERT (token-classification)
@@ -206,12 +214,12 @@ self.addEventListener('message', async ev => {
         const textes = msg.texts || [msg.text];
         // Seuil bas ici : le filtrage fin appartient au moteur pur
         // (GLINER_THRESHOLD dans src/engine/gliner.js), pas au worker.
-        const res = await gliner.inference({
+        const res = await enFile(() => gliner.inference({
           texts: textes,
           entities: msg.labels,
           threshold: 0.05,
           flatNer: false
-        });
+        }));
         // Réponse indexée COMME l'entrée. C'est le contrat dont dépend la
         // redistribution côté appelant : un décalage ici collerait les entités
         // d'un texte sur un autre — donc un masquage faux ET une fuite.
@@ -223,7 +231,8 @@ self.addEventListener('message', async ev => {
         );
       } else {
         if (!pipe) throw new Error('modèle non chargé');
-        self.postMessage({ type: 'result', id: msg.id, tokens: await pipe(msg.text) });
+        // Même verrou ORT côté BERT : il n'est pas concurrent non plus.
+        self.postMessage({ type: 'result', id: msg.id, tokens: await enFile(() => pipe(msg.text)) });
       }
     } catch (err) {
       self.postMessage({ type: 'error', id: msg.id, message: String(err?.message || err) });

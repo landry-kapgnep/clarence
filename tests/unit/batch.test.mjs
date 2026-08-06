@@ -4,7 +4,90 @@
 // couverture au niveau des validateurs, pas au niveau « UI ».
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBatchedPipeline, decouperEnLots } from '../../src/engine/batch.js';
+import { createBatchedPipeline, decouperEnLots, serialiser } from '../../src/engine/batch.js';
+
+// --- Non-concurrence : ORT n'exécute QU'UNE inférence à la fois. Son
+// fournisseur WebGPU pose un marqueur global et lève « Session already
+// started » si un second `run` démarre pendant le premier. Vécu en vrai
+// Chrome : le traitement échouait au bout de deux secondes, juste après
+// l'ajout du regroupement en lots. Ces tests figent les deux garde-fous.
+
+test('serialiser : deux tâches ne se CHEVAUCHENT jamais', async () => {
+  let enVol = 0;
+  let maxEnVol = 0;
+  const enFile = serialiser();
+  const tache = () => enFile(async () => {
+    maxEnVol = Math.max(maxEnVol, ++enVol);
+    await new Promise(r => setTimeout(r, 5));
+    enVol--;
+  });
+  await Promise.all([tache(), tache(), tache(), tache()]);
+  assert.equal(maxEnVol, 1, 'une seule inférence à la fois, sinon ORT lève');
+});
+
+test('serialiser : une tâche en ÉCHEC ne bloque pas la file', async () => {
+  const enFile = serialiser();
+  const echec = enFile(async () => { throw new Error('boom'); });
+  await assert.rejects(echec);
+  assert.equal(await enFile(async () => 'ok'), 'ok',
+    'sinon une seule erreur figerait toute la détection restante');
+});
+
+test('serialiser : l\'ordre de soumission est respecté', async () => {
+  const enFile = serialiser();
+  const vus = [];
+  await Promise.all([1, 2, 3].map(n => enFile(async () => {
+    await new Promise(r => setTimeout(r, (4 - n) * 3));
+    vus.push(n);
+  })));
+  assert.deepEqual(vus, [1, 2, 3]);
+});
+
+test('le batcher ne lance JAMAIS deux lots en parallèle', async () => {
+  // REPRODUCTION EXACTE du bug. Il ne suffit pas d'envoyer beaucoup d'appels
+  // d'un coup : ceux-là partent dans un seul vidage, qui enchaîne ses lots
+  // proprement même avec l'ancien code. Le défaut n'apparaît que quand des
+  // appels naissent PENDANT le vidage — c'est le cas réel, chaque unité
+  // relançant une passe en réagissant à la résolution de la précédente.
+  //
+  // Avec l'ancien code (`planifie = false` dès l'entrée de `vider`), ces
+  // retardataires programmaient un SECOND vidage qui postait son lot avant la
+  // réponse du premier → deux inférences en vol → « Session already started ».
+  let enVol = 0;
+  let maxEnVol = 0;
+  const pipe = createBatchedPipeline(async textes => {
+    maxEnVol = Math.max(maxEnVol, ++enVol);
+    await new Promise(r => setTimeout(r, 10));
+    enVol--;
+    return textes.map(() => []);
+  }, { maxLot: 2 });
+
+  const enCours = [pipe('a', ['person']), pipe('b', ['person'])];
+  // Le premier lot est parti et attend : on injecte pendant son attente.
+  await new Promise(r => setTimeout(r, 5));
+  enCours.push(pipe('c', ['person']), pipe('d', ['person']));
+  await new Promise(r => setTimeout(r, 5));
+  enCours.push(pipe('e', ['person']));
+
+  await Promise.all(enCours);
+  assert.equal(maxEnVol, 1, 'deux lots simultanés = « Session already started » en Chrome');
+});
+
+test('les appels arrivés PENDANT un vidage sont quand même traités', async () => {
+  // Le corollaire du verrou : si on refuse de programmer un second vidage, la
+  // boucle doit reprendre les retardataires — sinon leur promesse ne se résout
+  // jamais et la détection se fige.
+  const pipe = createBatchedPipeline(
+    async textes => { await new Promise(r => setTimeout(r, 5)); return textes.map(t => [t]); },
+    { maxLot: 2 }
+  );
+  const premiers = [pipe('a', ['person']), pipe('b', ['person'])];
+  // Arrive alors que le premier lot est déjà parti.
+  await new Promise(r => setTimeout(r, 1));
+  const retardataire = pipe('c', ['person']);
+  const res = await Promise.all([...premiers, retardataire]);
+  assert.deepEqual(res, [['a'], ['b'], ['c']]);
+});
 
 const items = (...longueurs) => longueurs.map((n, i) => ({ text: 'x'.repeat(n), i }));
 

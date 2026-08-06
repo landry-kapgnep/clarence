@@ -1,4 +1,7 @@
 import {
+  serialiser
+} from "./chunk-IT5BP6N7.js";
+import {
   __commonJS,
   __require,
   __toESM
@@ -65932,6 +65935,7 @@ var Gliner = class {
 };
 
 // src/worker/ner-worker.js
+var enFile = serialiser();
 var moteur = null;
 var pipe = null;
 var gliner = null;
@@ -66048,19 +66052,19 @@ self.addEventListener("message", async (ev) => {
       if (moteur === "gliner") {
         if (!gliner) throw new Error("mod\xE8le non charg\xE9");
         const textes = msg.texts || [msg.text];
-        const res = await gliner.inference({
+        const res = await enFile(() => gliner.inference({
           texts: textes,
           entities: msg.labels,
           threshold: 0.05,
           flatNer: false
-        });
+        }));
         const spansBatch = textes.map((_, i) => res[i] || []);
         self.postMessage(
           msg.texts ? { type: "result", id: msg.id, spansBatch } : { type: "result", id: msg.id, spans: spansBatch[0] }
         );
       } else {
         if (!pipe) throw new Error("mod\xE8le non charg\xE9");
-        self.postMessage({ type: "result", id: msg.id, tokens: await pipe(msg.text) });
+        self.postMessage({ type: "result", id: msg.id, tokens: await enFile(() => pipe(msg.text)) });
       }
     } catch (err) {
       self.postMessage({ type: "error", id: msg.id, message: String(err?.message || err) });

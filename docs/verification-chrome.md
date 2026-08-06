@@ -125,6 +125,38 @@ worker MV3 (tué à l'inactivité, sans DOM alors que `pdf-reconstruct.js` utili
 réel, non engagé : à ~1 minute et avec une annulation qui marche, le besoin
 devient marginal.
 
+### A0ter. ORT n'exécute QU'UNE inférence à la fois (06/08/2026)
+
+Trouvé en vrai Chrome, deux secondes après le lancement :
+`Error: Session already started`, et le traitement échoue.
+
+La source est dans le binaire JSEP lui-même :
+
+```js
+if (u.Eb) throw Error("Session already started");   // wrapper _OrtRun
+```
+
+Le fournisseur **WebGPU** pose un marqueur global et refuse un second `run`
+tant que le premier n'a pas rendu la main. Tant que la détection était
+séquentielle, le cas était inatteignable ; **le regroupement en lots l'a rendu
+atteignable** — le vidage des lots libérait son verrou dès son entrée, donc les
+appels nés pendant ses attentes programmaient un second vidage concurrent.
+
+Corrigé à DEUX endroits, volontairement :
+1. **Dans le worker** (`serialiser`, `src/engine/batch.js`) — c'est lui qui fait
+   autorité : la contrainte appartient au moteur d'exécution, pas à l'appelant.
+   Tout futur appelant est couvert sans avoir à connaître la règle.
+2. **Dans le batcher** — un seul vidage à la fois, pour ne pas empiler des lots
+   qui seraient de toute façon mis en file derrière.
+
+Le test de non-régression a été **vérifié rouge avant / vert après** contre une
+réplique de l'ancienne logique : 2 inférences simultanées avant, 1 après. Un
+test de concurrence qu'on n'a pas vu échouer ne prouve rien.
+
+⚠️ Ne pas « paralléliser les inférences pour aller plus vite » : c'est
+impossible avec ce fournisseur. Le levier de vitesse est le LOT (un seul `run`
+pour N textes), pas la concurrence.
+
 ### À chronométrer maintenant : le regroupement en lots
 
 Les inférences partent désormais par lots de 8 (`src/engine/batch.js`). Mesuré
