@@ -26,6 +26,7 @@ import { detectPhonesIntl } from '../../src/engine/phone-intl.js';
 import {
   detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, GLINER_VARIANTE, glinerModelUrl
 } from '../../src/engine/gliner.js';
+import { createBatchedPipeline } from '../../src/engine/batch.js';
 import { mergeEntities } from '../../src/engine/merge.js';
 import { selectActive, filterByRules, forcedMasks } from '../../src/engine/selection.js';
 import { maskText } from '../../src/engine/masking.js';
@@ -80,10 +81,15 @@ async function chargerGliner() {
   decoupeur.whitespacePattern = DECOUPEUR_UNICODE;
   console.error('[modèle prêt]');
 
-  return async (texte, labels) => {
-    const res = await instance.inference({ texts: [texte], entities: labels, threshold: 0.05 });
-    return res[0] || [];
-  };
+  // MÊME regroupement en lots que la popup, et c'est délibéré : le banc doit
+  // pouvoir prouver que grouper les inférences ne change PAS la détection.
+  // Le rembourrage à la longueur du plus long texte du lot pourrait, en
+  // théorie, déteindre sur les scores si le masque d'attention était imparfait.
+  // C'est une hypothèse à vérifier, pas à supposer — d'où ce câblage.
+  return createBatchedPipeline(async (textes, labels) => {
+    const res = await instance.inference({ texts: textes, entities: labels, threshold: 0.05 });
+    return textes.map((_, i) => res[i] || []);
+  });
 }
 
 // Le modèle est mis en cache hors du dépôt et téléchargé une fois.

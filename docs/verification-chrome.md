@@ -90,6 +90,21 @@ le banc tourne en Node sur `onnxruntime-node`, sans WebGPU. Puis `npm run build`
    change la numérique du modèle, donc potentiellement les scores. Un gain de
    vitesse payé en qualité n'est pas un gain.
 
+### À chronométrer maintenant : le regroupement en lots
+
+Les inférences partent désormais par lots de 8 (`src/engine/batch.js`). Mesuré
+en Node : **×2,6** sur 240 unités, à détection strictement identique (570 spans
+dans tous les cas). Le gain attendu en Chrome est au moins aussi bon, le GPU
+étant encore plus pénalisé par les petits appels que le CPU.
+
+À vérifier sur le mémoire de 75 pages, avec le même protocole qu'au-dessus :
+1. Temps total (référence à battre : **2 min 01**).
+2. **Nombre de placeholders identique** à la mesure précédente — c'est le
+   contrôle qui compte : si le regroupement redistribuait un résultat de
+   travers, les entités d'une unité atterriraient sur une autre.
+3. La barre de progression avance toujours jusqu'à 100 % (elle progresse
+   maintenant par vagues de 24 unités, plus une par une).
+
 ### Mesures encore à faire
 
 - **Pré-filtre seul** (`quantized` + `wasm`, pré-filtre désactivé) : son gain

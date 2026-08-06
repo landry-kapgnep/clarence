@@ -16,20 +16,34 @@ var DATE_NUE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/;
 function meriteUnePasseContextuelle(text) {
   return new RegExp("\\p{L}{2}", "u").test(text) || DATE_NUE.test(text);
 }
+var VAGUE = 24;
 async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
-  const out = [];
   const cache = /* @__PURE__ */ new Map();
-  for (let i = 0; i < units.length; i++) {
-    const { text, structurel } = units[i];
-    if (!structurel && meriteUnePasseContextuelle(text)) {
-      if (!cache.has(text)) cache.set(text, await detect(text, nerPipeline, { disabledTypes }));
-      const base = ranges[i].start;
-      for (const e of cache.get(text)) {
-        out.push({ ...e, start: e.start + base, end: e.end + base });
-      }
+  const parUnite = new Array(units.length);
+  let faits = 0;
+  for (let debut = 0; debut < units.length; debut += VAGUE) {
+    const fin = Math.min(debut + VAGUE, units.length);
+    const vague = [];
+    for (let i = debut; i < fin; i++) {
+      const { text, structurel } = units[i];
+      if (structurel || !meriteUnePasseContextuelle(text)) continue;
+      if (!cache.has(text)) cache.set(text, detect(text, nerPipeline, { disabledTypes }));
+      const indice = i;
+      vague.push(cache.get(text).then((entites) => {
+        const base = ranges[indice].start;
+        parUnite[indice] = entites.map((e) => ({
+          ...e,
+          start: e.start + base,
+          end: e.end + base
+        }));
+      }));
     }
-    if (onProgress) await onProgress({ done: i + 1, total: units.length });
+    await Promise.all(vague);
+    faits = fin;
+    if (onProgress) await onProgress({ done: faits, total: units.length });
   }
+  const out = [];
+  for (const entites of parUnite) if (entites) out.push(...entites);
   return out;
 }
 function joinWithSentinel(units) {

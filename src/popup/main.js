@@ -5,6 +5,7 @@ import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl } from '../engine/gliner.js';
+import { createBatchedPipeline } from '../engine/batch.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
 import { createPseudonymizer } from '../engine/pseudonyms.js';
@@ -276,7 +277,10 @@ function createNerWorker() {
       if (!p) return;
       nerPending.delete(msg.id);
       // GLiNER renvoie des spans décodés, BERT des tokens bruts.
-      msg.type === 'result' ? p.resolve(msg.spans ?? msg.tokens) : p.reject(new Error(msg.message));
+      // spansBatch (lot GLiNER) | spans (appel unitaire) | tokens (BERT).
+      msg.type === 'result'
+        ? p.resolve(msg.spansBatch ?? msg.spans ?? msg.tokens)
+        : p.reject(new Error(msg.message));
     }
   });
   return worker;
@@ -332,11 +336,18 @@ async function ensureNER() {
     nerWorker = worker;
     // Proxy commun. GLiNER reçoit en plus les labels du groupe à chercher ;
     // BERT les ignore.
-    nerPipe = (text, labels) => new Promise((resolve, reject) => {
+    const envoyer = charge => new Promise((resolve, reject) => {
       const id = ++nerReqId;
       nerPending.set(id, { resolve, reject });
-      nerWorker.postMessage({ type: 'run', id, text, labels });
+      nerWorker.postMessage({ type: 'run', id, ...charge });
     });
+
+    nerPipe = nerEngine === 'gliner'
+      // GLiNER traite nativement un lot en UN passage du modèle : on rassemble
+      // les appels concurrents plutôt que de payer 37 ms de coût fixe par
+      // unité. BERT n'a pas cette capacité — il garde l'appel unitaire.
+      ? createBatchedPipeline((texts, labels) => envoyer({ texts, labels }))
+      : (text, labels) => envoyer({ text, labels });
   } catch (err) {
     console.error(err);
     // Le regex tourne quand même : mieux vaut un résultat partiel signalé

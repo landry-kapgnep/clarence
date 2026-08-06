@@ -198,15 +198,29 @@ self.addEventListener('message', async ev => {
     try {
       if (moteur === 'gliner') {
         if (!gliner) throw new Error('modèle non chargé');
+        // UN passage du modèle pour N textes. `inference` construit un seul
+        // tenseur et lance un seul `run()` : les 37 ms de coût fixe sont payées
+        // une fois pour tout le lot au lieu d'une fois par texte.
+        // `texts` (lot) ou `text` (appel unitaire) — les deux restent acceptés
+        // pour que le protocole ne casse pas si un appelant n'est pas groupé.
+        const textes = msg.texts || [msg.text];
         // Seuil bas ici : le filtrage fin appartient au moteur pur
         // (GLINER_THRESHOLD dans src/engine/gliner.js), pas au worker.
         const res = await gliner.inference({
-          texts: [msg.text],
+          texts: textes,
           entities: msg.labels,
           threshold: 0.05,
           flatNer: false
         });
-        self.postMessage({ type: 'result', id: msg.id, spans: res[0] || [] });
+        // Réponse indexée COMME l'entrée. C'est le contrat dont dépend la
+        // redistribution côté appelant : un décalage ici collerait les entités
+        // d'un texte sur un autre — donc un masquage faux ET une fuite.
+        const spansBatch = textes.map((_, i) => res[i] || []);
+        self.postMessage(
+          msg.texts
+            ? { type: 'result', id: msg.id, spansBatch }
+            : { type: 'result', id: msg.id, spans: spansBatch[0] }
+        );
       } else {
         if (!pipe) throw new Error('modèle non chargé');
         self.postMessage({ type: 'result', id: msg.id, tokens: await pipe(msg.text) });

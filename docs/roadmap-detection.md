@@ -19,6 +19,43 @@ Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
 | Rappel **contextuel** | **83 %** (30/36) | mesuré, jamais promis | 78 → **83** |
 | Termes **préservés** | **98 %** (45/46) | bloque le payant | 90 → 95 → 96 → **98** |
 
+### Inférences regroupées en lots : ×2,6 de plus, à détection identique
+
+Le coût d'une inférence est « ~37 ms fixes + k × longueur ». Sur un mémoire
+découpé en ~470 unités × 2 groupes de labels, cela faisait ~940 appels, soit
+**~35 s de coût fixe pur** avant le moindre calcul utile — et un GPU nourri
+d'une unité de 90 caractères tourne à vide.
+
+GLiNER.js sait nativement traiter un lot (`inference({ texts: [...] })` = UN
+tenseur, UN `run()`). `src/engine/batch.js` rassemble donc les appels
+concurrents ; `detectNerPerUnit` lance les unités par vagues de 24 pour qu'il y
+ait matière à grouper. **`detectGliner` n'est pas touché** : seuils, filtres de
+forme, recalage et pontage restent à l'identique — c'est du transport, pas de
+la détection.
+
+Mesuré sur 240 unités réalistes, deux tirages concordants :
+
+| Taille de lot | Temps | Spans produits |
+|---|---|---|
+| 1 (avant) | 18,8 s | 570 |
+| **8** | **7,1-7,4 s** | **570** |
+| 16 | 7,5-8,2 s | 570 |
+| 32 | 7,5-7,8 s | 570 |
+
+**570 spans identiques à toutes les tailles** : le regroupement ne change pas
+la détection, vérifié au span près et pas seulement en agrégat. Le banc complet
+est passé au même mécanisme et rend exactement 100 % / 83 % / 98 %.
+
+Au-delà de 8 la courbe s'aplatit puis remonte : un gros lot mélange des
+longueurs éloignées, et le lot est calculé à la longueur de son PLUS LONG texte
+(`inputLength = Math.max(...textLengths)`). D'où le tri par longueur et le
+budget qui borne `taille × plus long`. **Ne pas monter la taille de lot « pour
+aller plus vite » : c'est mesuré, et ça ne marche pas.**
+
+Ce n'est PAS le « regroupement d'unités » déjà rejeté (concaténer les textes en
+un seul, ce qui perdait les entités isolées) : chaque texte reste une entrée
+distincte du lot.
+
 ### Le temps de traitement divisé par 2,8 — et ce que ça a failli coûter
 
 Un mémoire réel de 75 pages passe de **5 min 45 à 2 min 01** en vrai Chrome,

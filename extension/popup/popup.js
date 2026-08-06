@@ -160,6 +160,69 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
   }).sort((a, b) => a.start - b.start);
 }
 
+// src/engine/batch.js
+var TAILLE_LOT = 8;
+var BUDGET = 8e3;
+function decouperEnLots(items, { maxLot = TAILLE_LOT, budget = BUDGET } = {}) {
+  const tries = [...items].sort((a, b) => a.text.length - b.text.length);
+  const lots = [];
+  let lot = [];
+  let plusLong = 0;
+  for (const it of tries) {
+    const maxSiAjoute = Math.max(plusLong, it.text.length);
+    const coutSiAjoute = (lot.length + 1) * maxSiAjoute;
+    if (lot.length && (lot.length >= maxLot || coutSiAjoute > budget)) {
+      lots.push(lot);
+      lot = [];
+      plusLong = 0;
+    }
+    lot.push(it);
+    plusLong = Math.max(plusLong, it.text.length);
+  }
+  if (lot.length) lots.push(lot);
+  return lots;
+}
+function createBatchedPipeline(runBatch, opts = {}) {
+  const {
+    maxLot = TAILLE_LOT,
+    budget = BUDGET,
+    // setTimeout(0) et non queueMicrotask : les appels suivants d'un même
+    // `detectGliner` naissent en réagissant à la résolution du lot précédent,
+    // donc dans des microtâches successives. Un vidage en microtâche partirait
+    // avec un lot presque vide. Le retard (~0-4 ms) est négligeable face aux
+    // 37 ms fixes qu'un appel isolé coûterait.
+    planifier = (f) => setTimeout(f, 0)
+  } = opts;
+  const attente = /* @__PURE__ */ new Map();
+  let planifie = false;
+  async function vider() {
+    planifie = false;
+    const paquets = [...attente.values()];
+    attente.clear();
+    for (const items of paquets) {
+      for (const lot of decouperEnLots(items, { maxLot, budget })) {
+        try {
+          const res = await runBatch(lot.map((i) => i.text), lot[0].labels);
+          lot.forEach((it, i) => it.resolve(res?.[i] || []));
+        } catch (e) {
+          lot.forEach((it) => it.reject(e));
+        }
+      }
+    }
+  }
+  return function pipelineGroupe(text, labels) {
+    return new Promise((resolve, reject) => {
+      const cle = (labels || []).join("\0");
+      if (!attente.has(cle)) attente.set(cle, []);
+      attente.get(cle).push({ text, labels, resolve, reject });
+      if (!planifie) {
+        planifie = true;
+        planifier(vider);
+      }
+    });
+  };
+}
+
 // src/engine/pseudonyms.js
 var LOCALES = {
   fr: {
@@ -1011,7 +1074,7 @@ function createNerWorker() {
       const p = nerPending.get(msg.id);
       if (!p) return;
       nerPending.delete(msg.id);
-      msg.type === "result" ? p.resolve(msg.spans ?? msg.tokens) : p.reject(new Error(msg.message));
+      msg.type === "result" ? p.resolve(msg.spansBatch ?? msg.spans ?? msg.tokens) : p.reject(new Error(msg.message));
     }
   });
   return worker;
@@ -1060,11 +1123,12 @@ async function ensureNER() {
       nerEngine = "bert";
     }
     nerWorker = worker;
-    nerPipe = (text, labels) => new Promise((resolve, reject) => {
+    const envoyer = (charge) => new Promise((resolve, reject) => {
       const id = ++nerReqId;
       nerPending.set(id, { resolve, reject });
-      nerWorker.postMessage({ type: "run", id, text, labels });
+      nerWorker.postMessage({ type: "run", id, ...charge });
     });
+    nerPipe = nerEngine === "gliner" ? createBatchedPipeline((texts, labels) => envoyer({ texts, labels })) : (text, labels) => envoyer({ text, labels });
   } catch (err) {
     console.error(err);
   } finally {
@@ -1769,7 +1833,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-C4FINZW2.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-LSBWKPJE.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
@@ -1794,7 +1858,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-KYVHZQDK.js");
+    const { anonymizeUnits } = await import("./anonymize-units-CL2KRMH3.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

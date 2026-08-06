@@ -66047,13 +66047,17 @@ self.addEventListener("message", async (ev) => {
     try {
       if (moteur === "gliner") {
         if (!gliner) throw new Error("mod\xE8le non charg\xE9");
+        const textes = msg.texts || [msg.text];
         const res = await gliner.inference({
-          texts: [msg.text],
+          texts: textes,
           entities: msg.labels,
           threshold: 0.05,
           flatNer: false
         });
-        self.postMessage({ type: "result", id: msg.id, spans: res[0] || [] });
+        const spansBatch = textes.map((_, i) => res[i] || []);
+        self.postMessage(
+          msg.texts ? { type: "result", id: msg.id, spansBatch } : { type: "result", id: msg.id, spans: spansBatch[0] }
+        );
       } else {
         if (!pipe) throw new Error("mod\xE8le non charg\xE9");
         self.postMessage({ type: "result", id: msg.id, tokens: await pipe(msg.text) });

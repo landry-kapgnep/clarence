@@ -77,20 +77,56 @@ function meriteUnePasseContextuelle(text) {
   return /\p{L}{2}/u.test(text) || DATE_NUE.test(text);
 }
 
+// Unités lancées DE FRONT. Elles ne sont pas traitées en parallèle par le
+// modèle — c'est le regroupement en lots (src/engine/batch.js) qui a besoin
+// d'appels concurrents pour avoir quelque chose à rassembler. Sans vague, la
+// boucle `await` séquentielle ne présente jamais qu'un seul texte à la fois et
+// le lot reste de taille 1.
+//
+// Chaque unité peut engendrer plusieurs appels (une passe par groupe de
+// labels) : une vague de 24 alimente donc des lots confortables sans faire
+// enfler la mémoire.
+const VAGUE = 24;
+
 async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
-  const out = [];
+  // Le cache mémorise la PROMESSE, pas le résultat : deux unités au texte
+  // identique lancées dans la même vague se partagent une seule inférence.
+  // Avec la valeur résolue, elles rateraient toutes les deux le cache et
+  // paieraient deux fois.
   const cache = new Map();
-  for (let i = 0; i < units.length; i++) {
-    const { text, structurel } = units[i];
-    if (!structurel && meriteUnePasseContextuelle(text)) {
-      if (!cache.has(text)) cache.set(text, await detect(text, nerPipeline, { disabledTypes }));
-      const base = ranges[i].start;
-      for (const e of cache.get(text)) {
-        out.push({ ...e, start: e.start + base, end: e.end + base });
-      }
+  // Résultats rangés PAR INDICE puis aplatis dans l'ordre : la concurrence ne
+  // doit pas rendre l'ordre de sortie dépendant de l'ordonnancement. Un ordre
+  // instable changerait l'issue des chevauchements en aval, donc le masquage.
+  const parUnite = new Array(units.length);
+  let faits = 0;
+
+  for (let debut = 0; debut < units.length; debut += VAGUE) {
+    const fin = Math.min(debut + VAGUE, units.length);
+    const vague = [];
+
+    for (let i = debut; i < fin; i++) {
+      const { text, structurel } = units[i];
+      if (structurel || !meriteUnePasseContextuelle(text)) continue;
+      if (!cache.has(text)) cache.set(text, detect(text, nerPipeline, { disabledTypes }));
+      const indice = i;
+      vague.push(cache.get(text).then(entites => {
+        const base = ranges[indice].start;
+        parUnite[indice] = entites.map(e => ({
+          ...e, start: e.start + base, end: e.end + base
+        }));
+      }));
     }
-    if (onProgress) await onProgress({ done: i + 1, total: units.length });
+
+    await Promise.all(vague);
+
+    // La progression avance par vague, pas par unité : rendre la main entre
+    // chaque unité n'aurait plus de sens puisqu'elles avancent ensemble.
+    faits = fin;
+    if (onProgress) await onProgress({ done: faits, total: units.length });
   }
+
+  const out = [];
+  for (const entites of parUnite) if (entites) out.push(...entites);
   return out;
 }
 
