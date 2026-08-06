@@ -41,11 +41,16 @@ déclarer un bug de livraison.
 
 **Mesuré en vrai Chrome, sur le MÊME mémoire de 75 pages à chaque fois :**
 
-| Modèle | Accélérateur | Temps | Verdict |
-|---|---|---|---|
-| `model_quantized` (int8, 175 Mo) | `wasm` | 5 min 45 | ligne de base |
-| `model_quantized` (int8, 175 Mo) | `webgpu` | 5 min 36 | aucun gain |
-| `model_fp16` (292 Mo) | `webgpu` | **2 min 01** | **×2,8 — livré** |
+| Modèle | Accélérateur | Lots | Temps | Verdict |
+|---|---|---|---|---|
+| `model_quantized` (int8, 175 Mo) | `wasm` | 1 | 5 min 45 | ligne de base |
+| `model_quantized` (int8, 175 Mo) | `webgpu` | 1 | 5 min 36 | aucun gain |
+| `model_fp16` (292 Mo) | `webgpu` | 1 | 2 min 01 | ×2,8 |
+| `model_fp16` (292 Mo) | `webgpu` | **8** | **1 min 02** | **×5,6 — livré** |
+
+Contrôle de la sortie sur ce dernier passage (75 pages) : **2030 placeholders**
+(335 distincts), **0 tronqué** (le correctif P7 tient à l'échelle), et **zéro
+fuite** sur les motifs déterministes — email, IBAN, téléphone, NIR.
 
 **La leçon, et elle est contre-intuitive : ce n'est pas WebGPU qui accélère,
 c'est le COUPLE modèle+fournisseur.** Le fournisseur WebGPU d'ORT supporte mal

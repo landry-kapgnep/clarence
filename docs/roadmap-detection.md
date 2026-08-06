@@ -19,6 +19,20 @@ Classé par priorité = gravité (fuite > sur-masquage > cosmétique).
 | Rappel **contextuel** | **83 %** (30/36) | mesuré, jamais promis | 78 → **83** |
 | Termes **préservés** | **98 %** (45/46) | bloque le payant | 90 → 95 → 96 → **98** |
 
+### Où en est le temps de traitement : 5 min 45 → **1 min 02**
+
+Mémoire réel de 75 pages, en vrai Chrome, trois correctifs cumulés (pré-filtre,
+fp16+WebGPU, lots de 8). Détail des mesures dans `docs/verification-chrome.md`
+§A0. Objectif fixé par l'usage : **sous 30 s**. On y est presque, et le reste
+ne viendra plus de l'accélérateur — voir la limite ci-dessous.
+
+**Limite structurelle à connaître avant de chercher plus loin** : ORT n'exécute
+**qu'une inférence à la fois** (marqueur global du fournisseur WebGPU, voir
+§A0ter). Le parallélisme d'appels est donc définitivement hors de portée — pool
+de workers compris, d'autant qu'il n'y a de toute façon qu'un seul GPU. Le seul
+levier restant est de **soumettre moins de texte** au modèle, pas de le
+soumettre plus vite.
+
 ### Inférences regroupées en lots : ×2,6 de plus, à détection identique
 
 Le coût d'une inférence est « ~37 ms fixes + k × longueur ». Sur un mémoire
