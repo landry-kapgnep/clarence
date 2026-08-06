@@ -16,8 +16,10 @@ import {
 } from "./chunk-MN45A56O.js";
 import {
   anonymizeUnits
-} from "./chunk-4NBNJHMC.js";
-import "./chunk-6SRQ32UP.js";
+} from "./chunk-HV6P2PSX.js";
+import {
+  verifierAnnulation
+} from "./chunk-VSTVIDZ2.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/files/pdf-reconstruct.js
@@ -156,7 +158,7 @@ function tailleQuiTient(font, texte, taille, x, largeurPage) {
   if (largeur <= dispo) return taille;
   return Math.max(taille * (dispo / largeur), taille * REDUCTION_MIN);
 }
-async function parsePages(buffer) {
+async function parsePages(buffer, signal) {
   const pdf = await getDocument({
     data: new Uint8Array(buffer.slice(0)),
     useWorkerFetch: false,
@@ -165,6 +167,7 @@ async function parsePages(buffer) {
   }).promise;
   const pages = [];
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    verifierAnnulation(signal);
     const page = await pdf.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1 });
     const textContent = await page.getTextContent();
@@ -185,7 +188,8 @@ async function parsePages(buffer) {
 }
 async function reconstructPdf(buffer, opts = {}) {
   const { PDFDocument, StandardFonts } = opts.deps;
-  const pages = await parsePages(buffer);
+  const { signal } = opts;
+  const pages = await parsePages(buffer, signal);
   const allUnits = pages.flatMap((p) => p.units.map((u) => ({ id: u.id, text: u.text })));
   const { results, mapping } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
@@ -194,12 +198,14 @@ async function reconstructPdf(buffer, opts = {}) {
     maskOpts: opts.maskOpts,
     forceTerms: opts.forceTerms,
     disabledTypes: opts.disabledTypes,
-    keepValues: opts.keepValues
+    keepValues: opts.keepValues,
+    signal
   });
   const entitiesById = new Map(results.map((r) => [r.id, r.entities || []]));
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   for (const page of pages) {
+    verifierAnnulation(signal);
     const pdfPage = pdfDoc.addPage([page.width, page.height]);
     const encoded = await Promise.all((page.images || []).map(async (img) => {
       try {

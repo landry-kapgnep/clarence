@@ -14,6 +14,7 @@ import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, HEADING_SIZE_RATIO } from './pdf-adapter.js';
 import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { anonymizeUnits } from './anonymize-units.js';
+import { verifierAnnulation } from '../engine/annulation.js';
 
 if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('vendor/pdf.worker.min.mjs');
@@ -224,7 +225,7 @@ export function tailleQuiTient(font, texte, taille, x, largeurPage) {
 
 // Ré-extrait la structure géométrique page par page (convention stateless ;
 // buffer.slice(0) car pdfjs détache — cf. gotcha CLAUDE.md).
-async function parsePages(buffer) {
+async function parsePages(buffer, signal) {
   const pdf = await pdfjsLib.getDocument({
     data: new Uint8Array(buffer.slice(0)),
     useWorkerFetch: false, isEvalSupported: false, disableFontFace: true
@@ -232,6 +233,10 @@ async function parsePages(buffer) {
 
   const pages = [];
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    // L'extraction d'un gros PDF est déjà longue AVANT la détection : sans
+    // point de reprise ici, annuler pendant la lecture ne ferait rien de
+    // visible pendant des dizaines de secondes.
+    verifierAnnulation(signal);
     const page = await pdf.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1 });
     const textContent = await page.getTextContent();
@@ -257,7 +262,8 @@ async function parsePages(buffer) {
 // Retourne { buffer: ArrayBuffer, mapping }.
 export async function reconstructPdf(buffer, opts = {}) {
   const { PDFDocument, StandardFonts } = opts.deps;
-  const pages = await parsePages(buffer);
+  const { signal } = opts;
+  const pages = await parsePages(buffer, signal);
 
   // UNE seule passe de détection sur toutes les unités de toutes les pages
   // (placeholders cohérents inter-pages, comme les autres adaptateurs).
@@ -269,7 +275,8 @@ export async function reconstructPdf(buffer, opts = {}) {
     maskOpts: opts.maskOpts,
     forceTerms: opts.forceTerms,
     disabledTypes: opts.disabledTypes,
-    keepValues: opts.keepValues
+    keepValues: opts.keepValues,
+    signal
   });
   const entitiesById = new Map(results.map(r => [r.id, r.entities || []]));
 
@@ -277,6 +284,9 @@ export async function reconstructPdf(buffer, opts = {}) {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   for (const page of pages) {
+    // Le ré-encodage des images est le second poste long : il doit s'arrêter
+    // aussi, sinon « Annuler » resterait sans effet visible sur un PDF illustré.
+    verifierAnnulation(signal);
     const pdfPage = pdfDoc.addPage([page.width, page.height]);
 
     // Images d'abord (en fond), texte par-dessus. Encodage en PARALLÈLE (le

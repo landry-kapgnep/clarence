@@ -1,11 +1,13 @@
 import {
   NER_MODEL,
+  OperationAnnulee,
   bridgeNameParts,
   chunkText,
   detectNER,
   detectPhonesIntl,
   detectRegex,
   entityKey,
+  estAnnulation,
   filterByRules,
   forcedMasks,
   isHonorificAt,
@@ -13,8 +15,9 @@ import {
   mergeEntities,
   reinject,
   selectActive,
-  snapToWordBoundaries
-} from "./chunk-6SRQ32UP.js";
+  snapToWordBoundaries,
+  verifierAnnulation
+} from "./chunk-VSTVIDZ2.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -1124,6 +1127,7 @@ async function ensureNER() {
     }
     nerWorker = worker;
     const envoyer = (charge) => new Promise((resolve, reject) => {
+      if (!nerWorker) return reject(new OperationAnnulee());
       const id = ++nerReqId;
       nerPending.set(id, { resolve, reject });
       nerWorker.postMessage({ type: "run", id, ...charge });
@@ -1134,6 +1138,15 @@ async function ensureNER() {
   } finally {
     nerLoading = false;
   }
+}
+function purgerWorkerNer(raison) {
+  for (const p of nerPending.values()) p.reject(raison);
+  nerPending.clear();
+  if (nerWorker) nerWorker.terminate();
+  nerWorker = null;
+  nerPipe = null;
+  nerEngine = null;
+  nerLoading = false;
 }
 function contextualDetector() {
   return nerEngine === "gliner" ? detectGliner : detectNER;
@@ -1328,6 +1341,8 @@ var FILE_TYPES = {
   png: { mime: "image/png", text: false, metadataOnly: true, load: () => import("./image-adapter-2KEQSNMF.js") }
 };
 var chosenFile = null;
+var fileRun = null;
+var fileRunId = 0;
 var fileOutBlob = null;
 var fileOutName = "";
 var fileDisabledTypes = new Set(TYPES_PEU_FIABLES);
@@ -1341,6 +1356,7 @@ $("fileTypeToggles")?.addEventListener("change", (ev) => {
   invalidateFileResult();
 });
 function invalidateFileResult() {
+  if (annulerRunFichier("Options modifi\xE9es \u2014 relance l\u2019anonymisation.")) return;
   if (!fileOutBlob) return;
   fileOutBlob = null;
   fileOutName = "";
@@ -1378,6 +1394,7 @@ function setChosenFile(file) {
     fileSetStatus(`Fichier trop lourd (${humanSize(file.size)}, max ${humanSize(MAX_FILE_BYTES)}).`, "error");
     return;
   }
+  annulerRunFichier("");
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $("fileName");
@@ -1805,22 +1822,45 @@ function setAnalyzeBtnLoading(loading) {
     if (btn.dataset.label) btn.textContent = btn.dataset.label;
   }
 }
+function annulerRunFichier(motif) {
+  if (!fileRun) return false;
+  const run = fileRun;
+  fileRun = null;
+  run.controller.abort(new OperationAnnulee());
+  purgerWorkerNer(new OperationAnnulee());
+  setProcessing(false);
+  setFileProgress(null);
+  setAnalyzeBtnLoading(false);
+  $("fileAnalyzeBtn").disabled = false;
+  $("fileCancelBtn").hidden = true;
+  fileSetStatus(motif === void 0 ? "Traitement annul\xE9 \u2014 aucun fichier produit." : motif);
+  return true;
+}
 async function processFile() {
   if (!chosenFile) return;
-  const ext = extOf(chosenFile.name);
+  annulerRunFichier("");
+  const source = chosenFile;
+  const run = { id: ++fileRunId, controller: new AbortController() };
+  fileRun = run;
+  const signal = run.controller.signal;
+  const courant = () => fileRun === run;
+  const ext = extOf(source.name);
   const kind = FILE_TYPES[ext];
   const btn = $("fileAnalyzeBtn");
   btn.disabled = true;
+  $("fileCancelBtn").hidden = false;
   setProcessing(true);
   setAnalyzeBtnLoading(true);
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
+    verifierAnnulation(signal);
     if (kind.metadataOnly) {
       fileSetStatus("Nettoyage des m\xE9tadonn\xE9es\u2026");
-      const cleaned2 = await adapter.stripMetadata(await chosenFile.arrayBuffer(), { mime: kind.mime });
+      const cleaned2 = await adapter.stripMetadata(await source.arrayBuffer(), { mime: kind.mime });
+      verifierAnnulation(signal);
       fileOutBlob = new Blob([cleaned2], { type: kind.mime });
-      fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, "-nettoye$1");
+      fileOutName = source.name.replace(/(\.[^.]+)$/, "-nettoye$1");
       $("fileMappingWrap").innerHTML = "<p>Image : m\xE9tadonn\xE9es (EXIF/GPS/appareil) retir\xE9es. Le contenu visuel n'est pas modifi\xE9.</p>";
       $("fileSummary").textContent = "M\xE9tadonn\xE9es retir\xE9es (EXIF, GPS, appareil).";
       $("fileSummary").className = "status active";
@@ -1831,11 +1871,13 @@ async function processFile() {
       return;
     }
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
-      fileSetStatus("Reconstruction du PDF\u2026");
+      fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-LSBWKPJE.js");
+      verifierAnnulation(signal);
+      const { reconstructPdf } = await import("./pdf-reconstruct-NU55SMYC.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
-      const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
+      const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await source.arrayBuffer(), {
+        signal,
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
         onProgress: nerProgress,
@@ -1851,15 +1893,16 @@ async function processFile() {
         keepValues: parseLines($("fileAlwaysKeep")?.value),
         deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
       });
+      verifierAnnulation(signal);
       fileOutBlob = new Blob([outBuf], { type: "application/pdf" });
-      fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, "-anonymise$1");
+      fileOutName = source.name.replace(/(\.[^.]+)$/, "-anonymise$1");
       showFileResults(mapping2, false);
       renderEngineBadge("fileEngineBadge");
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-CL2KRMH3.js");
-    const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await chosenFile.arrayBuffer()) : await chosenFile.arrayBuffer();
+    const { anonymizeUnits } = await import("./anonymize-units-DSHFTPSG.js");
+    const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
       fileSetStatus("Aucun texte \xE0 analyser dans ce fichier.", "error");
@@ -1867,7 +1910,9 @@ async function processFile() {
     }
     fileSetStatus("D\xE9tection en cours\u2026");
     await ensureNER();
+    verifierAnnulation(signal);
     const { results, mapping } = await anonymizeUnits(units, {
+      signal,
       nerPipeline: nerPipe,
       nerDetect: contextualDetector(),
       onProgress: nerProgress,
@@ -1879,24 +1924,32 @@ async function processFile() {
       keepValues: parseLines($("fileAlwaysKeep")?.value)
     });
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
+    fileSetStatus("R\xE9\xE9criture du fichier\u2026");
     const masked = await adapter.applyMask(input, byId);
     const cleaned = await adapter.stripMetadata(masked);
+    verifierAnnulation(signal);
     fileOutBlob = new Blob([cleaned], { type: kind.mime });
-    fileOutName = kind.outExt ? chosenFile.name.replace(/\.[^.]+$/, "-anonymise" + kind.outExt) : chosenFile.name.replace(/(\.[^.]+)$/, "-anonymise$1");
+    fileOutName = kind.outExt ? source.name.replace(/\.[^.]+$/, "-anonymise" + kind.outExt) : source.name.replace(/(\.[^.]+)$/, "-anonymise$1");
     showFileResults(mapping, kind.mime.startsWith("text/"));
     renderEngineBadge("fileEngineBadge");
     fileSetStatus("");
   } catch (err) {
+    if (estAnnulation(err)) return;
     console.error(err);
+    if (!courant()) return;
     fileOutBlob = null;
     $("fileResults").hidden = true;
     $("dragCard").hidden = true;
     fileSetStatus("Traitement \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
   } finally {
-    setProcessing(false);
-    setFileProgress(null);
-    setAnalyzeBtnLoading(false);
-    btn.disabled = false;
+    if (courant()) {
+      fileRun = null;
+      setProcessing(false);
+      setFileProgress(null);
+      setAnalyzeBtnLoading(false);
+      btn.disabled = false;
+      $("fileCancelBtn").hidden = true;
+    }
   }
 }
 function downloadFile() {
@@ -1922,7 +1975,9 @@ for (const btn of document.querySelectorAll(".mode-btn")) {
 }
 $("filePickBtn").addEventListener("click", () => $("fileInput").click());
 $("fileInput").addEventListener("change", (ev) => setChosenFile(ev.target.files[0]));
+$("fileCancelBtn").addEventListener("click", () => annulerRunFichier());
 $("fileResetBtn").addEventListener("click", () => {
+  annulerRunFichier("");
   chosenFile = null;
   fileOutBlob = null;
   $("fileInput").value = "";

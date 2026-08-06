@@ -3989,6 +3989,21 @@ async function detectNER(text, nerPipeline, { onProgress } = {}) {
   }).sort((a, b) => a.start - b.start);
 }
 
+// src/engine/annulation.js
+var OperationAnnulee = class extends Error {
+  constructor(message = "traitement annul\xE9") {
+    super(message);
+    this.name = "OperationAnnulee";
+  }
+};
+function estAnnulation(err) {
+  return err instanceof OperationAnnulee || err?.name === "AbortError";
+}
+function verifierAnnulation(signal) {
+  if (!signal?.aborted) return;
+  throw signal.reason instanceof Error ? signal.reason : new OperationAnnulee();
+}
+
 // src/engine/merge.js
 var TYPE_PRIORITY = [
   "NIR",
@@ -4207,6 +4222,9 @@ export {
   snapToWordBoundaries,
   bridgeNameParts,
   detectNER,
+  OperationAnnulee,
+  estAnnulation,
+  verifierAnnulation,
   mergeEntities,
   entityKey,
   selectActive,

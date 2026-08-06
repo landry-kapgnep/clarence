@@ -90,6 +90,41 @@ le banc tourne en Node sur `onnxruntime-node`, sans WebGPU. Puis `npm run build`
    change la numérique du modèle, donc potentiellement les scores. Un gain de
    vitesse payé en qualité n'est pas un gain.
 
+### A0bis. Annulation et runs concurrents (06/08/2026)
+
+Trois symptômes vécus à l'usage, **une seule cause** : `processFile()` n'avait
+aucune identité de run, donc deux exécutions pouvaient se chevaucher en
+écrivant dans le même état global.
+
+| Symptôme vécu | Cause réelle |
+|---|---|
+| « l'anonymisation n'est pas allée au bout » après avoir changé de fichier | le `finally` du run abandonné réinitialisait l'UI pendant que l'autre tournait |
+| « ça boucle sur Reconstruction du PDF » | le worker traite ses messages un par un : le nouveau run attendait derrière des centaines d'inférences mortes |
+| « Traitement échoué » à la relance | état global écrasé par le run périmé |
+
+Le plus grave n'était visible nulle part : le **nom de sortie était lu à la
+fin** alors que le contenu avait été lu au début. Changer de fichier en cours de
+route produisait **le contenu de A sous le nom de B** — on croit tenir B
+anonymisé. Même gravité qu'une fuite, corrigé par capture du fichier au départ.
+
+À vérifier en Chrome :
+1. Lancer un gros PDF, cliquer **Annuler** → arrêt en quelques secondes, statut
+   « Traitement annulé », **aucun fichier** proposé au téléchargement.
+2. Relancer juste après → doit repartir à vitesse normale. Si c'est lent, la
+   purge du worker n'a pas eu lieu (c'est tout l'objet du correctif).
+3. Changer de fichier / cocher une autre option **pendant** un traitement →
+   annulation automatique, pas de résultat fantôme qui apparaît plus tard.
+4. Vérifier qu'un vrai échec affiche toujours « Traitement échoué » : une
+   annulation ne doit pas emprunter ce message, et réciproquement.
+
+**Limite assumée, à ne pas redécouvrir** : si la popup est fermée ou rechargée,
+le Worker meurt avec elle — le traitement ne « continue » pas, il disparaît.
+Le faire survivre supposerait de déplacer tout le pipeline dans le service
+worker MV3 (tué à l'inactivité, sans DOM alors que `pdf-reconstruct.js` utilise
+`canvas`/`ImageBitmap`, et un troisième contexte où charger 292 Mo). Chantier
+réel, non engagé : à ~1 minute et avec une annulation qui marche, le besoin
+devient marginal.
+
 ### À chronométrer maintenant : le regroupement en lots
 
 Les inférences partent désormais par lots de 8 (`src/engine/batch.js`). Mesuré

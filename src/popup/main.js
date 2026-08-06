@@ -6,6 +6,7 @@ import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl } from '../engine/gliner.js';
 import { createBatchedPipeline } from '../engine/batch.js';
+import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
 import { createPseudonymizer } from '../engine/pseudonyms.js';
@@ -337,6 +338,10 @@ async function ensureNER() {
     // Proxy commun. GLiNER reçoit en plus les labels du groupe à chercher ;
     // BERT les ignore.
     const envoyer = charge => new Promise((resolve, reject) => {
+      // Le worker a pu être purgé entre-temps (annulation) : un lot déjà
+      // constitué peut encore arriver ici. Rejeter proprement plutôt que de
+      // laisser un TypeError remonter comme un « traitement échoué ».
+      if (!nerWorker) return reject(new OperationAnnulee());
       const id = ++nerReqId;
       nerPending.set(id, { resolve, reject });
       nerWorker.postMessage({ type: 'run', id, ...charge });
@@ -355,6 +360,29 @@ async function ensureNER() {
   } finally {
     nerLoading = false;
   }
+}
+
+// Coupe court à TOUTES les inférences en attente et repart d'un worker neuf.
+//
+// POURQUOI TERMINER LE WORKER plutôt que juste ignorer les résultats. Le worker
+// traite ses messages UN PAR UN : les centaines de lots déjà postés pour un run
+// abandonné seraient calculés jusqu'au dernier, et le run suivant attendrait
+// derrière eux. C'est exactement ce qui donnait l'impression d'un blocage sur
+// « Reconstruction du PDF… ». Il n'existe aucun moyen de vider la file d'un
+// worker de l'extérieur — le terminer est la seule voie sûre.
+//
+// Le coût est faible et connu : le modèle est en Cache API, la ré-init a été
+// mesurée à ~94 ms après le premier chargement.
+function purgerWorkerNer(raison) {
+  for (const p of nerPending.values()) p.reject(raison);
+  nerPending.clear();
+  if (nerWorker) nerWorker.terminate();
+  nerWorker = null;
+  nerPipe = null;
+  nerEngine = null;
+  // Sinon ensureNER() croirait un chargement encore en cours et rendrait la
+  // main sans jamais reconstruire le pipeline : plus aucune détection.
+  nerLoading = false;
 }
 
 // Fonction de détection du moteur ACTIF, avec la signature commune
@@ -576,6 +604,14 @@ const FILE_TYPES = {
 };
 
 let chosenFile = null;
+// Run fichier EN COURS. Sans cette identité, deux exécutions pouvaient se
+// chevaucher (changer de fichier, relancer) en écrivant dans le MÊME état
+// global : la plus lente écrasait la plus récente, et le `finally` de la
+// périmée réinitialisait l'UI pendant que l'autre tournait encore.
+// Déclaré ICI, avec l'état fichier, et non près de processFile : `let` ne
+// remonte pas, et invalidateFileResult (plus haut dans le fichier) y touche.
+let fileRun = null;
+let fileRunId = 0;
 let fileOutBlob = null;
 let fileOutName = '';
 let fileDisabledTypes = new Set(TYPES_PEU_FIABLES); // idem, mode Fichier
@@ -600,6 +636,11 @@ $('fileTypeToggles')?.addEventListener('change', ev => {
 // toutes. C'est une fuite, pas une gêne — d'où l'effacement du résultat plutôt
 // qu'un simple avertissement.
 function invalidateFileResult() {
+  // Un traitement EN COURS est tout aussi périmé qu'un résultat déjà produit :
+  // il a démarré avec les anciennes options. Le laisser finir livrerait un
+  // fichier qui ne correspond pas aux cases affichées — exactement la
+  // fausse confiance que cette fonction existe pour empêcher.
+  if (annulerRunFichier('Options modifiées — relance l’anonymisation.')) return;
   if (!fileOutBlob) return;
   fileOutBlob = null;
   fileOutName = '';
@@ -643,6 +684,10 @@ function setChosenFile(file) {
     fileSetStatus(`Fichier trop lourd (${humanSize(file.size)}, max ${humanSize(MAX_FILE_BYTES)}).`, 'error');
     return;
   }
+  // Changer de fichier pendant un traitement l'annule. Le laisser courir n'a
+  // aucun intérêt (son résultat ne concerne plus rien d'affiché) et il occupe
+  // le modèle au détriment du run suivant.
+  annulerRunFichier('');
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $('fileName');
@@ -1201,25 +1246,68 @@ function setAnalyzeBtnLoading(loading) {
   }
 }
 
+// Annule le traitement en cours, s'il y en a un. Sûr à appeler à vide.
+// `motif` : texte de statut. `''` efface le statut (l'appelant en écrit un
+// autre juste après) ; omis, on affiche le message d'annulation par défaut.
+function annulerRunFichier(motif) {
+  if (!fileRun) return false;
+  const run = fileRun;
+  fileRun = null;
+  run.controller.abort(new OperationAnnulee());
+  // Les inférences déjà postées ne s'arrêtent pas toutes seules — c'est la
+  // purge qui libère réellement le modèle pour le run suivant.
+  purgerWorkerNer(new OperationAnnulee());
+  setProcessing(false);
+  setFileProgress(null);
+  setAnalyzeBtnLoading(false);
+  $('fileAnalyzeBtn').disabled = false;
+  $('fileCancelBtn').hidden = true;
+  // `motif ||` aurait avalé la chaîne vide et affiché « Traitement annulé »
+  // pendant une simple relance, juste avant que l'appelant n'écrive son propre
+  // statut — message contradictoire et clignotant.
+  fileSetStatus(motif === undefined ? 'Traitement annulé — aucun fichier produit.' : motif);
+  return true;
+}
+
 async function processFile() {
   if (!chosenFile) return;
-  const ext = extOf(chosenFile.name);
+  // Une relance annule la précédente : deux runs concurrents sur le même modèle
+  // sont plus lents que l'un des deux seul, et se marchent dessus.
+  annulerRunFichier('');
+
+  // Le fichier est CAPTURÉ ici, une fois pour toutes. Il était relu à la fin
+  // pour composer le nom de sortie : changer de fichier en cours de route
+  // produisait le CONTENU de l'ancien sous le NOM du nouveau — on croyait tenir
+  // B anonymisé en tenant A. Même gravité qu'une fuite, d'où la capture.
+  const source = chosenFile;
+  const run = { id: ++fileRunId, controller: new AbortController() };
+  fileRun = run;
+  const signal = run.controller.signal;
+  // Vrai tant que CE run est celui qui compte. Tout écriture d'état ou d'UI
+  // après un `await` doit passer par là, sinon un run périmé parle à la place
+  // du run courant.
+  const courant = () => fileRun === run;
+
+  const ext = extOf(source.name);
   const kind = FILE_TYPES[ext];
   const btn = $('fileAnalyzeBtn');
   btn.disabled = true;
+  $('fileCancelBtn').hidden = false;
   setProcessing(true);
   setAnalyzeBtnLoading(true);
   fileSetStatus('Lecture du fichier…');
   try {
     const adapter = await kind.load();
+    verifierAnnulation(signal);
 
     // Images : pas de PII textuelle, juste des métadonnées à retirer.
     // Court-circuit total du pipeline détection/masquage/NER.
     if (kind.metadataOnly) {
       fileSetStatus('Nettoyage des métadonnées…');
-      const cleaned = await adapter.stripMetadata(await chosenFile.arrayBuffer(), { mime: kind.mime });
+      const cleaned = await adapter.stripMetadata(await source.arrayBuffer(), { mime: kind.mime });
+      verifierAnnulation(signal);
       fileOutBlob = new Blob([cleaned], { type: kind.mime });
-      fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, '-nettoye$1');
+      fileOutName = source.name.replace(/(\.[^.]+)$/, '-nettoye$1');
       $('fileMappingWrap').innerHTML = '<p>Image : métadonnées (EXIF/GPS/appareil) retirées. Le contenu visuel n\'est pas modifié.</p>';
       $('fileSummary').textContent = 'Métadonnées retirées (EXIF, GPS, appareil).';
       $('fileSummary').className = 'status active';
@@ -1234,11 +1322,13 @@ async function processFile() {
     // chemin indépendant de l'extraction Markdown. Une seule passe de détection
     // à l'intérieur de reconstructPdf. Sortie binaire .pdf (pas copiable texte).
     if (ext === 'pdf' && $('pdfModePreserve')?.checked) {
-      fileSetStatus('Reconstruction du PDF…');
+      fileSetStatus('Lecture du PDF…');
       await ensureNER();
+      verifierAnnulation(signal);
       const { reconstructPdf } = await import('../files/pdf-reconstruct.js');
       const pdflib = await import('pdf-lib');
-      const { buffer: outBuf, mapping } = await reconstructPdf(await chosenFile.arrayBuffer(), {
+      const { buffer: outBuf, mapping } = await reconstructPdf(await source.arrayBuffer(), {
+        signal,
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
         onProgress: nerProgress,
@@ -1254,8 +1344,9 @@ async function processFile() {
         keepValues: parseLines($('fileAlwaysKeep')?.value),
         deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
       });
+      verifierAnnulation(signal);
       fileOutBlob = new Blob([outBuf], { type: 'application/pdf' });
-      fileOutName = chosenFile.name.replace(/(\.[^.]+)$/, '-anonymise$1');
+      fileOutName = source.name.replace(/(\.[^.]+)$/, '-anonymise$1');
       showFileResults(mapping, false);
       renderEngineBadge('fileEngineBadge');
       fileSetStatus('');
@@ -1266,8 +1357,8 @@ async function processFile() {
     const input = kind.text
       // ignoreBOM: garde le ﻿ initial dans la chaîne pour que l'adaptateur
       // CSV le détecte et le préserve en sortie (sinon TextDecoder l'avale).
-      ? new TextDecoder('utf-8', { ignoreBOM: true }).decode(await chosenFile.arrayBuffer())
-      : await chosenFile.arrayBuffer();
+      ? new TextDecoder('utf-8', { ignoreBOM: true }).decode(await source.arrayBuffer())
+      : await source.arrayBuffer();
 
     // await : sans effet sur les 3 adaptateurs synchrones (CSV/XLSX/DOCX),
     // indispensable pour PDF (pdfjs-dist est intrinsèquement asynchrone).
@@ -1279,7 +1370,9 @@ async function processFile() {
 
     fileSetStatus('Détection en cours…');
     await ensureNER();
+    verifierAnnulation(signal);
     const { results, mapping } = await anonymizeUnits(units, {
+      signal,
       nerPipeline: nerPipe,
       nerDetect: contextualDetector(),
       onProgress: nerProgress,
@@ -1293,14 +1386,16 @@ async function processFile() {
 
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
     const byId = new Map(results.map(r => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
+    fileSetStatus('Réécriture du fichier…');
     const masked = await adapter.applyMask(input, byId);
     const cleaned = await adapter.stripMetadata(masked);
+    verifierAnnulation(signal);
     fileOutBlob = new Blob([cleaned], { type: kind.mime });
     // outExt (PDF uniquement) : la sortie est un nouveau document (.md), pas
     // une réécriture — remplace l'extension entière, pas juste le nom.
     fileOutName = kind.outExt
-      ? chosenFile.name.replace(/\.[^.]+$/, '-anonymise' + kind.outExt)
-      : chosenFile.name.replace(/(\.[^.]+)$/, '-anonymise$1');
+      ? source.name.replace(/\.[^.]+$/, '-anonymise' + kind.outExt)
+      : source.name.replace(/(\.[^.]+)$/, '-anonymise$1');
 
     // Copier n'a de sens que pour une sortie TEXTE (md/csv), pas binaire.
     showFileResults(mapping, kind.mime.startsWith('text/'));
@@ -1308,16 +1403,30 @@ async function processFile() {
     renderEngineBadge('fileEngineBadge');
     fileSetStatus('');
   } catch (err) {
+    // Une ANNULATION n'est pas un échec. Afficher « Traitement échoué » quand
+    // l'utilisateur vient de cliquer sur Annuler laisserait croire à un bug —
+    // et masquerait les vrais échecs dans le bruit. `annulerRunFichier` a déjà
+    // remis l'UI en état, il n'y a rien à ajouter.
+    if (estAnnulation(err)) return;
     console.error(err);
+    // Un run périmé ne doit pas afficher son erreur par-dessus le run courant.
+    if (!courant()) return;
     fileOutBlob = null;
     $('fileResults').hidden = true;
     $('dragCard').hidden = true;
     fileSetStatus('Traitement échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
   } finally {
-    setProcessing(false);
-    setFileProgress(null);
-    setAnalyzeBtnLoading(false);
-    btn.disabled = false;
+    // Seul le run COURANT rend l'UI à l'utilisateur. Sans cette garde, un run
+    // abandonné réactivait le bouton et effaçait la barre pendant que le run
+    // suivant tournait encore — d'où « l'anonymisation n'est pas allée au bout ».
+    if (courant()) {
+      fileRun = null;
+      setProcessing(false);
+      setFileProgress(null);
+      setAnalyzeBtnLoading(false);
+      btn.disabled = false;
+      $('fileCancelBtn').hidden = true;
+    }
   }
 }
 
@@ -1351,7 +1460,9 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
 // --- Sélection de fichier (bouton + glisser-déposer)
 $('filePickBtn').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', ev => setChosenFile(ev.target.files[0]));
+$('fileCancelBtn').addEventListener('click', () => annulerRunFichier());
 $('fileResetBtn').addEventListener('click', () => {
+  annulerRunFichier('');
   chosenFile = null;
   fileOutBlob = null;
   $('fileInput').value = '';

@@ -9,6 +9,7 @@ import { detectNER } from '../engine/ner.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, forcedMasks, filterByRules } from '../engine/selection.js';
 import { maskText, propagatedSpans } from '../engine/masking.js';
+import { verifierAnnulation } from '../engine/annulation.js';
 
 // Séparateur entre unités : caractères de la zone d'usage privé Unicode,
 // jamais présents dans un vrai document, encadrés de retours à la ligne.
@@ -88,7 +89,7 @@ function meriteUnePasseContextuelle(text) {
 // enfler la mémoire.
 const VAGUE = 24;
 
-async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
+async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes, signal) {
   // Le cache mémorise la PROMESSE, pas le résultat : deux unités au texte
   // identique lancées dans la même vague se partagent une seule inférence.
   // Avec la valeur résolue, elles rateraient toutes les deux le cache et
@@ -101,6 +102,10 @@ async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, 
   let faits = 0;
 
   for (let debut = 0; debut < units.length; debut += VAGUE) {
+    // Point de reprise : une vague est l'unité de travail la plus fine qu'on
+    // puisse interrompre proprement (les inférences d'un lot déjà parti vont au
+    // bout, mais aucune nouvelle n'est lancée).
+    verifierAnnulation(signal);
     const fin = Math.min(debut + VAGUE, units.length);
     const vague = [];
 
@@ -166,14 +171,17 @@ function joinWithSentinel(units) {
 // - keepValues    : valeurs « ne jamais masquer » (les masques forcés restent intouchables).
 // onProgress (optionnel) : transmis à detectNER, pour afficher l'avancement
 // (le NER est le poste long — voir commentaire dans ner.js).
-export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
+// signal (optionnel) : AbortSignal. Un traitement abandonné doit s'ARRÊTER, pas
+// seulement voir son résultat ignoré — sinon il continue d'occuper le modèle et
+// le run suivant attend derrière lui (voir src/engine/annulation.js).
+export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
   // Structuré = regex FR + téléphones internationaux (libphonenumber).
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
   const nerEntities = nerPipeline
-    ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes)
+    ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal)
     : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, new Set());

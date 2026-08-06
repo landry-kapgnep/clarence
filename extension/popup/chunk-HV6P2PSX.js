@@ -7,8 +7,9 @@ import {
   maskText,
   mergeEntities,
   propagatedSpans,
-  selectActive
-} from "./chunk-6SRQ32UP.js";
+  selectActive,
+  verifierAnnulation
+} from "./chunk-VSTVIDZ2.js";
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\n\uE000\uE004\uE000\n";
@@ -17,11 +18,12 @@ function meriteUnePasseContextuelle(text) {
   return new RegExp("\\p{L}{2}", "u").test(text) || DATE_NUE.test(text);
 }
 var VAGUE = 24;
-async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes) {
+async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes, signal) {
   const cache = /* @__PURE__ */ new Map();
   const parUnite = new Array(units.length);
   let faits = 0;
   for (let debut = 0; debut < units.length; debut += VAGUE) {
+    verifierAnnulation(signal);
     const fin = Math.min(debut + VAGUE, units.length);
     const vague = [];
     for (let i = debut; i < fin; i++) {
@@ -60,11 +62,11 @@ function joinWithSentinel(units) {
   }
   return { combined, ranges };
 }
-async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress } = {}) {
+async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal } = {}) {
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
-  const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes) : [];
+  const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal) : [];
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, /* @__PURE__ */ new Set());
   const active = filterByRules(selected, {
