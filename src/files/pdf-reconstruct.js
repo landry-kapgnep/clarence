@@ -188,6 +188,40 @@ async function encodeImage(img) {
   return { bytes: await blob.arrayBuffer(), jpeg: useJpeg };
 }
 
+// Marge de sécurité à droite, en points : sous cette valeur on considère que le
+// fragment touche le bord.
+const MARGE_DROITE = 2;
+// Plancher de réduction. En dessous, un fragment deviendrait illisible ; on
+// préfère alors le laisser déborder plutôt que d'écrire en corps 2.
+const REDUCTION_MIN = 0.45;
+
+// Taille de police à laquelle un fragment TIENT dans la page.
+//
+// P7 — LE MÊME BUG QUE « LES LIGNES QUI DÉPASSENT ». Un placeholder est presque
+// toujours plus long que la valeur qu'il remplace (« Nantes » → « [LIEU_3] »),
+// et chaque fragment est redessiné à SA position d'origine : un fragment en fin
+// de ligne finit donc hors page. Deux conséquences, longtemps prises pour deux
+// bugs distincts :
+//   - visuellement, le texte déborde (constaté à l'usage) ;
+//   - à la relecture, `pdfjs.getTextContent()` NE RETOURNE PAS les glyphes
+//     situés hors du cadre de page. D'où les « placeholders tronqués »
+//     ([PERSONN, [NATIONALIT) comptés à 422/4118 sur un mémoire réel : ils
+//     n'étaient pas coupés dans le fichier, ils étaient hors page.
+//
+// Vérifié en isolant pdf-lib et pdfjs : le même texte de 393 pt dessiné à x=40
+// ressort tronqué sur une page de 420 pt, et INTACT sur une page de 600 pt.
+//
+// Réduire la taille du fragment le fait rentrer, donc le rend à la fois visible
+// et de nouveau extractible — ce qui restaure la réversibilité, l'enjeu réel
+// pour un document destiné à être recollé dans un LLM.
+export function tailleQuiTient(font, texte, taille, x, largeurPage) {
+  const dispo = largeurPage - x - MARGE_DROITE;
+  if (dispo <= 0) return taille;
+  const largeur = font.widthOfTextAtSize(texte, taille);
+  if (largeur <= dispo) return taille;
+  return Math.max(taille * (dispo / largeur), taille * REDUCTION_MIN);
+}
+
 // Ré-extrait la structure géométrique page par page (convention stateless ;
 // buffer.slice(0) car pdfjs détache — cf. gotcha CLAUDE.md).
 async function parsePages(buffer) {
@@ -268,7 +302,8 @@ export async function reconstructPdf(buffer, opts = {}) {
         const text = sanitizeForWinAnsi(masked[i].text);
         if (!text) return;
         try {
-          pdfPage.drawText(text, { x: run.x, y: run.y, size: run.size, font });
+          const size = tailleQuiTient(font, text, run.size, run.x, page.width);
+          pdfPage.drawText(text, { x: run.x, y: run.y, size, font });
         } catch { /* fragment non dessinable : ignoré, jamais bloquant */ }
       });
     }

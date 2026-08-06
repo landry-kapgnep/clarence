@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { reconstructPdf } from '../../src/files/pdf-reconstruct.js';
+import { reconstructPdf, tailleQuiTient } from '../../src/files/pdf-reconstruct.js';
 
 const deps = { PDFDocument, StandardFonts };
 
@@ -147,4 +147,57 @@ test('reconstruction : interligne 1,5 → un seul paragraphe soumis au modèle',
   const [texte] = [...distincts];
   assert.match(texte, /localisation des jeux video/, 'les lignes doivent être recollées');
   assert.match(texte, /present travail$/, 'jusqu\'à la dernière');
+});
+
+// --- P7 : placeholders « tronqués » — en réalité DÉBORDANTS.
+//
+// Un placeholder est presque toujours plus long que la valeur qu'il remplace,
+// et chaque fragment est redessiné à SA position d'origine : un fragment en fin
+// de ligne finit donc hors page. pdfjs.getTextContent() ne retourne pas les
+// glyphes hors cadre — d'où 422 « placeholders tronqués » comptés sur un
+// mémoire réel, qui n'étaient pas coupés dans le fichier mais hors page.
+test('tailleQuiTient : un fragment qui déborde est réduit, un autre non', async () => {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const largeurPage = 420, x = 40;
+
+  const court = 'court';
+  assert.equal(tailleQuiTient(font, court, 12, x, largeurPage), 12,
+    'un fragment qui tient ne doit PAS être réduit');
+
+  // Chaîne construite pour DÉPASSER à coup sûr : on la mesure au lieu de la
+  // supposer (une première version « visiblement trop longue » tenait en fait).
+  let long = 'fragment';
+  while (font.widthOfTextAtSize(long, 12) <= largeurPage - x) long += ' encore plus long';
+  const reduite = tailleQuiTient(font, long, 12, x, largeurPage);
+  assert.ok(reduite < 12, 'un fragment qui déborde doit être réduit');
+  assert.ok(font.widthOfTextAtSize(long, reduite) <= largeurPage - x,
+    'après réduction, le fragment doit tenir dans la page');
+});
+
+test('tailleQuiTient : plancher de réduction respecté (jamais de corps illisible)', async () => {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  // Fragment absurdement long : on préfère le laisser déborder plutôt que
+  // d'écrire en corps 1.
+  const enorme = 'x'.repeat(400);
+  const t = tailleQuiTient(font, enorme, 12, 40, 420);
+  assert.ok(t >= 12 * 0.45, 'la réduction ne doit pas passer sous le plancher, obtenu ' + t);
+});
+
+test('reconstruction : un placeholder en fin de ligne reste ENTIÈREMENT extractible', async () => {
+  // Ligne qui remplit presque la page ; l'email en fin de ligne devient un
+  // placeholder plus long, ce qui la faisait déborder — donc perdre des
+  // caractères à la relecture.
+  const inBuf = await makePdf([
+    'Merci de bien vouloir confirmer par retour a@b.fr'
+  ]);
+  const { buffer, mapping } = await reconstructPdf(inBuf, { deps });
+  const texte = await extractText(buffer);
+
+  assert.match(texte, /\[EMAIL_1\]/, 'le placeholder doit être extractible en entier : ' + texte);
+  for (const m of mapping) {
+    assert.ok(texte.includes(m.placeholder),
+      `placeholder ${m.placeholder} introuvable dans la sortie — réversibilité cassée`);
+  }
 });

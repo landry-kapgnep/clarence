@@ -103,7 +103,7 @@ dans l'UI, décochés.
 | — | `KAROLINE ANSELME` ratée sur `certificat-fr.txt` (contextuel 67 %, pire document du banc) | ouvert | rappel |
 | ~~—~~ | ~~`1988-03-14` raté en cellule nue~~ — corrigé par le pré-filtre (`meriteUnePasseContextuelle`), `tableau-rh.csv` à 100 %/100 % | ✅ | — |
 | ~~—~~ | ~~`Nadia Belkacem` ratée~~ — corrigée par le seuil à 0,38 | ✅ | — |
-| P7 | Placeholders **tronqués** (422/4118 sur le mémoire) — casse la réversibilité, pas une fuite | ouvert, cause non isolée | réversibilité |
+| ~~P7~~ | ~~Placeholders tronqués~~ — c'était un DÉBORDEMENT hors page, pas une troncature ; réduit à la taille qui tient. 422 → **0** sur le mémoire | ✅ | — |
 | P2ter | Adresse abrégée (« Av. ») mal typée ; produits tiers jamais détectés | ouvert | couverture |
 | — | Régression assumée : `IUT` ne survit plus (fusionné avec « Informatique ») | connu | cosmétique |
 | P5 | i18n de la couche structurée (codes postaux, IDs non-FR) | partiel | couverture |
@@ -518,7 +518,35 @@ que dans le sens « on a pu rater quelque chose ».
 
 ---
 
-## P7 — Placeholders TRONQUÉS dans le PDF reconstruit (mesuré 04/08/2026, cause non isolée)
+## ~~P7 — Placeholders TRONQUÉS dans le PDF reconstruit~~ ✅ CORRIGÉ (05/08/2026)
+
+**Ce n'était pas une troncature, et ce n'était pas un bug distinct de « les lignes
+qui dépassent » : c'est le MÊME défaut.**
+
+Un placeholder est presque toujours plus long que la valeur qu'il remplace
+(« Nantes » → « [LIEU_3] »), et la reconstruction redessine chaque fragment à
+SA position d'origine. Un fragment en fin de ligne finit donc **hors page** —
+visuellement il déborde, et à la relecture `pdfjs.getTextContent()` **ne
+retourne pas les glyphes situés hors du cadre**. Les 422 « placeholders
+tronqués » n'étaient donc pas coupés dans le fichier : ils étaient hors champ.
+
+Isolé par reproduction minimale (pdf-lib + pdfjs seuls, sans le moteur) :
+un texte de 393 pt dessiné à x=40 ressort **tronqué** sur une page de 420 pt et
+**intact** sur une page de 600 pt. C'est la borne de page qui coupe, rien d'autre.
+
+**Correctif** : `tailleQuiTient` réduit la taille du fragment pour qu'il rentre
+dans la page, avec un plancher à 45 % (en dessous on préfère laisser déborder
+plutôt qu'écrire en corps illisible). Le texte redevient à la fois visible ET
+extractible — c'est la réversibilité qui était en jeu, l'enjeu réel pour un
+document destiné à être recollé dans un LLM.
+
+**Mesuré sur le mémoire réel de 75 pages** : fragments tronqués **422 → 0**, et
+**0 placeholder introuvable sur les 332** de la table de correspondance. Trois
+tests de non-régression, dont un bout en bout.
+
+---
+
+## P7 (diagnostic initial, conservé pour l'historique)
 
 Sur le même document : **39 fragments sur 1042** se terminent par un
 placeholder coupé — `[NATIONALIT`, `[ENTRE`, `[PERSONN`, `[PE`…
