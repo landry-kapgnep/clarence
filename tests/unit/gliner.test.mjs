@@ -100,15 +100,17 @@ test('un type désactivé fait SAUTER la passe entière (pas juste un filtre ava
       ? [{ label: 'date of birth', start: 0, end: 10, spanText: '1988-03-14', score: 0.9 }]
       : [];
   };
-  // Les 3 groupes actifs → 3 appels.
+  // « 1988-03-14 » n'a AUCUNE majuscule : le groupe identité est sauté par son
+  // pré-filtre `pertinent` (il ne pourrait produire aucun nom propre). Restent
+  // le groupe date et le groupe sensible → 2 appels.
   passes = 0;
   await detectGliner('1988-03-14', pipe);
-  assert.equal(passes, 3);
+  assert.equal(passes, 2);
 
-  // DATE_NAISSANCE désactivé → le groupe 2 n'est plus appelé du tout.
+  // DATE_NAISSANCE désactivé → le groupe date n'est plus appelé du tout.
   passes = 0;
   const out = await detectGliner('1988-03-14', pipe, { disabledTypes: new Set(['DATE_NAISSANCE']) });
-  assert.equal(passes, 2, 'la passe désactivée a quand même coûté une inférence');
+  assert.equal(passes, 1, 'la passe désactivée a quand même coûté une inférence');
   assert.equal(out.length, 0);
 });
 
@@ -169,12 +171,38 @@ test('l\'aval est inchangé : merge + masquage cohérent fonctionnent tels quels
   assert.equal(mapping.length, 2);
 });
 
-test('progression : un tick par (fenêtre x groupe actif)', async () => {
+test('progression : un tick par passe RÉELLEMENT exécutée', async () => {
   const pipe = async () => [];
+  // « Texte court 2024 » : une majuscule ET un chiffre, donc les 3 groupes
+  // passent leur pré-filtre.
   const ticks = [];
-  await detectGliner('texte court', pipe, { onProgress: p => ticks.push(p) });
+  await detectGliner('Texte court 2024', pipe, { onProgress: p => ticks.push(p) });
   assert.equal(ticks.length, 3, 'une fenêtre x 3 groupes');
   assert.deepEqual(ticks[2], { done: 3, total: 3 });
+});
+
+test('progression : le total EXCLUT les passes sautées par le pré-filtre', async () => {
+  // Sans ce calcul exact, `total` compterait chunks × groupes et la barre
+  // n'atteindrait jamais 100 % — défaut introduit par le pré-filtre lui-même.
+  const ticks = [];
+  await detectGliner('texte sans majuscule ni chiffre', async () => [], { onProgress: p => ticks.push(p) });
+  assert.ok(ticks.length > 0, 'au moins une passe doit tourner');
+  const dernier = ticks[ticks.length - 1];
+  assert.equal(dernier.done, dernier.total, 'la progression doit finir à 100 %');
+});
+
+test('pré-filtre : une passe dont le résultat serait DE TOUTE FAÇON jeté est sautée', async () => {
+  // `estPlausiblePourLeType` écarte déjà les PER/ORG/LIEU sans majuscule. Si le
+  // texte entier n'en a aucune, la passe ne peut rien produire qui survive :
+  // on la saute. Zéro perte par construction.
+  const vus = [];
+  await detectGliner('aucune majuscule ici', async (t, labels) => { vus.push(labels); return []; });
+  assert.ok(!vus.some(l => l.includes('person')), 'le groupe identité aurait dû être sauté');
+
+  const vus2 = [];
+  await detectGliner('Avec Une Majuscule', async (t, labels) => { vus2.push(labels); return []; });
+  assert.ok(vus2.some(l => l.includes('person')), 'avec une majuscule, le groupe identité doit tourner');
+  assert.ok(!vus2.some(l => l.includes('date of birth')), 'sans chiffre, le groupe date doit être sauté');
 });
 
 test('pipeline absent : aucune entité, aucune exception (repli silencieux)', async () => {

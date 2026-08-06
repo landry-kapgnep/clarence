@@ -56,14 +56,20 @@ export const GROUPES = [
     // structuré inchangé. Plus aucune fuite partielle sur les 7 documents.
     seuil: 0.38,
     labels: ['person', 'company', 'location'],
-    types: { person: 'PER', company: 'ORG', location: 'LOC' }
+    types: { person: 'PER', company: 'ORG', location: 'LOC' },
+    // Voir `pertinent` plus bas : un texte sans la moindre majuscule ne peut
+    // produire aucun nom propre, donc aucune entité de ce groupe.
+    pertinent: t => /\p{Lu}/u.test(t)
   },
   {
     // Seul : associé à d'autres labels il perd sa précision, et « address »
     // faisait monter le bruit du garde-fou à 0,47 (trop près du seuil).
     // Les adresses restent couvertes par le motif ADRESSE, déterministe.
     labels: ['date of birth'],
-    types: { 'date of birth': 'DATE_NAISSANCE' }
+    types: { 'date of birth': 'DATE_NAISSANCE' },
+    // Une date porte toujours au moins l'année : sans chiffre, rien à trouver.
+    // 65 % des unités d'un vrai mémoire sont dans ce cas — 54 % du texte.
+    pertinent: t => /\d/.test(t)
   },
   {
     // Catégories sensibles au sens RGPD (santé, origine) + contexte pro.
@@ -158,13 +164,32 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
   if (!groupesActifs.length) return [];
 
   const chunks = chunkText(text);
-  const total = chunks.length * groupesActifs.length;
+  // Total EXACT des passes qui seront RÉELLEMENT exécutées : compter
+  // `chunks × groupes` inclurait celles que `pertinent` va sauter, et la barre
+  // de progression n'atteindrait jamais 100 %.
+  let total = 0;
+  for (const { text: c } of chunks) {
+    for (const g of groupesActifs) if (!g.pertinent || g.pertinent(c)) total++;
+  }
   const all = [];
   let done = 0;
 
   for (const { offset, text: chunk } of chunks) {
     const duChunk = [];
     for (const groupe of groupesActifs) {
+      // NE PAS PAYER UNE INFÉRENCE DONT ON JETTERA LE RÉSULTAT.
+      //
+      // `estPlausiblePourLeType` écarte déjà, APRÈS coup, les spans sans
+      // majuscule (noms propres) ou sans chiffre (date de naissance). Si le
+      // texte entier n'en contient aucun, la passe ne peut RIEN produire qui
+      // survive à ce filtre : on la saute. Zéro perte par construction — c'est
+      // la même règle, appliquée avant la dépense au lieu d'après.
+      //
+      // Mesuré sur un mémoire de 75 pages : le groupe « date de naissance »
+      // coûte AUTANT que le groupe identité (25,0 contre 25,4 ms/unité) alors
+      // qu'il n'a qu'un label — le coût suit la longueur du texte, pas le
+      // nombre de labels. Or 65 % des unités n'ont aucun chiffre.
+      if (groupe.pertinent && !groupe.pertinent(chunk)) continue;
       const spans = await glinerPipeline(chunk, groupe.labels);
       const seuil = groupe.seuil ?? GLINER_THRESHOLD;
       for (const s of spans || []) {

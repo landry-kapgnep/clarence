@@ -147,6 +147,15 @@ async function encodeImage(img) {
   const blob = await canvas.convertToBlob(useJpeg ? { type: "image/jpeg", quality: 0.82 } : { type: "image/png" });
   return { bytes: await blob.arrayBuffer(), jpeg: useJpeg };
 }
+var MARGE_DROITE = 2;
+var REDUCTION_MIN = 0.45;
+function tailleQuiTient(font, texte, taille, x, largeurPage) {
+  const dispo = largeurPage - x - MARGE_DROITE;
+  if (dispo <= 0) return taille;
+  const largeur = font.widthOfTextAtSize(texte, taille);
+  if (largeur <= dispo) return taille;
+  return Math.max(taille * (dispo / largeur), taille * REDUCTION_MIN);
+}
 async function parsePages(buffer) {
   const pdf = await getDocument({
     data: new Uint8Array(buffer.slice(0)),
@@ -214,7 +223,8 @@ async function reconstructPdf(buffer, opts = {}) {
         const text = sanitizeForWinAnsi(masked[i].text);
         if (!text) return;
         try {
-          pdfPage.drawText(text, { x: run.x, y: run.y, size: run.size, font });
+          const size = tailleQuiTient(font, text, run.size, run.x, page.width);
+          pdfPage.drawText(text, { x: run.x, y: run.y, size, font });
         } catch {
         }
       });
@@ -224,5 +234,6 @@ async function reconstructPdf(buffer, opts = {}) {
   return { buffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), mapping };
 }
 export {
-  reconstructPdf
+  reconstructPdf,
+  tailleQuiTient
 };

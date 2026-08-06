@@ -43,14 +43,20 @@ var GROUPES = [
     // structuré inchangé. Plus aucune fuite partielle sur les 7 documents.
     seuil: 0.38,
     labels: ["person", "company", "location"],
-    types: { person: "PER", company: "ORG", location: "LOC" }
+    types: { person: "PER", company: "ORG", location: "LOC" },
+    // Voir `pertinent` plus bas : un texte sans la moindre majuscule ne peut
+    // produire aucun nom propre, donc aucune entité de ce groupe.
+    pertinent: (t) => new RegExp("\\p{Lu}", "u").test(t)
   },
   {
     // Seul : associé à d'autres labels il perd sa précision, et « address »
     // faisait monter le bruit du garde-fou à 0,47 (trop près du seuil).
     // Les adresses restent couvertes par le motif ADRESSE, déterministe.
     labels: ["date of birth"],
-    types: { "date of birth": "DATE_NAISSANCE" }
+    types: { "date of birth": "DATE_NAISSANCE" },
+    // Une date porte toujours au moins l'année : sans chiffre, rien à trouver.
+    // 65 % des unités d'un vrai mémoire sont dans ce cas — 54 % du texte.
+    pertinent: (t) => /\d/.test(t)
   },
   {
     // Catégories sensibles au sens RGPD (santé, origine) + contexte pro.
@@ -79,12 +85,16 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
   const groupesActifs = GROUPES.filter((g) => typesDuGroupe(g).some((t) => !desactives.has(t)));
   if (!groupesActifs.length) return [];
   const chunks = chunkText(text);
-  const total = chunks.length * groupesActifs.length;
+  let total = 0;
+  for (const { text: c } of chunks) {
+    for (const g of groupesActifs) if (!g.pertinent || g.pertinent(c)) total++;
+  }
   const all = [];
   let done = 0;
   for (const { offset, text: chunk } of chunks) {
     const duChunk = [];
     for (const groupe of groupesActifs) {
+      if (groupe.pertinent && !groupe.pertinent(chunk)) continue;
       const spans = await glinerPipeline(chunk, groupe.labels);
       const seuil = groupe.seuil ?? GLINER_THRESHOLD;
       for (const s of spans || []) {
@@ -1731,7 +1741,7 @@ async function processFile() {
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Reconstruction du PDF\u2026");
       await ensureNER();
-      const { reconstructPdf } = await import("./pdf-reconstruct-AV5HDMYJ.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-C4FINZW2.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await chosenFile.arrayBuffer(), {
         nerPipeline: nerPipe,
