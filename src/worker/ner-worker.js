@@ -26,6 +26,9 @@ import { Gliner } from 'gliner';
 let moteur = null;
 let pipe = null;    // pipeline BERT (token-classification)
 let gliner = null;  // instance GLiNER
+// 'webgpu' ou 'wasm' — remonté à la popup avec le message `ready` : sans ça,
+// impossible de savoir si une lenteur vient d'un repli silencieux.
+let accelerateur = null;
 
 // Le découpeur de mots de GLiNER.js utilise /\w+(?:[-_]\w+)*|\S/g. En
 // JavaScript, \w ne couvre PAS les caractères accentués : « réunion » est
@@ -76,12 +79,27 @@ async function chargerModele(url) {
   return new Uint8Array(buf);
 }
 
-async function initGliner({ wasmPath, model, modelUrl }) {
+// WebGPU disponible ? Test de CAPACITÉ RÉELLE, pas de simple présence d'API :
+// `navigator.gpu` peut exister alors qu'aucun adaptateur n'est utilisable
+// (pilote sur liste noire, machine virtuelle, GPU désactivé). Demander
+// l'adaptateur est le seul test qui ne mente pas.
+//
+// Le cadrage (§8) chiffre ~1 utilisateur sur 3 sans WebGPU : le repli n'est pas
+// un cas limite, c'est un chemin nominal. Il doit être SILENCIEUX — jamais une
+// erreur visible.
+async function webgpuUtilisable() {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.gpu) return false;
+    return Boolean(await navigator.gpu.requestAdapter());
+  } catch { return false; }
+}
+
+async function construireGliner({ wasmPath, model, modelBytes, provider }) {
   const instance = new Gliner({
     tokenizerPath: model,
     onnxSettings: {
-      modelPath: await chargerModele(modelUrl),
-      executionProvider: 'wasm',
+      modelPath: modelBytes,
+      executionProvider: provider,
       // JAMAIS le CDN par défaut de la lib : MV3 interdit le code distant.
       wasmPaths: wasmPath,
       // Mesuré : le multi-thread n'apporte rien (923 ms contre 927 ms sur une
@@ -107,8 +125,32 @@ async function initGliner({ wasmPath, model, modelUrl }) {
     throw new Error('GLiNER.js : découpeur de mots introuvable, correction accents impossible');
   }
   decoupeur.whitespacePattern = DECOUPEUR_UNICODE;
+  return instance;
+}
 
-  gliner = instance;
+async function initGliner({ wasmPath, model, modelUrl }) {
+  // Le modèle n'est téléchargé/lu qu'UNE fois, même si le premier essai
+  // échoue : 183 Mo, on ne les repaie pas pour un repli.
+  const modelBytes = await chargerModele(modelUrl);
+
+  // WebGPU d'abord. `gliner` importe statiquement les trois runtimes ORT
+  // (cpu / webgpu / webgl), donc le code est déjà dans le bundle : basculer ne
+  // coûte qu'une option — mais le binaire JSEP doit être dans vendor/ (voir
+  // build.mjs), sinon l'init échoue et on retombe ici sans le savoir.
+  if (await webgpuUtilisable()) {
+    try {
+      gliner = await construireGliner({ wasmPath, model, modelBytes, provider: 'webgpu' });
+      accelerateur = 'webgpu';
+      return;
+    } catch (e) {
+      // Repli SILENCIEUX, chemin nominal pour ~1 utilisateur sur 3 (cadrage §8).
+      // On trace en console pour pouvoir diagnostiquer, sans rien montrer.
+      console.warn('[clarence] WebGPU indisponible, repli WASM :', e?.message || e);
+    }
+  }
+
+  gliner = await construireGliner({ wasmPath, model, modelBytes, provider: 'wasm' });
+  accelerateur = 'wasm';
 }
 
 async function initBert({ wasmPath, model }) {
@@ -137,7 +179,7 @@ self.addEventListener('message', async ev => {
   if (msg.type === 'init') {
     try {
       await init(msg);
-      self.postMessage({ type: 'ready', engine: moteur });
+      self.postMessage({ type: 'ready', engine: moteur, accelerateur });
     } catch (err) {
       // Échec signalé, jamais silencieux : la popup replie sur l'autre moteur,
       // et si les deux échouent elle le dit (principe anti-fausse-confiance).

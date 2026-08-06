@@ -37,6 +37,32 @@ déclarer un bug de livraison.
 
 ---
 
+## A0. WebGPU — À MESURER EN PRIORITÉ (spike du 05/08/2026)
+
+Le fournisseur d'exécution passe de `wasm` à **`webgpu`**, avec repli silencieux.
+Node ne peut pas le tester : **aucune** valeur de gain n'est connue tant que ce
+test n'est pas fait en vrai Chrome.
+
+1. Ouvrir la console du worker (DevTools de la popup → onglet Sources ou
+   Console). Au premier chargement du modèle, vérifier :
+   - **soit** rien (WebGPU actif) ;
+   - **soit** `[clarence] WebGPU indisponible, repli WASM : …` — le repli
+     fonctionne, mais on mesure alors la vitesse WASM, pas WebGPU.
+2. Confirmer l'accélérateur réellement retenu : le message `ready` du worker
+   porte désormais `accelerateur: 'webgpu' | 'wasm'`.
+3. **Chronométrer un vrai document long.** Référence à battre :
+   `Mémoire_MENAGER Valentine.pdf`, 75 pages — **5 min 45 en WASM**, mesuré le
+   05/08. Objectif produit fixé : **moins de 30 s**.
+4. Vérifier que le résultat est IDENTIQUE entre WebGPU et WASM (même nombre de
+   placeholders sur le même document) : un fournisseur d'exécution ne doit
+   jamais changer la détection. S'il la change, c'est un bug d'ORT à contourner,
+   pas une amélioration à garder.
+
+⚠️ `vendor/ort-wasm-simd-threaded.jsep.wasm` (20 Mo) est le binaire qui PORTE
+l'accélération. S'il manque, l'init WebGPU échoue et on retombe en WASM
+silencieusement — donc lent sans que rien ne l'indique. `build.mjs` échoue
+bruyamment s'il est introuvable.
+
 ## A. Ce que Node ne peut structurellement PAS attraper
 
 La catégorie la plus importante : chacun de ces bugs a été trouvé en vrai

@@ -65935,6 +65935,7 @@ var Gliner = class {
 var moteur = null;
 var pipe = null;
 var gliner = null;
+var accelerateur = null;
 var DECOUPEUR_UNICODE = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
 var CACHE_MODELES = "clarence-models";
 async function chargerModele(url2) {
@@ -65968,12 +65969,20 @@ async function chargerModele(url2) {
   await cache.put(url2, new Response(buf));
   return new Uint8Array(buf);
 }
-async function initGliner({ wasmPath, model, modelUrl }) {
+async function webgpuUtilisable() {
+  try {
+    if (typeof navigator === "undefined" || !navigator.gpu) return false;
+    return Boolean(await navigator.gpu.requestAdapter());
+  } catch {
+    return false;
+  }
+}
+async function construireGliner({ wasmPath, model, modelBytes, provider }) {
   const instance = new Gliner({
     tokenizerPath: model,
     onnxSettings: {
-      modelPath: await chargerModele(modelUrl),
-      executionProvider: "wasm",
+      modelPath: modelBytes,
+      executionProvider: provider,
       // JAMAIS le CDN par défaut de la lib : MV3 interdit le code distant.
       wasmPaths: wasmPath,
       // Mesuré : le multi-thread n'apporte rien (923 ms contre 927 ms sur une
@@ -65994,7 +66003,21 @@ async function initGliner({ wasmPath, model, modelUrl }) {
     throw new Error("GLiNER.js : d\xE9coupeur de mots introuvable, correction accents impossible");
   }
   decoupeur.whitespacePattern = DECOUPEUR_UNICODE;
-  gliner = instance;
+  return instance;
+}
+async function initGliner({ wasmPath, model, modelUrl }) {
+  const modelBytes = await chargerModele(modelUrl);
+  if (await webgpuUtilisable()) {
+    try {
+      gliner = await construireGliner({ wasmPath, model, modelBytes, provider: "webgpu" });
+      accelerateur = "webgpu";
+      return;
+    } catch (e) {
+      console.warn("[clarence] WebGPU indisponible, repli WASM :", e?.message || e);
+    }
+  }
+  gliner = await construireGliner({ wasmPath, model, modelBytes, provider: "wasm" });
+  accelerateur = "wasm";
 }
 async function initBert({ wasmPath, model }) {
   env.backends.onnx.wasm.wasmPaths = wasmPath;
@@ -66014,7 +66037,7 @@ self.addEventListener("message", async (ev) => {
   if (msg.type === "init") {
     try {
       await init(msg);
-      self.postMessage({ type: "ready", engine: moteur });
+      self.postMessage({ type: "ready", engine: moteur, accelerateur });
     } catch (err) {
       self.postMessage({ type: "error", message: String(err?.message || err) });
     }

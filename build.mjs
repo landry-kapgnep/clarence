@@ -42,7 +42,12 @@ const WASM = [
   // npm peut hisser ou imbriquer la dépendance selon l'arbre : on essaie les
   // deux emplacements plutôt que de coder en dur un résultat de hoisting.
   [['node_modules/gliner/node_modules/onnxruntime-web/dist',
-    'node_modules/onnxruntime-web/dist'], 'ort-wasm-simd-threaded.wasm']
+    'node_modules/onnxruntime-web/dist'], 'ort-wasm-simd-threaded.wasm'],
+  // Binaire JSEP : c'est LUI qui porte l'accélération WebGPU d'ORT 1.19. Sans
+  // lui, `executionProvider: 'webgpu'` échoue au démarrage et on retombe en
+  // WASM — donc silencieusement lent, sans que rien ne le signale.
+  [['node_modules/gliner/node_modules/onnxruntime-web/dist',
+    'node_modules/onnxruntime-web/dist'], 'ort-wasm-simd-threaded.jsep.wasm']
 ];
 for (const [dirs, f] of WASM) {
   const candidats = Array.isArray(dirs) ? dirs : [dirs];
