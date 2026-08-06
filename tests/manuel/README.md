@@ -59,10 +59,47 @@ exact du défaut d'internationalisation déjà connu, dans l'autre sens.
 | `1988-03-14`, `EMP-0012`, `Villetaneuse` | valeurs isolées sans contexte (ce que seul le zero-shot traite) | masquées |
 | `Réunion « stratégie » — cœur…` | caractères hors WinAnsi | ne fait pas planter la reconstruction |
 | `CLAUSE TYPE` (prose sur les données personnelles) | **P6** : un texte dont le SUJET est la donnée personnelle est le pire cas — son vocabulaire ressemble aux catégories cherchées | ⚠️ **cassé** : pronoms (`you`, `I`, `me`, `we`), rôles (`vendor`, `representative`, `candidate`) et noms communs (`name`, `address`, `consent`) masqués. Rien ici ne devrait l'être |
-| Image (figure 1) | ré-embarquement en mode « Préserver » (`ImageBitmap`, navigateur seulement) | image présente en « Préserver », absente en « Alléger » |
+| **Interligne 1,5** (page 3) | **P8** : le plus gros défaut de mise en page rencontré — seuil de paragraphe calibré sur la police et non sur l'interligne, donc un paragraphe par ligne | les 6 lignes forment UNE unité |
+| **Article 9** (page 3) | santé, poste, nationalité, établissement — le plus grave restant | ⚠️ non détectés, types **décochés par défaut** : c'est dit, pas caché |
+| **Tableau** (page 3) | en-têtes à préserver, cellules à masquer ; rendu à améliorer | ⚠️ `Ville` masqué : pas de marquage `structurel` côté PDF |
+| `OSCAR CRM`, `Scholaro` (page 3) | **P2ter** : produits tiers, ni technos ni entreprises reconnaissables | angle mort connu |
+| `99 Av. Jean Jaurès` (page 2) | **P2ter** : le motif ADRESSE ne couvrait pas la forme abrégée | masqué |
+| `Rose Fontaine` / « une rose ancienne » | propagation par composant **sensible à la casse** | le nom masqué, le nom commun préservé |
+| `jean dupont` (minuscules) | **limite assumée** du filtre de casse (PER/ORG/LIEU exigent une majuscule) | ⚠️ non détecté — témoin de la limite, pas un objectif |
+| Ligne longue → placeholder (page 1) | **P7** : le fragment sortait hors page, invisible ET perdu à la relecture | reste dans la page, entièrement extractible |
+| Image (figure 1) | **fond TRANSPARENT sur 200×200** : déclenche le chemin JPEG de `encodeImage` (bascule au-delà de 128×128), or le JPEG n'a pas d'alpha | ⚠️ le fond doit rester transparent, pas devenir noir |
 | Métadonnées du PDF | titre/auteur/sujet portent le nom de la candidate | sortie « Préserver » = pages **neuves**, rien n'est recopié |
 
-## Ce que le document montre aujourd'hui (04/08/2026)
+## Critère de clôture de la détection (posé le 05/08/2026)
+
+**Le dossier détection ne se ferme que lorsque ce fichier ressort correctement
+anonymisé.** C'est la vérité terrain INVERSÉE : chaque bloc est un piège connu,
+et le document n'a aucune vocation à être réaliste.
+
+Deux listes font foi (vérifiées par `tests/bench/.modeles/` pendant les
+séances, à industrialiser) :
+
+**DOIT DISPARAÎTRE (32)** — noms, emails, téléphones, handle, entreprises,
+patronymes difficiles, IBAN, BIC, carte, NIR, SIRET, INE, n° étudiant, réf.
+interne, IP, MAC, adresses (dont la forme abrégée « Av. »), dates FR et EN,
+cellules nues, `Rose Fontaine`.
+
+**DOIT SURVIVRE (18)** — technos, `BUT`, `IUT`, `innovante` (mot recollé),
+« une rose ancienne » (nom commun, casse), en-têtes de tableau, titres de
+section, `483 921 657` (le piège SIREN/téléphone).
+
+### État mesuré au 05/08/2026 : 1 fuite, 3 sur-masquages sur 50 pièges
+
+| Cas | Nature | Cause mesurée |
+|---|---|---|
+| `EMP-0012` | **fuite** | Référence interne **sans libellé** : le motif REFERENCE exige « Réf. »/« Matricule » adjacent, et la couche contextuelle ne la voit pas. Dans le tableau elle est même avalée par un span `PER "Rousseau EMP"` à 0,81 |
+| `Ville` | sur-masquage | **En-tête de tableau PDF** — CSV/XLSX marquent les leurs `structurel`, le chemin PDF n'a aucun équivalent |
+| `SOMMAIRE` | sur-masquage | P2bis : titre en capitales sur unité courte, sorti `PER 0,57` |
+| `GitLab` | sur-masquage | `ORG 0,47`. **Comportement attendu** sans le profil « Développeur / Tech », qui existe exactement pour ça — à ne pas corriger dans le moteur |
+
+Traitement : **1,3 s** pour 3 pages en Node (sans le navigateur).
+
+## Ce que le document montrait au 04/08/2026 (historique)
 
 Consigné pour qu'une régression saute aux yeux — ce n'est pas un idéal, c'est
 l'état réel :
