@@ -39,13 +39,51 @@ export function forcedMasks(text, terms) {
   return out;
 }
 
+// Découpe en MOTS pour la comparaison des règles « ne jamais masquer ».
+// Comparer des sous-chaînes brutes ferait correspondre « MT » à l'intérieur de
+// « Amtrak » ; comparer des suites de mots ne le peut pas. `\p{L}\p{N}` couvre
+// les accents, indispensable ici (Quémerais, Vanmassenhove, Müller).
+const motsDe = t => (t || '').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+
+// `aiguille` apparaît-elle comme suite de mots ENTIERS dans `botte` ?
+function contientLesMots(botte, aiguille) {
+  if (!aiguille.length || aiguille.length > botte.length) return false;
+  for (let i = 0; i + aiguille.length <= botte.length; i++) {
+    if (aiguille.every((m, j) => botte[i + j] === m)) return true;
+  }
+  return false;
+}
+
 // Filtre post-sélection : retire les entités des types désactivés et celles
-// dont la valeur est dans la liste « ne jamais masquer ». Les masques MANUELS
-// (y compris forcés) sont intouchables : l'utilisateur a le dernier mot.
+// visées par « ne jamais masquer ». Les masques MANUELS (y compris forcés)
+// sont intouchables : l'utilisateur a le dernier mot.
+//
+// LA CORRESPONDANCE N'EST PLUS EXACTE, et c'est une correction de bug mesurée.
+// Sur un vrai mémoire, 14 termes saisis en « ne jamais masquer » n'en ont vu
+// que 6 appliqués. Cause : le modèle détecte « Joss Moorkens », « Rivas
+// Ginel », « Google Translate » comme entités ENTIÈRES, tandis que
+// l'utilisateur saisit le patronyme ou la marque seuls. Aucune égalité stricte
+// ne pouvait donc matcher, et la règle restait sans effet — sans que rien ne
+// le signale, ce qui est le pire cas : on croit sa consigne appliquée.
+//
+// La comparaison se fait donc par SUITE DE MOTS ENTIERS, dans les deux sens :
+//  - « Moorkens » épargne l'entité « Joss Moorkens » (le terme est dedans) ;
+//  - « Joss Moorkens » épargne l'entité « Moorkens » (l'entité est dedans).
+// Les frontières de mot interdisent les correspondances par accident :
+// « MT » n'épargne ni « Amtrak » ni « Smith ».
+//
+// RISQUE ASSUMÉ : garder « Paris » épargnerait aussi une personne nommée
+// « Paris Dupont ». C'est une conséquence directe d'une consigne explicite de
+// l'utilisateur, et « toujours masquer » reprend la main dessus (les masques
+// manuels passent avant, première condition du filtre).
 export function filterByRules(entities, { disabledTypes = new Set(), keepValues = [] } = {}) {
-  const keep = new Set((keepValues || []).map(v => (v || '').trim().toLowerCase()).filter(Boolean));
-  return entities.filter(e =>
-    e.source === 'manuel' ||
-    (!disabledTypes.has(e.type) && !keep.has(e.value.toLowerCase()))
-  );
+  const keep = (keepValues || [])
+    .map(v => motsDe(v))
+    .filter(m => m.length);
+  return entities.filter(e => {
+    if (e.source === 'manuel') return true;
+    if (disabledTypes.has(e.type)) return false;
+    const mots = motsDe(e.value);
+    return !keep.some(k => contientLesMots(mots, k) || contientLesMots(k, mots));
+  });
 }

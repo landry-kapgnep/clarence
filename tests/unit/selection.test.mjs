@@ -81,3 +81,57 @@ test('filterByRules : un masque MANUEL survit même si son type/valeur est filtr
   const out = filterByRules(es, { disabledTypes: new Set(['PERSONNALISE']), keepValues: ['lyon'] });
   assert.equal(out.length, 1, 'la volonté explicite de l\'utilisateur prime');
 });
+
+// --- « NE JAMAIS MASQUER » : correspondance par suite de MOTS, pas par égalité.
+//
+// Bug mesuré sur un vrai mémoire : 14 termes saisis, 6 appliqués seulement. Le
+// modèle détecte « Joss Moorkens » ou « Google Translate » en entier, tandis
+// que l'utilisateur saisit « Moorkens » ou « Google ». L'égalité stricte ne
+// pouvait rien matcher, et la consigne restait sans effet SANS QUE RIEN NE LE
+// SIGNALE — on croit sa règle appliquée alors qu'elle ne l'est pas.
+const ent = (value, type = 'PER', source = 'ner') =>
+  ({ type, value, start: 0, end: value.length, source });
+
+test('un terme gardé épargne l\'entité qui le CONTIENT', () => {
+  const out = filterByRules([ent('Joss Moorkens')], { keepValues: ['Moorkens'] });
+  assert.deepEqual(out, []);
+});
+
+test('un terme gardé épargne l\'entité CONTENUE dedans', () => {
+  // L'utilisateur saisit le nom complet, le modèle n'a détecté que le patronyme.
+  const out = filterByRules([ent('Moorkens')], { keepValues: ['Joss Moorkens'] });
+  assert.deepEqual(out, []);
+});
+
+test('la correspondance porte sur des MOTS ENTIERS, jamais des fragments', () => {
+  // Sans frontière de mot, « MT » épargnerait « Amtrak » et « Smith » — et le
+  // sur-masquage deviendrait du SOUS-masquage silencieux.
+  const gardes = filterByRules(
+    [ent('Amtrak', 'ORG'), ent('Smith'), ent('MT', 'ORG')],
+    { keepValues: ['MT'] }
+  ).map(e => e.value);
+  assert.deepEqual(gardes, ['Amtrak', 'Smith']);
+});
+
+test('la casse et les accents ne font pas échouer la règle', () => {
+  const out = filterByRules([ent('Sterenn QUÉMERAIS')], { keepValues: ['quémerais'] });
+  assert.deepEqual(out, []);
+});
+
+test('« toujours masquer » l\'emporte sur « ne jamais masquer »', () => {
+  // Garde-fou du risque assumé : garder « Paris » épargnerait « Paris Dupont ».
+  // Un masque manuel reprend la main — l'utilisateur a le dernier mot.
+  const out = filterByRules(
+    [{ ...ent('Paris Dupont'), source: 'manuel' }],
+    { keepValues: ['Paris'] }
+  );
+  assert.equal(out.length, 1);
+});
+
+test('un terme gardé ne désactive pas les entités SANS RAPPORT', () => {
+  const gardes = filterByRules(
+    [ent('Joss Moorkens'), ent('Sterenn Quémerais')],
+    { keepValues: ['Moorkens'] }
+  ).map(e => e.value);
+  assert.deepEqual(gardes, ['Sterenn Quémerais']);
+});

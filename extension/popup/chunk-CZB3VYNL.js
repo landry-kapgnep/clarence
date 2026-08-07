@@ -4085,11 +4085,22 @@ function forcedMasks(text, terms) {
   }
   return out;
 }
+var motsDe = (t) => (t || "").toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+function contientLesMots(botte, aiguille) {
+  if (!aiguille.length || aiguille.length > botte.length) return false;
+  for (let i = 0; i + aiguille.length <= botte.length; i++) {
+    if (aiguille.every((m, j) => botte[i + j] === m)) return true;
+  }
+  return false;
+}
 function filterByRules(entities, { disabledTypes = /* @__PURE__ */ new Set(), keepValues = [] } = {}) {
-  const keep = new Set((keepValues || []).map((v) => (v || "").trim().toLowerCase()).filter(Boolean));
-  return entities.filter(
-    (e) => e.source === "manuel" || !disabledTypes.has(e.type) && !keep.has(e.value.toLowerCase())
-  );
+  const keep = (keepValues || []).map((v) => motsDe(v)).filter((m) => m.length);
+  return entities.filter((e) => {
+    if (e.source === "manuel") return true;
+    if (disabledTypes.has(e.type)) return false;
+    const mots = motsDe(e.value);
+    return !keep.some((k) => contientLesMots(mots, k) || contientLesMots(k, mots));
+  });
 }
 
 // src/engine/masking.js
