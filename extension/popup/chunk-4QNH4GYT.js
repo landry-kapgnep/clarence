@@ -18,7 +18,7 @@ function meriteUnePasseContextuelle(text) {
   return new RegExp("\\p{L}{2}", "u").test(text) || DATE_NUE.test(text);
 }
 var VAGUE = 24;
-async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes, signal) {
+async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes, signal, intitules = /* @__PURE__ */ new Set()) {
   const cache = /* @__PURE__ */ new Map();
   const parUnite = new Array(units.length);
   let faits = 0;
@@ -33,11 +33,7 @@ async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, 
       const indice = i;
       vague.push(cache.get(text).then((entites) => {
         const base = ranges[indice].start;
-        parUnite[indice] = entites.map((e) => ({
-          ...e,
-          start: e.start + base,
-          end: e.end + base
-        }));
+        parUnite[indice] = entites.filter((e) => !(e.start === 0 && intitules.has(e.value))).map((e) => ({ ...e, start: e.start + base, end: e.end + base }));
       }));
     }
     await Promise.all(vague);
@@ -62,11 +58,11 @@ function joinWithSentinel(units) {
   }
   return { combined, ranges };
 }
-async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre } = {}) {
+async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre, intitules } = {}) {
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
-  let nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal) : [];
+  let nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal, new Set(intitules || [])) : [];
   if (arbitre && nerEntities.length) {
     verifierAnnulation(signal);
     nerEntities = await arbitre(nerEntities);

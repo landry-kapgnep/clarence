@@ -4,6 +4,7 @@ import {
   applyMask,
   extractTextUnits,
   groupIntoLines,
+  intitulesRetenus,
   isLineWrapHyphen,
   marquerIntitules,
   median,
@@ -12,7 +13,7 @@ import {
   ressembleAUnIntitule,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-RHL3QVTN.js";
+} from "./chunk-TFRVDJ4U.js";
 import "./chunk-PIRHQTI4.js";
 export {
   HEADING_SIZE_RATIO,
@@ -20,6 +21,7 @@ export {
   applyMask,
   extractTextUnits,
   groupIntoLines,
+  intitulesRetenus,
   isLineWrapHyphen,
   marquerIntitules,
   median,

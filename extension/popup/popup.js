@@ -1312,7 +1312,7 @@ var FILE_TYPES = {
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-Y6OCDFVC.js"), outExt: ".md" },
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-4W2IMW43.js"), outExt: ".md" },
   // Images : metadataOnly → processFile() court-circuite le pipeline de
   // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
   // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
@@ -1854,7 +1854,7 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-D6YNTZ26.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-AMI4R3OK.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await source.arrayBuffer(), {
         signal,
@@ -1882,9 +1882,9 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-Y6CXQB6V.js");
+    const { anonymizeUnits } = await import("./anonymize-units-DUNZMMJE.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
-    const { units } = await adapter.extractTextUnits(input);
+    const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
       fileSetStatus("Aucun texte \xE0 analyser dans ce fichier.", "error");
       return;
@@ -1897,6 +1897,7 @@ async function processFile() {
       nerPipeline: nerPipe,
       nerDetect: contextualDetector(),
       arbitre: arbitreContextuel(),
+      intitules,
       onProgress: nerProgress,
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte

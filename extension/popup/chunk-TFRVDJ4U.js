@@ -31756,6 +31756,7 @@ async function parseStructure(buffer) {
     disableFontFace: true
   }).promise;
   const units = [];
+  const intitules = /* @__PURE__ */ new Set();
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
     const textContent = await page.getTextContent();
@@ -31766,20 +31767,30 @@ async function parseStructure(buffer) {
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
       if (!lines.length) continue;
+      for (const l of lines) {
+        const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
+        if (!titre && ressembleAUnIntitule(l.text)) intitules.add(l.text.trim());
+      }
       for (const p of groupIntoParagraphs(lines, dominantSize)) {
         units.push({ id: `page${pageNum}#para${paraIndex++}`, text: p.text, isHeading: p.isHeading });
       }
     }
   }
+  units.intitules = intitulesRetenus(intitules);
   return units;
 }
-var PONCTUATION_PHRASE = /[.!?,;]/;
+var PONCTUATION_PHRASE = /[.!?,;:]/;
+var NUMERO_DE_RUBRIQUE = /\s+\d{1,2}$/;
 function ressembleAUnIntitule(texte) {
   const t = (texte || "").trim();
   if (!t || PONCTUATION_PHRASE.test(t)) return false;
   if (t.split(/\s+/).length > 3) return false;
   if (!new RegExp("\\p{L}", "u").test(t)) return false;
+  if (/\d/.test(t.replace(NUMERO_DE_RUBRIQUE, ""))) return false;
   return t === t.toUpperCase();
+}
+function intitulesRetenus(candidats) {
+  return candidats.size >= 2 ? [...candidats] : [];
 }
 function marquerIntitules(units) {
   const candidats = units.filter((u) => !u.isHeading && ressembleAUnIntitule(u.text));
@@ -31788,8 +31799,14 @@ function marquerIntitules(units) {
   return units;
 }
 async function extractTextUnits(buffer) {
-  const structured = marquerIntitules(await parseStructure(buffer));
-  return { units: structured.map(({ id, text, structurel }) => ({ id, text, structurel })) };
+  const structured = await parseStructure(buffer);
+  marquerIntitules(structured);
+  return {
+    units: structured.map(({ id, text, structurel }) => ({ id, text, structurel })),
+    // Transmis à anonymizeUnits : permet d'écarter un intitulé même quand le
+    // regroupement l'a noyé dans un paragraphe plus long.
+    intitules: structured.intitules || []
+  };
 }
 async function applyMask(buffer, resultsById) {
   const structured = await parseStructure(buffer);
@@ -31815,6 +31832,7 @@ export {
   paragraphGapThreshold,
   splitIntoColumns,
   ressembleAUnIntitule,
+  intitulesRetenus,
   marquerIntitules,
   extractTextUnits,
   applyMask,

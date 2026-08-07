@@ -258,6 +258,9 @@ async function parseStructure(buffer) {
   }).promise;
 
   const units = [];
+  // Intitulés repérés AU NIVEAU DE LA LIGNE, avant le regroupement en
+  // paragraphes — voir `relevesDesIntitules` pour le pourquoi.
+  const intitules = new Set();
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
     const textContent = await page.getTextContent();
@@ -275,11 +278,17 @@ async function parseStructure(buffer) {
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
       if (!lines.length) continue;
+      // Relevé AVANT le regroupement : c'est tout l'objet du mécanisme.
+      for (const l of lines) {
+        const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
+        if (!titre && ressembleAUnIntitule(l.text)) intitules.add(l.text.trim());
+      }
       for (const p of groupIntoParagraphs(lines, dominantSize)) {
         units.push({ id: `page${pageNum}#para${paraIndex++}`, text: p.text, isHeading: p.isHeading });
       }
     }
   }
+  units.intitules = intitulesRetenus(intitules);
   return units;
 }
 
@@ -318,14 +327,62 @@ async function parseStructure(buffer) {
 // dans le corps du texte (bloc de signature, liste d'auteurs) ne serait plus
 // masqué automatiquement. Le profil d'identité et « toujours masquer » le
 // forcent toujours, eux.
-const PONCTUATION_PHRASE = /[.!?,;]/;
+// Le deux-points est INCLUS : c'est le séparateur libellé/valeur. Sans lui,
+// « BIC : AGRIFRPP882 », « SSN: 123-45-6789 » et « DNI: 12345678Z » passaient
+// pour des intitulés de rubrique — or ce sont des identifiants, et les classer
+// ainsi ouvrait la porte à leur DÉMASQUAGE. Trou trouvé en relisant la liste
+// produite, pas en théorie.
+const PONCTUATION_PHRASE = /[.!?,;:]/;
+
+// Un numéro de rubrique final est légitime (« ANNEXE 2 ») ; des chiffres
+// ailleurs trahissent un identifiant (« EMP-0012 »).
+//
+// DEUX CHIFFRES AU PLUS, et c'est un test qui l'a imposé : sans cette borne,
+// « TEL 0612345678 » voyait son numéro pris pour une numérotation de section et
+// passait pour un intitulé. Une section va rarement au-delà de 99 ; un
+// identifiant, presque toujours.
+const NUMERO_DE_RUBRIQUE = /\s+\d{1,2}$/;
 
 export function ressembleAUnIntitule(texte) {
   const t = (texte || '').trim();
   if (!t || PONCTUATION_PHRASE.test(t)) return false;
   if (t.split(/\s+/).length > 3) return false;
   if (!/\p{L}/u.test(t)) return false;
+  // Aucun chiffre hors numéro de rubrique final : un intitulé ne porte pas de
+  // matricule. « ANNEXE 2 » reste accepté, « EMP-0012 » est écarté.
+  if (/\d/.test(t.replace(NUMERO_DE_RUBRIQUE, ''))) return false;
   return t === t.toUpperCase();
+}
+
+// LE PROBLÈME QUE `marquerIntitules` NE PEUT PAS RÉSOUDRE SEUL.
+//
+// `marquerIntitules` n'épargne une unité que si l'unité ENTIÈRE est un
+// intitulé. Or `groupIntoParagraphs` recolle très souvent l'intitulé au texte
+// qui le suit : « SOMMAIRE » devient le début du paragraphe « SOMMAIRE
+// Introduction et contexte… », et la règle ne le voit plus. Mesuré : 6 unités
+// épargnées seulement, et `SOMMAIRE`, `ANNEXE`, `COORDONNÉES`, `INTERLIGNE`,
+// `CELLULES NUES`, `SPRACHEN` restaient tous masqués.
+//
+// PISTE ÉVIDENTE, MESURÉE ET REJETÉE : couper le paragraphe sur un intitulé.
+// Ça porte bien les unités épargnées de 6 à 16, mais le total masqué REMONTE
+// (69 → 70) et la composition empire — « Éléonore » et « Vaquier » ressortent
+// seuls, « IBAN » et « Montant » deviennent des lieux. Découper davantage
+// fragmente le document, et la fragmentation PDF fait monter le bruit au-dessus
+// du signal (P1bis). Voir le commentaire dans `groupIntoParagraphs`.
+//
+// LA VOIE RETENUE : ne pas toucher au découpage du tout. On relève les lignes
+// qui ressemblent à un intitulé AVANT le regroupement, et on transmet cette
+// liste à l'aval. Les unités gardent exactement le contexte qu'elles avaient ;
+// seules les entités qui tombent EXACTEMENT sur un intitulé, EN TÊTE de leur
+// unité, sont écartées (voir anonymize-units.js).
+//
+// La double condition est le garde-fou : « en tête de l'unité » interdit
+// d'écarter un nom qui apparaîtrait en plein texte, et « exactement » interdit
+// d'emporter les mots voisins.
+export function intitulesRetenus(candidats) {
+  // Même règle des « au moins deux » que marquerIntitules : un mot isolé en
+  // capitales n'est pas un motif de mise en page, et pourrait être un patronyme.
+  return candidats.size >= 2 ? [...candidats] : [];
 }
 
 // Marque `structurel` les unités qui forment le squelette du document.
@@ -341,8 +398,14 @@ export function marquerIntitules(units) {
 // { units: [{id, text, structurel?}] } — `isHeading` n'est pas exposé (interface
 // commune aux 4 adaptateurs), applyMask le re-dérive via parseStructure.
 export async function extractTextUnits(buffer) {
-  const structured = marquerIntitules(await parseStructure(buffer));
-  return { units: structured.map(({ id, text, structurel }) => ({ id, text, structurel })) };
+  const structured = await parseStructure(buffer);
+  marquerIntitules(structured);
+  return {
+    units: structured.map(({ id, text, structurel }) => ({ id, text, structurel })),
+    // Transmis à anonymizeUnits : permet d'écarter un intitulé même quand le
+    // regroupement l'a noyé dans un paragraphe plus long.
+    intitules: structured.intitules || []
+  };
 }
 
 // resultsById : Map<id, { maskedText }>. Ignore le buffer PDF d'origine pour

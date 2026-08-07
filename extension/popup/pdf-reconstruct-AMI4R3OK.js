@@ -8,16 +8,18 @@ import {
   OPS,
   getDocument,
   groupIntoLines,
+  intitulesRetenus,
   isLineWrapHyphen,
   marquerIntitules,
   median,
   needsSpace,
   paragraphGapThreshold,
+  ressembleAUnIntitule,
   splitIntoColumns
-} from "./chunk-RHL3QVTN.js";
+} from "./chunk-TFRVDJ4U.js";
 import {
   anonymizeUnits
-} from "./chunk-4EP5VF67.js";
+} from "./chunk-4QNH4GYT.js";
 import {
   verifierAnnulation
 } from "./chunk-MOMSVBUU.js";
@@ -167,6 +169,7 @@ async function parsePages(buffer, signal) {
     disableFontFace: true
   }).promise;
   const pages = [];
+  const intitulesVus = /* @__PURE__ */ new Set();
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     verifierAnnulation(signal);
     const page = await pdf.getPage(pageNum);
@@ -179,6 +182,10 @@ async function parsePages(buffer, signal) {
     let paraIdx = 0;
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
+      for (const l of lines) {
+        const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
+        if (!titre && ressembleAUnIntitule(l.text)) intitulesVus.add(l.text.trim());
+      }
       for (const para of paragraphsWithParts(lines, dominantSize)) {
         const unit = paragraphToRuns(para, `page${pageNum}#para${paraIdx++}`);
         unit.isHeading = para.isHeading;
@@ -187,6 +194,7 @@ async function parsePages(buffer, signal) {
     }
     pages.push({ pageNum, width: viewport.width, height: viewport.height, units, images });
   }
+  pages.intitules = intitulesRetenus(intitulesVus);
   return pages;
 }
 async function reconstructPdf(buffer, opts = {}) {
@@ -203,6 +211,7 @@ async function reconstructPdf(buffer, opts = {}) {
     disabledTypes: opts.disabledTypes,
     keepValues: opts.keepValues,
     arbitre: opts.arbitre,
+    intitules: pages.intitules,
     signal
   });
   const entitiesById = new Map(results.map((r) => [r.id, r.entities || []]));

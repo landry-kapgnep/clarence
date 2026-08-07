@@ -89,7 +89,7 @@ function meriteUnePasseContextuelle(text) {
 // enfler la mémoire.
 const VAGUE = 24;
 
-async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes, signal) {
+async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, disabledTypes, signal, intitules = new Set()) {
   // Le cache mémorise la PROMESSE, pas le résultat : deux unités au texte
   // identique lancées dans la même vague se partagent une seule inférence.
   // Avec la valeur résolue, elles rateraient toutes les deux le cache et
@@ -116,9 +116,18 @@ async function detectNerPerUnit(units, ranges, nerPipeline, onProgress, detect, 
       const indice = i;
       vague.push(cache.get(text).then(entites => {
         const base = ranges[indice].start;
-        parUnite[indice] = entites.map(e => ({
-          ...e, start: e.start + base, end: e.end + base
-        }));
+        parUnite[indice] = entites
+          // INTITULÉ NOYÉ DANS UN PARAGRAPHE. « SOMMAIRE » recollé au texte qui
+          // suit n'est plus une unité à lui seul, donc `structurel` ne peut plus
+          // l'épargner — mais il reste EN TÊTE de son unité. Deux conditions,
+          // toutes deux nécessaires :
+          //   - l'entité commence à l'offset 0 de l'unité : un nom cité en plein
+          //     texte n'est jamais concerné ;
+          //   - sa valeur est EXACTEMENT un intitulé relevé : on n'emporte pas
+          //     les mots voisins (« ÉTAT CIVIL Née » ≠ « ÉTAT CIVIL », donc
+          //     conservé).
+          .filter(e => !(e.start === 0 && intitules.has(e.value)))
+          .map(e => ({ ...e, start: e.start + base, end: e.end + base }));
       }));
     }
 
@@ -174,14 +183,14 @@ function joinWithSentinel(units) {
 // signal (optionnel) : AbortSignal. Un traitement abandonné doit s'ARRÊTER, pas
 // seulement voir son résultat ignoré — sinon il continue d'occuper le modèle et
 // le run suivant attend derrière lui (voir src/engine/annulation.js).
-export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre } = {}) {
+export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre, intitules } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
   // Structuré = regex FR + téléphones internationaux (libphonenumber).
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
   let nerEntities = nerPipeline
-    ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal)
+    ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal, new Set(intitules || []))
     : [];
 
   // `arbitre` (optionnel) : seconde opinion du modèle sur les entités qu'il

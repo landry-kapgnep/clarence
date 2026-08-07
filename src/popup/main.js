@@ -1372,7 +1372,7 @@ async function processFile() {
 
     // await : sans effet sur les 3 adaptateurs synchrones (CSV/XLSX/DOCX),
     // indispensable pour PDF (pdfjs-dist est intrinsèquement asynchrone).
-    const { units } = await adapter.extractTextUnits(input);
+    const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
       fileSetStatus('Aucun texte à analyser dans ce fichier.', 'error');
       return;
@@ -1386,6 +1386,7 @@ async function processFile() {
       nerPipeline: nerPipe,
       nerDetect: contextualDetector(),
       arbitre: arbitreContextuel(),
+      intitules,
       onProgress: nerProgress,
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte

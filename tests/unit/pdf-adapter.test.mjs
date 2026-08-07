@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { extractTextUnits, applyMask, stripMetadata, groupIntoLines, isLineWrapHyphen, paragraphGapThreshold } from '../../src/files/pdf-adapter.js';
-import { ressembleAUnIntitule, marquerIntitules } from '../../src/files/pdf-adapter.js';
+import { ressembleAUnIntitule, marquerIntitules, intitulesRetenus } from '../../src/files/pdf-adapter.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
 
 // Items pdfjs synthétiques (transform = [a,b,c,d,x,y]) : reproduit de façon
@@ -270,4 +270,29 @@ test('un seul intitulé dans tout le document : on ne neutralise RIEN', () => {
   const units = [{ id: 'a', text: 'DUPONT', isHeading: false }, { id: 'b', text: 'Texte courant ici.' }];
   marquerIntitules(units);
   assert.equal(units[0].structurel, undefined);
+});
+
+// --- Un IDENTIFIANT n'est jamais un intitulé. Trou trouvé en relisant la liste
+// réellement produite : « BIC : AGRIFRPP882 », « SSN: 123-45-6789 »,
+// « DNI: 12345678Z » et « EMP-0012 » passaient la règle (≤ 3 mots, capitales,
+// pas de ponctuation de phrase). Les classer ainsi ouvrait la porte à leur
+// DÉMASQUAGE — exactement l'inverse du but.
+test('un identifiant ne passe JAMAIS pour un intitulé de rubrique', () => {
+  for (const t of ['BIC : AGRIFRPP882', 'MAC : 3C:5A:B4:0F:11:22',
+                   'SSN: 123-45-6789', 'DNI: 12345678Z', 'EMP-0012',
+                   'IBAN: FR76 3000', 'TEL 0612345678']) {
+    assert.equal(ressembleAUnIntitule(t), false, t);
+  }
+});
+
+test('un numéro de rubrique final reste accepté', () => {
+  // « ANNEXE 2 » est un vrai intitulé ; le chiffre y numérote la section.
+  assert.equal(ressembleAUnIntitule('ANNEXE 2'), true);
+  assert.equal(ressembleAUnIntitule('PARTIE 3'), true);
+});
+
+test('intitulesRetenus applique la règle des « au moins deux »', () => {
+  assert.deepEqual(intitulesRetenus(new Set(['SOMMAIRE'])), []);
+  assert.deepEqual(intitulesRetenus(new Set(['SOMMAIRE', 'ANNEXE'])).sort(),
+    ['ANNEXE', 'SOMMAIRE']);
 });
