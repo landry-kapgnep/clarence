@@ -312,3 +312,62 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
     })
     .sort((a, b) => a.start - b.start);
 }
+
+// --- ARBITRAGE DES FAUX POSITIFS -----------------------------------------
+//
+// LE PROBLÈME QU'IL TRAITE. Le label « person » désigne toute expression qui
+// RÉFÈRE à une personne, pas seulement un nom : le modèle sort donc
+// « Analyste », « Ingénieure », « Second candidat », « Poste occupé ». Il a
+// raison linguistiquement, c'est notre besoin qui porte sur les entités
+// NOMMÉES. Aucun seuil ne les écarte — mesuré, ces faux positifs sortent
+// AU-DESSUS de vraies entités (« Réunion » 0,961 contre « Villetaneuse »
+// 0,699).
+//
+// POURQUOI UNE PASSE SÉPARÉE, et pas des labels ajoutés au groupe identité :
+// les labels se CONCURRENCENT dans un même appel (gotcha documenté). Mis face
+// à « person », un label « job title » sort écrasé à 0,000 et ne sert à rien.
+// Seul, il répond.
+//
+// CE QUE ÇA COÛTE. Une inférence par VALEUR DISTINCTE, pas par occurrence, et
+// sur un texte très court. Les appels partent en parallèle donc le
+// regroupement en lots les rassemble (voir src/engine/batch.js).
+//
+// CE QUE ÇA NE TOUCHE JAMAIS : la couche déterministe. On n'arbitre que les
+// entités venues du modèle (`source === 'ner'`) et de type nom propre. Un IBAN
+// validé mathématiquement ne se discute pas.
+export const LABELS_LEURRE = ['job title', 'section heading', 'common noun', 'skill or hobby'];
+
+// Mesuré sur 21 faux positifs et 15 vraies entités du document piégé :
+// 6 faux positifs écartés, AUCUNE vraie entité perdue. Le gain est modeste
+// mais il est gratuit en risque — c'est ce qui l'a fait retenir.
+export async function arbitrerFauxPositifs(entities, glinerPipeline) {
+  if (!glinerPipeline || !entities?.length) return entities || [];
+  const labelsPII = GROUPES[0].labels;
+  const tous = [...labelsPII, ...LABELS_LEURRE];
+
+  const candidats = [...new Set(
+    entities.filter(e => e.source === 'ner' && TYPES_NOMS_PROPRES.has(e.type)).map(e => e.value)
+  )];
+  if (!candidats.length) return entities;
+
+  const rejete = new Set();
+  await Promise.all(candidats.map(async valeur => {
+    let spans;
+    try {
+      spans = await glinerPipeline(valeur, tous);
+    } catch {
+      return; // en cas d'échec on GARDE l'entité : ne jamais démasquer sur une erreur
+    }
+    let pii = 0, leurre = 0;
+    for (const s of spans || []) {
+      // Seul le span qui couvre TOUT le candidat compte : un fragment ne dit
+      // rien de la nature de l'expression entière.
+      if ((s.spanText || '').trim() !== valeur.trim()) continue;
+      if (LABELS_LEURRE.includes(s.label)) leurre = Math.max(leurre, s.score);
+      else pii = Math.max(pii, s.score);
+    }
+    if (leurre > pii) rejete.add(valeur);
+  }));
+
+  return entities.filter(e => !rejete.has(e.value));
+}

@@ -62,11 +62,15 @@ function joinWithSentinel(units) {
   }
   return { combined, ranges };
 }
-async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal } = {}) {
+async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre } = {}) {
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
-  const nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal) : [];
+  let nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal) : [];
+  if (arbitre && nerEntities.length) {
+    verifierAnnulation(signal);
+    nerEntities = await arbitre(nerEntities);
+  }
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, /* @__PURE__ */ new Set());
   const active = filterByRules(selected, {

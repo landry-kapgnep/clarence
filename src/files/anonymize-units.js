@@ -174,15 +174,26 @@ function joinWithSentinel(units) {
 // signal (optionnel) : AbortSignal. Un traitement abandonné doit s'ARRÊTER, pas
 // seulement voir son résultat ignoré — sinon il continue d'occuper le modèle et
 // le run suivant attend derrière lui (voir src/engine/annulation.js).
-export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal } = {}) {
+export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
   // Structuré = regex FR + téléphones internationaux (libphonenumber).
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
-  const nerEntities = nerPipeline
+  let nerEntities = nerPipeline
     ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal)
     : [];
+
+  // `arbitre` (optionnel) : seconde opinion du modèle sur les entités qu'il
+  // vient de proposer, pour écarter « Analyste », « Poste occupé » et consorts.
+  // Injecté par l'appelant plutôt que branché ici, parce qu'il est propre à
+  // GLiNER : le moteur BERT de repli n'a pas de labels à interroger. Appliqué
+  // AVANT la fusion, donc uniquement au contextuel — le déterministe n'est
+  // jamais soumis à l'avis d'un modèle.
+  if (arbitre && nerEntities.length) {
+    verifierAnnulation(signal);
+    nerEntities = await arbitre(nerEntities);
+  }
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, new Set());
   const active = filterByRules(selected, {

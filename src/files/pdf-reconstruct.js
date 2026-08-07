@@ -286,6 +286,7 @@ export async function reconstructPdf(buffer, opts = {}) {
     forceTerms: opts.forceTerms,
     disabledTypes: opts.disabledTypes,
     keepValues: opts.keepValues,
+    arbitre: opts.arbitre,
     signal
   });
   const entitiesById = new Map(results.map(r => [r.id, r.entities || []]));

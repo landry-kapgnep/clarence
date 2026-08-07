@@ -4,7 +4,7 @@
 import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
-import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl } from '../engine/gliner.js';
+import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
 import { createBatchedPipeline } from '../engine/batch.js';
 import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
 import { mergeEntities } from '../engine/merge.js';
@@ -391,6 +391,15 @@ function purgerWorkerNer(raison) {
 // inférence), pas seulement à filtrer après coup.
 function contextualDetector() {
   return nerEngine === 'gliner' ? detectGliner : detectNER;
+}
+
+// Seconde opinion du modèle sur ses propres propositions, pour écarter
+// « Analyste », « Poste occupé » et consorts (voir arbitrerFauxPositifs).
+// UNIQUEMENT avec GLiNER : le moteur BERT de repli n'a pas de labels à
+// interroger, on renvoie alors `undefined` et l'orchestrateur passe outre.
+function arbitreContextuel() {
+  if (nerEngine !== 'gliner' || !nerPipe) return undefined;
+  return entities => arbitrerFauxPositifs(entities, nerPipe);
 }
 
 // Même chose pour le mode texte, où le pipeline est déjà connu.
@@ -1331,6 +1340,7 @@ async function processFile() {
         signal,
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
+      arbitre: arbitreContextuel(),
         onProgress: nerProgress,
         // Manquait entièrement : le PDF reconstruit ignorait la case
         // Pseudonymes, contrairement aux autres formats. Toujours [TYPE_N].
@@ -1375,6 +1385,7 @@ async function processFile() {
       signal,
       nerPipeline: nerPipe,
       nerDetect: contextualDetector(),
+      arbitre: arbitreContextuel(),
       onProgress: nerProgress,
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte

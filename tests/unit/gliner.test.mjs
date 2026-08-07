@@ -2,7 +2,7 @@
 // Pipeline SIMULÉ (comme ner-chunk.test.mjs) — aucun modèle chargé ici.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectGliner, GROUPES, GLINER_THRESHOLD } from '../../src/engine/gliner.js';
+import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs } from '../../src/engine/gliner.js';
 import { mergeEntities } from '../../src/engine/merge.js';
 import { maskText } from '../../src/engine/masking.js';
 
@@ -379,4 +379,81 @@ test('le seuil ne doit PAS descendre au point de masquer un titre en capitales',
   const identite = GROUPES.find(g => g.labels.includes('person'));
   assert.ok(identite.seuil > 0.42,
     'sous 0,42, « CERTIFICAT DE SCOLARITE » et « SOMMAIRE » deviennent des faux positifs mesurés au banc (préservé 98 % → 93 %)');
+});
+
+// --- ARBITRAGE DES FAUX POSITIFS. Le label « person » désigne toute expression
+// qui RÉFÈRE à une personne : le modèle sort « Analyste », « Poste occupé ».
+// Une passe SÉPARÉE (les labels se concurrencent dans un même appel) demande
+// une seconde opinion sur chaque valeur proposée.
+//
+// Enjeu de sûreté : cette fonction RETIRE des masques. Toute erreur y est une
+// fuite, d'où la densité de tests.
+
+// Pipeline simulé : rend les scores demandés pour le span couvrant tout le texte.
+const pipeArbitre = table => async (texte, labels) =>
+  Object.entries(table[texte] || {})
+    .filter(([label]) => labels.includes(label))
+    .map(([label, score]) => ({ label, score, spanText: texte, start: 0, end: texte.length }));
+
+const entiteNer = (value, type = 'PER') => ({ value, type, source: 'ner', start: 0, end: value.length });
+
+test('arbitrage : une expression que le leurre emporte est RETIRÉE', async () => {
+  const pipe = pipeArbitre({ Analyste: { person: 0.73, 'job title': 0.90 } });
+  const out = await arbitrerFauxPositifs([entiteNer('Analyste')], pipe);
+  assert.deepEqual(out, []);
+});
+
+test('arbitrage : un vrai nom est CONSERVÉ', async () => {
+  const pipe = pipeArbitre({ 'Amandine ROUSSEAU': { person: 0.92, 'job title': 0 } });
+  const out = await arbitrerFauxPositifs([entiteNer('Amandine ROUSSEAU')], pipe);
+  assert.equal(out.length, 1);
+});
+
+test('arbitrage : le DÉTERMINISTE n\'est JAMAIS soumis au modèle', async () => {
+  // Un IBAN validé par mod-97 ne se discute pas avec un modèle statistique.
+  // Le pipeline renvoie pourtant un verdict « leurre » écrasant : ignoré.
+  const pipe = pipeArbitre({ 'FR76 3000 6000 0112 3456 7890 189': { 'common noun': 0.99 } });
+  const iban = { value: 'FR76 3000 6000 0112 3456 7890 189', type: 'IBAN', source: 'regex' };
+  const out = await arbitrerFauxPositifs([iban], pipe);
+  assert.deepEqual(out, [iban]);
+});
+
+test('arbitrage : seuls les types NOM PROPRE sont arbitrés', async () => {
+  const pipe = pipeArbitre({ '1988-03-14': { 'common noun': 0.99 } });
+  const date = entiteNer('1988-03-14', 'DATE_NAISSANCE');
+  assert.deepEqual(await arbitrerFauxPositifs([date], pipe), [date]);
+});
+
+test('arbitrage : un échec du modèle CONSERVE l\'entité', async () => {
+  // Ne jamais démasquer sur une erreur : le repli sûr est de garder le masque.
+  const pipe = async () => { throw new Error('worker purgé'); };
+  const out = await arbitrerFauxPositifs([entiteNer('Analyste')], pipe);
+  assert.equal(out.length, 1);
+});
+
+test('arbitrage : un span PARTIEL ne compte pas', async () => {
+  // Le modèle peut renvoyer un fragment ; il ne dit rien de la nature de
+  // l'expression entière et ne doit pas décider à sa place.
+  const pipe = async (texte, labels) => labels.includes('common noun')
+    ? [{ label: 'common noun', score: 0.99, spanText: texte.slice(0, 4), start: 0, end: 4 }]
+    : [{ label: 'person', score: 0.5, spanText: texte, start: 0, end: texte.length }];
+  const out = await arbitrerFauxPositifs([entiteNer('Rose Fontaine')], pipe);
+  assert.equal(out.length, 1, 'un fragment ne doit pas faire démasquer le tout');
+});
+
+test('arbitrage : sans pipeline, tout est conservé tel quel', async () => {
+  const ents = [entiteNer('Analyste')];
+  assert.deepEqual(await arbitrerFauxPositifs(ents, null), ents);
+});
+
+test('arbitrage : une valeur n\'est jugée QU\'UNE fois même répétée', async () => {
+  let appels = 0;
+  const pipe = async (texte, labels) => {
+    appels++;
+    return labels.includes('job title') ? [{ label: 'job title', score: 0.9, spanText: texte, start: 0, end: texte.length }] : [];
+  };
+  const out = await arbitrerFauxPositifs(
+    [entiteNer('Analyste'), entiteNer('Analyste'), entiteNer('Analyste')], pipe);
+  assert.equal(appels, 1, 'une inférence par valeur DISTINCTE, pas par occurrence');
+  assert.deepEqual(out, []);
 });

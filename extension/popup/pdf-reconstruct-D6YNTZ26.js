@@ -17,7 +17,7 @@ import {
 } from "./chunk-RHL3QVTN.js";
 import {
   anonymizeUnits
-} from "./chunk-XOCSIZVV.js";
+} from "./chunk-4EP5VF67.js";
 import {
   verifierAnnulation
 } from "./chunk-MOMSVBUU.js";
@@ -202,6 +202,7 @@ async function reconstructPdf(buffer, opts = {}) {
     forceTerms: opts.forceTerms,
     disabledTypes: opts.disabledTypes,
     keepValues: opts.keepValues,
+    arbitre: opts.arbitre,
     signal
   });
   const entitiesById = new Map(results.map((r) => [r.id, r.entities || []]));

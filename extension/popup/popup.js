@@ -174,6 +174,33 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
     return true;
   }).sort((a, b) => a.start - b.start);
 }
+var LABELS_LEURRE = ["job title", "section heading", "common noun", "skill or hobby"];
+async function arbitrerFauxPositifs(entities, glinerPipeline) {
+  if (!glinerPipeline || !entities?.length) return entities || [];
+  const labelsPII = GROUPES[0].labels;
+  const tous = [...labelsPII, ...LABELS_LEURRE];
+  const candidats = [...new Set(
+    entities.filter((e) => e.source === "ner" && TYPES_NOMS_PROPRES.has(e.type)).map((e) => e.value)
+  )];
+  if (!candidats.length) return entities;
+  const rejete = /* @__PURE__ */ new Set();
+  await Promise.all(candidats.map(async (valeur) => {
+    let spans;
+    try {
+      spans = await glinerPipeline(valeur, tous);
+    } catch {
+      return;
+    }
+    let pii = 0, leurre = 0;
+    for (const s of spans || []) {
+      if ((s.spanText || "").trim() !== valeur.trim()) continue;
+      if (LABELS_LEURRE.includes(s.label)) leurre = Math.max(leurre, s.score);
+      else pii = Math.max(pii, s.score);
+    }
+    if (leurre > pii) rejete.add(valeur);
+  }));
+  return entities.filter((e) => !rejete.has(e.value));
+}
 
 // src/engine/pseudonyms.js
 var LOCALES = {
@@ -1100,6 +1127,10 @@ function purgerWorkerNer(raison) {
 function contextualDetector() {
   return nerEngine === "gliner" ? detectGliner : detectNER;
 }
+function arbitreContextuel() {
+  if (nerEngine !== "gliner" || !nerPipe) return void 0;
+  return (entities) => arbitrerFauxPositifs(entities, nerPipe);
+}
 function detectContextual(text, opts = {}) {
   if (!nerPipe) return [];
   return contextualDetector()(text, nerPipe, opts);
@@ -1823,12 +1854,13 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-UBYX37SJ.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-D6YNTZ26.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await source.arrayBuffer(), {
         signal,
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
+        arbitre: arbitreContextuel(),
         onProgress: nerProgress,
         // Manquait entièrement : le PDF reconstruit ignorait la case
         // Pseudonymes, contrairement aux autres formats. Toujours [TYPE_N].
@@ -1850,7 +1882,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-EHXVECZO.js");
+    const { anonymizeUnits } = await import("./anonymize-units-Y6CXQB6V.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -1864,6 +1896,7 @@ async function processFile() {
       signal,
       nerPipeline: nerPipe,
       nerDetect: contextualDetector(),
+      arbitre: arbitreContextuel(),
       onProgress: nerProgress,
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte

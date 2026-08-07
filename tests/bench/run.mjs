@@ -24,7 +24,8 @@ import { dirname, join, extname } from 'node:path';
 import { detectRegex } from '../../src/engine/regex-detect.js';
 import { detectPhonesIntl } from '../../src/engine/phone-intl.js';
 import {
-  detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, GLINER_VARIANTE, glinerModelUrl
+  detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, GLINER_VARIANTE, glinerModelUrl,
+  arbitrerFauxPositifs
 } from '../../src/engine/gliner.js';
 import { createBatchedPipeline } from '../../src/engine/batch.js';
 import { mergeEntities } from '../../src/engine/merge.js';
@@ -114,6 +115,10 @@ async function modeleLocal() {
   return fichier;
 }
 
+// L'arbitrage des faux positifs, exactement comme la popup le branche. Sans
+// lui, le banc noterait une détection plus bruyante que celle qu'on livre.
+const arbitreDuBanc = pipe => (pipe ? (ents => arbitrerFauxPositifs(ents, pipe)) : undefined);
+
 // --- Passage d'un document dans le pipeline RÉEL --------------------------
 // Le chemin fichier (CSV, PDF) passe par anonymizeUnits, exactement comme la
 // popup : c'est là que vivaient les bugs qui n'apparaissaient pas en texte.
@@ -142,6 +147,7 @@ async function anonymiser(fichier, glinerPipe) {
     const { buffer } = await reconstructPdf(new Uint8Array(readFileSync(chemin)).buffer, {
       nerPipeline: glinerPipe || null,
       nerDetect: detecter,
+      arbitre: arbitreDuBanc(glinerPipe),
       deps: { PDFDocument, StandardFonts }
     });
     return await texteDuPdf(buffer);
@@ -152,7 +158,8 @@ async function anonymiser(fichier, glinerPipe) {
     const { units } = await adapter.extractTextUnits(readFileSync(chemin, 'utf8'));
     const { results } = await anonymizeUnits(units, {
       nerPipeline: glinerPipe || null,
-      nerDetect: detecter
+      nerDetect: detecter,
+      arbitre: arbitreDuBanc(glinerPipe)
     });
     return results.map(r => r.maskedText).join('\n');
   }
