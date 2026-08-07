@@ -13,7 +13,8 @@ import {
   ressembleAUnIntitule,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-TFRVDJ4U.js";
+} from "./chunk-C47KMYBO.js";
+import "./chunk-GQJ4YNB7.js";
 import "./chunk-PIRHQTI4.js";
 export {
   HEADING_SIZE_RATIO,

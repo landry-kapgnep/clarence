@@ -1,7 +1,4 @@
 import {
-  createBatchedPipeline
-} from "./chunk-IT5BP6N7.js";
-import {
   NER_MODEL,
   OperationAnnulee,
   bridgeNameParts,
@@ -21,6 +18,9 @@ import {
   snapToWordBoundaries,
   verifierAnnulation
 } from "./chunk-MOMSVBUU.js";
+import {
+  createBatchedPipeline
+} from "./chunk-IT5BP6N7.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -200,6 +200,59 @@ async function arbitrerFauxPositifs(entities, glinerPipeline) {
     if (leurre > pii) rejete.add(valeur);
   }));
   return entities.filter((e) => !rejete.has(e.value));
+}
+
+// src/popup/poids.js
+var NIVEAUX = {
+  leger: { libelle: "L\xE9ger", classe: "poids-leger" },
+  moyen: { libelle: "Moyen", classe: "poids-moyen" },
+  lourd: { libelle: "Lourd", classe: "poids-lourd" },
+  tresLourd: { libelle: "Tr\xE8s lourd", classe: "poids-tres-lourd" }
+};
+var SEUILS_PAGES = [
+  [8, "leger"],
+  [25, "moyen"],
+  [60, "lourd"]
+];
+var SEUILS_CARACTERES = [
+  [15e3, "leger"],
+  [6e4, "moyen"],
+  [15e4, "lourd"]
+];
+var SEUILS_OCTETS = [
+  [40 * 1024, "leger"],
+  [200 * 1024, "moyen"],
+  [800 * 1024, "lourd"]
+];
+function classer(valeur, seuils) {
+  for (const [max, cle] of seuils) if (valeur <= max) return cle;
+  return "tresLourd";
+}
+var SANS_TEXTE = /* @__PURE__ */ new Set(["jpg", "jpeg", "png", "webp"]);
+function poidsDeTraitement({ ext, taille = 0, pages = null, caracteres = null }) {
+  const e = (ext || "").toLowerCase();
+  if (SANS_TEXTE.has(e)) return { cle: "leger", ...NIVEAUX.leger, base: "image" };
+  if (pages != null) {
+    return { cle: classer(pages, SEUILS_PAGES), ...NIVEAUX[classer(pages, SEUILS_PAGES)], base: "pages" };
+  }
+  if (caracteres != null) {
+    const cle2 = classer(caracteres, SEUILS_CARACTERES);
+    return { cle: cle2, ...NIVEAUX[cle2], base: "caracteres" };
+  }
+  const cle = classer(taille, SEUILS_OCTETS);
+  return { cle, ...NIVEAUX[cle], base: "octets" };
+}
+function expliquerPoids(poids) {
+  switch (poids.base) {
+    case "image":
+      return "Une image n\u2019a pas de texte \xE0 analyser : seules les m\xE9tadonn\xE9es sont retir\xE9es.";
+    case "pages":
+      return "Estim\xE9 d\u2019apr\xE8s le nombre de pages. Ce qui compte est la quantit\xE9 de texte, pas le poids du fichier.";
+    case "caracteres":
+      return "Estim\xE9 d\u2019apr\xE8s la quantit\xE9 de texte \xE0 analyser.";
+    default:
+      return "Estim\xE9 d\u2019apr\xE8s la taille du fichier \u2014 approximatif pour ce format, dont le texte est compress\xE9.";
+  }
 }
 
 // src/engine/pseudonyms.js
@@ -1312,7 +1365,7 @@ var FILE_TYPES = {
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-4W2IMW43.js"), outExt: ".md" },
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-7VMC3MIU.js"), outExt: ".md" },
   // Images : metadataOnly → processFile() court-circuite le pipeline de
   // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
   // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
@@ -1358,6 +1411,36 @@ function extOf(name) {
   const m = /\.([^.]+)$/.exec(name);
   return m ? m[1].toLowerCase() : "";
 }
+function afficherPoids(file, ext) {
+  const badge = $("filePoids");
+  const rendre = (poids) => {
+    badge.textContent = poids.libelle;
+    badge.className = `poids-badge ${poids.classe}`;
+    badge.title = expliquerPoids(poids);
+    badge.hidden = false;
+  };
+  rendre(poidsDeTraitement({ ext, taille: file.size }));
+  if (ext !== "pdf") return;
+  const pourCeFichier = chosenFile;
+  (async () => {
+    try {
+      const pdfjs = await import("./pdf-ITQTBJLX.js");
+      if (chrome?.runtime?.getURL) {
+        pdfjs.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("vendor/pdf.worker.min.mjs");
+      }
+      const buf = await pourCeFichier.arrayBuffer();
+      const doc = await pdfjs.getDocument({
+        data: new Uint8Array(buf),
+        useWorkerFetch: false,
+        isEvalSupported: false,
+        disableFontFace: true
+      }).promise;
+      if (chosenFile !== pourCeFichier) return;
+      rendre(poidsDeTraitement({ ext, taille: file.size, pages: doc.numPages }));
+    } catch {
+    }
+  })();
+}
 function humanSize(bytes) {
   if (bytes < 1024) return `${bytes} o`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
@@ -1398,6 +1481,7 @@ function setChosenFile(file) {
     fileNameEl.textContent = file.name;
   }
   $("fileSize").textContent = humanSize(file.size);
+  afficherPoids(file, ext);
   $("fileChosen").hidden = false;
   $("fileOptions").hidden = !!FILE_TYPES[ext].metadataOnly;
   $("pdfModeChoice").hidden = ext !== "pdf";
@@ -1854,7 +1938,7 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-AMI4R3OK.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-XJINQBC2.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await source.arrayBuffer(), {
         signal,
@@ -1965,6 +2049,7 @@ $("fileResetBtn").addEventListener("click", () => {
   fileOutBlob = null;
   $("fileInput").value = "";
   $("fileChosen").hidden = true;
+  $("filePoids").hidden = true;
   $("fileOptions").hidden = true;
   $("fileResults").hidden = true;
   $("fileCopyBtn").hidden = true;

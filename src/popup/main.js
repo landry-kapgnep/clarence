@@ -7,6 +7,7 @@ import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
 import { createBatchedPipeline } from '../engine/batch.js';
 import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
+import { poidsDeTraitement, expliquerPoids } from './poids.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
 import { createPseudonymizer } from '../engine/pseudonyms.js';
@@ -676,6 +677,47 @@ function extOf(name) {
   return m ? m[1].toLowerCase() : '';
 }
 
+// Affiche le poids de TRAITEMENT du fichier choisi — jamais un temps estimé
+// (voir src/popup/poids.js pour le raisonnement).
+//
+// En deux temps volontairement : un premier classement INSTANTANÉ d'après la
+// taille, puis un affinage quand un signal plus fiable est disponible. Pour un
+// PDF c'est le nombre de pages, et il faut ouvrir le document pour l'obtenir :
+// attendre pour afficher donnerait un badge qui apparaît en retard, alors qu'un
+// badge qui se corrige en place est vivant et honnête.
+function afficherPoids(file, ext) {
+  const badge = $('filePoids');
+  const rendre = poids => {
+    badge.textContent = poids.libelle;
+    badge.className = `poids-badge ${poids.classe}`;
+    badge.title = expliquerPoids(poids);
+    badge.hidden = false;
+  };
+  rendre(poidsDeTraitement({ ext, taille: file.size }));
+
+  // Affinage PDF. Défensif de bout en bout : un comptage de pages qui échoue ne
+  // doit RIEN casser — le badge approximatif reste affiché, et l'utilisateur
+  // n'apprend jamais qu'on a essayé.
+  if (ext !== 'pdf') return;
+  const pourCeFichier = chosenFile;
+  (async () => {
+    try {
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      if (chrome?.runtime?.getURL) {
+        pdfjs.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('vendor/pdf.worker.min.mjs');
+      }
+      const buf = await pourCeFichier.arrayBuffer();
+      const doc = await pdfjs.getDocument({
+        data: new Uint8Array(buf), useWorkerFetch: false, isEvalSupported: false, disableFontFace: true
+      }).promise;
+      // L'utilisateur a pu changer de fichier entre-temps : ne jamais écrire un
+      // badge périmé par-dessus le fichier courant (même règle que les runs).
+      if (chosenFile !== pourCeFichier) return;
+      rendre(poidsDeTraitement({ ext, taille: file.size, pages: doc.numPages }));
+    } catch { /* le badge d'après la taille reste en place */ }
+  })();
+}
+
 function humanSize(bytes) {
   if (bytes < 1024) return `${bytes} o`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
@@ -720,6 +762,7 @@ function setChosenFile(file) {
     fileNameEl.textContent = file.name;
   }
   $('fileSize').textContent = humanSize(file.size);
+  afficherPoids(file, ext);
   $('fileChosen').hidden = false;
   // Options (pseudonymes/personnaliser) : révélées dès qu'un fichier est
   // choisi — elles doivent être réglées AVANT le traitement (flux en un clic),
@@ -1479,6 +1522,7 @@ $('fileResetBtn').addEventListener('click', () => {
   fileOutBlob = null;
   $('fileInput').value = '';
   $('fileChosen').hidden = true;
+  $('filePoids').hidden = true;
   $('fileOptions').hidden = true;
   $('fileResults').hidden = true;
   $('fileCopyBtn').hidden = true;

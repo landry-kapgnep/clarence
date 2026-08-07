@@ -162,6 +162,33 @@ test de concurrence qu'on n'a pas vu échouer ne prouve rien.
 impossible avec ce fournisseur. Le levier de vitesse est le LOT (un seul `run`
 pour N textes), pas la concurrence.
 
+
+### A0quater. Badge de poids du fichier (07/08/2026)
+
+Affiché à la sélection du fichier, à côté de son nom : **Léger / Moyen /
+Lourd / Très lourd**. Ce n'est délibérément PAS une estimation de temps — un
+temps annoncé est une promesse qu'on ne peut pas tenir (machine, WebGPU, cache
+du modèle), et l'utilisateur en voudrait à l'application. Un poids décrit le
+fichier : il est vérifiable et ne peut pas être démenti.
+
+À vérifier en Chrome (`src/popup/main.js` n’a aucune couverture automatique) :
+
+1. Choisir une **image lourde** (plusieurs Mo) → doit afficher **Léger**.
+   Aucune inférence n'est faite dessus, seules les métadonnées sont retirées.
+2. Choisir le **mémoire de 75 pages** → doit afficher **Très lourd**. Le badge
+   part d'abord d'une estimation à la taille, puis **se corrige** une fois les
+   pages comptées : la correction en place est le comportement attendu.
+3. Choisir un **PDF de quelques pages mais lourd en images** → doit finir en
+   **Léger** ou **Moyen**. C'est le cas qui prouve que le badge ne se fie pas
+   aux octets.
+4. Survoler le badge → une phrase dit sur quoi le classement repose.
+5. Changer de fichier en cours de comptage → le badge ne doit **jamais**
+   afficher le résultat du fichier précédent (même règle que les runs).
+
+Contraste mesuré des quatre teintes sur le fond sombre : **7,25 à 8,50** —
+au-dessus du seuil AAA (7:1). Le mot est toujours présent à côté de la couleur,
+jamais la couleur seule.
+
 ### À chronométrer maintenant : le regroupement en lots
 
 Les inférences partent désormais par lots de 8 (`src/engine/batch.js`). Mesuré

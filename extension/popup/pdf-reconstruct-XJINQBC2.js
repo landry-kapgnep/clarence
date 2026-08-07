@@ -1,12 +1,15 @@
 import {
+  anonymizeUnits
+} from "./chunk-4QNH4GYT.js";
+import {
+  verifierAnnulation
+} from "./chunk-MOMSVBUU.js";
+import {
   distributeEntitiesOverRuns,
   joinRuns
 } from "./chunk-3WGABFPD.js";
 import {
-  GlobalWorkerOptions,
   HEADING_SIZE_RATIO,
-  OPS,
-  getDocument,
   groupIntoLines,
   intitulesRetenus,
   isLineWrapHyphen,
@@ -16,13 +19,12 @@ import {
   paragraphGapThreshold,
   ressembleAUnIntitule,
   splitIntoColumns
-} from "./chunk-TFRVDJ4U.js";
+} from "./chunk-C47KMYBO.js";
 import {
-  anonymizeUnits
-} from "./chunk-4QNH4GYT.js";
-import {
-  verifierAnnulation
-} from "./chunk-MOMSVBUU.js";
+  GlobalWorkerOptions,
+  OPS,
+  getDocument
+} from "./chunk-GQJ4YNB7.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/files/pdf-reconstruct.js
