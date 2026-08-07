@@ -961,6 +961,15 @@ var TYPE_DISPLAY = {
   PERSONNALISE: "Perso"
 };
 var parseLines = parseTermes;
+var APERCUS_TERMES = [["docKeep", "docKeepLus"], ["docMask", "docMaskLus"]];
+function rendreApercuTermes() {
+  for (const [idChamp, idApercu] of APERCUS_TERMES) {
+    const champ = $(idChamp), apercu = $(idApercu);
+    if (!champ || !apercu) continue;
+    const termes = parseTermes(champ.value);
+    apercu.textContent = termes.length ? `${termes.length} terme${termes.length > 1 ? "s" : ""} : ${termes.join(" \xB7 ")}` : "";
+  }
+}
 var nerPipe = null;
 var nerLoading = false;
 var pseudoSeed = Math.random().toString(36).slice(2);
@@ -1474,6 +1483,7 @@ function setChosenFile(file) {
   fileRegen = null;
   if ($("docKeep")) $("docKeep").value = "";
   if ($("docMask")) $("docMask").value = "";
+  rendreApercuTermes();
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $("fileName");
@@ -1532,6 +1542,7 @@ async function retirerDuMasquage(valeur) {
   const avant = champ.value;
   champ.value = ajouterTerme(avant, valeur);
   if (champ.value === avant) return;
+  rendreApercuTermes();
   const btn = $("fileAnalyzeBtn");
   btn.disabled = true;
   fileSetStatus("Mise \xE0 jour du fichier\u2026");
@@ -1573,6 +1584,7 @@ async function retirerDuMasquage(valeur) {
   } catch (err) {
     console.error(err);
     champ.value = avant;
+    rendreApercuTermes();
     fileSetStatus("Impossible de mettre \xE0 jour le fichier. D\xE9tail dans la console.", "error");
   } finally {
     btn.disabled = false;
@@ -2135,6 +2147,10 @@ for (const btn of document.querySelectorAll(".mode-btn")) {
 }
 $("filePickBtn").addEventListener("click", () => $("fileInput").click());
 $("fileInput").addEventListener("change", (ev) => setChosenFile(ev.target.files[0]));
+for (const [idChamp] of APERCUS_TERMES) {
+  $(idChamp)?.addEventListener("input", rendreApercuTermes);
+}
+rendreApercuTermes();
 $("fileCancelBtn").addEventListener("click", () => annulerRunFichier());
 $("fileMappingWrap").addEventListener("click", (ev) => {
   const btn = ev.target.closest(".map-retirer");

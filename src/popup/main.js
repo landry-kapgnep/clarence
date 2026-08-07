@@ -45,6 +45,36 @@ const TYPE_DISPLAY = {
 // src/popup/termes.js pour le choix des séparateurs et ce qu'on en exclut.
 const parseLines = parseTermes;
 
+// Affiche les termes TELS QUE LE MOTEUR LES LIRA, sous le champ de saisie.
+//
+// POURQUOI. Vécu deux fois de suite sur un vrai document : une virgule oubliée
+// avait soudé « UE » et « Ginel » en un terme fantôme « UEGinel », et un
+// rechargement de l'extension avait vidé le champ sans que rien ne le signale —
+// 7 termes sur 15 perdus, découverts seulement en comparant deux sorties.
+//
+// Une consigne qu'on croit appliquée alors qu'elle ne l'est pas est le pire cas
+// pour cet outil : la même famille de défaut que le sur-masquage silencieux.
+// L'aperçu utilise `parseTermes`, la MÊME fonction que le moteur, donc il ne
+// peut pas mentir — s'il affiche 8 termes, le moteur en appliquera 8.
+// Fonction AUTONOME plutôt qu'un écouteur qui se suffirait à lui-même : les
+// deux champs sont aussi écrits par programme — par le bouton « ne plus
+// masquer » et par l'effacement au changement de fichier. Or une écriture
+// programmatique ne déclenche PAS `input`, et le déclencher à la main
+// appellerait `invalidateFileResult`, qui détruirait le résultat qu'on est en
+// train de régénérer. On rafraîchit donc explicitement.
+const APERCUS_TERMES = [['docKeep', 'docKeepLus'], ['docMask', 'docMaskLus']];
+
+function rendreApercuTermes() {
+  for (const [idChamp, idApercu] of APERCUS_TERMES) {
+    const champ = $(idChamp), apercu = $(idApercu);
+    if (!champ || !apercu) continue;
+    const termes = parseTermes(champ.value);
+    apercu.textContent = termes.length
+      ? `${termes.length} terme${termes.length > 1 ? 's' : ''} : ${termes.join(' · ')}`
+      : '';
+  }
+}
+
 // NB : la touche Tab n'est PAS capturée dans ces champs, et c'est délibéré.
 // Elle l'a été un temps, quand la tabulation servait de séparateur — mais
 // capturer Tab enferme les personnes qui naviguent au clavier, et la virgule a
@@ -755,6 +785,7 @@ function setChosenFile(file) {
   fileRegen = null;
   if ($('docKeep')) $('docKeep').value = '';
   if ($('docMask')) $('docMask').value = '';
+  rendreApercuTermes();
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $('fileName');
@@ -853,6 +884,7 @@ async function retirerDuMasquage(valeur) {
   champ.value = ajouterTerme(avant, valeur);
   // Rien changé : le terme y était déjà.
   if (champ.value === avant) return;
+  rendreApercuTermes();
 
   const btn = $('fileAnalyzeBtn');
   btn.disabled = true;
@@ -901,6 +933,7 @@ async function retirerDuMasquage(valeur) {
     // que si la régénération a abouti. Mieux vaut un retrait sans effet qu'un
     // résultat à moitié réécrit.
     champ.value = avant;
+    rendreApercuTermes();
     fileSetStatus('Impossible de mettre à jour le fichier. Détail dans la console.', 'error');
   } finally {
     btn.disabled = false;
@@ -1654,6 +1687,12 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
 // --- Sélection de fichier (bouton + glisser-déposer)
 $('filePickBtn').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', ev => setChosenFile(ev.target.files[0]));
+// Aperçu des termes réellement lus — accroché ici, une fois `$` déclaré.
+for (const [idChamp] of APERCUS_TERMES) {
+  $(idChamp)?.addEventListener('input', rendreApercuTermes);
+}
+rendreApercuTermes();
+
 $('fileCancelBtn').addEventListener('click', () => annulerRunFichier());
 
 // Délégation : la table est reconstruite à chaque régénération, un écouteur

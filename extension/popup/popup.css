@@ -976,3 +976,18 @@ td.map-occ {
   min-height: 46px;
   margin-top: 3px;
 }
+
+/* Aperçu des termes TELS QUE LE MOTEUR LES LIRA.
+   Vécu deux fois : une virgule oubliée soudant « UE » et « Ginel » en un terme
+   fantôme, puis un champ vidé par un rechargement — 7 termes sur 15 perdus,
+   découverts seulement en comparant deux sorties. Une consigne qu'on croit
+   appliquée alors qu'elle ne l'est pas est le pire cas pour cet outil. */
+.termes-lus {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--seal-lit);
+  word-break: break-word;
+}
+.termes-lus:empty { display: none; }

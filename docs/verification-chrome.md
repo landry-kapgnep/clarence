@@ -253,6 +253,37 @@ masque davantage) ; côté « ne jamais masquer » ça peut laisser en clair un
 fragment non voulu. Rare, et **visible** à la relecture — c’est exactement ce
 que la tabulation ne permettait pas.
 
+
+### A0septies. Aperçu des termes réellement lus (08/08/2026)
+
+Sous chaque champ de « Termes de ce document », une ligne affiche **les termes
+tels que le moteur les lira**, comptés et séparés visuellement.
+
+Deux incidents vécus le même soir, tous deux **silencieux** :
+
+1. Une virgule oubliée a soudé `UE` et `Ginel` en un terme fantôme `UEGinel` —
+   ni l’un ni l’autre n’a été épargné.
+2. Un rechargement de l’extension a vidé le champ ; la liste a été retapée
+   partiellement, **7 termes sur 15 perdus**, découverts seulement en comparant
+   deux sorties.
+
+Une consigne qu’on croit appliquée alors qu’elle ne l’est pas est le pire cas
+pour cet outil — même famille de défaut que le sur-masquage silencieux.
+
+L’aperçu utilise `parseTermes`, **la même fonction que le moteur** : il ne peut
+donc pas mentir. S’il affiche 8 termes, le moteur en applique 8.
+
+À vérifier en Chrome :
+
+1. Taper `A, B, C` → « 3 termes : A · B · C ». Retirer une virgule → le compte
+   **baisse** et le terme soudé apparaît tel quel.
+2. Cliquer « ne plus masquer » dans la table → le terme s’ajoute ET **l’aperçu
+   se met à jour** (écriture programmatique : elle ne déclenche pas `input`,
+   le rafraîchissement est explicite).
+3. Changer de fichier → champs vidés **et** aperçus vidés.
+4. Un échec de régénération restaure la valeur précédente → l’aperçu revient
+   à l’état d’avant.
+
 ### À chronométrer maintenant : le regroupement en lots
 
 Les inférences partent désormais par lots de 8 (`src/engine/batch.js`). Mesuré
