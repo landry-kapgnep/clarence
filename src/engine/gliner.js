@@ -185,9 +185,31 @@ const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
 // « Sept. 2024 - Aout 2025 » comme dates de naissance. Même raisonnement que
 // pour les noms propres : une exigence de FORME propre au type, déterministe,
 // là où le score ne sépare rien.
+// Une DATE DE NAISSANCE, c'est un jour situé dans une ANNÉE. « Contient un
+// chiffre » était beaucoup trop faible : mesuré sur tous-defauts.pdf, ça
+// laissait passer « ANNEXE 2 », « 2021 » et « 12 mars ».
+//
+// Deux formes acceptées, et AUCUNE liste de mois : le projet doit rester
+// multilingue, or un nom de mois est propre à une langue. On se contente de la
+// STRUCTURE — une date numérique, ou une année accompagnée d'un autre nombre
+// (le quantième), quelle que soit la langue qui les sépare :
+//   « March 14, 1988 », « 16 octobre 2004 », « 14. März 1988 » → acceptés
+//   « 2021 » (année seule), « ANNEXE 2 », « 12 mars » (sans année) → refusés
+const DATE_NUMERIQUE = /\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}/;
+const ANNEE = /(?:1[89]|20)\d{2}/;
+
+function estUneDate(valeur) {
+  if (DATE_NUMERIQUE.test(valeur)) return true;
+  const annee = ANNEE.exec(valeur);
+  if (!annee) return false;
+  // Un autre nombre que l'année elle-même : le jour du mois.
+  const reste = valeur.slice(0, annee.index) + valeur.slice(annee.index + annee[0].length);
+  return /\d/.test(reste);
+}
+
 function estPlausiblePourLeType(type, valeur) {
   if (TYPES_NOMS_PROPRES.has(type)) return /\p{Lu}/u.test(valeur);
-  if (type === 'DATE_NAISSANCE') return /\d/.test(valeur);
+  if (type === 'DATE_NAISSANCE') return estUneDate(valeur);
   return true;
 }
 

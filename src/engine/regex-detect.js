@@ -157,7 +157,13 @@ export const REGEX_PATTERNS = [
   },
   {
     type: 'ADRESSE',
-    re: /\b\d{1,4}\s?(?:bis|ter)?\s*,?\s*(?:rue|avenue|av\.|boulevard|bd\.?|impasse|all[ée]e|chemin|place|cours|quai|route|square|passage)\s+(?:de\s+la\s+|de\s+l'|du\s+|des\s+|de\s+|d'|la\s+|le\s+)?[A-Za-zÀ-ÿ0-9'-]+(?:\s+[A-ZÀ-Ü][a-zà-ÿ'-]+){0,3}/g,
+    // Le type de voie accepte l'INITIALE MAJUSCULE : le motif était sensible à
+    // la casse et ne connaissait que « av. », donc « 99 Av. Jean Jaurès »
+    // n'était pas une adresse — et le modèle récupérait « Jean Jaurès » comme
+    // une PERSONNE (mesuré sur tous-defauts.pdf). On ne met pas le drapeau `i`
+    // sur tout le motif : les groupes [A-ZÀ-Ü] plus loin exigent délibérément
+    // une majuscule pour le nom de la voie.
+    re: /\b\d{1,4}\s?(?:bis|ter)?\s*,?\s*(?:[Rr]ue|[Aa]venue|[Aa]v\.|[Bb]oulevard|[Bb]d\.?|[Ii]mpasse|[Aa]ll[ée]e|[Cc]hemin|[Pp]lace|[Cc]ours|[Qq]uai|[Rr]oute|[Ss]quare|[Pp]assage)\s+(?:de\s+la\s+|de\s+l'|du\s+|des\s+|de\s+|d'|la\s+|le\s+)?[A-Za-zÀ-ÿ0-9'-]+(?:\s+[A-ZÀ-Ü][a-zà-ÿ'-]+){0,3}/g,
     validate: null
   },
   {

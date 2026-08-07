@@ -202,7 +202,11 @@ const CAPWORD = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*";
 const CAPWORD_MIXTE = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*[a-zà-ÿ][A-Za-zÀ-ÿ'’-]*";
 const ALLCAPS = "[A-ZÀ-Ü]{2,}(?:[-'’][A-ZÀ-Ü]+)*";
 const FWD_PARTICLE = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
-const FWD_ALLCAPS = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-zÀ-ÿ])`);
+// La garde de fin refuse aussi un CHIFFRE, directement ou après un tiret :
+// sans elle, « Nadia Belkacem EMP-0012 » absorbait « EMP » et produisait le
+// patronyme fantôme « Belkacem EMP » (mesuré sur tous-defauts.pdf). Un sigle
+// suivi d'un tiret et de chiffres est un IDENTIFIANT, jamais un nom de famille.
+const FWD_ALLCAPS = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-zÀ-ÿ0-9]|[-'’]?\\d)`);
 const BACK_PARTICLE = new RegExp(`(${CAPWORD_MIXTE}(?:\\s+${PARTICLE})+\\s+)$`);
 export function bridgeNameParts(text, entities) {
   for (const e of entities) {

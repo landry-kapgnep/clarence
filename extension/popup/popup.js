@@ -20,7 +20,7 @@ import {
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-VSTVIDZ2.js";
+} from "./chunk-MOMSVBUU.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -106,9 +106,18 @@ var GROUPES = [
 var TYPES_PEU_FIABLES = ["POSTE", "NATIONALITE", "ETABLISSEMENT", "SANTE"];
 var typesDuGroupe = (g) => Object.values(g.types);
 var TYPES_NOMS_PROPRES = /* @__PURE__ */ new Set(["PER", "ORG", "LOC"]);
+var DATE_NUMERIQUE = /\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}/;
+var ANNEE = /(?:1[89]|20)\d{2}/;
+function estUneDate(valeur) {
+  if (DATE_NUMERIQUE.test(valeur)) return true;
+  const annee = ANNEE.exec(valeur);
+  if (!annee) return false;
+  const reste = valeur.slice(0, annee.index) + valeur.slice(annee.index + annee[0].length);
+  return /\d/.test(reste);
+}
 function estPlausiblePourLeType(type, valeur) {
   if (TYPES_NOMS_PROPRES.has(type)) return new RegExp("\\p{Lu}", "u").test(valeur);
-  if (type === "DATE_NAISSANCE") return /\d/.test(valeur);
+  if (type === "DATE_NAISSANCE") return estUneDate(valeur);
   return true;
 }
 async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: disabledTypes2 } = {}) {
@@ -1814,7 +1823,7 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-NU55SMYC.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-GNHI2SXO.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await source.arrayBuffer(), {
         signal,
@@ -1841,7 +1850,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-DSHFTPSG.js");
+    const { anonymizeUnits } = await import("./anonymize-units-EHXVECZO.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units } = await adapter.extractTextUnits(input);
     if (!units.length) {

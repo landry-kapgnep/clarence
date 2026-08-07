@@ -258,3 +258,16 @@ test('identifiant interne à libellé français (fuite structurée)', () => {
 test('un mot quelconque suivi d\'un code n\'est pas une référence', () => {
   assert.equal(find('le train TGV-INOUI-2024 part', 'REFERENCE').length, 0);
 });
+
+// --- Type de voie ABRÉGÉ et capitalisé. Le motif ne connaissait que « av. »
+// en minuscules : « 99 Av. Jean Jaurès » n'était pas une adresse, et le modèle
+// contextuel récupérait « Jean Jaurès » comme une PERSONNE — un nom de rue
+// affiché comme un individu. Mesuré sur tous-defauts.pdf.
+test('adresse : type de voie abrégé, avec ou sans majuscule', () => {
+  assert.equal(find('99 Av. Jean Jaurès, 93430 Villetaneuse', 'ADRESSE')[0].value,
+    '99 Av. Jean Jaurès');
+  assert.equal(find('12 Rue des Cordeliers', 'ADRESSE')[0].value, '12 Rue des Cordeliers');
+  assert.equal(find('8 Boulevard Voltaire', 'ADRESSE')[0].value, '8 Boulevard Voltaire');
+  // Non-régression : la forme en minuscules marchait déjà.
+  assert.equal(find('42 rue des Cordeliers', 'ADRESSE')[0].value, '42 rue des Cordeliers');
+});

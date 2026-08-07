@@ -40,15 +40,41 @@ test('les labels des trois groupes sont mappés vers les bons types', async () =
     ['medical condition', 'SANTE']
   ];
   // La valeur factice doit être plausible pour TOUS les types testés (voir
-  // estPlausiblePourLeType) : une majuscule pour PER/ORG/LIEU, un chiffre pour
-  // DATE_NAISSANCE. Ce test porte sur le mapping label→type, pas sur la forme.
+  // estPlausiblePourLeType) : une majuscule pour PER/ORG/LIEU, et une vraie
+  // FORME DE DATE pour DATE_NAISSANCE — « un chiffre » ne suffit plus depuis
+  // que « ANNEXE 2 » et « 2021 » passaient pour des dates de naissance.
+  // Ce test porte sur le mapping label→type, pas sur la forme.
+  const factice = 'C1988-03-14';
   for (const [label, type] of cas) {
-    const pipe = fakePipe({ Cib88: [{ label, len: 5, score: 0.9 }] });
-    const [e] = await detectGliner('valeur Cib88 ici', pipe);
+    const pipe = fakePipe({ [factice]: [{ label, len: factice.length, score: 0.9 }] });
+    const [e] = await detectGliner(`valeur ${factice} ici`, pipe);
     assert.ok(e, `aucune entité pour le label ${label}`);
     assert.equal(e.type, type, `mauvais type pour ${label}`);
   }
 });
+
+// --- Forme d'une DATE DE NAISSANCE. « Contient un chiffre » laissait passer
+// « ANNEXE 2 », « 2021 » et « 12 mars » sur tous-defauts.pdf — du sur-masquage
+// qui abîme le texte sans rien protéger.
+//
+// Le contrôle est STRUCTUREL et sans liste de mois : le projet doit rester
+// multilingue, or les noms de mois sont propres à une langue.
+for (const [valeur, garde] of [
+  ['1988-03-14', true],        // date numérique nue (cas phare du zero-shot)
+  ['13/10/1976', true],
+  ['March 14, 1988', true],    // année + quantième, séparés par de l'anglais
+  ['16 octobre 2004', true],   // idem en français
+  ['14. März 1988', true],     // idem en allemand : aucune liste n'est requise
+  ['2021', false],             // année SEULE : pas une date de naissance
+  ['ANNEXE 2', false],         // un titre de section numéroté
+  ['12 mars', false]           // jour et mois sans année
+]) {
+  test(`date de naissance : ${JSON.stringify(valeur)} ${garde ? 'reste' : 'est écartée'}`, async () => {
+    const pipe = fakePipe({ [valeur]: [{ label: 'date of birth', len: valeur.length, score: 0.9 }] });
+    const spans = await detectGliner(`Mention ${valeur} ici`, pipe);
+    assert.equal(spans.length, garde ? 1 : 0);
+  });
+}
 
 test('chaque label déclaré possède un type — aucun placeholder [undefined_N] possible', () => {
   for (const g of GROUPES) {
@@ -238,6 +264,29 @@ test('un nom de CV isolé à 0,47 est masqué ENTIÈREMENT (seuil + pontage)', a
   assert.equal(out[0].value, 'LANDRY KAPGNEP', 'le patronyme ne doit pas rester en clair');
   const { masked } = maskText(texte, out);
   assert.equal(masked, '[PERSONNE_1]');
+});
+
+// Revers du pontage ci-dessus : il absorbait AUSSI les sigles suivis d'un
+// identifiant. « Nadia Belkacem EMP-0012 » produisait le patronyme fantôme
+// « Belkacem EMP » (mesuré sur tous-defauts.pdf), qui masque un bout du
+// matricule ET affiche un nom qui n'existe pas.
+test('le pontage n\'absorbe PAS un sigle suivi d\'un identifiant', async () => {
+  const texte = 'Nadia Belkacem EMP-0012 est en poste.';
+  const pipe = async (t, labels) => labels.includes('person')
+    ? [{ label: 'person', start: 0, end: 14, spanText: 'Nadia Belkacem', score: 0.95 }]
+    : [];
+  const [e] = await detectGliner(texte, pipe);
+  assert.equal(e.value, 'Nadia Belkacem', 'le matricule ne fait pas partie du nom');
+});
+
+test('le pontage marche TOUJOURS sur un vrai patronyme en capitales', async () => {
+  // Garde-fou du correctif précédent : il ne doit pas avoir tué le cas réel.
+  const texte = 'Amandine ROUSSEAU, chargée du dossier.';
+  const pipe = async (t, labels) => labels.includes('person')
+    ? [{ label: 'person', start: 0, end: 8, spanText: 'Amandine', score: 0.9 }]
+    : [];
+  const [e] = await detectGliner(texte, pipe);
+  assert.equal(e.value, 'Amandine ROUSSEAU');
 });
 
 test('les groupes sans seuil propre gardent le défaut', async () => {
