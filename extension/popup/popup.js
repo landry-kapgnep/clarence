@@ -1428,7 +1428,7 @@ function invalidateFileResult() {
 for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle", "filePseudoLocale"]) {
   $(id)?.addEventListener("change", invalidateFileResult);
 }
-for (const id of ["fileAlwaysMask", "fileAlwaysKeep"]) {
+for (const id of ["fileAlwaysMask", "fileAlwaysKeep", "docKeep", "docMask"]) {
   $(id)?.addEventListener("input", invalidateFileResult);
 }
 function fileSetStatus(msg, cls = "") {
@@ -1487,6 +1487,8 @@ function setChosenFile(file) {
   }
   annulerRunFichier("");
   fileRegen = null;
+  if ($("docKeep")) $("docKeep").value = "";
+  if ($("docMask")) $("docMask").value = "";
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $("fileName");
@@ -1530,8 +1532,17 @@ function fileMaskOptions(units = []) {
   };
 }
 var fileRegen = null;
+var termesAGarder = () => [
+  ...parseLines($("fileAlwaysKeep")?.value),
+  ...parseLines($("docKeep")?.value)
+];
+var termesAMasquer = () => [
+  ...parseLines($("fileAlwaysMask")?.value),
+  ...parseLines($("docMask")?.value),
+  ...identityForceTerms()
+];
 async function retirerDuMasquage(valeur) {
-  const champ = $("fileAlwaysKeep");
+  const champ = $("docKeep");
   if (!fileRegen || !champ) return;
   const avant = champ.value;
   champ.value = ajouterTerme(avant, valeur);
@@ -1541,8 +1552,8 @@ async function retirerDuMasquage(valeur) {
   fileSetStatus("Mise \xE0 jour du fichier\u2026");
   try {
     const r = fileRegen;
-    const keepValues = parseLines($("fileAlwaysKeep")?.value);
-    const forceTerms = [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()];
+    const keepValues = termesAGarder();
+    const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
       const { reconstructPdf } = await import("./pdf-reconstruct-JGINQLWB.js");
@@ -2038,9 +2049,9 @@ async function processFile() {
         // « Cannot access 'units' before initialization ». reconstructPdf
         // extrait ses propres unités en interne.
         maskOpts: fileMaskOptions(),
-        forceTerms: [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()],
+        forceTerms: termesAMasquer(),
         disabledTypes: fileDisabledTypes,
-        keepValues: parseLines($("fileAlwaysKeep")?.value),
+        keepValues: termesAGarder(),
         deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
       });
       verifierAnnulation(signal);
@@ -2072,9 +2083,9 @@ async function processFile() {
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte
       // (selection.js), appliquées au document combiné entier.
-      forceTerms: [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()],
+      forceTerms: termesAMasquer(),
       disabledTypes: fileDisabledTypes,
-      keepValues: parseLines($("fileAlwaysKeep")?.value)
+      keepValues: termesAGarder()
     });
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus("R\xE9\xE9criture du fichier\u2026");
@@ -2139,7 +2150,7 @@ for (const btn of document.querySelectorAll(".mode-btn")) {
 }
 $("filePickBtn").addEventListener("click", () => $("fileInput").click());
 $("fileInput").addEventListener("change", (ev) => setChosenFile(ev.target.files[0]));
-for (const id of ["alwaysMask", "alwaysKeep", "fileAlwaysMask", "fileAlwaysKeep"]) {
+for (const id of ["alwaysMask", "alwaysKeep", "fileAlwaysMask", "fileAlwaysKeep", "docKeep", "docMask"]) {
   tabInsereUneTabulation($(id));
 }
 $("fileCancelBtn").addEventListener("click", () => annulerRunFichier());

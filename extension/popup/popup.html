@@ -135,8 +135,27 @@
           </select>
         </label>
 
+        <!-- Termes propres à CE document, hors profil.
+             Volontairement à l'extérieur de « Personnaliser le masquage » : les
+             champs qui s'y trouvent sont ÉCRASÉS au chargement d'un profil, et
+             « Enregistrer » y pousserait des termes qui ne valent que pour un
+             fichier. Deux vocabulaires distincts, deux endroits distincts. -->
+        <div id="docTerms">
+          <div class="field-label">Termes de ce document
+            <span class="hint">(tabulation entre les termes ; effacés au changement de fichier)</span>
+          </div>
+          <div class="doc-terms-grid">
+            <label class="hint" for="docKeep">Ne jamais masquer
+              <textarea id="docKeep" class="mini" placeholder="ChatGPT&#9;MT&#9;OpenAI"></textarea>
+            </label>
+            <label class="hint" for="docMask">Toujours masquer
+              <textarea id="docMask" class="mini" placeholder="nom du client&#9;nom de code"></textarea>
+            </label>
+          </div>
+        </div>
+
         <details id="fileCustomRules">
-          <summary>Personnaliser le masquage</summary>
+          <summary>Personnaliser le masquage <span class="hint">(profil réutilisable)</span></summary>
           <div class="custom-body">
             <div class="profile-bar">
               <select id="fileProfileSelect" class="profile-select"></select>
@@ -148,7 +167,7 @@
             <div id="fileTypeToggles" class="type-toggles"></div>
             <label class="field-label" for="fileAlwaysMask">Toujours masquer <span class="hint">(tabulation ou retour à la ligne entre les termes)</span></label>
             <textarea id="fileAlwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
-            <label class="field-label" for="fileAlwaysKeep">Ne jamais masquer <span class="hint">(valable pour ce document ; « Enregistrer » le rend permanent)</span></label>
+            <label class="field-label" for="fileAlwaysKeep">Ne jamais masquer</label>
             <textarea id="fileAlwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
           </div>
         </details>

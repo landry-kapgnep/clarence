@@ -962,3 +962,17 @@ td.map-occ {
   white-space: nowrap;
 }
 .map-retirer:hover { background: var(--control-ghost-hover-bg); color: var(--paper); }
+
+/* Termes propres à UN document, hors profil.
+   Séparés des champs de « Personnaliser le masquage » pour une raison
+   fonctionnelle, pas esthétique : ces derniers sont ÉCRASÉS au chargement d'un
+   profil, et « Enregistrer » y pousserait des termes qui ne valent que pour un
+   fichier. Deux vocabulaires distincts, deux endroits distincts. */
+#docTerms { margin-top: 10px; }
+.doc-terms-grid { display: flex; gap: 8px; }
+.doc-terms-grid label { flex: 1; display: block; }
+.doc-terms-grid textarea.mini {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 3px;
+}

@@ -691,7 +691,7 @@ function invalidateFileResult() {
 for (const id of ['pdfModeLight', 'pdfModePreserve', 'fileRealisticToggle', 'filePseudoLocale']) {
   $(id)?.addEventListener('change', invalidateFileResult);
 }
-for (const id of ['fileAlwaysMask', 'fileAlwaysKeep']) {
+for (const id of ['fileAlwaysMask', 'fileAlwaysKeep', 'docKeep', 'docMask']) {
   $(id)?.addEventListener('input', invalidateFileResult);
 }
 
@@ -767,10 +767,13 @@ function setChosenFile(file) {
   // aucun intérêt (son résultat ne concerne plus rien d'affiché) et il occupe
   // le modèle au détriment du run suivant.
   annulerRunFichier('');
-  // Nouveau fichier : le résultat précédent n'est plus régénérable. Le champ
-  // « ne jamais masquer » appartient à l'utilisateur — on ne l'efface pas dans
-  // son dos, et ses termes restent souvent pertinents d'un fichier à l'autre.
+  // Nouveau fichier : le résultat précédent n'est plus régénérable, et les
+  // termes DE CE DOCUMENT n'ont plus de raison d'être. Les laisser filtrerait
+  // silencieusement le fichier suivant avec le vocabulaire du précédent.
+  // Les règles de PROFIL, elles, ne sont pas touchées : elles sont durables.
   fileRegen = null;
+  if ($('docKeep')) $('docKeep').value = '';
+  if ($('docMask')) $('docMask').value = '';
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $('fileName');
@@ -835,6 +838,20 @@ function fileMaskOptions(units = []) {
 // 45 secondes d'inférence et le geste cesserait d'être utilisable.
 let fileRegen = null;
 
+// Vocabulaire du PROFIL (réutilisable, écrasé au changement de profil) FUSIONNÉ
+// avec celui du DOCUMENT courant (#docKeep / #docMask, effacés au changement de
+// fichier). Deux fonctions plutôt que deux lectures dispersées : il y a quatre
+// points d'appel, et en oublier un donnerait un masquage différent selon le
+// chemin — le genre d'écart qu'on ne voit qu'en comparant deux sorties.
+const termesAGarder = () => [
+  ...parseLines($('fileAlwaysKeep')?.value),
+  ...parseLines($('docKeep')?.value)
+];
+const termesAMasquer = () => [
+  ...parseLines($('fileAlwaysMask')?.value),
+  ...parseLines($('docMask')?.value),
+  ...identityForceTerms()
+];
 // Retire un terme du masquage et REJOUE le masquage sur le fichier entier,
 // sans relancer la détection.
 //
@@ -849,7 +866,7 @@ let fileRegen = null;
 // jamais par surprise. Et il n'y a qu'une seule liste, donc rien à
 // resynchroniser.
 async function retirerDuMasquage(valeur) {
-  const champ = $('fileAlwaysKeep');
+  const champ = $('docKeep');
   if (!fileRegen || !champ) return;
   const avant = champ.value;
   champ.value = ajouterTerme(avant, valeur);
@@ -861,8 +878,8 @@ async function retirerDuMasquage(valeur) {
   fileSetStatus('Mise à jour du fichier…');
   try {
     const r = fileRegen;
-    const keepValues = parseLines($('fileAlwaysKeep')?.value);
-    const forceTerms = [...parseLines($('fileAlwaysMask')?.value), ...identityForceTerms()];
+    const keepValues = termesAGarder();
+    const forceTerms = termesAMasquer();
     let mapping;
 
     if (r.mode === 'pdf') {
@@ -1529,9 +1546,9 @@ async function processFile() {
         // « Cannot access 'units' before initialization ». reconstructPdf
         // extrait ses propres unités en interne.
         maskOpts: fileMaskOptions(),
-        forceTerms: [...parseLines($('fileAlwaysMask')?.value), ...identityForceTerms()],
+        forceTerms: termesAMasquer(),
         disabledTypes: fileDisabledTypes,
-        keepValues: parseLines($('fileAlwaysKeep')?.value),
+        keepValues: termesAGarder(),
         deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
       });
       verifierAnnulation(signal);
@@ -1572,9 +1589,9 @@ async function processFile() {
       maskOpts: fileMaskOptions(units),
       // Règles personnalisées : mêmes primitives que le mode texte
       // (selection.js), appliquées au document combiné entier.
-      forceTerms: [...parseLines($('fileAlwaysMask')?.value), ...identityForceTerms()],
+      forceTerms: termesAMasquer(),
       disabledTypes: fileDisabledTypes,
-      keepValues: parseLines($('fileAlwaysKeep')?.value)
+      keepValues: termesAGarder()
     });
 
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
@@ -1657,7 +1674,7 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
 $('filePickBtn').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', ev => setChosenFile(ev.target.files[0]));
 // Tabulation comme séparateur de termes dans les quatre champs de règles.
-for (const id of ['alwaysMask', 'alwaysKeep', 'fileAlwaysMask', 'fileAlwaysKeep']) {
+for (const id of ['alwaysMask', 'alwaysKeep', 'fileAlwaysMask', 'fileAlwaysKeep', 'docKeep', 'docMask']) {
   tabInsereUneTabulation($(id));
 }
 

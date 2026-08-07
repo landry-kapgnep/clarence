@@ -221,28 +221,35 @@ rentables en premier.
    sont **oubliés** (nouveau mapping, anciennes cibles caduques).
 
 
-### A0sexies. Termes en vrac : tabulation et retraits visibles (07/08/2026)
+### A0sexies. Deux vocabulaires, deux endroits (07/08/2026)
 
-Les champs « toujours masquer » / « ne jamais masquer » existaient déjà et
-étaient DÉJÀ par-document (rien n'est écrit dans un profil sans cliquer
-« Enregistrer »). Leur défaut était de framing : posés sous la barre de
-profils, ils se lisent comme des réglages de profil. Deux corrections :
+**Termes de ce document** (`#docKeep` / `#docMask`) — bloc visible, hors du
+panneau « Personnaliser le masquage ».
 
-1. **La tabulation sépare les termes**, en plus du saut de ligne — saisie en
-   vrac sans quitter le clavier. Attention : dans un `<textarea>`, Tab déplace
-   normalement le focus ; il est donc capturé. **Vérifier les échappatoires**
-   au clavier : **Maj+Tab** revient au champ précédent, **Échap** sort du
-   champ. Sans elles, on enferme les personnes qui naviguent au clavier.
-2. **Le bouton « ne plus masquer » écrit dans le champ VISIBLE**, plus dans un
-   état caché. À vérifier : après un clic, le terme apparaît dans « ne jamais
-   masquer » ; on peut le supprimer à la main pour le remasquer ; et cliquer
-   « Enregistrer » le rend permanent — l’éphémère devient durable par un geste
-   explicite, jamais par surprise.
+La séparation est FONCTIONNELLE, pas esthétique. Les champs du panneau sont
+**écrasés au chargement d’un profil** (`fileAlwaysKeep.value = p.alwaysKeep…`)
+et « Enregistrer » y pousserait des termes qui ne valent que pour un fichier.
+Y ranger le vocabulaire d'un document, c'était le perdre au premier changement
+de profil et polluer le profil au premier enregistrement.
+
+À vérifier en Chrome :
+
+1. Saisir des termes dans « Termes de ce document », **changer de profil** →
+   ils doivent **survivre** ; les champs du panneau, eux, changent.
+2. Cliquer « Enregistrer » sur un profil → les termes du document **ne doivent
+   pas** s’y retrouver.
+3. Choisir un **autre fichier** → les termes du document sont **effacés** ; les
+   règles de profil sont **intactes**.
+4. **Tab insère une tabulation** dans les quatre champs de règles. Vérifier les
+   échappatoires clavier : **Maj+Tab** revient en arrière, **Échap** sort du
+   champ. Sans elles, on enferme ceux qui naviguent au clavier.
+5. Le bouton « ne plus masquer » de la table écrit dans **« Termes de ce
+   document »** — le terme est visible, modifiable à la main, et disparaîtra
+   avec le fichier.
 
 ⚠️ La virgule et le point-virgule ne sont **pas** des séparateurs, et c’est
 délibéré : « Dupont, Marie » ou « Legrand & Fils, S.A. » sont des termes
-plausibles, et les découper produirait des fragments qui masqueraient
-n’importe quoi.
+plausibles, et les découper produirait des fragments masquant n’importe quoi.
 
 ### À chronométrer maintenant : le regroupement en lots
 
