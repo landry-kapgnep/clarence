@@ -1,9 +1,9 @@
 import {
   anonymizeUnits
-} from "./chunk-4QNH4GYT.js";
+} from "./chunk-7OA5DXBI.js";
 import {
   verifierAnnulation
-} from "./chunk-MOMSVBUU.js";
+} from "./chunk-IAEMHCI7.js";
 import {
   distributeEntitiesOverRuns,
   joinRuns
@@ -204,7 +204,7 @@ async function reconstructPdf(buffer, opts = {}) {
   const { signal } = opts;
   const pages = await parsePages(buffer, signal);
   const allUnits = marquerIntitules(pages.flatMap((p) => p.units)).map((u) => ({ id: u.id, text: u.text, structurel: u.structurel }));
-  const { results, mapping } = await anonymizeUnits(allUnits, {
+  const { results, mapping, entitesContextuelles } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
     nerDetect: opts.nerDetect,
     onProgress: opts.onProgress,
@@ -214,6 +214,7 @@ async function reconstructPdf(buffer, opts = {}) {
     keepValues: opts.keepValues,
     arbitre: opts.arbitre,
     intitules: pages.intitules,
+    entitesConnues: opts.entitesConnues,
     signal
   });
   const entitiesById = new Map(results.map((r) => [r.id, r.entities || []]));
@@ -252,7 +253,11 @@ async function reconstructPdf(buffer, opts = {}) {
     }
   }
   const bytes = await pdfDoc.save();
-  return { buffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), mapping };
+  return {
+    buffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    mapping,
+    entitesContextuelles
+  };
 }
 export {
   reconstructPdf,

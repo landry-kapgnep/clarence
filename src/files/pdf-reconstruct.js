@@ -287,7 +287,7 @@ export async function reconstructPdf(buffer, opts = {}) {
   // sa règle des « au moins deux » n'a de sens qu'à cette échelle.
   const allUnits = marquerIntitules(pages.flatMap(p => p.units))
     .map(u => ({ id: u.id, text: u.text, structurel: u.structurel }));
-  const { results, mapping } = await anonymizeUnits(allUnits, {
+  const { results, mapping, entitesContextuelles } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
     nerDetect: opts.nerDetect,
     onProgress: opts.onProgress,
@@ -297,6 +297,7 @@ export async function reconstructPdf(buffer, opts = {}) {
     keepValues: opts.keepValues,
     arbitre: opts.arbitre,
     intitules: pages.intitules,
+    entitesConnues: opts.entitesConnues,
     signal
   });
   const entitiesById = new Map(results.map(r => [r.id, r.entities || []]));
@@ -341,5 +342,11 @@ export async function reconstructPdf(buffer, opts = {}) {
   }
 
   const bytes = await pdfDoc.save();
-  return { buffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), mapping };
+  // `entitesContextuelles` remontée telle quelle : permet de régénérer le PDF
+  // après un démasquage sans repayer la détection (voir anonymize-units.js).
+  return {
+    buffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    mapping,
+    entitesContextuelles
+  };
 }

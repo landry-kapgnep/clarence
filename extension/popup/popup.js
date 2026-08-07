@@ -17,7 +17,7 @@ import {
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-MOMSVBUU.js";
+} from "./chunk-IAEMHCI7.js";
 import {
   createBatchedPipeline
 } from "./chunk-IT5BP6N7.js";
@@ -1458,6 +1458,8 @@ function setChosenFile(file) {
     return;
   }
   annulerRunFichier("");
+  fileRegen = null;
+  fileTermesRetires = [];
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $("fileName");
@@ -1500,12 +1502,64 @@ function fileMaskOptions(units = []) {
     })
   };
 }
+var fileRegen = null;
+var fileTermesRetires = [];
+async function retirerDuMasquage(valeur) {
+  if (!fileRegen || fileTermesRetires.includes(valeur)) return;
+  fileTermesRetires = [...fileTermesRetires, valeur];
+  const btn = $("fileAnalyzeBtn");
+  btn.disabled = true;
+  fileSetStatus("Mise \xE0 jour du fichier\u2026");
+  try {
+    const r = fileRegen;
+    const keepValues = [...parseLines($("fileAlwaysKeep")?.value), ...fileTermesRetires];
+    const forceTerms = [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()];
+    let mapping;
+    if (r.mode === "pdf") {
+      const { reconstructPdf } = await import("./pdf-reconstruct-JGINQLWB.js");
+      const pdflib = await import("./es-RR6ZCDY3.js");
+      const res = await reconstructPdf(r.tampon.slice(0), {
+        entitesConnues: r.entites,
+        maskOpts: fileMaskOptions(),
+        forceTerms,
+        keepValues,
+        disabledTypes: fileDisabledTypes,
+        deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
+      });
+      fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
+      mapping = res.mapping;
+    } else {
+      const { anonymizeUnits } = await import("./anonymize-units-PBS7INM3.js");
+      const { results, mapping: m } = await anonymizeUnits(r.units, {
+        entitesConnues: r.entites,
+        intitules: r.intitules,
+        maskOpts: fileMaskOptions(r.units),
+        forceTerms,
+        keepValues,
+        disabledTypes: fileDisabledTypes
+      });
+      const byId = new Map(results.map((x) => [x.id, { maskedText: x.maskedText, entities: x.entities }]));
+      const masked = await r.adapter.applyMask(r.input, byId);
+      fileOutBlob = new Blob([await r.adapter.stripMetadata(masked)], { type: r.kind.mime });
+      mapping = m;
+    }
+    showFileResults(mapping, r.kind.mime.startsWith("text/"));
+    fileSetStatus(`\xAB ${valeur} \xBB n\u2019est plus masqu\xE9.`);
+  } catch (err) {
+    console.error(err);
+    fileTermesRetires = fileTermesRetires.filter((v) => v !== valeur);
+    fileSetStatus("Impossible de mettre \xE0 jour le fichier. D\xE9tail dans la console.", "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
 function showFileResults(mapping, copyable) {
   lastMapping = mapping;
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {
   });
-  $("fileMappingWrap").innerHTML = mapping.length ? `<table>${mapping.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
+  const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
+    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
   ).join("")}</table>` : "<p>Aucun masque actif.</p>";
   $("fileSummary").textContent = mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.";
   $("fileSummary").className = "status active";
@@ -1903,6 +1957,8 @@ function annulerRunFichier(motif) {
 async function processFile() {
   if (!chosenFile) return;
   annulerRunFichier("");
+  fileTermesRetires = [];
+  fileRegen = null;
   const source = chosenFile;
   const run = { id: ++fileRunId, controller: new AbortController() };
   fileRun = run;
@@ -1938,9 +1994,10 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-XJINQBC2.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-JGINQLWB.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
-      const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await source.arrayBuffer(), {
+      const tampon = await source.arrayBuffer();
+      const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
         signal,
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
@@ -1961,12 +2018,13 @@ async function processFile() {
       verifierAnnulation(signal);
       fileOutBlob = new Blob([outBuf], { type: "application/pdf" });
       fileOutName = source.name.replace(/(\.[^.]+)$/, "-anonymise$1");
+      fileRegen = { mode: "pdf", tampon, entites: entitesContextuelles2, source, kind, ext };
       showFileResults(mapping2, false);
       renderEngineBadge("fileEngineBadge");
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-DUNZMMJE.js");
+    const { anonymizeUnits } = await import("./anonymize-units-PBS7INM3.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -1976,7 +2034,7 @@ async function processFile() {
     fileSetStatus("D\xE9tection en cours\u2026");
     await ensureNER();
     verifierAnnulation(signal);
-    const { results, mapping } = await anonymizeUnits(units, {
+    const { results, mapping, entitesContextuelles } = await anonymizeUnits(units, {
       signal,
       nerPipeline: nerPipe,
       nerDetect: contextualDetector(),
@@ -1997,6 +2055,17 @@ async function processFile() {
     verifierAnnulation(signal);
     fileOutBlob = new Blob([cleaned], { type: kind.mime });
     fileOutName = kind.outExt ? source.name.replace(/\.[^.]+$/, "-anonymise" + kind.outExt) : source.name.replace(/(\.[^.]+)$/, "-anonymise$1");
+    fileRegen = {
+      mode: "standard",
+      input,
+      units,
+      intitules,
+      entites: entitesContextuelles,
+      adapter,
+      source,
+      kind,
+      ext
+    };
     showFileResults(mapping, kind.mime.startsWith("text/"));
     renderEngineBadge("fileEngineBadge");
     fileSetStatus("");
@@ -2043,6 +2112,10 @@ for (const btn of document.querySelectorAll(".mode-btn")) {
 $("filePickBtn").addEventListener("click", () => $("fileInput").click());
 $("fileInput").addEventListener("change", (ev) => setChosenFile(ev.target.files[0]));
 $("fileCancelBtn").addEventListener("click", () => annulerRunFichier());
+$("fileMappingWrap").addEventListener("click", (ev) => {
+  const btn = ev.target.closest(".map-retirer");
+  if (btn) retirerDuMasquage(btn.dataset.valeur);
+});
 $("fileResetBtn").addEventListener("click", () => {
   annulerRunFichier("");
   chosenFile = null;

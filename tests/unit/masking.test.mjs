@@ -9,7 +9,10 @@ const e = (type, value, start, source = 'ner') =>
 test('placeholder typé et numéroté', () => {
   const { masked, mapping } = maskText('Contact : jean@acme.fr', [e('EMAIL', 'jean@acme.fr', 10, 'regex')]);
   assert.equal(masked, 'Contact : [EMAIL_1]');
-  assert.deepEqual(mapping, [{ placeholder: '[EMAIL_1]', value: 'jean@acme.fr', type: 'EMAIL', realistic: false }]);
+  assert.deepEqual(mapping, [{
+    placeholder: '[EMAIL_1]', value: 'jean@acme.fr', type: 'EMAIL',
+    realistic: false, occurrences: 1
+  }]);
 });
 
 test('même valeur → même placeholder partout (cohérence)', () => {
@@ -118,4 +121,37 @@ test('avec pseudonymes, le composant reçoit SON pseudonyme, pas le nom complet'
   });
   assert.match(masked, /Contact : Noémie Rousseau\./);
   assert.match(masked, /Noémie rappellera demain/, 'attendu « Noémie » seul, obtenu : ' + masked);
+});
+
+// --- COMPTEUR D'OCCURRENCES. Il sert à trier la table de correspondance par
+// fréquence, et ce tri porte une découverte mesurée sur un vrai mémoire :
+// le sur-masquage se concentre en TÊTE de distribution (« ChatGPT » masqué
+// 41 fois, « MT » 25 fois), alors que la vraie donnée personnelle de ce
+// document n'apparaissait qu'UNE fois. Trier par fréquence met donc les
+// corrections les plus rentables en premier.
+test('les occurrences sont comptées, propagation COMPRISE', () => {
+  // « Rose Fontaine » n'est détecté qu'une fois ; la seconde occurrence est
+  // rattrapée par la propagation. Le compteur doit voir les DEUX, sinon il
+  // décrit la détection au lieu de décrire le document livré.
+  const texte = 'Rose Fontaine a signé. Merci à Rose Fontaine.';
+  const { mapping } = maskText(texte, [e('PER', 'Rose Fontaine', 0)]);
+  assert.equal(mapping.length, 1);
+  assert.equal(mapping[0].occurrences, 2);
+});
+
+test('le compteur distingue bien les valeurs entre elles', () => {
+  const texte = 'Paul écrit à Marie. Paul insiste. Paul rappelle Marie.';
+  const { mapping } = maskText(texte, [e('PER', 'Paul', 0), e('PER', 'Marie', 13)]);
+  const parValeur = Object.fromEntries(mapping.map(m => [m.value, m.occurrences]));
+  assert.deepEqual(parValeur, { Paul: 3, Marie: 2 });
+});
+
+test('un pseudonyme réaliste est compté comme un placeholder', () => {
+  // Le pseudonyme n'est pas entre crochets et peut contenir des caractères que
+  // le compteur ne doit pas interpréter — d'où la recherche littérale.
+  const texte = 'Paul écrit. Paul répond.';
+  const { mapping } = maskText(texte, [e('PER', 'Paul', 0)], {
+    pseudonymize: () => 'Noémie R. (a+b)'
+  });
+  assert.equal(mapping[0].occurrences, 2);
 });

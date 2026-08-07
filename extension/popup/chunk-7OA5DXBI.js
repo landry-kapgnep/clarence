@@ -9,7 +9,7 @@ import {
   propagatedSpans,
   selectActive,
   verifierAnnulation
-} from "./chunk-MOMSVBUU.js";
+} from "./chunk-IAEMHCI7.js";
 
 // src/files/anonymize-units.js
 var UNIT_SEP = "\n\uE000\uE004\uE000\n";
@@ -58,14 +58,19 @@ function joinWithSentinel(units) {
   }
   return { combined, ranges };
 }
-async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre, intitules } = {}) {
+async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre, intitules, entitesConnues } = {}) {
   const nonEmpty = units.filter((u) => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
-  let nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal, new Set(intitules || [])) : [];
-  if (arbitre && nerEntities.length) {
-    verifierAnnulation(signal);
-    nerEntities = await arbitre(nerEntities);
+  let nerEntities;
+  if (entitesConnues) {
+    nerEntities = entitesConnues;
+  } else {
+    nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal, new Set(intitules || [])) : [];
+    if (arbitre && nerEntities.length) {
+      verifierAnnulation(signal);
+      nerEntities = await arbitre(nerEntities);
+    }
   }
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, /* @__PURE__ */ new Set());
@@ -100,7 +105,7 @@ async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTe
     entities: entitiesByUnitId.get(u.id)
   }));
   const emptyResults = units.filter((u) => u.text.length === 0).map((u) => ({ id: u.id, text: u.text, maskedText: u.text, entities: [] }));
-  return { results: [...results, ...emptyResults], mapping };
+  return { results: [...results, ...emptyResults], mapping, entitesContextuelles: nerEntities };
 }
 
 export {

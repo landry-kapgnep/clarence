@@ -936,3 +936,29 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 /* Rouge repris de la note laissée en tête de fichier (« e53935 pour le rouge
    plus pâle ») plutôt que d'en inventer un nouveau. */
 .poids-badge.poids-tres-lourd { background: #e53935; }
+
+/* Table de correspondance ACTIONNABLE (mode Fichier).
+   La détection ne sera jamais parfaite, et une part du sur-masquage dépend du
+   document lui-même : « ChatGPT » doit survivre dans un mémoire sur ChatGPT,
+   ce qu'aucun réglage enregistré à l'avance ne peut prévoir. Le levier n'est
+   donc pas de mieux deviner mais de rendre la correction immédiate. */
+td.map-occ {
+  text-align: right;
+  color: var(--paper-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding-right: 8px;
+}
+/* Style repris des contrôles existants (plat, carré, sans translucidité),
+   pas d'une pastille générique. */
+.map-retirer {
+  font-size: 11px;
+  padding: 2px 6px;
+  line-height: 1.3;
+  background: var(--control-ghost-bg);
+  color: var(--paper-dim);
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.map-retirer:hover { background: var(--control-ghost-hover-bg); color: var(--paper); }

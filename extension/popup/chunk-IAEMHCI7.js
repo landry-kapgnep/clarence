@@ -4124,6 +4124,15 @@ var TYPE_LABELS = {
   SANTE: "SANTE"
 };
 var escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function compterOccurrences(texte, aiguille) {
+  if (!aiguille) return 0;
+  let n = 0, i = texte.indexOf(aiguille);
+  while (i !== -1) {
+    n++;
+    i = texte.indexOf(aiguille, i + aiguille.length);
+  }
+  return n;
+}
 function maskText(text, entities, opts = {}) {
   const pseudonymize = opts.pseudonymize || null;
   const byValue = /* @__PURE__ */ new Map();
@@ -4144,7 +4153,7 @@ function maskText(text, entities, opts = {}) {
         ph = "[" + label + "_" + n + "]";
       }
       byValue.set(key, ph);
-      mapping.push({ placeholder: ph, value: e.value, type: e.type, realistic });
+      mapping.push({ placeholder: ph, value: e.value, type: e.type, realistic, occurrences: 0 });
     }
     out += text.slice(cursor, e.start) + ph;
     cursor = e.end;
@@ -4154,6 +4163,9 @@ function maskText(text, entities, opts = {}) {
   for (let i = spans.length - 1; i >= 0; i--) {
     const s = spans[i];
     out = out.slice(0, s.start) + s.placeholder + out.slice(s.end);
+  }
+  for (const m of mapping) {
+    m.occurrences = compterOccurrences(out, m.placeholder);
   }
   return { masked: out, mapping };
 }

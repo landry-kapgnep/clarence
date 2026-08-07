@@ -189,6 +189,37 @@ Contraste mesuré des quatre teintes sur le fond sombre : **7,25 à 8,50** —
 au-dessus du seuil AAA (7:1). Le mot est toujours présent à côté de la couleur,
 jamais la couleur seule.
 
+
+### A0quinquies. Table de correspondance actionnable (07/08/2026)
+
+La détection ne sera jamais parfaite, et une part du sur-masquage dépend du
+DOCUMENT : « ChatGPT » doit survivre dans un mémoire sur ChatGPT — aucun
+réglage enregistré à l'avance ne peut le prévoir, et un profil créé pour un
+seul document reviendrait à anonymiser à la main. Le levier n'est donc pas de
+mieux deviner, mais de rendre la correction immédiate.
+
+Mesuré sur un vrai mémoire anglais de 21 pages : `ChatGPT` masqué **41 fois**,
+`MT` **25 fois**, quand la vraie donnée personnelle (le nom de l’autrice)
+n'apparaissait qu'**une** fois. Le sur-masquage se concentre donc en tête de la
+distribution — d’où le tri par fréquence, qui met les corrections les plus
+rentables en premier.
+
+À vérifier en Chrome :
+
+1. Traiter un fichier → la table est triée par **occurrences décroissantes**,
+   chaque ligne portant son compte et un bouton « ne plus masquer ».
+2. Cliquer sur le bouton de la ligne la plus fréquente → le fichier est
+   **régénéré en moins d’une seconde**. Si ça prend 45 s, le cache d’entités
+   n’a pas été réutilisé et tout le mécanisme est manqué.
+3. Retélécharger → le terme doit être en clair **partout**, pas seulement à sa
+   première occurrence.
+4. Retirer un deuxième terme → les deux restent retirés (les retraits
+   s’accumulent).
+5. Sur un PDF « Préserver », vérifier que les **images sont toujours là** après
+   régénération.
+6. Changer de fichier, puis relancer une détection → les retraits précédents
+   sont **oubliés** (nouveau mapping, anciennes cibles caduques).
+
 ### À chronométrer maintenant : le regroupement en lots
 
 Les inférences partent désormais par lots de 8 (`src/engine/batch.js`). Mesuré

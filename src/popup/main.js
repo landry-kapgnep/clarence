@@ -739,6 +739,9 @@ function setChosenFile(file) {
   // aucun intérêt (son résultat ne concerne plus rien d'affiché) et il occupe
   // le modèle au détriment du run suivant.
   annulerRunFichier('');
+  // Nouveau fichier : les retraits de l'ancien n'ont plus lieu d'être.
+  fileRegen = null;
+  fileTermesRetires = [];
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $('fileName');
@@ -791,14 +794,108 @@ function fileMaskOptions(units = []) {
   };
 }
 
+// Tout ce qu'il faut pour REJOUER le masquage sans repayer la détection, quand
+// l'utilisateur retire un masque depuis la table de correspondance.
+//
+// POURQUOI CE N'EST PAS UN LUXE. La détection ne sera jamais parfaite — cinq
+// pistes mesurées et écartées le 07/08 — et une partie du sur-masquage dépend
+// du DOCUMENT, pas de réglages qu'on pourrait pré-configurer : « ChatGPT » doit
+// survivre dans un mémoire sur ChatGPT, et un profil enregistré ne servirait
+// qu'à ce document-là. Le levier n'est donc pas de mieux deviner, c'est de
+// rendre la correction triviale. Sans ce cache, retirer un masque relancerait
+// 45 secondes d'inférence et le geste cesserait d'être utilisable.
+let fileRegen = null;
+
+// Termes que l'utilisateur a retirés depuis la table, pour CE fichier.
+// Distinct du champ « ne jamais masquer » des options, qui est persistant et
+// vaut pour tous les fichiers : ici c'est une correction ponctuelle.
+let fileTermesRetires = [];
+
+// Retire un terme du masquage et REJOUE le masquage sur le fichier entier,
+// sans relancer la détection.
+//
+// Le terme rejoint `keepValues`, la primitive que `filterByRules` applique déjà
+// aux règles « ne jamais masquer » : aucune mécanique nouvelle, donc aucun
+// chemin de masquage parallèle qui pourrait diverger.
+async function retirerDuMasquage(valeur) {
+  if (!fileRegen || fileTermesRetires.includes(valeur)) return;
+  fileTermesRetires = [...fileTermesRetires, valeur];
+
+  const btn = $('fileAnalyzeBtn');
+  btn.disabled = true;
+  fileSetStatus('Mise à jour du fichier…');
+  try {
+    const r = fileRegen;
+    const keepValues = [...parseLines($('fileAlwaysKeep')?.value), ...fileTermesRetires];
+    const forceTerms = [...parseLines($('fileAlwaysMask')?.value), ...identityForceTerms()];
+    let mapping;
+
+    if (r.mode === 'pdf') {
+      const { reconstructPdf } = await import('../files/pdf-reconstruct.js');
+      const pdflib = await import('pdf-lib');
+      // `tampon` est re-copié : pdfjs DÉTACHE l'ArrayBuffer qu'on lui passe
+      // (gotcha connu), donc le garder tel quel le rendrait inutilisable au
+      // deuxième retrait.
+      const res = await reconstructPdf(r.tampon.slice(0), {
+        entitesConnues: r.entites,
+        maskOpts: fileMaskOptions(),
+        forceTerms, keepValues,
+        disabledTypes: fileDisabledTypes,
+        deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
+      });
+      fileOutBlob = new Blob([res.buffer], { type: 'application/pdf' });
+      mapping = res.mapping;
+    } else {
+      const { anonymizeUnits } = await import('../files/anonymize-units.js');
+      const { results, mapping: m } = await anonymizeUnits(r.units, {
+        entitesConnues: r.entites,
+        intitules: r.intitules,
+        maskOpts: fileMaskOptions(r.units),
+        forceTerms, keepValues,
+        disabledTypes: fileDisabledTypes
+      });
+      const byId = new Map(results.map(x => [x.id, { maskedText: x.maskedText, entities: x.entities }]));
+      const masked = await r.adapter.applyMask(r.input, byId);
+      fileOutBlob = new Blob([await r.adapter.stripMetadata(masked)], { type: r.kind.mime });
+      mapping = m;
+    }
+
+    showFileResults(mapping, r.kind.mime.startsWith('text/'));
+    fileSetStatus(`« ${valeur} » n’est plus masqué.`);
+  } catch (err) {
+    console.error(err);
+    // Le fichier précédent reste valide et téléchargeable : on ne le remplace
+    // que si la régénération a abouti. Mieux vaut un retrait sans effet qu'un
+    // résultat à moitié réécrit.
+    fileTermesRetires = fileTermesRetires.filter(v => v !== valeur);
+    fileSetStatus('Impossible de mettre à jour le fichier. Détail dans la console.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // Affichage partagé du résultat fichier (chemin standard ET reconstruction PDF).
 // copyable : la sortie est-elle du texte copiable (md/csv) vs binaire (pdf/xlsx/docx).
 function showFileResults(mapping, copyable) {
   lastMapping = mapping;
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {});
+  // TRI PAR FRÉQUENCE, et ce n'est pas cosmétique.
+  //
+  // Mesuré sur un vrai mémoire de 21 pages : le sur-masquage est massivement
+  // concentré en TÊTE de cette distribution — « ChatGPT » masqué 41 fois et
+  // « MT » 25 fois dans un mémoire QUI PORTE SUR eux, alors que la vraie
+  // donnée personnelle du document (le nom de l'autrice) n'apparaissait
+  // qu'UNE fois. Trier par fréquence met donc les corrections les plus
+  // rentables en premier : trois clics récupèrent un quart des placeholders.
+  const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
   $('fileMappingWrap').innerHTML = mapping.length
-    ? `<table>${mapping.map(m =>
-        `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
+    ? `<table>${triees.map(m =>
+        `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td>` +
+        `<td class="map-occ">${m.occurrences || 1}×</td>` +
+        // `data-valeur` porte la valeur RÉELLE : c'est elle qu'on ajoutera aux
+        // termes « ne jamais masquer », pas le placeholder.
+        `<td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
+        ` title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
       ).join('')}</table>`
     : '<p>Aucun masque actif.</p>';
   $('fileSummary').textContent = mapping.length
@@ -1331,6 +1428,11 @@ async function processFile() {
   // pour composer le nom de sortie : changer de fichier en cours de route
   // produisait le CONTENU de l'ancien sous le NOM du nouveau — on croyait tenir
   // B anonymisé en tenant A. Même gravité qu'une fuite, d'où la capture.
+  // Une nouvelle détection rebâtit le mapping : les retraits de la passe
+  // précédente n'ont plus de cible.
+  fileTermesRetires = [];
+  fileRegen = null;
+
   const source = chosenFile;
   const run = { id: ++fileRunId, controller: new AbortController() };
   fileRun = run;
@@ -1379,7 +1481,8 @@ async function processFile() {
       verifierAnnulation(signal);
       const { reconstructPdf } = await import('../files/pdf-reconstruct.js');
       const pdflib = await import('pdf-lib');
-      const { buffer: outBuf, mapping } = await reconstructPdf(await source.arrayBuffer(), {
+      const tampon = await source.arrayBuffer();
+      const { buffer: outBuf, mapping, entitesContextuelles } = await reconstructPdf(tampon, {
         signal,
         nerPipeline: nerPipe,
         nerDetect: contextualDetector(),
@@ -1400,6 +1503,7 @@ async function processFile() {
       verifierAnnulation(signal);
       fileOutBlob = new Blob([outBuf], { type: 'application/pdf' });
       fileOutName = source.name.replace(/(\.[^.]+)$/, '-anonymise$1');
+      fileRegen = { mode: 'pdf', tampon, entites: entitesContextuelles, source, kind, ext };
       showFileResults(mapping, false);
       renderEngineBadge('fileEngineBadge');
       fileSetStatus('');
@@ -1424,7 +1528,7 @@ async function processFile() {
     fileSetStatus('Détection en cours…');
     await ensureNER();
     verifierAnnulation(signal);
-    const { results, mapping } = await anonymizeUnits(units, {
+    const { results, mapping, entitesContextuelles } = await anonymizeUnits(units, {
       signal,
       nerPipeline: nerPipe,
       nerDetect: contextualDetector(),
@@ -1451,6 +1555,9 @@ async function processFile() {
     fileOutName = kind.outExt
       ? source.name.replace(/\.[^.]+$/, '-anonymise' + kind.outExt)
       : source.name.replace(/(\.[^.]+)$/, '-anonymise$1');
+
+    fileRegen = { mode: 'standard', input, units, intitules,
+      entites: entitesContextuelles, adapter, source, kind, ext };
 
     // Copier n'a de sens que pour une sortie TEXTE (md/csv), pas binaire.
     showFileResults(mapping, kind.mime.startsWith('text/'));
@@ -1516,6 +1623,13 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
 $('filePickBtn').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', ev => setChosenFile(ev.target.files[0]));
 $('fileCancelBtn').addEventListener('click', () => annulerRunFichier());
+
+// Délégation : la table est reconstruite à chaque régénération, un écouteur
+// posé sur chaque bouton serait perdu au premier retrait.
+$('fileMappingWrap').addEventListener('click', ev => {
+  const btn = ev.target.closest('.map-retirer');
+  if (btn) retirerDuMasquage(btn.dataset.valeur);
+});
 $('fileResetBtn').addEventListener('click', () => {
   annulerRunFichier('');
   chosenFile = null;

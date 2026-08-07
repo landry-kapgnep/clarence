@@ -183,25 +183,42 @@ function joinWithSentinel(units) {
 // signal (optionnel) : AbortSignal. Un traitement abandonné doit s'ARRÊTER, pas
 // seulement voir son résultat ignoré — sinon il continue d'occuper le modèle et
 // le run suivant attend derrière lui (voir src/engine/annulation.js).
-export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre, intitules } = {}) {
+export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre, intitules, entitesConnues } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);
 
   // Structuré = regex FR + téléphones internationaux (libphonenumber).
   const regexEntities = [...detectRegex(combined), ...detectPhonesIntl(combined)];
-  let nerEntities = nerPipeline
-    ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal, new Set(intitules || []))
-    : [];
 
-  // `arbitre` (optionnel) : seconde opinion du modèle sur les entités qu'il
-  // vient de proposer, pour écarter « Analyste », « Poste occupé » et consorts.
-  // Injecté par l'appelant plutôt que branché ici, parce qu'il est propre à
-  // GLiNER : le moteur BERT de repli n'a pas de labels à interroger. Appliqué
-  // AVANT la fusion, donc uniquement au contextuel — le déterministe n'est
-  // jamais soumis à l'avis d'un modèle.
-  if (arbitre && nerEntities.length) {
-    verifierAnnulation(signal);
-    nerEntities = await arbitre(nerEntities);
+  // `entitesConnues` : sortie contextuelle d'un appel PRÉCÉDENT sur les MÊMES
+  // unités. Fournie, elle court-circuite entièrement la détection.
+  //
+  // À quoi ça sert : régénérer le fichier quand l'utilisateur retire un masque
+  // depuis la table de correspondance. Sans ça, décocher « ChatGPT » relancerait
+  // 45 secondes d'inférence pour un résultat que le modèle a déjà donné — et le
+  // geste cesserait d'être utilisable.
+  //
+  // Les offsets sont absolus dans `combined`, qui ne dépend que de `units` :
+  // tant que les unités sont identiques, les entités restent valides. Le jour
+  // où l'appelant changerait les unités, il ne doit PAS repasser ce cache.
+  let nerEntities;
+  if (entitesConnues) {
+    nerEntities = entitesConnues;
+  } else {
+    nerEntities = nerPipeline
+      ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal, new Set(intitules || []))
+      : [];
+
+    // `arbitre` (optionnel) : seconde opinion du modèle sur les entités qu'il
+    // vient de proposer, pour écarter « Analyste », « Poste occupé » et consorts.
+    // Injecté par l'appelant plutôt que branché ici, parce qu'il est propre à
+    // GLiNER : le moteur BERT de repli n'a pas de labels à interroger. Appliqué
+    // AVANT la fusion, donc uniquement au contextuel — le déterministe n'est
+    // jamais soumis à l'avis d'un modèle.
+    if (arbitre && nerEntities.length) {
+      verifierAnnulation(signal);
+      nerEntities = await arbitre(nerEntities);
+    }
   }
   const forced = forcedMasks(combined, forceTerms || []);
   const selected = selectActive(mergeEntities(regexEntities, nerEntities), forced, new Set());
@@ -251,5 +268,7 @@ export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, 
     .filter(u => u.text.length === 0)
     .map(u => ({ id: u.id, text: u.text, maskedText: u.text, entities: [] }));
 
-  return { results: [...results, ...emptyResults], mapping };
+  // `entitesContextuelles` est rendue pour que l'appelant puisse REJOUER le
+  // masquage sans repayer la détection (voir `entitesConnues` plus haut).
+  return { results: [...results, ...emptyResults], mapping, entitesContextuelles: nerEntities };
 }

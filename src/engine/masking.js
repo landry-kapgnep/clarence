@@ -28,6 +28,19 @@ const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // entities : sortie de mergeEntities/selectActive (triées, sans chevauchement).
 // opts.pseudonymize : fn(type, value) → pseudo réaliste ou null (→ placeholder).
 // Retourne { masked, mapping } ; mapping = [{ placeholder, value, type, realistic }].
+// Compte les occurrences d'un placeholder dans le texte masqué.
+//
+// `indexOf` en boucle et non une RegExp : un pseudonyme réaliste (« Noémie
+// Rousseau ») n'est pas échappé et contiendrait des métacaractères, et un
+// placeholder porte des crochets — deux façons de casser une RegExp construite
+// à la volée. La recherche littérale n'a pas ce problème.
+function compterOccurrences(texte, aiguille) {
+  if (!aiguille) return 0;
+  let n = 0, i = texte.indexOf(aiguille);
+  while (i !== -1) { n++; i = texte.indexOf(aiguille, i + aiguille.length); }
+  return n;
+}
+
 export function maskText(text, entities, opts = {}) {
   const pseudonymize = opts.pseudonymize || null;
   const byValue = new Map();
@@ -50,7 +63,12 @@ export function maskText(text, entities, opts = {}) {
         ph = '[' + label + '_' + n + ']';
       }
       byValue.set(key, ph);
-      mapping.push({ placeholder: ph, value: e.value, type: e.type, realistic });
+      // `occurrences` est rempli plus bas, une fois la propagation faite : c'est
+      // ce compteur qui permet de trier la table de correspondance par
+      // fréquence. Le sur-masquage se concentre en tête de cette distribution
+      // — mesuré sur un vrai mémoire, « ChatGPT » masqué 41 fois et « MT »
+      // 25 fois, quand la vraie donnée personnelle n'apparaissait qu'UNE fois.
+      mapping.push({ placeholder: ph, value: e.value, type: e.type, realistic, occurrences: 0 });
     }
     out += text.slice(cursor, e.start) + ph;
     cursor = e.end;
@@ -63,6 +81,13 @@ export function maskText(text, entities, opts = {}) {
   for (let i = spans.length - 1; i >= 0; i--) {
     const s = spans[i];
     out = out.slice(0, s.start) + s.placeholder + out.slice(s.end);
+  }
+
+  // Comptage APRÈS propagation : on compte ce que l'utilisateur voit vraiment
+  // dans le document final, pas ce que la détection avait proposé. Les deux
+  // diffèrent — la propagation rattrape des occurrences que le modèle a ratées.
+  for (const m of mapping) {
+    m.occurrences = compterOccurrences(out, m.placeholder);
   }
 
   return { masked: out, mapping };
