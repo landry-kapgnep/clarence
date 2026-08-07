@@ -329,5 +329,124 @@ p3.drawImage(png, { x: 50, y: y3 - 120, width: 120, height: 120 });
 put(p3, 'Figure 1 — le fond de ce disque est TRANSPARENT (doit le rester,', 190, y3 - 60, 8);
 put(p3, 'pas devenir noir). Contenu visuel non anonymisé : pas d’OCR.', 190, y3 - 74, 8);
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAGE 4 — ANGLOPHONE. Le corpus était à 6 documents sur 7 en français : on ne
+// mesurait donc RIEN hors du français, exactement le mécanisme qui avait laissé
+// passer le bug d'interligne (tout le corpus était en interligne simple).
+//
+// La couche contextuelle est multilingue par nature — le modèle l'est. La
+// couche DÉTERMINISTE, elle, est franco-française : c'est ce que cette page
+// éprouve en premier, et chaque identifiant US ci-dessous est une fuite
+// ATTENDUE tant que P5 (i18n du structuré) n'est pas fait.
+// ═══════════════════════════════════════════════════════════════════════════
+const p4 = doc.addPage([595, 842]);
+let y4 = 790;
+const l4 = (t, size = 9, gras = false, pas = 14) => { put(p4, t, 50, y4, size, gras); y4 -= pas; };
+
+l4('APPENDIX 3 — ENGLISH RECORD', 13, true);
+y4 -= 10;
+
+// Intitulés anglais : mêmes propriétés formelles qu'en français (capitales,
+// court, sans ponctuation, plusieurs dans le document). La règle structurelle
+// est indépendante de la langue — cette page le vérifie. Doivent SURVIVRE.
+l4('SUMMARY', 10, true);
+l4('Contract analyst, five years in localisation. Works with Kubernetes');
+l4('and PostgreSQL on a daily basis.');
+y4 -= 8;
+
+l4('CONTACT DETAILS', 10, true);
+// Téléphone au format NATIONAL américain. La regex FR ne le voit pas, et
+// libphonenumber tourne volontairement SANS pays par défaut : avec `FR` il
+// prend le piège SIREN « 483 921 657 » pour un numéro français.
+l4('Phone: (617) 555-0142 — mobile: 617-555-0143');
+// SSN : structure 3-2-4, aucun équivalent dans nos motifs.
+l4('SSN: 123-45-6789');
+// ZIP+4 : notre CODE_POSTAL_VILLE attend 5 chiffres à la française.
+l4('Address: 1600 Amphitheatre Pkwy, Mountain View, CA 94043-1351');
+// Date américaine mois-en-premier : « 03/14/1988 » se lit 14 mars aux
+// États-Unis et serait INVALIDE en français (mois 14). Ambiguïté réelle.
+l4('Date of birth: 03/14/1988 (born on March 14, 1988)');
+y4 -= 8;
+
+l4('PEOPLE', 10, true);
+// Patronyme composé, hors répertoire occidental courant.
+l4('Reviewed by Kwame Nkrumah-Boateng, head of the audit team.');
+// Particule irlandaise « Ó » et accents : équivalent de nos « de La ». Les
+// accents hors français sont testés ici À DESSEIN — c'est un accent qui avait
+// cassé le découpeur de mots de GLiNER.js.
+l4('Countersigned by Siobhán Ó Braonáin on the same day.');
+l4('Filed by Mary-Jane Watson at the front desk.');
+// Entreprise avec esperluette et suffixe juridique.
+l4('Counsel: Ravenscroft & Bell LLP, registered in Delaware.');
+y4 -= 8;
+
+// LE PIÈGE LE PLUS FIN DE LA PAGE : le MÊME mot, une fois nom propre, une fois
+// nom commun. « Mr. Baker » est une personne, « the baker » est un métier ;
+// « Ms. Rose » est une personne, « a rose grower » ne l'est pas. Aucun lexique
+// ne peut trancher — seule la position le peut. Témoin de la passe d'arbitrage
+// et de la civilité (honorifics.js).
+l4('AMBIGUOUS WORDS', 10, true);
+l4('Mr. Baker signed the form; the baker on Oak Street did not.');
+l4('Ms. Rose met a rose grower near Green Park last spring.');
+y4 -= 8;
+
+// Noms COMMUNS que le modèle étiquette volontiers entreprise ou lieu lorsqu'ils
+// sont isolés. Doivent SURVIVRE.
+l4('OTHER SECTIONS', 10, true);
+l4('Contents, Overview and Conclusion are listed in the front matter.');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAGE 5 — ESPAGNOL ET ALLEMAND, volontairement COURTS et intégralement glosés
+// dans tests/manuel/README.md. Raison assumée : le propriétaire du projet lit
+// le français et l'anglais ; un jeu de test qu'on ne peut pas relire soi-même
+// est une dette, pas un actif. Chaque terme y est traduit.
+// ═══════════════════════════════════════════════════════════════════════════
+const p5 = doc.addPage([595, 842]);
+let y5 = 790;
+const l5 = (t, size = 9, gras = false, pas = 14) => { put(p5, t, 50, y5, size, gras); y5 -= pas; };
+
+l5('APPENDIX 4 — ES / DE', 13, true);
+y5 -= 10;
+
+l5('SECCIÓN EN ESPAÑOL', 10, true);
+// Intitulés espagnols — doivent SURVIVRE.
+l5('IDIOMAS');
+l5('COMPETENCIAS');
+// DNI : 8 chiffres + une lettre de contrôle CALCULÉE, exactement le genre de
+// validation mathématique que la couche déterministe sait faire (comme la clé
+// du NIR). Candidat naturel à l'i18n du structuré.
+l5('DNI: 12345678Z — teléfono: +34 612 345 678');
+// Type de voie espagnol, inconnu de notre motif ADRESSE.
+l5('Dirección: Calle Mayor 12, 28013 Madrid');
+// Particule « del », équivalent de nos « de la » (voir PARTICLE dans ner.js).
+l5('Firmado por María del Carmen Ruiz-Salinas.');
+y5 -= 10;
+
+l5('DEUTSCHER ABSCHNITT', 10, true);
+// ┌───────────────────────────────────────────────────────────────────────────┐
+// │ LA SPÉCIFICITÉ ALLEMANDE, et elle touche le moteur au cœur :              │
+// │ l'allemand met une MAJUSCULE À TOUS LES NOMS COMMUNS.                     │
+// │                                                                           │
+// │ Or `estPlausiblePourLeType` (gliner.js) écarte les faux positifs          │
+// │ PER/ORG/LIEU en exigeant « au moins une majuscule » — la garde P6, qui a  │
+// │ fait passer les termes préservés de 90 à 95 %. Cette garde ne filtre      │
+// │ STRICTEMENT RIEN en allemand : Besprechung, Vertrag, Unternehmen la       │
+// │ passent tous les trois.                                                   │
+// │                                                                           │
+// │ C'est une limite STRUCTURELLE du moteur, pas un réglage à ajuster — et    │
+// │ elle n'était mesurée nulle part avant cette page.                         │
+// └───────────────────────────────────────────────────────────────────────────┘
+l5('SPRACHEN');
+l5('AUSBILDUNG');
+// Trois noms COMMUNS, tous capitalisés par la grammaire. Doivent SURVIVRE.
+l5('Die Besprechung über den Vertrag fand im Unternehmen statt.');
+// Type de voie allemand COLLÉ au nom (Hauptstraße = « rue principale »), et
+// code postal à 5 chiffres comme en France — donc faux positif possible sur
+// CODE_POSTAL_VILLE, qui suppose une ville française derrière.
+l5('Anschrift: Hauptstraße 15, 10115 Berlin');
+// Particule « von der », équivalent de « de la ».
+l5('Unterzeichnet von Jürgen von der Weiden am 14. März 1988.');
+
 writeFileSync(join(here, 'tous-defauts.pdf'), await doc.save());
-console.log('tests/manuel/tous-defauts.pdf généré (3 pages).');
+console.log('tests/manuel/tous-defauts.pdf généré (5 pages).');
