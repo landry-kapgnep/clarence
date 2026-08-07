@@ -31773,9 +31773,23 @@ async function parseStructure(buffer) {
   }
   return units;
 }
+var PONCTUATION_PHRASE = /[.!?,;]/;
+function ressembleAUnIntitule(texte) {
+  const t = (texte || "").trim();
+  if (!t || PONCTUATION_PHRASE.test(t)) return false;
+  if (t.split(/\s+/).length > 3) return false;
+  if (!new RegExp("\\p{L}", "u").test(t)) return false;
+  return t === t.toUpperCase();
+}
+function marquerIntitules(units) {
+  const candidats = units.filter((u) => !u.isHeading && ressembleAUnIntitule(u.text));
+  if (candidats.length < 2) return units;
+  for (const u of candidats) u.structurel = true;
+  return units;
+}
 async function extractTextUnits(buffer) {
-  const structured = await parseStructure(buffer);
-  return { units: structured.map(({ id, text }) => ({ id, text })) };
+  const structured = marquerIntitules(await parseStructure(buffer));
+  return { units: structured.map(({ id, text, structurel }) => ({ id, text, structurel })) };
 }
 async function applyMask(buffer, resultsById) {
   const structured = await parseStructure(buffer);
@@ -31800,6 +31814,8 @@ export {
   median,
   paragraphGapThreshold,
   splitIntoColumns,
+  ressembleAUnIntitule,
+  marquerIntitules,
   extractTextUnits,
   applyMask,
   stripMetadata

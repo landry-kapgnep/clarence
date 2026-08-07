@@ -131,6 +131,14 @@ function groupIntoParagraphs(lines, dominantSize) {
   for (const line of lines) {
     const isHeading = line.size >= dominantSize * HEADING_SIZE_RATIO;
     const gap = prevY === null ? Infinity : prevY - line.y;
+    // TENTÉ ET REJETÉ (06/08/2026) : couper le paragraphe sur un intitulé, pour
+    // que `marquerIntitules` ait plus d'unités à épargner. Ça DOUBLE bien le
+    // nombre d'unités neutralisées (6 → 16), mais le total masqué remonte
+    // (69 → 70) et la composition empire : « Éléonore » et « Vaquier »
+    // ressortent SEULS, « IBAN » et « Montant » deviennent des lieux. Découper
+    // davantage fragmente le document, et la fragmentation PDF fait monter le
+    // bruit au-dessus du signal (gotcha P1bis de CLAUDE.md). Ne pas retenter
+    // sans re-mesurer CE chiffre.
     const isNewParagraph = isHeading || !current ||
       current.isHeading !== isHeading ||
       gap > seuilEcart;
@@ -275,11 +283,66 @@ async function parseStructure(buffer) {
   return units;
 }
 
-// { units: [{id, text}] } — le flag isHeading n'est pas exposé ici (interface
+// INTITULÉS DE SECTION — reconnus à leur PLACE, jamais à leur sens.
+//
+// LE PROBLÈME. Soumis seuls, « SOMMAIRE », « COMPÉTENCES », « LANGUES »
+// sortent du modèle en ENTREPRISE ou LIEU avec des scores élevés (0,50 à 0,79
+// mesurés) — au-dessus de vraies entités. Résultat : un CV dont les titres de
+// rubrique sont maquillés en placeholders, illisible pour le LLM.
+//
+// CE QUI NE MARCHE PAS, et qui a été mesuré avant d'en arriver ici :
+//  - monter le seuil : les faux positifs sortent AU-DESSUS des vrais ;
+//  - des labels leurres (« titre de section », « métier ») : 6 cas sur 21 ;
+//  - reposer la question en « nom propre / nom commun » : GLiNER EXTRAIT des
+//    entités, il ne CLASSE pas — il répond « nom propre » à tout, et son score
+//    est même anti-corrélé (les faux positifs sortent plus haut que les vrais) ;
+//  - la fertilité du tokenizer : fuit sur Ali, Kim, Anna, Rose, Petit, Lille.
+// Les quatre jugent le mot ISOLÉ. Or un humain reconnaît un intitulé à sa
+// position dans la page, pas au mot lui-même.
+//
+// LA RÈGLE. Cinq conditions, toutes déterministes :
+//  (1) PAS un titre en gros corps — c'est le garde-fou essentiel : le nom en
+//      tête d'un CV en est un (« ÉLÉONORE VASSEUR » corps 21 contre corps 8
+//      des rubriques), et il DOIT rester masqué ;
+//  (2) court : 3 mots au plus ;
+//  (3) aucune ponctuation de phrase ;
+//  (4) entièrement en capitales ;
+//  (5) le document en contient AU MOINS DEUX — un motif de mise en page, pas
+//      un mot isolé qu'on écarterait par accident.
+//
+// CE QUE ÇA NE DÉSACTIVE PAS. `structurel` ne saute que la passe CONTEXTUELLE :
+// `detectRegex` tourne sur le document combiné entier. Une ligne « BIC :
+// AGRIFRPP882 » attrapée par la règle reste donc protégée par le déterministe.
+//
+// RISQUE ASSUMÉ, mesuré nul sur tout le corpus mais réel : un nom en capitales
+// dans le corps du texte (bloc de signature, liste d'auteurs) ne serait plus
+// masqué automatiquement. Le profil d'identité et « toujours masquer » le
+// forcent toujours, eux.
+const PONCTUATION_PHRASE = /[.!?,;]/;
+
+export function ressembleAUnIntitule(texte) {
+  const t = (texte || '').trim();
+  if (!t || PONCTUATION_PHRASE.test(t)) return false;
+  if (t.split(/\s+/).length > 3) return false;
+  if (!/\p{L}/u.test(t)) return false;
+  return t === t.toUpperCase();
+}
+
+// Marque `structurel` les unités qui forment le squelette du document.
+// Partagé par les DEUX chemins PDF (Markdown et reconstruction) : ils ont déjà
+// divergé une fois sur le découpage (leçon P1bis).
+export function marquerIntitules(units) {
+  const candidats = units.filter(u => !u.isHeading && ressembleAUnIntitule(u.text));
+  if (candidats.length < 2) return units;
+  for (const u of candidats) u.structurel = true;
+  return units;
+}
+
+// { units: [{id, text, structurel?}] } — `isHeading` n'est pas exposé (interface
 // commune aux 4 adaptateurs), applyMask le re-dérive via parseStructure.
 export async function extractTextUnits(buffer) {
-  const structured = await parseStructure(buffer);
-  return { units: structured.map(({ id, text }) => ({ id, text })) };
+  const structured = marquerIntitules(await parseStructure(buffer));
+  return { units: structured.map(({ id, text, structurel }) => ({ id, text, structurel })) };
 }
 
 // resultsById : Map<id, { maskedText }>. Ignore le buffer PDF d'origine pour

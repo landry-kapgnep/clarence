@@ -9,11 +9,12 @@ import {
   getDocument,
   groupIntoLines,
   isLineWrapHyphen,
+  marquerIntitules,
   median,
   needsSpace,
   paragraphGapThreshold,
   splitIntoColumns
-} from "./chunk-MN45A56O.js";
+} from "./chunk-RHL3QVTN.js";
 import {
   anonymizeUnits
 } from "./chunk-XOCSIZVV.js";
@@ -179,7 +180,9 @@ async function parsePages(buffer, signal) {
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
       for (const para of paragraphsWithParts(lines, dominantSize)) {
-        units.push(paragraphToRuns(para, `page${pageNum}#para${paraIdx++}`));
+        const unit = paragraphToRuns(para, `page${pageNum}#para${paraIdx++}`);
+        unit.isHeading = para.isHeading;
+        units.push(unit);
       }
     }
     pages.push({ pageNum, width: viewport.width, height: viewport.height, units, images });
@@ -190,7 +193,7 @@ async function reconstructPdf(buffer, opts = {}) {
   const { PDFDocument, StandardFonts } = opts.deps;
   const { signal } = opts;
   const pages = await parsePages(buffer, signal);
-  const allUnits = pages.flatMap((p) => p.units.map((u) => ({ id: u.id, text: u.text })));
+  const allUnits = marquerIntitules(pages.flatMap((p) => p.units)).map((u) => ({ id: u.id, text: u.text, structurel: u.structurel }));
   const { results, mapping } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
     nerDetect: opts.nerDetect,

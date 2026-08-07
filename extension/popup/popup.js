@@ -1281,7 +1281,7 @@ var FILE_TYPES = {
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
-  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-L6MI6LLK.js"), outExt: ".md" },
+  pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-Y6OCDFVC.js"), outExt: ".md" },
   // Images : metadataOnly → processFile() court-circuite le pipeline de
   // détection/masquage (une image n'a pas d'unités PII textuelles) et appelle
   // uniquement stripMetadata (re-encodage canvas, retire EXIF/GPS/chunks).
@@ -1823,7 +1823,7 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-GNHI2SXO.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-UBYX37SJ.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const { buffer: outBuf, mapping: mapping2 } = await reconstructPdf(await source.arrayBuffer(), {
         signal,

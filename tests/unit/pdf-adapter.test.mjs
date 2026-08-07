@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { extractTextUnits, applyMask, stripMetadata, groupIntoLines, isLineWrapHyphen, paragraphGapThreshold } from '../../src/files/pdf-adapter.js';
+import { ressembleAUnIntitule, marquerIntitules } from '../../src/files/pdf-adapter.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
 
 // Items pdfjs synthétiques (transform = [a,b,c,d,x,y]) : reproduit de façon
@@ -228,4 +229,45 @@ test('un vrai saut de paragraphe reste détecté malgré le calibrage', async ()
   assert.equal(units.length, 2, 'deux paragraphes attendus, obtenu : ' + JSON.stringify(units.map(u => u.text)));
   assert.match(units[0].text, /premier bloc.*premier bloc/s, 'les 10 lignes du 1er bloc doivent être fusionnées');
   assert.match(units[1].text, /second bloc/);
+});
+
+// --- INTITULÉS DE SECTION. Un CV dont « COMPÉTENCES » et « LANGUES » sont
+// maquillés en [ENTREPRISE_3] est illisible pour le LLM — et c'est ce que
+// faisait le modèle (scores 0,50 à 0,79, au-dessus de vraies entités, donc
+// aucun seuil ne pouvait les séparer).
+test('un intitulé de rubrique est reconnu par sa FORME, pas par son sens', () => {
+  for (const t of ['COMPÉTENCES', 'LANGUES', 'ÉTAT CIVIL', 'EXPÉRIENCES PROFESSIONNELLES']) {
+    assert.equal(ressembleAUnIntitule(t), true, t);
+  }
+});
+
+test('ce qui n\'est PAS un intitulé le reste', () => {
+  // Une phrase (ponctuation), un texte long, du minuscule, du vide.
+  for (const t of ['AMANDINE EST LÀ.', 'UNE PHRASE BEAUCOUP TROP LONGUE POUR UN TITRE',
+                   'Compétences', 'compétences', '', '   ', '2024']) {
+    assert.equal(ressembleAUnIntitule(t), false, JSON.stringify(t));
+  }
+});
+
+test('un nom en GROS CORPS n\'est jamais neutralisé — le garde-fou anti-fuite', () => {
+  // Mesuré : la détection de titre attrape EXACTEMENT les noms à masquer
+  // (« ÉLÉONORE VASSEUR » corps 21 contre corps 8 des rubriques). Sans cette
+  // condition, la règle ferait fuir le nom en tête de chaque CV.
+  const units = [
+    { id: 'a', text: 'ÉLÉONORE VASSEUR', isHeading: true },
+    { id: 'b', text: 'COMPÉTENCES', isHeading: false },
+    { id: 'c', text: 'LANGUES', isHeading: false }
+  ];
+  marquerIntitules(units);
+  assert.equal(units[0].structurel, undefined, 'le nom du CV doit rester analysé');
+  assert.equal(units[1].structurel, true);
+  assert.equal(units[2].structurel, true);
+});
+
+test('un seul intitulé dans tout le document : on ne neutralise RIEN', () => {
+  // La règle des « au moins deux » : un mot isolé en capitales n'est pas un
+  // motif de mise en page, et pourrait très bien être un patronyme.
+  const units = [{ id: 'a', text: 'DUPONT', isHeading: false }, { id: 'b', text: 'Texte courant ici.' }];
+  marquerIntitules(units);
+  assert.equal(units[0].structurel, undefined);
 });

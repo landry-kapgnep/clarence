@@ -5,12 +5,14 @@ import {
   extractTextUnits,
   groupIntoLines,
   isLineWrapHyphen,
+  marquerIntitules,
   median,
   needsSpace,
   paragraphGapThreshold,
+  ressembleAUnIntitule,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-MN45A56O.js";
+} from "./chunk-RHL3QVTN.js";
 import "./chunk-PIRHQTI4.js";
 export {
   HEADING_SIZE_RATIO,
@@ -19,9 +21,11 @@ export {
   extractTextUnits,
   groupIntoLines,
   isLineWrapHyphen,
+  marquerIntitules,
   median,
   needsSpace,
   paragraphGapThreshold,
+  ressembleAUnIntitule,
   splitIntoColumns,
   stripMetadata
 };

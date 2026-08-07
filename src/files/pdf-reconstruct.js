@@ -11,7 +11,7 @@
 // pdf-lib est injecté (deps) — comme DOMParser pour DOCX — pour rester testable
 // en Node. Le ré-encodage canvas des images (Stage B) est navigateur-only.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, HEADING_SIZE_RATIO } from './pdf-adapter.js';
+import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, marquerIntitules, HEADING_SIZE_RATIO } from './pdf-adapter.js';
 import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { anonymizeUnits } from './anonymize-units.js';
 import { verifierAnnulation } from '../engine/annulation.js';
@@ -47,6 +47,9 @@ function paragraphsWithParts(lines, dominantSize) {
   for (const line of lines) {
     const isHeading = line.size >= dominantSize * HEADING_SIZE_RATIO;
     const gap = prevY === null ? Infinity : prevY - line.y;
+    // MÊME découpage que groupIntoParagraphs, y compris ce qu'on a REFUSÉ d'y
+    // mettre : couper sur un intitulé de rubrique a été mesuré puis rejeté
+    // (voir le commentaire là-bas). Les deux chemins restent alignés.
     const isNew = isHeading || !current || current.isHeading !== isHeading ||
       gap > seuilEcart;
     if (isNew) { current = { isHeading, lines: [line] }; paragraphs.push(current); }
@@ -249,7 +252,11 @@ async function parsePages(buffer, signal) {
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
       for (const para of paragraphsWithParts(lines, dominantSize)) {
-        units.push(paragraphToRuns(para, `page${pageNum}#para${paraIdx++}`));
+        const unit = paragraphToRuns(para, `page${pageNum}#para${paraIdx++}`);
+        // Conservé pour `marquerIntitules` : c'est le garde-fou qui épargne le
+        // nom en gros corps d'un CV.
+        unit.isHeading = para.isHeading;
+        units.push(unit);
       }
     }
     pages.push({ pageNum, width: viewport.width, height: viewport.height, units, images });
@@ -267,7 +274,10 @@ export async function reconstructPdf(buffer, opts = {}) {
 
   // UNE seule passe de détection sur toutes les unités de toutes les pages
   // (placeholders cohérents inter-pages, comme les autres adaptateurs).
-  const allUnits = pages.flatMap(p => p.units.map(u => ({ id: u.id, text: u.text })));
+  // `marquerIntitules` travaille sur le DOCUMENT entier, pas page par page :
+  // sa règle des « au moins deux » n'a de sens qu'à cette échelle.
+  const allUnits = marquerIntitules(pages.flatMap(p => p.units))
+    .map(u => ({ id: u.id, text: u.text, structurel: u.structurel }));
   const { results, mapping } = await anonymizeUnits(allUnits, {
     nerPipeline: opts.nerPipeline,
     nerDetect: opts.nerDetect,
