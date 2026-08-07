@@ -397,56 +397,171 @@ l4('OTHER SECTIONS', 10, true);
 l4('Contents, Overview and Conclusion are listed in the front matter.');
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PAGE 5 — ESPAGNOL ET ALLEMAND, volontairement COURTS et intégralement glosés
-// dans tests/manuel/README.md. Raison assumée : le propriétaire du projet lit
-// le français et l'anglais ; un jeu de test qu'on ne peut pas relire soi-même
-// est une dette, pas un actif. Chaque terme y est traduit.
+// PAGE 5 — ESPAGNOL, aussi fourni que les pages françaises.
+//
+// POURQUOI L'ESPAGNOL ET PAS LE MANDARIN OU LE HINDI, alors qu'ils sont plus
+// parlés : le mode PDF « Préserver » ne sait PAS écrire hors Latin-1.
+// `sanitizeForWinAnsi` (pdf-reconstruct.js) remplace tout au-delà de U+00FF
+// par « ? » — mesuré : « 张伟在北京工作 » ressort « ??????? ». Tester une langue
+// que le moteur ne peut pas restituer ne mesurerait rien. S'y ajoutent la
+// police Helvetica standard (Latin-1) et un modèle bâti sur un socle
+// anglophone. Voir docs/roadmap-detection.md (limite non-latine).
+//
+// Le cadrage vise par ailleurs le marché francophone : un indépendant français
+// reçoit de l'anglais, de l'espagnol, de l'allemand, de l'italien — Latin-1.
 // ═══════════════════════════════════════════════════════════════════════════
 const p5 = doc.addPage([595, 842]);
 let y5 = 790;
 const l5 = (t, size = 9, gras = false, pas = 14) => { put(p5, t, 50, y5, size, gras); y5 -= pas; };
 
-l5('APPENDIX 4 — ES / DE', 13, true);
+l5('ANEXO 5 — EXPEDIENTE EN ESPAÑOL', 13, true);
 y5 -= 10;
 
-l5('SECCIÓN EN ESPAÑOL', 10, true);
-// Intitulés espagnols — doivent SURVIVRE.
+// Intitulés espagnols. Doivent SURVIVRE (règle formelle, donc universelle).
+l5('DATOS PERSONALES', 10, true);
+
+// ── LA SPÉCIFICITÉ ESPAGNOLE N°1 : DEUX PATRONYMES, SANS TRAIT D'UNION.
+// « Ruiz Salinas » = nom du père + nom de la mère. Ce ne sont PAS deux
+// personnes, et ce n'est pas un patronyme composé à la française (qui, lui,
+// porte un trait d'union). Notre pontage (bridgeNameParts) doit relier les
+// DEUX, sinon la moitié du nom fuit à côté du placeholder.
+l5('Nombre: María del Carmen Ruiz Salinas');
+// ── SPÉCIFICITÉ N°2 : « María del Carmen » est un PRÉNOM COMPOSÉ unique, très
+// courant. La structure réelle est [María del Carmen] [Ruiz] [Salinas] et non
+// [María] [del] [Carmen…]. Nos pseudonymes mémorisent PAR COMPOSANT : le
+// risque est que « Carmen » soit pris pour un patronyme et reçoive un pseudo
+// de famille. Piège volontaire, issue non connue d'avance.
+l5('Conocida también como Carmen Ruiz en el expediente.');
+// DNI : 8 chiffres + lettre de contrôle CALCULÉE (n mod 23 dans la table
+// TRWAGMYFPDXBNJZSQVHLCKE). Celle-ci est VALIDE — vérifié : 12345678 mod 23
+// = 14, quinzième lettre = Z. C'est donc un vrai test de checksum.
+l5('DNI: 12345678Z');
+// NIE : équivalent du DNI pour les étrangers, préfixé X, Y ou Z. Même clé.
+l5('NIE del cónyuge: X1234567L');
+// Numéro de sécurité sociale espagnol : 12 chiffres, province + séquence.
+l5('Seguridad Social: 28 1234567840');
+// IBAN espagnol : 24 caractères contre 27 en France. Le mod-97 est le MÊME —
+// notre validateur devrait donc l'accepter sans modification.
+l5('IBAN: ES91 2100 0418 4502 0005 1332');
+// Téléphones : international (couvert par libphonenumber) puis NATIONAL (non
+// couvert, comme le format US de la page 4). Même variable isolée.
+l5('Teléfono: +34 612 345 678 — fijo: 91 234 56 78');
+y5 -= 8;
+
+l5('DIRECCIÓN Y FECHAS', 10, true);
+// Types de voie espagnols, tous absents de notre motif ADRESSE : Calle,
+// Avenida, Plaza, et l'abréviation « C/ » collée au nom.
+l5('Calle Mayor 12, 3º B, 28013 Madrid');
+l5('Antes en Avenida de la Constitución 45, Sevilla');
+l5('Oficina en C/ Gran Vía 28, Plaza de España');
+// Code postal espagnol : 5 chiffres, EXACTEMENT comme la France. Notre motif
+// CODE_POSTAL_VILLE le prendra donc pour un code français — bon résultat,
+// mauvaise raison, et ça masquerait tout aussi bien un nombre quelconque.
+l5('Código postal 08001 para Barcelona, 41001 para Sevilla.');
+// Date en toutes lettres espagnole : « el 14 de marzo de 1988 ». Le contrôle
+// de forme est structurel (quantième + année, sans liste de mois) : il doit
+// donc marcher ici sans qu'on ait rien ajouté.
+l5('Fecha de nacimiento: 14 de marzo de 1988');
+// Format numérique espagnol : jour/mois/année, comme en France.
+l5('Alta el 03/09/2021, baja el 30/06/2024.');
+y5 -= 8;
+
+// ── SPÉCIFICITÉ N°3 : la ponctuation INVERSÉE ¿ ¡ ouvre les phrases. Elle
+// colle au premier mot et peut casser une frontière de mot.
+l5('OBSERVACIONES', 10, true);
+l5('¿Quién firmó el contrato? ¡Fue Carmen Ruiz, no otra persona!');
+y5 -= 8;
+
+// Noms COMMUNS espagnols que le modèle étiquette volontiers entreprise ou
+// lieu quand ils sont isolés. Doivent SURVIVRE.
 l5('IDIOMAS');
 l5('COMPETENCIAS');
-// DNI : 8 chiffres + une lettre de contrôle CALCULÉE, exactement le genre de
-// validation mathématique que la couche déterministe sait faire (comme la clé
-// du NIR). Candidat naturel à l'i18n du structuré.
-l5('DNI: 12345678Z — teléfono: +34 612 345 678');
-// Type de voie espagnol, inconnu de notre motif ADRESSE.
-l5('Dirección: Calle Mayor 12, 28013 Madrid');
-// Particule « del », équivalent de nos « de la » (voir PARTICLE dans ner.js).
-l5('Firmado por María del Carmen Ruiz-Salinas.');
-y5 -= 10;
+l5('EXPERIENCIA LABORAL');
+l5('Contenido, Resumen y Conclusión figuran en el índice.');
+y5 -= 8;
 
-l5('DEUTSCHER ABSCHNITT', 10, true);
+// Entreprises espagnoles : suffixes juridiques S.L. et S.A., équivalents de
+// SARL et SA. Doivent être MASQUÉS.
+l5('Empleada en Astillero Bermeo S.L., antes en Tejidos Alcázar S.A.');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAGE 6 — ALLEMAND, aussi fourni que les pages françaises.
+// ═══════════════════════════════════════════════════════════════════════════
+const p6 = doc.addPage([595, 842]);
+let y6 = 790;
+const l6 = (t, size = 9, gras = false, pas = 14) => { put(p6, t, 50, y6, size, gras); y6 -= pas; };
+
+l6('ANLAGE 6 — DEUTSCHE AKTE', 13, true);
+y6 -= 10;
+
+l6('PERSÖNLICHE DATEN', 10, true);
+
 // ┌───────────────────────────────────────────────────────────────────────────┐
-// │ LA SPÉCIFICITÉ ALLEMANDE, et elle touche le moteur au cœur :              │
+// │ SPÉCIFICITÉ ALLEMANDE N°1, et elle touche le moteur au cœur :             │
 // │ l'allemand met une MAJUSCULE À TOUS LES NOMS COMMUNS.                     │
 // │                                                                           │
-// │ Or `estPlausiblePourLeType` (gliner.js) écarte les faux positifs          │
+// │ `estPlausiblePourLeType` (gliner.js) écarte les faux positifs             │
 // │ PER/ORG/LIEU en exigeant « au moins une majuscule » — la garde P6, qui a  │
 // │ fait passer les termes préservés de 90 à 95 %. Cette garde ne filtre      │
-// │ STRICTEMENT RIEN en allemand : Besprechung, Vertrag, Unternehmen la       │
-// │ passent tous les trois.                                                   │
-// │                                                                           │
-// │ C'est une limite STRUCTURELLE du moteur, pas un réglage à ajuster — et    │
-// │ elle n'était mesurée nulle part avant cette page.                         │
+// │ STRICTEMENT RIEN en allemand.                                             │
+// │ Première mesure (07/08) : 1 nom commun masqué sur 3. À re-mesurer ici     │
+// │ sur un échantillon plus large.                                            │
 // └───────────────────────────────────────────────────────────────────────────┘
-l5('SPRACHEN');
-l5('AUSBILDUNG');
-// Trois noms COMMUNS, tous capitalisés par la grammaire. Doivent SURVIVRE.
-l5('Die Besprechung über den Vertrag fand im Unternehmen statt.');
-// Type de voie allemand COLLÉ au nom (Hauptstraße = « rue principale »), et
-// code postal à 5 chiffres comme en France — donc faux positif possible sur
-// CODE_POSTAL_VILLE, qui suppose une ville française derrière.
-l5('Anschrift: Hauptstraße 15, 10115 Berlin');
-// Particule « von der », équivalent de « de la ».
-l5('Unterzeichnet von Jürgen von der Weiden am 14. März 1988.');
+// Douze noms communs capitalisés, tous à faire SURVIVRE.
+l6('Die Besprechung über den Vertrag fand im Unternehmen statt.');
+l6('Der Antrag, die Bescheinigung und die Rechnung fehlen noch.');
+l6('Das Ergebnis der Prüfung liegt der Abteilung vor.');
+y6 -= 8;
+
+// ── SPÉCIFICITÉ N°2 : les MOTS COMPOSÉS soudés. L'allemand agglutine sans
+// espace ni trait d'union. Aucune segmentation par espace ne retrouvera les
+// composants — et ces mots dépassent souvent 20 caractères, ce qui peut les
+// faire prendre pour des identifiants.
+l6('Krankenversicherungsnummer und Aufenthaltsgenehmigung liegen bei.');
+y6 -= 8;
+
+// ── SPÉCIFICITÉ N°3 : le tréma a une TRANSCRIPTION alternative officielle
+// (ü = ue, ö = oe, ä = ae, ß = ss). La MÊME personne s'écrit donc de deux
+// façons dans un même dossier. Nos placeholders sont cohérents PAR VALEUR :
+// « Müller » et « Mueller » recevront donc DEUX identités différentes, alors
+// que c'est la même personne. Piège réel, sans correctif prévu à ce jour.
+l6('Unterzeichnet von Jürgen Müller, auch geschrieben Juergen Mueller.');
+// Particule allemande en DEUX mots, équivalent de « de la ».
+l6('Beglaubigt durch Katharina von der Weiden.');
+// Particule simple, très fréquente dans les patronymes.
+l6('Vertreten durch Heinrich zu Guttenberg und Anna von Stein.');
+y6 -= 8;
+
+l6('ANSCHRIFT UND KENNZAHLEN', 10, true);
+// Type de voie SOUDÉ au nom (Haupt + straße). Le ß est un caractère à part
+// entière, pas deux « s ».
+l6('Anschrift: Hauptstraße 15, 10115 Berlin');
+// Abréviation soudée « str. », très courante.
+l6('Zweigstelle: Bahnhofstr. 7a, 80331 München');
+// Code postal allemand : 5 chiffres, comme la France et l'Espagne.
+l6('Postleitzahl 20095 für Hamburg, 50667 für Köln.');
+// Steuer-ID : 11 chiffres, avec une clé de contrôle.
+l6('Steuer-ID: 12345678901');
+// IBAN allemand : 22 caractères. Même mod-97 que la France.
+l6('IBAN: DE89 3704 0044 0532 0130 00');
+// Téléphone : international puis NATIONAL, même isolement de variable qu'en
+// anglais et en espagnol.
+l6('Telefon: +49 30 123456 — Festnetz: 030 1234567');
+y6 -= 8;
+
+// ── SPÉCIFICITÉ N°4 : la date allemande porte un POINT après le quantième
+// (14. März), et le format numérique utilise des points comme séparateurs.
+l6('Geburtsdatum: 14. März 1988 — im System: 14.03.1988');
+y6 -= 8;
+
+// Intitulés allemands. Doivent SURVIVRE.
+l6('SPRACHEN');
+l6('AUSBILDUNG');
+l6('BERUFSERFAHRUNG');
+y6 -= 8;
+
+// Entreprises allemandes : GmbH et AG, équivalents de SARL et SA.
+l6('Tätig bei Nordwind Logistik GmbH, zuvor bei Kranzler AG.');
 
 writeFileSync(join(here, 'tous-defauts.pdf'), await doc.save());
-console.log('tests/manuel/tous-defauts.pdf généré (5 pages).');
+console.log('tests/manuel/tous-defauts.pdf généré (6 pages).');

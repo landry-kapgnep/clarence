@@ -127,22 +127,68 @@ signal de « prêt », ce sont des fichiers réels de gens qui ne sont pas nous.
 
 ---
 
-## Pages 4 et 5 — multilingue (ajoutées le 07/08/2026)
+## Pages 4 à 6 — multilingue (07/08/2026)
 
 **Pourquoi elles existent.** Le corpus était à 6 documents sur 7 en français :
 on ne mesurait donc **rien** hors du français. C'est exactement le mécanisme qui
 avait laissé passer le bug d'interligne pendant des semaines — tout le corpus
-était en interligne simple, donc le défaut était invisible.
+était en interligne simple, donc le défaut était structurellement invisible.
 
-La couche **contextuelle** est multilingue par nature (le modèle l'est). La
-couche **déterministe** est franco-française : la plupart des fuites ci-dessous
-sont donc **attendues** tant que P5 (i18n du structuré) n'est pas fait. Elles
-sont là pour être comptées, pas pour être une surprise.
+- **Page 4** — anglais (identifiants US, noms difficiles, mots ambigus)
+- **Page 5** — espagnol, aussi fournie que les pages françaises
+- **Page 6** — allemand, aussi fournie que les pages françaises
 
 > **Note de relecture.** Le propriétaire du projet lit le français et l'anglais.
-> La page 4 est donc étoffée, et la page 5 (ES/DE) volontairement courte et
-> **intégralement traduite ci-dessous** — un jeu de test qu'on ne peut pas
-> relire soi-même est une dette, pas un actif.
+> Les pages 5 et 6 sont donc **intégralement glosées** dans les tableaux
+> ci-dessous — un jeu de test qu'on ne peut pas relire soi-même est une dette,
+> pas un actif.
+
+### Pourquoi PAS le mandarin, le hindi ou l'arabe, pourtant plus parlés
+
+Question posée le 07/08 et tranchée par la mesure, pas par principe. **Le mode
+PDF « Préserver » ne sait physiquement pas écrire hors Latin-1** :
+`sanitizeForWinAnsi` (`pdf-reconstruct.js`) remplace tout au-delà de U+00FF.
+
+```
+mandarin  « 张伟在北京工作 »      ->  « ??????? »
+hindi     « राहुल शर्मा दिल्ली में »  ->  « ????? ????? ?????? ??? »
+arabe     « محمد علي في القاهرة » ->  « ???? ??? ?? ??????? »
+russe     « Иван Петров в Москве » -> « ???? ?????? ? ?????? »
+```
+
+Trois verrous, pas un : la police Helvetica standard est limitée à Latin-1,
+`sanitizeForWinAnsi` écrase le reste, et le modèle est bâti sur un socle
+anglophone (le checkpoint multilingue avait été mesuré **moins bon** que le
+nôtre en français). Tester une langue que le moteur ne peut pas restituer ne
+mesurerait rien.
+
+S'y ajoute le cadrage, qui vise le **marché francophone** : un indépendant
+français reçoit de l'anglais, de l'espagnol, de l'allemand, de l'italien, du
+portugais — tous en Latin-1. La limite non-latine est consignée comme défaut
+produit à part entière dans `docs/roadmap-detection.md`.
+
+### État mesuré au 07/08/2026 — pages 5 et 6
+
+**9 fuites sur 30, 3 sur-masquages sur 21.**
+
+| Fuite | Pourquoi |
+|---|---|
+| `12345678Z` (DNI), `X1234567L` (NIE) | **P5.** Identifiants espagnols, aucun motif non-FR. Le DNI a pourtant une clé calculable (n mod 23) — candidat naturel à l'i18n |
+| `28 1234567840` (sécurité sociale ES) | **P5** |
+| `12345678901` (Steuer-ID DE) | **P5**, 11 chiffres avec clé |
+| `91 234 56 78`, `030 1234567` | **P5.** Formats **nationaux** ES et DE. Les formats internationaux (`+34…`, `+49…`) passent, eux — c'est bien la graphie qui bloque, pas le pays |
+| `08001`, `20095` (codes postaux) | **Découverte.** `CODE_POSTAL_VILLE` exige la ville **collée** au code. « 08001 para Barcelona » et « 20095 für Hamburg » intercalent une préposition → non reconnu. Les adresses où la ville suit directement (`28013 Madrid`) sont bien masquées |
+| `Bahnhofstr. 7a` | Type de voie allemand **abrégé et soudé**. `Hauptstraße 15`, lui, est masqué |
+
+| Sur-masquage | Verdict |
+|---|---|
+| `SPRACHEN` | Même cause qu'en français : lignes serrées recollées en un paragraphe, la règle des intitulés ne les voit plus. `AUSBILDUNG` et `BERUFSERFAHRUNG` survivent |
+| `Unternehmen`, `Abteilung` | **La faiblesse allemande, enfin chiffrée : 2 noms communs masqués sur 9 testés.** L'allemand capitalise tous ses noms communs, donc la garde « au moins une majuscule » (P6) ne filtre par construction **rien** dans cette langue — et pourtant le modèle n'en étiquette que 2. Bien moins grave que le raisonnement ne le laissait craindre |
+
+**Ce que ces pages ont apporté** : toutes les fuites sont dans la couche
+**déterministe**, aucune dans la contextuelle. Le modèle se débrouille bien en
+espagnol et en allemand ; c'est notre regex franco-française qui est le trou.
+Cela réoriente P5 d'un « nice to have » vers le principal chantier de couverture.
 
 ### Page 4 — anglais
 
@@ -162,27 +208,45 @@ sont là pour être comptées, pas pour être une surprise.
 | `Kubernetes`, `PostgreSQL` | survit | Technos (couvertes par le profil « Développeur / Tech ») |
 | `Contents`, `Overview`, `Conclusion` | survit | Noms communs que le modèle étiquette volontiers entreprise ou lieu quand ils sont isolés |
 
-### Page 5 — espagnol et allemand, avec traduction
+### Page 5 — espagnol, avec traduction
 
-| Terme | Traduction | Attendu | Pourquoi |
+| Terme | Traduction | Attendu | Pourquoi c'est un piège |
 |---|---|---|---|
-| `SECCIÓN EN ESPAÑOL` | « section en espagnol » | survit | Intitulé |
-| `IDIOMAS` | « langues » | survit | Intitulé (l'équivalent exact de `LANGUES`) |
-| `COMPETENCIAS` | « compétences » | survit | Intitulé |
-| `DNI: 12345678Z` | carte d'identité espagnole | masqué | 8 chiffres + **lettre de contrôle calculée** — exactement le type de validation mathématique que la couche déterministe sait faire (comme la clé du NIR). Candidat naturel à l'i18n |
-| `+34 612 345 678` | téléphone espagnol | masqué | Format international : **déjà couvert** par libphonenumber |
-| `Dirección` | « adresse » | survit | Libellé de champ |
-| `Calle Mayor 12, 28013 Madrid` | « 12 rue Mayor » | masqué | `Calle` est un type de voie inconnu de notre motif ADRESSE |
-| `María del Carmen Ruiz-Salinas` | prénom + particule + patronyme | masqué | La particule `del` est l'équivalent de nos `de la` (voir `PARTICLE` dans `ner.js`) |
-| `DEUTSCHER ABSCHNITT` | « section allemande » | survit | Intitulé |
-| `SPRACHEN` | « langues » | survit | Intitulé |
-| `AUSBILDUNG` | « formation » | survit | Intitulé |
-| `Die Besprechung`, `den Vertrag`, `im Unternehmen` | « la réunion », « le contrat », « l'entreprise » | **survit** | **Voir l'encadré ci-dessous** |
-| `Hauptstraße 15, 10115 Berlin` | « 15 rue Principale » | masqué | Type de voie **collé** au nom ; code postal à 5 chiffres **comme en France**, donc faux positif possible sur `CODE_POSTAL_VILLE` qui suppose une ville française |
-| `Jürgen von der Weiden` | prénom + particule + patronyme | masqué | `von der` = `de la` |
-| `14. März 1988` | 14 mars 1988 | masqué | Date à quantième pointé ; déjà couverte par le contrôle de forme structurel (sans aucune liste de mois) |
+| `DATOS PERSONALES`, `DIRECCIÓN Y FECHAS`, `OBSERVACIONES`, `IDIOMAS`, `COMPETENCIAS`, `EXPERIENCIA LABORAL` | « données personnelles », « adresse et dates », « observations », « langues », « compétences », « expérience professionnelle » | survit | Intitulés |
+| **`Ruiz Salinas`** | deux patronymes | masqué | **Spécificité n°1 : l'espagnol porte DEUX noms de famille — celui du père puis celui de la mère — SANS trait d'union.** Ce ne sont pas deux personnes. Le pontage doit relier les deux, sinon la moitié du nom fuit à côté du placeholder |
+| **`María del Carmen`** | prénom composé | masqué | **Spécificité n°2 : c'est UN prénom, pas « María » + particule.** La structure est [María del Carmen] [Ruiz] [Salinas]. Nos pseudonymes mémorisant par composant, « Carmen » risque de recevoir un pseudo de famille |
+| `Carmen Ruiz` | forme courte de la même personne | masqué | Vérifie la cohérence : même personne, deux graphies dans un même document |
+| `12345678Z` | carte d'identité | masqué | 8 chiffres + **lettre de contrôle calculée** (n mod 23 dans `TRWAGMYFPDXBNJZSQVHLCKE`). Celle-ci est **valide** — vraie épreuve de checksum |
+| `X1234567L` | titre de séjour étranger | masqué | Même clé, préfixe X/Y/Z |
+| `28 1234567840` | n° de sécurité sociale | masqué | Équivalent du NIR |
+| `ES91 2100 …` | IBAN espagnol | masqué | 24 caractères contre 27 en France, **même mod-97** : notre validateur devrait l'accepter sans rien changer |
+| `+34 612 345 678` / `91 234 56 78` | tél. international / national | masqué | Même isolement de variable qu'en anglais : seule la graphie change |
+| `Calle`, `Avenida`, `Plaza`, `C/` | « rue », « avenue », « place », abrév. de Calle | masqué | Types de voie absents de notre motif ADRESSE |
+| `08001`, `41001` | codes postaux | masqué | **5 chiffres, exactement comme la France** — notre motif les prend pour des codes français. Bon résultat, mauvaise raison |
+| `14 de marzo de 1988` | 14 mars 1988 | masqué | Date en toutes lettres ; le contrôle de forme est structurel (quantième + année, sans liste de mois) donc doit marcher sans ajout |
+| `¿` `¡` | ponctuation ouvrante inversée | — | **Spécificité n°3** : colle au premier mot et peut casser une frontière de mot |
+| `S.L.`, `S.A.` | équivalents de SARL et SA | masqué | Suffixes juridiques dans un nom d'entreprise |
+| `Contenido`, `Resumen`, `Conclusión` | « contenu », « résumé », « conclusion » | survit | Noms communs volontiers étiquetés entreprise ou lieu |
 
-### ⚠️ La spécificité allemande, et elle touche le moteur au cœur
+### Page 6 — allemand, avec traduction
+
+| Terme | Traduction | Attendu | Pourquoi c'est un piège |
+|---|---|---|---|
+| `PERSÖNLICHE DATEN`, `ANSCHRIFT UND KENNZAHLEN`, `SPRACHEN`, `AUSBILDUNG`, `BERUFSERFAHRUNG` | « données personnelles », « adresse et identifiants », « langues », « formation », « expérience » | survit | Intitulés |
+| `Besprechung`, `Vertrag`, `Unternehmen`, `Antrag`, `Bescheinigung`, `Rechnung`, `Ergebnis`, `Prüfung`, `Abteilung` | « réunion », « contrat », « entreprise », « demande », « attestation », « facture », « résultat », « contrôle », « service » | **survit** | **Spécificité n°1 : l'allemand met une majuscule à TOUS les noms communs** — voir l'encadré plus bas |
+| `Krankenversicherungsnummer`, `Aufenthaltsgenehmigung` | « n° d'assurance maladie », « titre de séjour » | survit | **Spécificité n°2 : mots composés SOUDÉS**, sans espace ni trait d'union. Aucune segmentation par espace ne retrouvera les composants, et leur longueur peut les faire prendre pour des identifiants |
+| **`Jürgen Müller` / `Juergen Mueller`** | même personne, deux graphies | masqué | **Spécificité n°3 : le tréma a une transcription officielle** (ü=ue, ö=oe, ä=ae, ß=ss). La même personne s'écrit de deux façons dans un même dossier. Nos placeholders étant cohérents **par valeur**, elle recevra **deux identités différentes**. Piège réel, sans correctif prévu |
+| `von der Weiden`, `zu Guttenberg`, `von Stein` | particules nobiliaires | masqué | Équivalents de nos « de la » / « de » (voir `PARTICLE` dans `ner.js`) |
+| `Hauptstraße 15` | « 15 rue Principale » | masqué | **Type de voie soudé au nom** (Haupt + straße). Le `ß` est un caractère à part entière, pas deux `s` |
+| `Bahnhofstr. 7a` | « 7a rue de la Gare » | masqué | Même chose, en **abrégé** |
+| `20095`, `50667` | codes postaux | masqué | 5 chiffres, comme la France et l'Espagne |
+| `12345678901` | Steuer-ID (n° fiscal) | masqué | 11 chiffres avec clé de contrôle |
+| `DE89 3704 …` | IBAN allemand | masqué | 22 caractères, même mod-97 |
+| `+49 30 123456` / `030 1234567` | tél. international / national | masqué | Même isolement de variable |
+| `14. März 1988` / `14.03.1988` | 14 mars 1988 | masqué | **Spécificité n°4 : point après le quantième**, et points comme séparateurs numériques |
+| `GmbH`, `AG` | équivalents de SARL et SA | masqué | Suffixes juridiques |
+
+#### ⚠️ La spécificité allemande, et elle touche le moteur au cœur
 
 **L'allemand met une majuscule à TOUS les noms communs.**
 
@@ -190,33 +254,11 @@ Or `estPlausiblePourLeType` (`src/engine/gliner.js`) écarte les faux positifs
 PERSONNE / ENTREPRISE / LIEU en exigeant **« au moins une majuscule »** — la
 garde P6, qui avait fait passer les termes préservés de 90 à 95 %.
 
-Cette garde ne filtre donc **strictement rien en allemand** : `Besprechung`,
-`Vertrag`, `Unternehmen` la passent tous les trois, alors que ce sont des noms
-communs. C'est une **limite structurelle**, pas un réglage à ajuster — et elle
-n'était mesurée nulle part avant cette page.
+Cette garde ne filtre donc **strictement rien en allemand** : les neuf noms
+communs testés ci-dessus la passent tous. C'est une **limite structurelle**,
+pas un réglage à ajuster.
 
-Conséquence pratique : le sur-masquage sera probablement **pire en allemand**
-qu'en français. À chiffrer avant toute promesse de support multilingue.
-
-### État mesuré au 07/08/2026, dès la première passe
-
-**3 fuites sur 18, 6 sur-masquages sur 18.** Détail et verdict :
-
-| Constat | Verdict |
-|---|---|
-| `(617) 555-0142`, `617-555-0143` en clair | **P5 confirmé et chiffré.** Format national US : ni la regex FR ni libphonenumber (sans pays par défaut) ne le voient. Connu, désormais mesuré |
-| `12345678Z` (DNI) en clair | **P5 confirmé.** Aucun motif non-FR dans la couche déterministe |
-| `Kubernetes`, `PostgreSQL` masqués | **Attendu, pas un défaut.** Ce diagnostic ne charge pas le profil « Développeur / Tech », qui les pré-remplit dans « ne jamais masquer » — même statut que `Docker` et `GitLab` |
-| `IDIOMAS`, `COMPETENCIAS`, `SPRACHEN` masqués | **Ce n'est PAS un problème de langue.** Ces lignes sont à 14 pt d'écart en corps 9 : le regroupement les recolle en un seul paragraphe, donc la règle des intitulés ne les voit plus. Même cause que `SOMMAIRE` et `ANNEXE` en français — c'est un défaut de **découpage**, pas de multilinguisme |
-| `Unternehmen` masqué, mais `Besprechung` et `Vertrag` **survivent** | **La prédiction allemande se vérifie — en plus modéré qu'annoncé.** 1 nom commun sur 3 masqué, là où la garde « au moins une majuscule » ne filtre par construction rien du tout. À re-mesurer sur un vrai document allemand avant toute promesse |
-
-**Ce que ces pages ont réellement apporté** : elles ont transformé deux
-suppositions en chiffres. La couche déterministe non-FR est bien le trou
-principal (3 fuites sur 3 tentatives), et la faiblesse allemande est réelle mais
-plus limitée que le raisonnement ne le laissait craindre.
-
-**Ce qu'elles ont infirmé** : le sur-masquage des intitulés ES/DE n'a rien à
-voir avec la langue. La règle est formelle, donc universelle ; c'est le
-découpage en paragraphes qui la prive de sa matière. Corriger le découpage
-profiterait donc aux cinq langues à la fois — mais la tentative directe a déjà
-été mesurée et rejetée (voir `groupIntoParagraphs`), il faudra une autre voie.
+**Mais la mesure nuance fortement le raisonnement** : sur ces neuf, le modèle
+n'en étiquette que **deux** (`Unternehmen`, `Abteilung`). La garde est inopérante,
+et pourtant le sur-masquage allemand reste comparable au français. À re-mesurer
+sur un vrai document avant toute promesse de support.
