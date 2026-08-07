@@ -1051,3 +1051,71 @@ Coût : ~235 Ko en chunk, chargé à l'ouverture de la popup.
 Note : `@faker-js/faker` (portage JS officiel, MIT, import par locale) rendrait
 les pseudonymes cohérents avec la langue du document. À arbitrer contre le poids
 et le déterminisme actuel de `pseudonyms.js`.
+
+## Spike POS « nom propre / nom commun » — mesuré le 07/08/2026
+
+**Question** : un étiqueteur morphosyntaxique peut-il écarter les faux positifs
+que GLiNER produit sur des mots isolés (`SOMMAIRE` → entreprise 0,79,
+`Analyste` → personne 0,73), là où aucun seuil ne les sépare ?
+
+**Modèle testé** : `wietsedv/xlm-roberta-base-ft-udpos28-en` — XLM-RoBERTa
+affiné sur Universal Dependencies 2.8, c'est-à-dire *exactement* ce qu'on aurait
+entraîné soi-même. Le tester revenait donc à tester notre futur modèle.
+
+### La règle doit être ASYMÉTRIQUE, sinon la mesure ment
+
+Premier critère posé — « ≥ 90 % des noms propres doivent sortir PROPN » — était
+**mal calibré**, et donnait un NO-GO trompeur. Opérationnellement, on ne
+démasque que si le modèle dit **explicitement `NOUN`** ; tout autre verdict
+(PROPN, ADJ, X, désaccord) garde le masque.
+
+Sous cette règle, les deux « échecs » du spike deviennent des succès :
+`Semantikmatch` → ADJ et `Petit` → ADJ **restent masqués**. Et les deux sont
+linguistiquement justes — *petit* EST un adjectif français.
+Score réel : **0 fuite sur 15 noms propres, 17 faux positifs sur 18 reconnus**.
+
+### Effet réel sur le document piégé
+
+| Variante de la règle | Démasqués | Fuites | Sur-masquage |
+|---|---|---|---|
+| première étiquette du texte brut | 12 | 0 | 125 → 113 |
+| **+ retrait du déterminant de tête** | **14** | **0** | **125 → 111** |
+| ~~+ minusculisation~~ | ~~19~~ | **3** ✗ | rejeté |
+| ~~les deux~~ | ~~21~~ | **3** ✗ | rejeté |
+
+Le déterminant de tête comptait : `L'entreprise` et `La vérité terrain`
+sortaient `DET` parce que le premier token est l'article.
+
+**Minusculiser est REJETÉ** : +7 démasquages mais 3 vraies données fuient
+(`Mountain View, CA 94043-1351`, `Avenida de la Constitución 45`,
+`Tejidos Alcázar S.A.`). Un modèle « cased » utilise la majuscule comme signal ;
+la retirer brouille la frontière dans les deux sens.
+
+### Pourquoi ce n'est PAS branché
+
+Le gain (14 démasquages) coûterait **~550 Mo** — XLM-R base fait 277 M de
+paramètres, presque un triplement du téléchargement (292 → 842 Mo).
+
+Et surtout, **un tiers du gain est récupérable gratuitement** : 5 des 14
+démasquages sont des intitulés de section (`ANNEXE`, `ANEXO 5`, `ANLAGE 6`,
+`COORDONNÉES`) que la règle structurelle devrait déjà attraper. Elle les rate
+parce que le regroupement en paragraphes les recolle au texte suivant — le même
+défaut qui lui fait rater `SOMMAIRE`, `INTERLIGNE`, `CELLULES NUES`,
+`ÉTAT CIVIL`, `SPRACHEN`, que le modèle ne rattrape pas non plus.
+
+**Ordre retenu** : réparer d'abord le découpage en paragraphes (gratuit, profite
+aux cinq langues, vise la famille la plus nombreuse), puis re-mesurer ce que le
+modèle apporte EN PLUS. Le chiffre sera alors bien plus petit et la décision
+bien plus nette.
+
+### Si on y revient : où vivent les paramètres
+
+Mesuré sur la config du modèle — **69 % du poids est la matrice de
+vocabulaire** (250 002 tokens × 768 = 192 M sur 277 M), pour couvrir une
+centaine de langues dont l'essentiel est hors Latin-1, que Clarence ne sait de
+toute façon pas écrire.
+
+Vocabulaire taillé aux scripts latins (~32 k) et 6 couches au lieu de 12 :
+**67 M de paramètres, ~134 Mo en fp16** — moins de la moitié du GLiNER actuel.
+Le projet serait donc une COMPRESSION vers une référence déjà mesurée, pas un
+entraînement dans l'inconnu. Piste vivante, non engagée.
