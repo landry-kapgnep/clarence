@@ -255,6 +255,19 @@ function expliquerPoids(poids) {
   }
 }
 
+// src/popup/termes.js
+var SEPARATEURS = /[\t\r\n]+/;
+function parseTermes(valeur) {
+  return (valeur || "").split(SEPARATEURS).map((s) => s.trim()).filter(Boolean);
+}
+function ajouterTerme(valeur, terme) {
+  const t = (terme || "").trim();
+  if (!t) return valeur || "";
+  const existants = parseTermes(valeur);
+  if (existants.includes(t)) return valeur || "";
+  return [...existants, t].join("\n");
+}
+
 // src/engine/pseudonyms.js
 var LOCALES = {
   fr: {
@@ -947,7 +960,22 @@ var TYPE_DISPLAY = {
   MISC: "Divers",
   PERSONNALISE: "Perso"
 };
-var parseLines = (v) => (v || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+var parseLines = parseTermes;
+function tabInsereUneTabulation(champ) {
+  if (!champ) return;
+  champ.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") {
+      champ.blur();
+      return;
+    }
+    if (ev.key !== "Tab" || ev.shiftKey) return;
+    ev.preventDefault();
+    const { selectionStart: d, selectionEnd: f, value } = champ;
+    champ.value = value.slice(0, d) + "	" + value.slice(f);
+    champ.selectionStart = champ.selectionEnd = d + 1;
+    champ.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
 var nerPipe = null;
 var nerLoading = false;
 var pseudoSeed = Math.random().toString(36).slice(2);
@@ -1459,7 +1487,6 @@ function setChosenFile(file) {
   }
   annulerRunFichier("");
   fileRegen = null;
-  fileTermesRetires = [];
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $("fileName");
@@ -1503,16 +1530,18 @@ function fileMaskOptions(units = []) {
   };
 }
 var fileRegen = null;
-var fileTermesRetires = [];
 async function retirerDuMasquage(valeur) {
-  if (!fileRegen || fileTermesRetires.includes(valeur)) return;
-  fileTermesRetires = [...fileTermesRetires, valeur];
+  const champ = $("fileAlwaysKeep");
+  if (!fileRegen || !champ) return;
+  const avant = champ.value;
+  champ.value = ajouterTerme(avant, valeur);
+  if (champ.value === avant) return;
   const btn = $("fileAnalyzeBtn");
   btn.disabled = true;
   fileSetStatus("Mise \xE0 jour du fichier\u2026");
   try {
     const r = fileRegen;
-    const keepValues = [...parseLines($("fileAlwaysKeep")?.value), ...fileTermesRetires];
+    const keepValues = parseLines($("fileAlwaysKeep")?.value);
     const forceTerms = [...parseLines($("fileAlwaysMask")?.value), ...identityForceTerms()];
     let mapping;
     if (r.mode === "pdf") {
@@ -1547,7 +1576,7 @@ async function retirerDuMasquage(valeur) {
     fileSetStatus(`\xAB ${valeur} \xBB n\u2019est plus masqu\xE9.`);
   } catch (err) {
     console.error(err);
-    fileTermesRetires = fileTermesRetires.filter((v) => v !== valeur);
+    champ.value = avant;
     fileSetStatus("Impossible de mettre \xE0 jour le fichier. D\xE9tail dans la console.", "error");
   } finally {
     btn.disabled = false;
@@ -1957,7 +1986,6 @@ function annulerRunFichier(motif) {
 async function processFile() {
   if (!chosenFile) return;
   annulerRunFichier("");
-  fileTermesRetires = [];
   fileRegen = null;
   const source = chosenFile;
   const run = { id: ++fileRunId, controller: new AbortController() };
@@ -2111,6 +2139,9 @@ for (const btn of document.querySelectorAll(".mode-btn")) {
 }
 $("filePickBtn").addEventListener("click", () => $("fileInput").click());
 $("fileInput").addEventListener("change", (ev) => setChosenFile(ev.target.files[0]));
+for (const id of ["alwaysMask", "alwaysKeep", "fileAlwaysMask", "fileAlwaysKeep"]) {
+  tabInsereUneTabulation($(id));
+}
 $("fileCancelBtn").addEventListener("click", () => annulerRunFichier());
 $("fileMappingWrap").addEventListener("click", (ev) => {
   const btn = ev.target.closest(".map-retirer");

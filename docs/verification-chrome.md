@@ -220,6 +220,30 @@ rentables en premier.
 6. Changer de fichier, puis relancer une détection → les retraits précédents
    sont **oubliés** (nouveau mapping, anciennes cibles caduques).
 
+
+### A0sexies. Termes en vrac : tabulation et retraits visibles (07/08/2026)
+
+Les champs « toujours masquer » / « ne jamais masquer » existaient déjà et
+étaient DÉJÀ par-document (rien n'est écrit dans un profil sans cliquer
+« Enregistrer »). Leur défaut était de framing : posés sous la barre de
+profils, ils se lisent comme des réglages de profil. Deux corrections :
+
+1. **La tabulation sépare les termes**, en plus du saut de ligne — saisie en
+   vrac sans quitter le clavier. Attention : dans un `<textarea>`, Tab déplace
+   normalement le focus ; il est donc capturé. **Vérifier les échappatoires**
+   au clavier : **Maj+Tab** revient au champ précédent, **Échap** sort du
+   champ. Sans elles, on enferme les personnes qui naviguent au clavier.
+2. **Le bouton « ne plus masquer » écrit dans le champ VISIBLE**, plus dans un
+   état caché. À vérifier : après un clic, le terme apparaît dans « ne jamais
+   masquer » ; on peut le supprimer à la main pour le remasquer ; et cliquer
+   « Enregistrer » le rend permanent — l’éphémère devient durable par un geste
+   explicite, jamais par surprise.
+
+⚠️ La virgule et le point-virgule ne sont **pas** des séparateurs, et c’est
+délibéré : « Dupont, Marie » ou « Legrand & Fils, S.A. » sont des termes
+plausibles, et les découper produirait des fragments qui masqueraient
+n’importe quoi.
+
 ### À chronométrer maintenant : le regroupement en lots
 
 Les inférences partent désormais par lots de 8 (`src/engine/batch.js`). Mesuré

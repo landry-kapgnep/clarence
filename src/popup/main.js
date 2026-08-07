@@ -8,6 +8,7 @@ import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrer
 import { createBatchedPipeline } from '../engine/batch.js';
 import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
 import { poidsDeTraitement, expliquerPoids } from './poids.js';
+import { parseTermes, ajouterTerme } from './termes.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
 import { createPseudonymizer } from '../engine/pseudonyms.js';
@@ -40,7 +41,34 @@ const TYPE_DISPLAY = {
   ETABLISSEMENT: 'Établissements', SANTE: 'Santé',
   MISC: 'Divers', PERSONNALISE: 'Perso'
 };
-const parseLines = v => (v || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+// Découpage TABULATION ou saut de ligne, espaces retirés — voir
+// src/popup/termes.js pour le choix des séparateurs et ce qu'on en exclut.
+const parseLines = parseTermes;
+
+// Dans un <textarea>, Tab DÉPLACE LE FOCUS au lieu d'insérer une tabulation.
+// Puisque la tabulation est devenue le séparateur de ces champs, il faut la
+// capturer — sinon le geste demandé fait simplement sortir du champ.
+//
+// PIÈGE D'ACCESSIBILITÉ, et il est réel : capturer Tab enferme les personnes
+// qui naviguent au clavier. D'où deux échappatoires laissées ouvertes —
+// Maj+Tab (retour arrière, comportement standard) et Échap (sort du champ).
+// C'est la convention des éditeurs de code embarqués dans un formulaire.
+function tabInsereUneTabulation(champ) {
+  if (!champ) return;
+  champ.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') { champ.blur(); return; }
+    if (ev.key !== 'Tab' || ev.shiftKey) return; // Maj+Tab : navigation normale
+    ev.preventDefault();
+    const { selectionStart: d, selectionEnd: f, value } = champ;
+    champ.value = value.slice(0, d) + '\t' + value.slice(f);
+    champ.selectionStart = champ.selectionEnd = d + 1;
+    // `input` ne part pas d'une écriture programmatique : on le déclenche pour
+    // que l'invalidation du résultat fichier se fasse comme à la frappe.
+    champ.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+// (L'accrochage aux champs se fait plus bas, une fois `$` déclaré : `const` ne
+// remonte pas, et l'appeler ici planterait la popup au chargement.)
 let nerPipe = null;
 let nerLoading = false;
 // Graine de session pour les pseudonymes réalistes : stable tant que la popup
@@ -739,9 +767,10 @@ function setChosenFile(file) {
   // aucun intérêt (son résultat ne concerne plus rien d'affiché) et il occupe
   // le modèle au détriment du run suivant.
   annulerRunFichier('');
-  // Nouveau fichier : les retraits de l'ancien n'ont plus lieu d'être.
+  // Nouveau fichier : le résultat précédent n'est plus régénérable. Le champ
+  // « ne jamais masquer » appartient à l'utilisateur — on ne l'efface pas dans
+  // son dos, et ses termes restent souvent pertinents d'un fichier à l'autre.
   fileRegen = null;
-  fileTermesRetires = [];
   chosenFile = file;
   fileOutBlob = null;
   const fileNameEl = $('fileName');
@@ -806,27 +835,33 @@ function fileMaskOptions(units = []) {
 // 45 secondes d'inférence et le geste cesserait d'être utilisable.
 let fileRegen = null;
 
-// Termes que l'utilisateur a retirés depuis la table, pour CE fichier.
-// Distinct du champ « ne jamais masquer » des options, qui est persistant et
-// vaut pour tous les fichiers : ici c'est une correction ponctuelle.
-let fileTermesRetires = [];
-
 // Retire un terme du masquage et REJOUE le masquage sur le fichier entier,
 // sans relancer la détection.
 //
 // Le terme rejoint `keepValues`, la primitive que `filterByRules` applique déjà
 // aux règles « ne jamais masquer » : aucune mécanique nouvelle, donc aucun
 // chemin de masquage parallèle qui pourrait diverger.
+//
+// LE TERME ATTERRIT DANS LE CHAMP VISIBLE, pas dans un état caché — c'est le
+// point de conception. Trois conséquences : l'utilisateur VOIT ce qu'il a
+// retiré, il peut le corriger à la main, et s'il veut le rendre permanent il
+// enregistre le profil. L'éphémère devient durable par un geste explicite,
+// jamais par surprise. Et il n'y a qu'une seule liste, donc rien à
+// resynchroniser.
 async function retirerDuMasquage(valeur) {
-  if (!fileRegen || fileTermesRetires.includes(valeur)) return;
-  fileTermesRetires = [...fileTermesRetires, valeur];
+  const champ = $('fileAlwaysKeep');
+  if (!fileRegen || !champ) return;
+  const avant = champ.value;
+  champ.value = ajouterTerme(avant, valeur);
+  // Rien changé : le terme y était déjà.
+  if (champ.value === avant) return;
 
   const btn = $('fileAnalyzeBtn');
   btn.disabled = true;
   fileSetStatus('Mise à jour du fichier…');
   try {
     const r = fileRegen;
-    const keepValues = [...parseLines($('fileAlwaysKeep')?.value), ...fileTermesRetires];
+    const keepValues = parseLines($('fileAlwaysKeep')?.value);
     const forceTerms = [...parseLines($('fileAlwaysMask')?.value), ...identityForceTerms()];
     let mapping;
 
@@ -867,7 +902,7 @@ async function retirerDuMasquage(valeur) {
     // Le fichier précédent reste valide et téléchargeable : on ne le remplace
     // que si la régénération a abouti. Mieux vaut un retrait sans effet qu'un
     // résultat à moitié réécrit.
-    fileTermesRetires = fileTermesRetires.filter(v => v !== valeur);
+    champ.value = avant;
     fileSetStatus('Impossible de mettre à jour le fichier. Détail dans la console.', 'error');
   } finally {
     btn.disabled = false;
@@ -1428,9 +1463,8 @@ async function processFile() {
   // pour composer le nom de sortie : changer de fichier en cours de route
   // produisait le CONTENU de l'ancien sous le NOM du nouveau — on croyait tenir
   // B anonymisé en tenant A. Même gravité qu'une fuite, d'où la capture.
-  // Une nouvelle détection rebâtit le mapping : les retraits de la passe
-  // précédente n'ont plus de cible.
-  fileTermesRetires = [];
+  // Une nouvelle détection rebâtit le mapping : l'ancien état de régénération
+  // ne correspond plus à rien.
   fileRegen = null;
 
   const source = chosenFile;
@@ -1622,6 +1656,11 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
 // --- Sélection de fichier (bouton + glisser-déposer)
 $('filePickBtn').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', ev => setChosenFile(ev.target.files[0]));
+// Tabulation comme séparateur de termes dans les quatre champs de règles.
+for (const id of ['alwaysMask', 'alwaysKeep', 'fileAlwaysMask', 'fileAlwaysKeep']) {
+  tabInsereUneTabulation($(id));
+}
+
 $('fileCancelBtn').addEventListener('click', () => annulerRunFichier());
 
 // Délégation : la table est reconstruite à chaque régénération, un écouteur
