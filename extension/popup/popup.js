@@ -256,7 +256,7 @@ function expliquerPoids(poids) {
 }
 
 // src/popup/termes.js
-var SEPARATEURS = /[\t\r\n]+/;
+var SEPARATEURS = /[,;\t\r\n]+/;
 function parseTermes(valeur) {
   return (valeur || "").split(SEPARATEURS).map((s) => s.trim()).filter(Boolean);
 }
@@ -265,7 +265,7 @@ function ajouterTerme(valeur, terme) {
   if (!t) return valeur || "";
   const existants = parseTermes(valeur);
   if (existants.includes(t)) return valeur || "";
-  return [...existants, t].join("\n");
+  return [...existants, t].join(", ");
 }
 
 // src/engine/pseudonyms.js
@@ -961,21 +961,6 @@ var TYPE_DISPLAY = {
   PERSONNALISE: "Perso"
 };
 var parseLines = parseTermes;
-function tabInsereUneTabulation(champ) {
-  if (!champ) return;
-  champ.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape") {
-      champ.blur();
-      return;
-    }
-    if (ev.key !== "Tab" || ev.shiftKey) return;
-    ev.preventDefault();
-    const { selectionStart: d, selectionEnd: f, value } = champ;
-    champ.value = value.slice(0, d) + "	" + value.slice(f);
-    champ.selectionStart = champ.selectionEnd = d + 1;
-    champ.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-}
 var nerPipe = null;
 var nerLoading = false;
 var pseudoSeed = Math.random().toString(36).slice(2);
@@ -2150,9 +2135,6 @@ for (const btn of document.querySelectorAll(".mode-btn")) {
 }
 $("filePickBtn").addEventListener("click", () => $("fileInput").click());
 $("fileInput").addEventListener("change", (ev) => setChosenFile(ev.target.files[0]));
-for (const id of ["alwaysMask", "alwaysKeep", "fileAlwaysMask", "fileAlwaysKeep", "docKeep", "docMask"]) {
-  tabInsereUneTabulation($(id));
-}
 $("fileCancelBtn").addEventListener("click", () => annulerRunFichier());
 $("fileMappingWrap").addEventListener("click", (ev) => {
   const btn = ev.target.closest(".map-retirer");

@@ -240,16 +240,18 @@ de profil et polluer le profil au premier enregistrement.
    pas** s’y retrouver.
 3. Choisir un **autre fichier** → les termes du document sont **effacés** ; les
    règles de profil sont **intactes**.
-4. **Tab insère une tabulation** dans les quatre champs de règles. Vérifier les
-   échappatoires clavier : **Maj+Tab** revient en arrière, **Échap** sort du
-   champ. Sans elles, on enferme ceux qui naviguent au clavier.
+4. **La virgule sépare les termes.** Tab n’est PAS capturé : il navigue
+   normalement entre les champs. La tabulation reste acceptée à l’analyse
+   (collage depuis un tableur), mais on n’en fabrique plus.
 5. Le bouton « ne plus masquer » de la table écrit dans **« Termes de ce
    document »** — le terme est visible, modifiable à la main, et disparaîtra
    avec le fichier.
 
-⚠️ La virgule et le point-virgule ne sont **pas** des séparateurs, et c’est
-délibéré : « Dupont, Marie » ou « Legrand & Fils, S.A. » sont des termes
-plausibles, et les découper produirait des fragments masquant n’importe quoi.
+⚠️ CONTREPARTIE : un terme ne peut plus contenir de virgule. « Dupont, Marie »
+sera lu comme deux termes. Côté « toujours masquer » c’est sans danger (on
+masque davantage) ; côté « ne jamais masquer » ça peut laisser en clair un
+fragment non voulu. Rare, et **visible** à la relecture — c’est exactement ce
+que la tabulation ne permettait pas.
 
 ### À chronométrer maintenant : le regroupement en lots
 

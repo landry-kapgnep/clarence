@@ -45,30 +45,11 @@ const TYPE_DISPLAY = {
 // src/popup/termes.js pour le choix des séparateurs et ce qu'on en exclut.
 const parseLines = parseTermes;
 
-// Dans un <textarea>, Tab DÉPLACE LE FOCUS au lieu d'insérer une tabulation.
-// Puisque la tabulation est devenue le séparateur de ces champs, il faut la
-// capturer — sinon le geste demandé fait simplement sortir du champ.
-//
-// PIÈGE D'ACCESSIBILITÉ, et il est réel : capturer Tab enferme les personnes
-// qui naviguent au clavier. D'où deux échappatoires laissées ouvertes —
-// Maj+Tab (retour arrière, comportement standard) et Échap (sort du champ).
-// C'est la convention des éditeurs de code embarqués dans un formulaire.
-function tabInsereUneTabulation(champ) {
-  if (!champ) return;
-  champ.addEventListener('keydown', ev => {
-    if (ev.key === 'Escape') { champ.blur(); return; }
-    if (ev.key !== 'Tab' || ev.shiftKey) return; // Maj+Tab : navigation normale
-    ev.preventDefault();
-    const { selectionStart: d, selectionEnd: f, value } = champ;
-    champ.value = value.slice(0, d) + '\t' + value.slice(f);
-    champ.selectionStart = champ.selectionEnd = d + 1;
-    // `input` ne part pas d'une écriture programmatique : on le déclenche pour
-    // que l'invalidation du résultat fichier se fasse comme à la frappe.
-    champ.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-}
-// (L'accrochage aux champs se fait plus bas, une fois `$` déclaré : `const` ne
-// remonte pas, et l'appeler ici planterait la popup au chargement.)
+// NB : la touche Tab n'est PAS capturée dans ces champs, et c'est délibéré.
+// Elle l'a été un temps, quand la tabulation servait de séparateur — mais
+// capturer Tab enferme les personnes qui naviguent au clavier, et la virgule a
+// rendu ce compromis inutile. La tabulation reste acceptée à l'ANALYSE (un
+// collage depuis un tableur en contient), simplement on n'en fabrique plus.
 let nerPipe = null;
 let nerLoading = false;
 // Graine de session pour les pseudonymes réalistes : stable tant que la popup
@@ -1673,11 +1654,6 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
 // --- Sélection de fichier (bouton + glisser-déposer)
 $('filePickBtn').addEventListener('click', () => $('fileInput').click());
 $('fileInput').addEventListener('change', ev => setChosenFile(ev.target.files[0]));
-// Tabulation comme séparateur de termes dans les quatre champs de règles.
-for (const id of ['alwaysMask', 'alwaysKeep', 'fileAlwaysMask', 'fileAlwaysKeep', 'docKeep', 'docMask']) {
-  tabInsereUneTabulation($(id));
-}
-
 $('fileCancelBtn').addEventListener('click', () => annulerRunFichier());
 
 // Délégation : la table est reconstruite à chaque régénération, un écouteur
