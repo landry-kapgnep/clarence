@@ -11,7 +11,34 @@
 > fonctionner dans un Chrome chargé en mode développeur.** Ce document est
 > l'outil de cette règle.
 
-## ⚠️ Passe due — neuf commits jamais vus tourner (08/08/2026)
+## Passe du 08/08/2026 — faite, résultats
+
+Exécutée en vrai Chrome sur `tous-defauts.pdf`, mode **Préserver** (le chemin le
+plus dur : reconstruction PDF).
+
+| Point | Résultat |
+|---|---|
+| Badge de poids | ✅ s'affiche |
+| Table triée par occurrences + bouton par ligne | ✅ |
+| Régénération après un clic « ne plus masquer » | ✅ **~1 s** — le cache d'entités est bien réutilisé |
+| Écriture dans « Termes de ce document » + aperçu | ✅ instantané |
+| **P5 — 16 valeurs structurées** | ✅ **zéro fuite** dans le PDF de sortie |
+| **Contrôle inverse : piège SIREN `483 921 657`** | ✅ **resté en clair** |
+
+P5 n'avait jamais tourné qu'en Node. Les motifs de téléphone au format national
+ajoutés pour l'ES/DE/US pouvaient réintroduire le piège SIREN — ils ne le font
+pas.
+
+**Défaut trouvé et corrigé** (`c2364bb`) : le fond à lettres se dessinait dans
+les gouttières INTERNES de la table de correspondance. L'évidement ne bloque que
+les rectangles du texte, jamais les boîtes — juste pour une pile de blocs pleine
+largeur, faux pour un tableau. À revoir au prochain passage.
+
+**Reste ouvert, mesuré ce jour** : le sur-masquage des intitulés de section, dont
+le diagnostic complet (trois causes distinctes) est dans
+`docs/roadmap-detection.md`.
+
+## ⚠️ Feuille de route de la passe (rejouer à chaque release)
 
 La dernière vérification date du **04/08**. Depuis, **neuf commits ont touché
 l'UI** sans qu'aucun ne soit passé en Chrome. Cinq fonctions neuves sont

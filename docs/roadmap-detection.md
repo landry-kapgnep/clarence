@@ -415,6 +415,63 @@ que `Meteojob` en début de ligne restait en clair.
 
 ---
 
+## P9 — Les intitulés de section : TROIS causes, pas une (mesuré 08/08/2026)
+
+Relevé sur la sortie réelle en Chrome (`tous-defauts.pdf`, mode Préserver). Le
+mécanisme d'intitulés relève bien **29 titres** avant regroupement, et pourtant
+`ANNEXE`, `ANEXO 5`, `ANLAGE 6`, `ÉTAT CIVIL Née`, `SPRACHEN` ressortent masqués.
+Ce ne sont pas cinq fois le même défaut.
+
+### Cause 1 — un VRAI titre n'est jamais relevé (le plus gros)
+
+```js
+const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
+if (!titre && ressembleAUnIntitule(l.text)) intitules.add(l.text.trim());
+```
+
+Le garde `!titre` **exclut du relevé les lignes qui sont typographiquement des
+titres**. L'hypothèse implicite était « un vrai titre est traité ailleurs ». Il
+ne l'est pas : `marquerIntitules` écarte lui aussi les unités `isHeading`
+(`!u.isHeading`), et `isHeading` n'est même pas exposé en aval par
+`extractTextUnits`. **Une ligne passe donc entre les trois filets précisément
+parce qu'elle est un titre** — l'inverse de l'intention.
+
+Vérifié : `ANNEXE`, `ANNEXE 2`, `ANEXO 5`, `ANLAGE 6` → tous « relevé : NON »,
+tous en tête de leur unité.
+
+⚠️ **Retirer `!titre` ne suffit PAS**, et c'est le piège. `ressembleAUnIntitule`
+plafonne à 3 mots : `ANNEXE — DOSSIER ADMINISTRATIF` en compte 4 (le tiret
+cadratin compte). Et même relevée, la chaîne entière ne serait pas égale à
+l'entité `ANNEXE` seule, que le filtre exige **exactement**.
+
+### Cause 2 — l'entité déborde de l'intitulé
+
+`ÉTAT CIVIL` **est** relevé et **est** en tête de son unité. Mais le modèle rend
+`ÉTAT CIVIL Née` : le filtre `intitules.has(e.value)` ne matche pas. C'est le
+comportement **délibéré** du mécanisme (« on n'emporte pas les mots voisins »),
+documenté dans `anonymize-units.js`. Arbitrage assumé, pas un bug.
+
+### Cause 3 — `SPRACHEN` n'est pas contextuel
+
+C'est un faux positif **BIC**, produit par le regex. Or le filtre d'intitulés
+s'applique à `nerEntities` **avant la fusion** — les entités déterministes n'y
+passent jamais. Déjà consigné et délibérément non corrigé : exiger un libellé
+pour le BIC ferait fuir un BIC nu dans un bloc de coordonnées bancaires.
+
+### Ce qu'il faut décider avant de coder
+
+La correction de la cause 1 touche à la **priorité zéro-fuite**. Exempter une
+unité-titre en bloc ferait fuir « RAPPORT DE Jean Dupont ». Relâcher le
+« exactement » vers un préfixe ferait fuir « Jean Dupont — RAPPORT ». Le
+mécanisme actuel est strict *parce que* le laxisme s'y paie en fuite.
+
+**Ne pas partir sur un correctif sans avoir chiffré** ce que chaque variante
+démasque ET ce qu'elle laisse fuir, sur le document piégé dont la vérité terrain
+est écrite dans les deux sens. C'est exactement la méthode qui a fait rejeter la
+minusculisation au spike POS (+7 démasquages, 3 fuites → rejeté).
+
+---
+
 ## P2bis — Sur-masquage sur les pages à faible contexte (constaté, non corrigé)
 
 Même rapport, page de sommaire :
