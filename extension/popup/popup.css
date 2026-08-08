@@ -983,6 +983,22 @@ td.map-occ {
 }
 .map-retirer:hover { background: var(--control-ghost-hover-bg); color: var(--paper); }
 
+/* Quatre colonnes de natures DIFFÉRENTES : trois doivent tenir leur contenu
+   (placeholder, compte, bouton), une seule doit absorber le reste (la valeur).
+   Sans contrainte, `table { width: 100% }` répartit la largeur à sa façon et
+   ouvre une gouttière au milieu de chaque ligne — l'œil doit alors traverser
+   un vide pour relier une valeur à son nombre d'occurrences.
+   `width: 1%` est l'idiome qui fait tenir une colonne à son contenu : la
+   largeur demandée est intenable, le moteur de table retombe donc sur le
+   minimum, et tout le reste va à la colonne à 100 %. */
+#fileMappingWrap td:first-child,
+#fileMappingWrap td.map-occ,
+#fileMappingWrap td:last-child { width: 1%; white-space: nowrap; }
+#fileMappingWrap td:nth-child(2) { width: 100%; }
+/* La ligne reste large : le survol la relie d'un bout à l'autre au moment où
+   on vise son bouton. Teinte reprise des contrôles, aucun ton nouveau. */
+#fileMappingWrap tr:hover { background: var(--control-ghost-bg); }
+
 /* Termes propres à UN document, hors profil.
    Séparés des champs de « Personnaliser le masquage » pour une raison
    fonctionnelle, pas esthétique : ces derniers sont ÉCRASÉS au chargement d'un

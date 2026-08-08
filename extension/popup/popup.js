@@ -1769,6 +1769,9 @@ function letterGridComputeBlocked(host, cellCss) {
   for (const img of wrap.querySelectorAll("img")) {
     if (!hidden(img)) add(img.getBoundingClientRect());
   }
+  for (const t of wrap.querySelectorAll("table")) {
+    if (!hidden(t)) add(t.getBoundingClientRect());
+  }
   return blocked;
 }
 function letterGridPaintCell(col, row, letter, cellPx, tint) {

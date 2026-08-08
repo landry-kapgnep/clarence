@@ -1206,6 +1206,19 @@ function letterGridComputeBlocked(host, cellCss) {
   for (const img of wrap.querySelectorAll('img')) {
     if (!hidden(img)) add(img.getBoundingClientRect());
   }
+  // Les TABLEAUX sont la seule exception à la règle « on ne bloque que le
+  // texte ». Cette règle suppose une pile de blocs pleine largeur, où le motif
+  // vit dans les MARGES d'une ligne courte — c'est ce qui lui laisse de la
+  // place. Un tableau viole l'hypothèse : il ouvre de larges gouttières ENTRE
+  // ses colonnes, à l'INTÉRIEUR de son cadre. Une lettre qui y tombe ne se lit
+  // plus comme un fond, mais comme un caractère parasite dans la donnée —
+  // constaté sur la table de correspondance, où des lettres isolées
+  // apparaissaient entre la valeur masquée et son nombre d'occurrences.
+  // Le coût en surface est acceptable ici, contrairement au cas général : une
+  // table n'apparaît que dans le panneau de résultats.
+  for (const t of wrap.querySelectorAll('table')) {
+    if (!hidden(t)) add(t.getBoundingClientRect());
+  }
   return blocked;
 }
 
