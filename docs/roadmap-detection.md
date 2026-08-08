@@ -415,7 +415,7 @@ que `Meteojob` en début de ligne restait en clair.
 
 ---
 
-## P10 — FUITE : un nom TOUT-MAJUSCULE **accentué** passe sous le seuil (08/08/2026)
+## ~~P10 — FUITE : un nom TOUT-MAJUSCULE accentué passe sous le seuil~~ ✅ CORRIGÉ (08/08/2026)
 
 Trouvé par le banc dès que le document piégé y a été branché — donc jamais vu
 auparavant, faute d'instrument.
@@ -454,20 +454,48 @@ La forme touchée — **titre de CV en capitales accentuées** — est exactemen
 celle du marché visé (l'indépendant francophone, cadrage §9). Ce n'est pas un
 cas exotique, c'est le cas modal.
 
-### Pistes, aucune mesurée
+### ✅ CORRIGÉ le 08/08/2026 — seconde passe sur copie désaccentuée
 
-1. **Passe supplémentaire sur une copie désaccentuée**, spans recalés sur
-   l'original. Le motif existe déjà dans le projet (double passe `boostCase` de
-   `ner.js`) et le gain brut est large (0,418 → 0,618). ⚠️ à ne pas confondre
-   avec la MINUSCULISATION, mesurée et **rejetée** au spike POS (+7
-   démasquages, 3 fuites) : désaccentuer préserve la casse, le signal que le
-   modèle utilise. À mesurer dans les deux sens, pas à supposer.
-2. **Baisser le seuil identité.** Le moins cher, le plus risqué : 0,46 a été
-   choisi contre un plancher de bruit mesuré. À ne toucher qu'avec le chiffre
-   de sur-masquage en regard — le banc le donne maintenant.
-3. **Ne rien faire côté modèle** et compter sur le profil d'identité
-   (`identity.js`), qui masque le nom de l'utilisateur de façon déterministe.
-   Ne couvre PAS les noms des TIERS dans le document.
+Idée de l'utilisateur : faire repasser le terme sous plusieurs formes plutôt que
+d'espérer qu'une seule suffise. C'est le motif que `ner.js` applique déjà sur
+l'axe CASSE (passe naturelle + passe boostée, fusion par span le plus long),
+étendu à l'axe ACCENTS.
+
+`desaccentuer()` produit une copie **à longueur strictement égale** (on ne
+remplace un caractère que si sa forme nue fait la même longueur : `é`→`e` oui,
+`ß`→`ss` non). Les deux passes partagent donc un seul repère d'offsets, et la
+valeur se relit toujours sur l'original — pas de recalage, contrairement à la
+passe de casse. C'est ce qui rend cet axe plus sûr que les autres.
+
+**Mesuré dans les deux sens** (diff de mapping avant/après, document piégé) :
+
+| | |
+|---|---|
+| **Fuites fermées** | `ÉLÉONORE VASSEUR` **et** `Éléonore` employée seule — la « fuite connue restante » du README |
+| **Faux positifs ajoutés** | `Exécution des tâches`, `d'OCR`, `Geburtsdatum`, `Fondateur` |
+| **Détections perdues** | aucune |
+| **Banc, 7 documents réalistes** | **strictement inchangé** (100 / 83 / 98) |
+| **Borne basse** | contextuel 91 → **95 %**, préservé **82 % inchangé** |
+
+Deux d'entre eux (`Geburtsdatum`, `Fondateur`) n'ont AUCUN accent : désaccentuer
+le chunk change le contexte d'encodage, donc les scores de TOUS ses spans, pas
+seulement des mots accentués. À savoir avant d'attribuer un écart au seul mot
+visé.
+
+**Coût, non optimisé** : la passe double les inférences de tout chunk contenant
+un accent — en français, presque tous. L'axe temps (1 min 02 sur 75 pages) n'a
+PAS été re-mesuré. Piste de garde, non implémentée : ne déclencher la seconde
+passe que sur les chunks COURTS, où la pénalité d'accent mord le plus (peu de
+contexte pour la compenser) et où l'inférence coûte le moins. ⚠️ mesurer
+d'abord : `Éléonore` seule a été rattrapée dans une unité longue, un garde de
+longueur la reperdrait.
+
+### Pistes écartées pour l'instant
+
+- **Baisser le seuil identité.** Moins cher, plus risqué : 0,46 a été choisi
+  contre un plancher de bruit mesuré. Devenu inutile ici.
+- **Ne rien faire et compter sur `identity.js`** : ne couvre que l'utilisateur,
+  pas les TIERS cités dans le document.
 
 ### Ce que ça dit du README du document piégé
 

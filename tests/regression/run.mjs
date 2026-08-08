@@ -49,6 +49,16 @@ const DETAIL = process.argv.includes('--detail');
 
 const empreinte = s => createHash('sha256').update(s).digest('hex').slice(0, 12);
 
+// MIROIR EN CLAIR — jamais committé (.gitignore), écrit à côté de l'instantané.
+// Il n'existe que pour répondre à « QUELLE valeur n'est plus masquée ? », que
+// les empreintes seules ne peuvent pas dire. Même statut que corpus/ : local,
+// utile, hors du dépôt.
+const cheminMiroir = nom => join(INSTANTANES, `${nom}.clair.json`);
+const lireMiroir = nom => {
+  const f = cheminMiroir(nom);
+  return existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : null;
+};
+
 // ── Chargement du moteur, identique au banc ────────────────────────────────
 // Même modèle, même variante, même correctif de découpeur : un harnais qui
 // mesurerait un moteur différent de celui qu'on livre ne prouverait rien.
@@ -106,7 +116,7 @@ async function analyser(chemin, pipe) {
 
   const entree = (ext === '.csv') ? readFileSync(chemin, 'utf8') : buffer;
   const { units, intitules } = await adaptateur.extractTextUnits(entree);
-  const { mapping } = await anonymizeUnits(units, {
+  const { mapping, results } = await anonymizeUnits(units, {
     nerPipeline: pipe,
     nerDetect: detectGliner,
     intitules,
@@ -127,12 +137,14 @@ async function analyser(chemin, pipe) {
     // Empreintes seulement — jamais les valeurs (voir l'en-tête).
     valeurs: mapping.map(m => `${m.type}:${empreinte(m.value)}`).sort(),
     // Gardé hors instantané, pour --detail uniquement.
-    _clair: mapping.map(m => `${m.type}:${m.value}`).sort()
+    _clair: mapping.map(m => `${m.type}:${m.value}`).sort(),
+    // La SORTIE, pour trancher « absorbée » contre « fuitée » (voir comparer).
+    _sortie: results.map(r => r.maskedText).join('\n')
   };
 }
 
 // ── Comparaison ────────────────────────────────────────────────────────────
-function comparer(nom, avant, apres, clair) {
+function comparer(nom, avant, apres, clair, sortie) {
   const ecarts = [];
   if (avant.empreinteSource !== apres.empreinteSource) {
     ecarts.push('LE DOCUMENT SOURCE A CHANGÉ — l\'écart ne vient pas du moteur');
@@ -147,11 +159,41 @@ function comparer(nom, avant, apres, clair) {
   // Le sens de l'écart est ce qui compte : « ne masque plus » est un risque de
   // FUITE, « masque en plus » est un risque de sur-masquage. Jamais mis dans
   // le même sac.
-  if (parties.length) ecarts.push(`NE MASQUE PLUS ${parties.length} valeur(s) — risque de fuite`);
+  //
+  // MAIS une valeur qui quitte le mapping n'est pas forcément en clair : elle
+  // peut avoir été ABSORBÉE par un span plus long ou reclassée sous un autre
+  // type. Le mapping est indexé par `type:valeur`, il ne sait pas voir la
+  // différence — et il criait donc « risque de fuite » sur des changements
+  // parfaitement sains (constaté le 08/08 : « 41001 » et une affiliation
+  // universitaire, toutes deux encore masquées).
+  //
+  // Le miroir permet de trancher pour de bon : on retrouve la valeur en clair,
+  // et on regarde si elle est PRÉSENTE DANS LA SORTIE. Absente = absorbée.
+  // Présente = fuite, et c'est la seule qui mérite le mot.
+  const miroir = lireMiroir(nom);
+  const fuites = [], absorbees = [];
+  for (const v of parties) {
+    const valeur = miroir?.[v];
+    const texte = valeur?.slice(valeur.indexOf(':') + 1);
+    // Sans miroir on ne peut pas trancher : on garde l'alerte la plus grave.
+    if (!texte || sortie?.includes(texte)) fuites.push(valeur || v);
+    else absorbees.push(valeur || v);
+  }
+  if (fuites.length) ecarts.push(`✘ FUITE — ${fuites.length} valeur(s) en clair dans la sortie`);
+  if (absorbees.length) ecarts.push(`${absorbees.length} valeur(s) sortie(s) du mapping mais TOUJOURS masquée(s) (absorbées ou reclassées)`);
   if (nouvelles.length) ecarts.push(`masque ${nouvelles.length} valeur(s) EN PLUS`);
 
   if (DETAIL && clair) {
     const parEmpreinte = new Map(apres.valeurs.map((v, i) => [v, clair[i]]));
+    // Ce qui a DISPARU est le sens dangereux, et c'est celui que l'instantané
+    // ne sait pas nommer : il ne contient que des empreintes, et une valeur
+    // qui n'est plus masquée n'est plus dans la passe courante non plus. D'où
+    // le miroir en clair, écrit à côté de l'instantané et IGNORÉ PAR GIT (voir
+    // .gitignore) — les vraies valeurs ne doivent jamais entrer dans le dépôt.
+    // Sans lui, le harnais criait « risque de fuite » sans pouvoir dire de
+    // quoi : défaut constaté à l'usage le 08/08, sur son deuxième vrai écart.
+    for (const v of fuites.slice(0, 15)) ecarts.push(`   ✘ ${v}`);
+    for (const v of absorbees.slice(0, 15)) ecarts.push(`   − ${v}`);
     for (const v of nouvelles.slice(0, 15)) ecarts.push(`   + ${parEmpreinte.get(v) || v}`);
   }
   return ecarts;
@@ -178,17 +220,21 @@ for (const fichier of documents) {
   const cheminInstantane = join(INSTANTANES, `${nom}.json`);
   const apres = await analyser(join(CORPUS, fichier), pipe);
   if (!apres) continue;
-  const { _clair, ...aEcrire } = apres;
+  const { _clair, _sortie, ...aEcrire } = apres;
 
   if (!existsSync(cheminInstantane) || MAJ) {
     writeFileSync(cheminInstantane, JSON.stringify(aEcrire, null, 2) + '\n');
+    // Miroir local : empreinte → valeur en clair, pour pouvoir nommer plus tard
+    // une valeur qui aurait cessé d'être masquée. Hors dépôt.
+    writeFileSync(cheminMiroir(nom), JSON.stringify(
+      Object.fromEntries(apres.valeurs.map((v, i) => [v, _clair[i]])), null, 2) + '\n');
     console.log(`  ${existsSync(cheminInstantane) && MAJ ? 'mis à jour' : 'créé'.padEnd(10)}  ${fichier}`);
     crees++;
     continue;
   }
 
   const avant = JSON.parse(readFileSync(cheminInstantane, 'utf8'));
-  const ecarts = comparer(nom, avant, aEcrire, _clair);
+  const ecarts = comparer(nom, avant, aEcrire, _clair, _sortie);
   if (ecarts.length) {
     regressions++;
     console.log(`\n  ÉCART  ${fichier}`);

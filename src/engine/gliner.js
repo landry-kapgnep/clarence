@@ -220,6 +220,35 @@ function estPlausiblePourLeType(type, valeur) {
 // disabledTypes : Set de types désactivés par l'utilisateur. Utilisé ICI (et
 // pas seulement en aval dans filterByRules) pour éviter une inférence inutile.
 // onProgress({ done, total }) : awaité, permet de rendre la main à l'UI.
+// COPIE DÉSACCENTUÉE, À LONGUEUR STRICTEMENT ÉGALE.
+//
+// POURQUOI. Le checkpoint est un `deberta-v3-small` ANGLOPHONE (choisi à la
+// mesure : il bat le multilingue sur nos fixtures FR, voir Gotchas). Les
+// accents lui coûtent cher — mesuré sur le MÊME nom, en capitales :
+// « ELEONORE VASSEUR » sort à 0,618, « ÉLÉONORE VASSEUR » à 0,418, pour un
+// seuil à 0,46. Le nom fuyait donc en clair (P10). Ce n'est pas « les
+// capitales accentuées ne marchent pas » — « MÉLANIE THÉVENOT » sort à 0,507 —
+// c'est que l'accentuation retire ~0,20 et que certains cas atterrissent juste
+// sous la barre.
+//
+// LONGUEUR PRÉSERVÉE, et c'est tout l'intérêt de cet axe. On ne remplace un
+// caractère que si sa forme désaccentuée fait EXACTEMENT la même longueur :
+// les offsets rendus par le modèle sont alors valides sur les DEUX textes, et
+// la valeur masquée se relit sur l'original sans le moindre recalage. La passe
+// à casse boostée de `ner.js`, elle, n'a pas cette garantie (« ß » → « SS »).
+//
+// À NE PAS CONFONDRE avec la MINUSCULISATION, mesurée et REJETÉE au spike POS
+// (+7 démasquages mais 3 fuites) : un modèle « cased » se sert de la majuscule
+// comme signal, la retirer brouille la frontière. Désaccentuer la préserve.
+export function desaccentuer(texte) {
+  let sortie = '';
+  for (const ch of texte) {
+    const nu = ch.normalize('NFD').replace(/\p{M}+/gu, '');
+    sortie += nu.length === ch.length ? nu : ch;
+  }
+  return sortie;
+}
+
 export async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes } = {}) {
   if (!glinerPipeline) return [];
   const desactives = disabledTypes || new Set();
@@ -239,6 +268,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
 
   for (const { offset, text: chunk } of chunks) {
     const duChunk = [];
+    const chunkNu = desaccentuer(chunk);
     for (const groupe of groupesActifs) {
       // NE PAS PAYER UNE INFÉRENCE DONT ON JETTERA LE RÉSULTAT.
       //
@@ -253,23 +283,31 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
       // qu'il n'a qu'un label — le coût suit la longueur du texte, pas le
       // nombre de labels. Or 65 % des unités n'ont aucun chiffre.
       if (groupe.pertinent && !groupe.pertinent(chunk)) continue;
-      const spans = await glinerPipeline(chunk, groupe.labels);
       const seuil = groupe.seuil ?? GLINER_THRESHOLD;
-      for (const s of spans || []) {
-        const type = groupe.types[s.label];
-        // Un label inconnu ne doit jamais devenir une entité sans type : mieux
-        // vaut l'ignorer que produire un placeholder [undefined_1].
-        if (!type || s.score < seuil) continue;
-        if (!estPlausiblePourLeType(type, chunk.slice(s.start, s.end))) continue;
-        duChunk.push({
-          type,
-          value: chunk.slice(s.start, s.end),
-          start: s.start,
-          end: s.end,
-          source: 'ner',
-          score: s.score,
-          validated: 'n/a'
-        });
+      // Seconde passe sur la copie désaccentuée, uniquement si le texte en
+      // contient (voir desaccentuer : P10). La longueur étant préservée, les
+      // deux passes partagent le même repère d'offsets.
+      for (const variante of chunkNu === chunk ? [chunk] : [chunk, chunkNu]) {
+        const spans = await glinerPipeline(variante, groupe.labels);
+        for (const s of spans || []) {
+          const type = groupe.types[s.label];
+          // Un label inconnu ne doit jamais devenir une entité sans type : mieux
+          // vaut l'ignorer que produire un placeholder [undefined_1].
+          if (!type || s.score < seuil) continue;
+          // La valeur se relit TOUJOURS sur le texte d'origine : c'est le texte
+          // accentué qu'il faudra masquer, pas la copie de travail.
+          const valeur = chunk.slice(s.start, s.end);
+          if (!estPlausiblePourLeType(type, valeur)) continue;
+          duChunk.push({
+            type,
+            value: valeur,
+            start: s.start,
+            end: s.end,
+            source: 'ner',
+            score: s.score,
+            validated: 'n/a'
+          });
+        }
       }
       if (onProgress) await onProgress({ done: ++done, total });
     }

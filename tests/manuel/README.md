@@ -111,7 +111,7 @@ l'état réel :
   sans contexte) : `IUT`, `SOMMAIRE`, `ANNEXE`, `DOSSIER`, `ADMINISTRATIF`,
   `COORDONNÉES`, `Montant`, `Réunion`, `stratégie`, `Figure 1`, `OCR`,
   `Course`, `pied`, `argentique`, `Second candidat`.
-- **Fuite connue restante** : `Éléonore` employée seule.
+- ~~**Fuite connue restante** : `Éléonore` employée seule.~~ ✅ fermée le 08/08 par la passe désaccentuée (P10).
 
 Le sur-masquage de la page 2 est spectaculaire **et c'est voulu** : cette page
 est délibérément faite de lignes courtes sans phrases, le pire cas pour le

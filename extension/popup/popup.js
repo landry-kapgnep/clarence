@@ -120,6 +120,14 @@ function estPlausiblePourLeType(type, valeur) {
   if (type === "DATE_NAISSANCE") return estUneDate(valeur);
   return true;
 }
+function desaccentuer(texte) {
+  let sortie = "";
+  for (const ch of texte) {
+    const nu = ch.normalize("NFD").replace(new RegExp("\\p{M}+", "gu"), "");
+    sortie += nu.length === ch.length ? nu : ch;
+  }
+  return sortie;
+}
 async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: disabledTypes2 } = {}) {
   if (!glinerPipeline) return [];
   const desactives = disabledTypes2 || /* @__PURE__ */ new Set();
@@ -134,23 +142,27 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
   let done = 0;
   for (const { offset, text: chunk } of chunks) {
     const duChunk = [];
+    const chunkNu = desaccentuer(chunk);
     for (const groupe of groupesActifs) {
       if (groupe.pertinent && !groupe.pertinent(chunk)) continue;
-      const spans = await glinerPipeline(chunk, groupe.labels);
       const seuil = groupe.seuil ?? GLINER_THRESHOLD;
-      for (const s of spans || []) {
-        const type = groupe.types[s.label];
-        if (!type || s.score < seuil) continue;
-        if (!estPlausiblePourLeType(type, chunk.slice(s.start, s.end))) continue;
-        duChunk.push({
-          type,
-          value: chunk.slice(s.start, s.end),
-          start: s.start,
-          end: s.end,
-          source: "ner",
-          score: s.score,
-          validated: "n/a"
-        });
+      for (const variante of chunkNu === chunk ? [chunk] : [chunk, chunkNu]) {
+        const spans = await glinerPipeline(variante, groupe.labels);
+        for (const s of spans || []) {
+          const type = groupe.types[s.label];
+          if (!type || s.score < seuil) continue;
+          const valeur = chunk.slice(s.start, s.end);
+          if (!estPlausiblePourLeType(type, valeur)) continue;
+          duChunk.push({
+            type,
+            value: valeur,
+            start: s.start,
+            end: s.end,
+            source: "ner",
+            score: s.score,
+            validated: "n/a"
+          });
+        }
       }
       if (onProgress) await onProgress({ done: ++done, total });
     }

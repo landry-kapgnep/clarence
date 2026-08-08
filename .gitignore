@@ -12,3 +12,8 @@ site/dist/
 # anonymisées. Seuls les INSTANTANÉS sont committés, et ils ne contiennent que
 # des empreintes des valeurs masquées, jamais les valeurs.
 tests/regression/corpus/
+
+# Miroir en clair des instantanés (empreinte → valeur réelle). Local seulement :
+# il sert à NOMMER une valeur qui a cessé d'être masquée, ce que les empreintes
+# ne peuvent pas dire. Le committer reviendrait à committer le corpus lui-même.
+tests/regression/instantanes/*.clair.json

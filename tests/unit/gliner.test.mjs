@@ -2,7 +2,7 @@
 // Pipeline SIMULÉ (comme ner-chunk.test.mjs) — aucun modèle chargé ici.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs } from '../../src/engine/gliner.js';
+import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs, desaccentuer } from '../../src/engine/gliner.js';
 import { mergeEntities } from '../../src/engine/merge.js';
 import { maskText } from '../../src/engine/masking.js';
 
@@ -456,4 +456,63 @@ test('arbitrage : une valeur n\'est jugée QU\'UNE fois même répétée', async
     [entiteNer('Analyste'), entiteNer('Analyste'), entiteNer('Analyste')], pipe);
   assert.equal(appels, 1, 'une inférence par valeur DISTINCTE, pas par occurrence');
   assert.deepEqual(out, []);
+});
+
+// --- PASSE DÉSACCENTUÉE (P10) --------------------------------------------
+// L'invariant porteur est la LONGUEUR. Les deux passes partagent un seul
+// repère d'offsets : si desaccentuer décalait d'un caractère, on masquerait la
+// mauvaise sous-chaîne — corruption silencieuse, la pire classe de bug ici.
+
+test('desaccentuer : longueur strictement préservée', () => {
+  for (const s of [
+    'ÉLÉONORE VASSEUR', 'Éléonore Vasseur', 'Hauptstraße 15', 'Jürgen Müller',
+    'María del Carmen', 'Siobhán Ó Braonáin', 'cœur', 'garçon', '¿Quién?',
+    'ÉTAT CIVIL Née', '', 'sans accent du tout', '14. März 1988'
+  ]) {
+    assert.equal(desaccentuer(s).length, s.length, `longueur changée sur « ${s} »`);
+  }
+});
+
+test('desaccentuer : retire les diacritiques, laisse les ligatures intactes', () => {
+  assert.equal(desaccentuer('ÉLÉONORE VASSEUR'), 'ELEONORE VASSEUR');
+  assert.equal(desaccentuer('Jürgen Müller'), 'Jurgen Muller');
+  assert.equal(desaccentuer('María'), 'Maria');
+  // « ß » et « œ » ne sont pas des lettres accentuées : les décomposer
+  // changerait la longueur (ß→ss), donc on les laisse telles quelles.
+  assert.equal(desaccentuer('Hauptstraße'), 'Hauptstraße');
+  assert.equal(desaccentuer('cœur'), 'cœur');
+});
+
+test('desaccentuer : la casse est PRÉSERVÉE (à ne pas confondre avec minusculiser)', () => {
+  // La minusculisation a été mesurée et REJETÉE au spike POS : un modèle
+  // « cased » se sert de la majuscule comme signal. Désaccentuer la garde.
+  assert.equal(desaccentuer('ÉLÉONORE'), 'ELEONORE');
+  assert.equal(desaccentuer('Éléonore'), 'Eleonore');
+});
+
+test('une entité vue SEULEMENT sur la copie désaccentuée est retenue', async () => {
+  // Le pipeline simulé ne répond que sur la forme SANS accents : c'est
+  // exactement le cas P10 (0,418 avec accents contre 0,618 sans).
+  const pipe = async (texte, labels) => {
+    const i = texte.indexOf('ELEONORE VASSEUR');
+    if (i === -1 || !labels.includes('person')) return [];
+    return [{ label: 'person', score: 0.62, start: i, end: i + 16, spanText: 'ELEONORE VASSEUR' }];
+  };
+  const [e] = await detectGliner('ÉLÉONORE VASSEUR', pipe);
+  assert.equal(e.type, 'PER');
+  // La VALEUR doit venir du texte d'ORIGINE, accents compris : c'est elle
+  // qu'on masquera et qu'on réinjectera.
+  assert.equal(e.value, 'ÉLÉONORE VASSEUR');
+  assert.equal(e.start, 0);
+  assert.equal(e.end, 16);
+});
+
+test('sans accent dans le texte, AUCUNE passe supplémentaire n\'est payée', async () => {
+  let appels = 0;
+  const pipe = async () => { appels++; return []; };
+  await detectGliner('MARTIN DUBOIS habite Paris', pipe);
+  const sansAccents = appels;
+  appels = 0;
+  await detectGliner('MARTÎN DUBOIS habite Paris', pipe);
+  assert.ok(appels > sansAccents, 'un texte accentué doit déclencher la seconde passe');
 });
