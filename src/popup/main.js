@@ -1208,12 +1208,17 @@ function letterGridComputeBlocked(host, cellCss) {
   }
   // Les TABLEAUX sont la seule exception à la règle « on ne bloque que le
   // texte ». Cette règle suppose une pile de blocs pleine largeur, où le motif
-  // vit dans les MARGES d'une ligne courte — c'est ce qui lui laisse de la
-  // place. Un tableau viole l'hypothèse : il ouvre de larges gouttières ENTRE
-  // ses colonnes, à l'INTÉRIEUR de son cadre. Une lettre qui y tombe ne se lit
-  // plus comme un fond, mais comme un caractère parasite dans la donnée —
-  // constaté sur la table de correspondance, où des lettres isolées
-  // apparaissaient entre la valeur masquée et son nombre d'occurrences.
+  // vit dans les MARGES d'une ligne courte. Un tableau viole l'hypothèse : ses
+  // gouttières sont INTERNES, entre les colonnes, au milieu de la donnée.
+  //
+  // NUANCE, tranchée par l'auteur de la DA après l'avoir vu à l'écran : le
+  // motif ne se lit PAS comme parasite. Son opacité dit clairement qu'il est en
+  // fond, et il habille la page — c'est voulu, partout ailleurs. Ceci n'est
+  // donc PAS une correction de bug mais un arbitrage local : dans une table on
+  // lit en balayant une colonne, et c'est le seul endroit où le motif coûte
+  // plus qu'il n'apporte. Ne pas généraliser ce blocage à d'autres conteneurs
+  // « pour faire propre » : ce serait effacer l'identité visuelle.
+  //
   // Le coût en surface est acceptable ici, contrairement au cas général : une
   // table n'apparaît que dans le panneau de résultats.
   for (const t of wrap.querySelectorAll('table')) {
