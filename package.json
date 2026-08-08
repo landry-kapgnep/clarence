@@ -8,6 +8,7 @@
     "fixtures": "node tests/run-fixtures.mjs",
     "build": "node build.mjs",
     "bench": "node tests/bench/run.mjs",
+    "regression": "node tests/regression/run.mjs",
     "site": "node site/build.mjs"
   },
   "devDependencies": {

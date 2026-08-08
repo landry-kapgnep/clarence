@@ -6,3 +6,9 @@ tests/bench/.modeles/
 
 # Sortie de build du site vitrine (prototype, régénérée par `npm run site`)
 site/dist/
+
+# Corpus de non-régression : de VRAIS documents, souvent personnels.
+# Règle absolue du projet — jamais de données réelles dans le dépôt, même
+# anonymisées. Seuls les INSTANTANÉS sont committés, et ils ne contiennent que
+# des empreintes des valeurs masquées, jamais les valeurs.
+tests/regression/corpus/
