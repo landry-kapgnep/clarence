@@ -9,6 +9,7 @@
     "build": "node build.mjs",
     "bench": "node tests/bench/run.mjs",
     "regression": "node tests/regression/run.mjs",
+    "injection": "node tests/injection/run.mjs",
     "site": "node site/build.mjs"
   },
   "devDependencies": {

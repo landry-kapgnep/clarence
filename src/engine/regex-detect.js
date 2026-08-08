@@ -276,8 +276,26 @@ export const REGEX_PATTERNS = [
     // sache vérifier à peu de frais, et « 11 chiffres » nu est une forme bien
     // trop banale pour être masquée sans contexte : le libellé est donc
     // INDISPENSABLE ici, contrairement au DNI qui se valide seul (voir plus bas).
+    // UN VERBE DE LIAISON peut séparer le libellé de la valeur — « Die
+    // Steuer-ID LAUTET 12345678901 », « the tax id IS 123-45-6789 ». Sans lui,
+    // le motif n'attrapait que les libellés suivis de deux-points, donc il
+    // marchait sur une fiche et échouait sur une phrase rédigée.
+    //
+    // Le défaut était DÉJÀ connu et corrigé sur le motif REFERENCE plus bas
+    // (« his employee identifier is EMP-4471-KD ») ; je ne l'avais pas
+    // répliqué ici. Trouvé par le harnais d'injection à son premier passage,
+    // sur de la vraie prose allemande — un cas qu'aucun de nos documents de
+    // test ne contenait.
+    //
+    // Volontairement UN SEUL mot, comme pour REFERENCE : au-delà on relierait
+    // un libellé à une valeur trop lointaine et sans rapport.
     type: 'ID_NATIONAL',
-    re: /(?:social\s+security(?:\s+number)?|ssn|national\s+insurance(?:\s+number)?|nhs\s+number|tax\s+id(?:entification)?(?:\s+number)?|seguridad\s+social|n[uú]mero\s+de\s+afiliaci[oó]n|steuer-?(?:id|nummer)|steueridentifikationsnummer|idnr|sozialversicherungsnummer|versicherungsnummer)\s*[:=]?\s*([A-Z]{0,2}\s?\d[\d\s-]{6,15}\d)\b/gi,
+    // Le préfixe `[A-Z]{0,2}` sert aux identifiants qui commencent par des
+    // lettres (le NI britannique, « AB 123456 C »). Mais sous le drapeau `i`
+    // il avale aussi le mot de liaison : la valeur capturée devenait
+    // « is 123-45-6789 », et comme le span le plus long gagne à la fusion, le
+    // mot « is » aurait été masqué avec le numéro. Le lookahead l'interdit.
+    re: /(?:social\s+security(?:\s+number)?|ssn|national\s+insurance(?:\s+number)?|nhs\s+number|tax\s+id(?:entification)?(?:\s+number)?|seguridad\s+social|n[uú]mero\s+de\s+afiliaci[oó]n|steuer-?(?:id|nummer)|steueridentifikationsnummer|idnr|sozialversicherungsnummer|versicherungsnummer)\s*(?:\s(?:is|was|est|était|sera|lautet|ist|es)\b)?\s*[:=]?\s*((?!(?:is|was|est|était|sera|lautet|ist|es)\b)[A-Z]{0,2}\s?\d[\d\s-]{6,15}\d)\b/gi,
     extract: 1,
     validate: null
   },

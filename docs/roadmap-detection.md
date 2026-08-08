@@ -1052,6 +1052,30 @@ Note : `@faker-js/faker` (portage JS officiel, MIT, import par locale) rendrait
 les pseudonymes cohérents avec la langue du document. À arbitrer contre le poids
 et le déterminisme actuel de `pseudonyms.js`.
 
+
+### Quatre mesures, quatre angles (08/08/2026)
+
+| Commande | Prose | Vérité terrain | Ce que ça dit |
+|---|---|---|---|
+| `npm test` | — | — | les fonctions pures sont correctes |
+| `npm run bench` | synthétique | complète | plancher de qualité, anti-régression |
+| `npm run regression` | **réelle** | aucune | la sortie a-t-elle BOUGÉ sur de vrais documents |
+| `npm run injection` | **réelle** | parfaite (sur l’injecté) | le RAPPEL sur de la vraie langue |
+
+Les deux derniers sont nés d’un constat : **tous** les défauts réels de la
+session du 07-08/08 ont été trouvés sur de vrais documents, **aucun** sur le
+corpus synthétique — que j’ai écrit en connaissant le moteur.
+
+Chacun a payé dès son premier passage. Le harnais d’injection a trouvé une
+fuite du Steuer-ID allemand (`« Die Steuer-ID lautet 12345678901 »` — un verbe
+de liaison au lieu d’un deux-points), et son correctif en a révélé une seconde,
+antérieure : le préfixe `[A-Z]{0,2}` avalait le mot de liaison, masquant
+« is » avec le numéro.
+
+**Limite à garder en tête** : `injection` mesure le rappel, jamais le
+sur-masquage — on ne connaît la vérité que sur ce qu’on a injecté. Le
+sur-masquage reste mesuré sur `tests/manuel/tous-defauts.pdf`.
+
 ## Spike POS « nom propre / nom commun » — mesuré le 07/08/2026
 
 **Question** : un étiqueteur morphosyntaxique peut-il écarter les faux positifs

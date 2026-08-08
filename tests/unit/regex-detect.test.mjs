@@ -335,3 +335,25 @@ test('le piège SIREN n\'est JAMAIS pris pour un téléphone', () => {
   assert.equal(find('Siren : 483 921 657', 'TELEPHONE').length, 0);
   assert.equal(find('Le numéro 483 921 657 figure au registre', 'TELEPHONE').length, 0);
 });
+
+test('un VERBE de liaison entre le libellé et l\'identifiant national', () => {
+  // « Die Steuer-ID LAUTET 12345678901 » : le motif n'attrapait que les
+  // libellés suivis de deux-points, donc il marchait sur une fiche et
+  // échouait sur une phrase rédigée. Le défaut était déjà connu et corrigé
+  // sur REFERENCE ; il n'avait pas été répliqué ici. Trouvé par le harnais
+  // d'injection (npm run injection) à son premier passage.
+  assert.equal(findMerged('Die Steuer-ID lautet 12345678901 laut Unterlagen.', 'ID_NATIONAL').length, 1);
+  assert.equal(findMerged('The tax id is 123-45-6789 on file.', 'ID_NATIONAL').length, 1);
+  // Le deux-points continue de marcher.
+  assert.equal(findMerged('Steuer-ID: 12345678901', 'ID_NATIONAL').length, 1);
+});
+
+test('le mot de liaison n\'est jamais AVALÉ dans la valeur masquée', () => {
+  // Le préfixe [A-Z]{0,2} du motif (pour « AB 123456 C ») capturait « is »
+  // sous le drapeau `i` : la valeur devenait « is 123-45-6789 », et comme le
+  // span le plus long gagne à la fusion, le mot « is » aurait disparu de la
+  // phrase. Défaut ANTÉRIEUR, révélé en ajoutant les verbes de liaison.
+  for (const e of findMerged('The tax id is 123-45-6789 on file.', 'ID_NATIONAL')) {
+    assert.doesNotMatch(e.value, /\bis\b/, 'mot de liaison avalé : ' + e.value);
+  }
+});
