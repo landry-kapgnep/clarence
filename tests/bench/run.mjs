@@ -123,7 +123,10 @@ const arbitreDuBanc = pipe => (pipe ? (ents => arbitrerFauxPositifs(ents, pipe))
 // Le chemin fichier (CSV, PDF) passe par anonymizeUnits, exactement comme la
 // popup : c'est là que vivaient les bugs qui n'apparaissaient pas en texte.
 async function anonymiser(fichier, glinerPipe) {
-  const chemin = join(here, 'corpus', fichier);
+  // Un chemin relatif (« ../manuel/… ») désigne un document hors du corpus du
+  // banc : le document piégé y reste, il a sa propre carte de lecture et son
+  // propre générateur. Le dupliquer dans corpus/ ferait deux sources de vérité.
+  const chemin = fichier.startsWith('.') ? join(here, fichier) : join(here, 'corpus', fichier);
   const ext = extname(fichier).toLowerCase();
   // Le banc mesure ce qui est RÉELLEMENT LIVRÉ : les types que la popup
   // décoche par défaut (TYPES_PEU_FIABLES) ne doivent pas être mesurés comme
@@ -243,6 +246,9 @@ async function main() {
   console.log(`\nMoteur : ${REGEX_SEUL ? 'REGEX SEUL (--regex)' : 'regex + GLiNER'}\n`);
 
   const global = { struct: [0, 0], ctx: [0, 0], garde: [0, 0] };
+  // Compté à part : le document piégé est la BORNE BASSE, pas un document
+  // représentatif. Ses chiffres sont un backlog rendu visible, pas une note.
+  const borne = { struct: [0, 0], ctx: [0, 0], garde: [0, 0] };
   const fuitesStructurees = [];
 
   for (const doc of CORPUS) {
@@ -265,12 +271,23 @@ async function main() {
     const fuitesCtx = fuites.filter(v => !TYPES_STRUCTURES.has(v.type));
     const perdus = doc.aGarder.filter(t => !presente(sortie, t));
 
-    global.struct[0] += struct.length - fuitesStruct.length;
-    global.struct[1] += struct.length;
-    global.ctx[0] += ctx.length - fuitesCtx.length;
-    global.ctx[1] += ctx.length;
-    global.garde[0] += doc.aGarder.length - perdus.length;
-    global.garde[1] += doc.aGarder.length;
+    // BORNE BASSE : le document piégé n'entre PAS dans les moyennes
+    // contextuelles ni de préservation. Il est délibérément adversarial (page
+    // de lignes courtes sans phrases, sommaire à points de suite) et n'a aucune
+    // vocation à être réaliste : l'y fondre tirerait les chiffres vers le bas
+    // sans rien dire de vrai sur le fichier d'un utilisateur.
+    //
+    // Le STRUCTURÉ, lui, compte partout. Un raté déterministe est un bug, pas
+    // une limite de modèle — la borne basse ne l'excuse pas.
+    const cible = doc.borneBasse ? borne : global;
+    cible.struct[0] += struct.length - fuitesStruct.length;
+    cible.struct[1] += struct.length;
+    cible.ctx[0] += ctx.length - fuitesCtx.length;
+    cible.ctx[1] += ctx.length;
+    cible.garde[0] += doc.aGarder.length - perdus.length;
+    cible.garde[1] += doc.aGarder.length;
+    // La liste des fuites structurées, elle, couvre TOUS les documents : c'est
+    // elle qui commande la porte de publication, borne basse comprise.
     fuitesStruct.forEach(v => fuitesStructurees.push(`${doc.fichier} → ${v.type} « ${v.valeur} »`));
 
     // Proportion du document remplacée par des placeholders : indicateur
@@ -305,7 +322,20 @@ async function main() {
   console.log(`  Termes PRÉSERVÉS    ${fmt(rGarde)}   (${global.garde[0]}/${global.garde[1]})   utilisabilité`);
   console.log('═'.repeat(66));
 
-  if (rStruct < 100) {
+  // La borne basse, à part et jamais mêlée aux trois chiffres ci-dessus.
+  // Ce bloc est l'instrument de P9 : toute variante sur les intitulés se juge
+  // à SES deux colonnes — ce qu'elle démasque (préservé ↑) contre ce qu'elle
+  // laisse fuir (contextuel ↓). Une variante qui gagne l'une en perdant l'autre
+  // est rejetée, comme la minusculisation l'a été au spike POS.
+  if (borne.struct[1] || borne.ctx[1]) {
+    console.log(`\n  BORNE BASSE (document piégé, adversarial — hors moyennes)`);
+    console.log(`    structuré  ${fmt(pct(borne.struct[0], borne.struct[1]))}   (${borne.struct[0]}/${borne.struct[1]})   exigence : 100 % ICI AUSSI`);
+    console.log(`    contextuel ${fmt(pct(borne.ctx[0], borne.ctx[1]))}   (${borne.ctx[0]}/${borne.ctx[1]})`);
+    console.log(`    préservé   ${fmt(pct(borne.garde[0], borne.garde[1]))}   (${borne.garde[0]}/${borne.garde[1]})   ← la cible de P9`);
+    console.log('═'.repeat(66));
+  }
+
+  if (fuitesStructurees.length) {
     console.log('\n  ✘ NON PUBLIABLE — le déterministe laisse fuir. Ce sont des bugs, pas des limites :');
     fuitesStructurees.forEach(f => console.log(`      ${f}`));
   } else {

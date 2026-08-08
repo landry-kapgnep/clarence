@@ -415,6 +415,70 @@ que `Meteojob` en début de ligne restait en clair.
 
 ---
 
+## P10 — FUITE : un nom TOUT-MAJUSCULE **accentué** passe sous le seuil (08/08/2026)
+
+Trouvé par le banc dès que le document piégé y a été branché — donc jamais vu
+auparavant, faute d'instrument.
+
+**`ÉLÉONORE VASSEUR`, le titre du document piégé, ressort EN CLAIR.** C'est le
+cas phare de la page 1, et une fuite prime sur tout le reste du backlog.
+
+### Ce n'est pas le découpeur, et ce n'est pas « les accents »
+
+Scores bruts, groupe identité (`person`/`company`/`location`), seuil **0,46**,
+découpeur unicode déjà corrigé :
+
+| Texte | Score | Verdict |
+|---|---|---|
+| **`ÉLÉONORE VASSEUR`** | **0,418** | **rien → fuite** |
+| `ELEONORE VASSEUR` (mêmes lettres, sans accents) | 0,618 | détecté |
+| `Éléonore Vasseur` (mêmes accents, casse normale) | 0,477 | détecté |
+| `KAROLINE ANSELME` (témoin de `cv-fr.pdf`) | 0,683 | détecté |
+| `MÉLANIE THÉVENOT` (accentué, capitales) | 0,507 | détecté |
+| `MARTIN DUBOIS` | 0,855 | détecté |
+
+Deux lectures s'imposent, et la seconde est la bonne :
+
+- **Faux** : « les capitales accentuées ne marchent pas » — `MÉLANIE THÉVENOT`
+  sort à 0,507.
+- **Juste** : **l'accentuation coûte ~0,20 de score** (0,618 → 0,418 sur le MÊME
+  nom), et ce cas-là atterrit juste en dessous de la barre. Le seuil 0,46 est
+  donc à quelques centièmes d'une fuite pour toute une famille de noms.
+
+Le checkpoint est un `deberta-v3-small` **anglophone** (choisi à la mesure, il
+bat le multilingue — voir Gotchas). Le coût des accents est cohérent avec ça.
+
+### Pourquoi la gravité est plus haute que le chiffre
+
+La forme touchée — **titre de CV en capitales accentuées** — est exactement
+celle du marché visé (l'indépendant francophone, cadrage §9). Ce n'est pas un
+cas exotique, c'est le cas modal.
+
+### Pistes, aucune mesurée
+
+1. **Passe supplémentaire sur une copie désaccentuée**, spans recalés sur
+   l'original. Le motif existe déjà dans le projet (double passe `boostCase` de
+   `ner.js`) et le gain brut est large (0,418 → 0,618). ⚠️ à ne pas confondre
+   avec la MINUSCULISATION, mesurée et **rejetée** au spike POS (+7
+   démasquages, 3 fuites) : désaccentuer préserve la casse, le signal que le
+   modèle utilise. À mesurer dans les deux sens, pas à supposer.
+2. **Baisser le seuil identité.** Le moins cher, le plus risqué : 0,46 a été
+   choisi contre un plancher de bruit mesuré. À ne toucher qu'avec le chiffre
+   de sur-masquage en regard — le banc le donne maintenant.
+3. **Ne rien faire côté modèle** et compter sur le profil d'identité
+   (`identity.js`), qui masque le nom de l'utilisateur de façon déterministe.
+   Ne couvre PAS les noms des TIERS dans le document.
+
+### Ce que ça dit du README du document piégé
+
+`tests/manuel/README.md` annonçait ce nom « masqué en entier ». L'attente datait
+d'une configuration antérieure (variante de poids et jeu de labels différents)
+et n'avait jamais été revérifiée depuis le passage au fp16. **Une attente écrite
+en prose ne se périme pas toute seule** — c'est précisément pourquoi elle est
+désormais encodée dans `tests/bench/verite-terrain.mjs`.
+
+---
+
 ## P9 — Les intitulés de section : TROIS causes, pas une (mesuré 08/08/2026)
 
 Relevé sur la sortie réelle en Chrome (`tous-defauts.pdf`, mode Préserver). Le

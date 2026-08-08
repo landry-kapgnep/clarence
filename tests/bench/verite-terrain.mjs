@@ -171,5 +171,120 @@ export const CORPUS = [
       // RECOLLÉ ; s'il reste fragmenté (« vante » isolée), ce test le signale.
       'innovante'
     ]
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // LE DOCUMENT PIÉGÉ — borne basse, jamais fondu dans les moyennes.
+  //
+  // `tests/manuel/tous-defauts.pdf` empile délibérément TOUS les défauts connus
+  // et n'a AUCUNE vocation à être réaliste : page 2 faite de lignes courtes sans
+  // phrases, sommaire à points de suite, blocs d'identifiants nus. Le lire comme
+  // un document représentatif tirerait les trois chiffres du banc vers le bas
+  // sans rien dire de vrai sur un fichier d'utilisateur.
+  //
+  // D'où `borneBasse` : run.mjs le rapporte À PART. Une seule exception, le
+  // STRUCTURÉ — un raté déterministe est un bug partout, y compris ici.
+  //
+  // Sa vérité terrain vivait en PROSE dans tests/manuel/README.md, avec la
+  // mention « à industrialiser ». La voici. Elle sert de banc d'essai à P9 :
+  // toute variante sur les intitulés doit être mesurée DANS LES DEUX SENS,
+  // et c'est ce document qui porte le contre-exemple (voir aMasquer, en tête).
+  {
+    fichier: '../manuel/tous-defauts.pdf',
+    borneBasse: true,
+    quoi: 'DOCUMENT PIÉGÉ (borne basse) — 6 pages, 4 langues, tous les défauts connus',
+    aMasquer: [
+      // ⚠️ LE CONTRE-EXEMPLE DE P9. « ÉLÉONORE VASSEUR » est une unité-TITRE
+      // isolée (21 pt), tout en capitales, deux mots, sans ponctuation ni
+      // chiffre : `ressembleAUnIntitule` la reconnaîtrait comme un intitulé de
+      // section, exactement comme « COMPÉTENCES ». Formellement indiscernables.
+      // Toute variante qui épargne les unités-titres fait donc fuir le nom de
+      // la candidate — c'est LE garde-fou à ne pas franchir.
+      { valeur: 'ÉLÉONORE VASSEUR', type: 'PER' },
+      { valeur: 'Sébastien de La Villardière', type: 'PER' },
+      { valeur: 'Hélène Brassard', type: 'PER' },
+      { valeur: 'Amandine ROUSSEAU', type: 'PER' },
+      { valeur: 'Sébastien Vaquier', type: 'PER' },
+      { valeur: 'Ahmed Al-Mansour', type: 'PER' },
+      { valeur: 'Clara SCHNEIDER', type: 'PER' },
+      { valeur: 'Rose Fontaine', type: 'PER' },
+      { valeur: 'Korrigane Labs', type: 'ORG' },
+      { valeur: 'Wobix Labs', type: 'ORG' },
+      { valeur: 'e.vasseur@courriel.example', type: 'EMAIL' },
+      { valeur: 'contact@korrigane-labs.example', type: 'EMAIL' },
+      { valeur: '06 44 55 66 77', type: 'TELEPHONE' },
+      { valeur: 'eleonore-vasseur', type: 'PSEUDO' },
+      { valeur: 'FR76 3000 6000 0112 3456 7890 189', type: 'IBAN' },
+      { valeur: 'AGRIFRPP882', type: 'BIC' },
+      { valeur: '4242 4242 4242 4242', type: 'CARTE_BANCAIRE' },
+      { valeur: '1 88 03 44 109 019 91', type: 'NIR' },
+      { valeur: '732 829 320 00074', type: 'SIRET_SIREN' },
+      { valeur: '080924167CD', type: 'ID_NATIONAL' },
+      { valeur: 'EMP-4471-KD', type: 'REFERENCE' },
+      { valeur: '192.168.1.254', type: 'IP' },
+      { valeur: '3C:5A:B4:0F:11:22', type: 'MAC' },
+      { valeur: '42 rue des Cordeliers', type: 'ADRESSE' },
+      { valeur: '99 Av. Jean Jaurès', type: 'ADRESSE' },
+
+      // Page 4 — anglais
+      { valeur: '(617) 555-0142', type: 'TELEPHONE' },
+      { valeur: '617-555-0143', type: 'TELEPHONE' },
+      { valeur: '123-45-6789', type: 'ID_NATIONAL' },
+      { valeur: 'Kwame Nkrumah-Boateng', type: 'PER' },
+      { valeur: 'Siobhán Ó Braonáin', type: 'PER' },
+      { valeur: 'Ravenscroft & Bell LLP', type: 'ORG' },
+
+      // Page 5 — espagnol
+      { valeur: '12345678Z', type: 'ID_NATIONAL' },
+      { valeur: 'X1234567L', type: 'ID_NATIONAL' },
+      { valeur: 'ES91 2100 0418 4502 0005 1332', type: 'IBAN' },
+      { valeur: '+34 612 345 678', type: 'TELEPHONE' },
+      { valeur: '91 234 56 78', type: 'TELEPHONE' },
+      { valeur: 'Calle Mayor 12', type: 'ADRESSE' },
+      { valeur: 'María del Carmen Ruiz Salinas', type: 'PER' },
+
+      // Page 6 — allemand
+      { valeur: '12345678901', type: 'ID_NATIONAL' },
+      { valeur: 'DE89 3704 0044 0532 0130 00', type: 'IBAN' },
+      { valeur: '+49 30 123456', type: 'TELEPHONE' },
+      { valeur: '030 1234567', type: 'TELEPHONE' },
+      { valeur: 'Hauptstraße 15', type: 'ADRESSE' },
+      { valeur: 'Bahnhofstr. 7a', type: 'ADRESSE' },
+      { valeur: 'Jürgen Müller', type: 'PER' },
+      { valeur: 'Katharina von der Weiden', type: 'PER' },
+      { valeur: 'Nordwind Logistik GmbH', type: 'ORG' }
+    ],
+
+    // CE QUI DOIT SURVIVRE. Les intitulés de section en tête : ce sont EUX que
+    // P9 cherche à démasquer, dans les quatre langues — la règle est formelle,
+    // donc elle doit être indépendante de la langue.
+    aGarder: [
+      // Intitulés — français
+      'COMPÉTENCES', 'FORMATION', 'LANGUES', 'EXPÉRIENCES PROFESSIONNELLES',
+      'SOMMAIRE', 'IDENTIFIANTS', 'COORDONNÉES', 'ÉTAT CIVIL',
+      'AUTRES CANDIDATS', 'CELLULES NUES', 'OUTILS UTILISÉS',
+      'TABLEAU DE SUIVI', 'ANNEXE',
+      // Intitulés — anglais / espagnol / allemand
+      'SUMMARY', 'CONTACT DETAILS', 'PEOPLE', 'AMBIGUOUS WORDS',
+      'OTHER SECTIONS', 'APPENDIX',
+      'DATOS PERSONALES', 'OBSERVACIONES', 'IDIOMAS', 'COMPETENCIAS',
+      'EXPERIENCIA LABORAL', 'ANEXO',
+      'PERSÖNLICHE DATEN', 'SPRACHEN', 'AUSBILDUNG', 'BERUFSERFAHRUNG',
+      'ANLAGE',
+      // Noms communs que le modèle étiquette volontiers ORG ou LIEU quand ils
+      // sont isolés. L'allemand est le pire cas : il met une majuscule à TOUS
+      // les noms communs, donc le filtre de casse ne protège rien.
+      'Contents', 'Overview', 'Conclusion',
+      'Contenido', 'Resumen', 'Conclusión',
+      'Besprechung', 'Vertrag', 'Unternehmen', 'Bescheinigung', 'Abteilung',
+      // Le piège le plus fin du document : le MÊME mot, nom propre puis nom
+      // commun. Aucun lexique ne peut trancher — seule la position le peut.
+      'the baker', 'rose grower', 'une rose ancienne',
+      // Technos et sigles : sans eux le CV ne veut plus rien dire.
+      'Python', 'Docker', 'PostgreSQL', 'Kubernetes', 'IUT', 'BUT',
+      // Le piège SIREN : Luhn-invalide, et pris pour un numéro FR par
+      // libphonenumber si on lui donnait un pays par défaut.
+      '483 921 657'
+    ]
   }
 ];
