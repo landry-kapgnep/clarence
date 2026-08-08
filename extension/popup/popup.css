@@ -1,3 +1,23 @@
+/* Syne Mono — la police de l'identité visuelle, désormais RÉELLEMENT servie.
+   Elle était nommée dans --font-body depuis toujours, mais aucun @font-face ne
+   la chargeait : le fichier dormait dans fonts/ sans jamais être lu. Sur une
+   machine où elle est installée localement (celle du développeur) tout semblait
+   normal ; chez tout autre utilisateur l'interface retombait sur system-ui.
+   L'identité typographique ne fonctionnait donc que sur un seul poste.
+
+   font-display: swap — le texte s'affiche immédiatement dans la police de
+   repli, puis bascule. Sur une popup, un texte invisible le temps du
+   chargement serait pire que le mauvais rendu qu'on cherche à corriger.
+
+   Licence SIL Open Font (fonts/Syne_Mono/OFL.txt) : l'embarquer est autorisé. */
+@font-face {
+  font-family: 'Syne Mono';
+  src: url('fonts/Syne_Mono/SyneMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Encre et papier, inversés : le papier devient l'encre. */
   --paper: #EDE6D3;            /* texte principal (ex-fond) */
