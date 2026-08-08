@@ -1,6 +1,6 @@
 # Vérification en vrai Chrome — la liste des bugs déjà vécus
 
-> **À quoi sert ce document.** `npm test` (246 tests) et `npm run bench` ne
+> **À quoi sert ce document.** `npm test` (362 tests) et `npm run bench` ne
 > voient qu'une partie du produit. `src/popup/main.js` n'est couvert par
 > **aucun** test — il dépend de `chrome.*` — et c'est justement là qu'un crash
 > a rendu le mode PDF « Préserver » totalement inutilisable *pendant que 230
@@ -10,6 +10,117 @@
 > Règle du projet : **une fonctionnalité n'est terminée que si on l'a vue
 > fonctionner dans un Chrome chargé en mode développeur.** Ce document est
 > l'outil de cette règle.
+
+## ⚠️ Passe due — neuf commits jamais vus tourner (08/08/2026)
+
+La dernière vérification date du **04/08**. Depuis, **neuf commits ont touché
+l'UI** sans qu'aucun ne soit passé en Chrome. Cinq fonctions neuves sont
+entrées dans `src/popup/main.js`, le fichier qui n'a aucune couverture et qui a
+déjà cassé tout le mode PDF avec 230 tests au vert.
+
+Feuille de route ci-dessous : **un seul chargement de `tous-defauts.pdf`**
+couvre l'essentiel. Le détail du *pourquoi* de chaque point est dans la section
+citée en regard ; ici on ne garde que le geste et le verdict.
+
+### Avant de commencer
+
+```bash
+npm run build
+```
+
+Puis `chrome://extensions` → recharger l'extension → **F5 sur l'onglet de test**
+(le content script ne suit pas le rechargement de l'extension).
+
+### 1. Ce qui saute aux yeux en premier — la police (`7ad4787`)
+
+`--font-body: 'Syne Mono'` était référencée sans **aucune** règle `@font-face` :
+la police n'était jamais servie. Elle ne « marchait » que sur une machine où
+elle est installée localement — la tienne. Tout autre utilisateur voyait une
+police de repli depuis le début.
+
+- [ ] Ouvrir la popup : le texte doit être en **Syne Mono** (chasse fixe, allure
+      technique). Si tu ne vois aucune différence, c'est *attendu* — tu l'as en
+      local. Vérifier alors dans la console : `document.fonts.check('12px "Syne Mono"')`
+      doit rendre `true` **et** l'onglet Réseau doit montrer le `.ttf` chargé
+      depuis l'extension.
+- [ ] Aucune requête de police vers un domaine externe (`fonts.gstatic.com`…) —
+      ce serait une violation MV3 et une fuite d'IP. → cf. **A3**
+
+### 2. Le fichier piégé, d'une traite
+
+Charger `tests/manuel/tous-defauts.pdf` en mode Fichier, option **Alléger**.
+
+- [ ] **Badge de poids** à côté du nom : s'affiche, puis **se corrige** après le
+      comptage des pages. Survol → une phrase explique le classement. → **A0quater**
+- [ ] **P5 — la couche structurée hors du français** (`55753f3`). **Jamais vu en
+      Chrome**, seulement en Node. Chercher ces valeurs dans le fichier de
+      SORTIE : aucune ne doit y figurer en clair.
+
+      | Valeur attendue masquée | Page | Ce qui la couvre |
+      |---|---|---|
+      | `123-45-6789` | 4 (EN) | SSN, motif labellisé |
+      | `(617) 555-0142` et `617-555-0143` | 4 (EN) | format national US, **sans libellé** |
+      | `Mountain View, CA 94043-1351` | 4 (EN) | code postal + ville |
+      | `12345678Z` | 5 (ES) | DNI, clé mod-23 |
+      | `28 1234567840` | 5 (ES) | Seguridad Social, motif labellisé |
+      | `Calle Mayor 12` … `28013 Madrid` | 5 (ES) | adresse ES + code postal |
+      | `12345678901` | 6 (DE) | Steuer-ID |
+      | `Hauptstraße 15` … `10115 Berlin` | 6 (DE) | voie soudée + code postal |
+      | `030 1234567` | 6 (DE) | national DE, avec libellé `Festnetz` |
+
+      ⚠️ Contrôle inverse, même importance : **`483 921 657` (le SIREN, page 2)
+      ne doit PAS être masqué comme téléphone.** C'est le piège pour lequel
+      libphonenumber tourne sans pays par défaut ; les motifs nationaux ajoutés
+      par P5 pouvaient le réintroduire.
+- [ ] **Table de correspondance** : triée par occurrences **décroissantes**,
+      chaque ligne porte son compte et un bouton. → **A0quinquies**
+- [ ] Cliquer « ne plus masquer » sur la ligne du haut → régénération en
+      **moins d'une seconde**. Si ça reprend 45 s, le cache d'entités n'est pas
+      réutilisé et tout le mécanisme est manqué.
+- [ ] Retélécharger → le terme est en clair **partout**, pas seulement à sa
+      première occurrence.
+- [ ] Le terme retiré est apparu dans **« Termes de ce document »**, et
+      **l'aperçu sous le champ s'est mis à jour** (écriture programmatique : le
+      rafraîchissement est explicite, c'est exactement ce qui peut manquer). → **A0septies**
+
+### 3. Les deux vocabulaires ne doivent pas se marcher dessus
+
+- [ ] Taper `A, B, C` dans « Termes de ce document » → l'aperçu dit
+      **« 3 termes : A · B · C »**. Retirer une virgule → le compte **baisse** et
+      le terme soudé s'affiche tel quel. → **A0septies**
+- [ ] **Changer de profil** → les termes du document **survivent** ; les champs
+      du panneau, eux, changent. C'est le bug qui a motivé la séparation. → **A0sexies**
+- [ ] « Enregistrer » un profil → les termes du document **ne s'y retrouvent pas**.
+- [ ] Tab dans un champ → **navigue** vers le suivant (plus capturé).
+
+### 4. « Ne jamais masquer » à la séquence de mots (`1ebe7dc`)
+
+Le champ n'épargnait qu'à l'**égalité stricte** : taper `Moorkens` ne faisait
+rien parce que le modèle détecte `Joss Moorkens`. Mesuré : **6 termes sur 14**
+fonctionnaient.
+
+- [ ] Repérer dans la table un nom **complet** détecté (prénom + patronyme).
+      Saisir **le patronyme seul** dans « ne jamais masquer » → l'entité
+      entière doit être épargnée.
+- [ ] Contrôle inverse — le mot doit rester **entier** : un terme court ne doit
+      pas épargner un mot qui le contient.
+
+### 5. Changement de fichier — la remise à zéro
+
+- [ ] Choisir un autre fichier → termes du document **effacés**, aperçus
+      **vidés**, retraits précédents **oubliés**, règles de profil **intactes**.
+      → **A0quinquies §6**, **A0sexies §3**
+
+### 6. Le contrôle qui ne se négocie pas
+
+- [ ] Onglet **Réseau** ouvert pendant tout ce qui précède : **aucune** requête
+      sortante contenant du texte utilisateur. Seul huggingface.co, une fois,
+      pour le modèle. → **A3**
+
+### Après la passe
+
+Consigner ce qui a été vu — y compris « rien à signaler ». Une passe non
+consignée sera refaite ou, pire, supposée faite.
 
 ## Le document piégé
 
