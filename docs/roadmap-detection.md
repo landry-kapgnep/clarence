@@ -198,7 +198,7 @@ dans l'UI, décochés.
 | ~~P7~~ | ~~Placeholders tronqués~~ — c'était un DÉBORDEMENT hors page, pas une troncature ; réduit à la taille qui tient. 422 → **0** sur le mémoire | ✅ | — |
 | P2ter | Adresse abrégée (« Av. ») mal typée ; produits tiers jamais détectés | ouvert | couverture |
 | — | Régression assumée : `IUT` ne survit plus (fusionné avec « Informatique ») | connu | cosmétique |
-| P5 | i18n de la couche structurée (codes postaux, IDs non-FR) | partiel | couverture |
+| ~~P5~~ | ~~i18n de la couche structurée~~ — DNI/NIE (clé mod 23), sécu ES, Steuer-ID, téléphones nationaux ES/DE/US, codes postaux à mot intercalé, adresses ES/DE. **10 fuites sur 10 fermées** (08/08) | ✅ | — |
 
 ### Diagnostiqués le 05/08, non corrigés — l'un par choix, l'autre par mesure
 

@@ -190,6 +190,31 @@ produit à part entière dans `docs/roadmap-detection.md`.
 espagnol et en allemand ; c'est notre regex franco-française qui est le trou.
 Cela réoriente P5 d'un « nice to have » vers le principal chantier de couverture.
 
+
+### P5 traité le 08/08/2026 — 10 fuites sur 10 fermées
+
+Les 9 fuites relevées le 07/08 (plus l’adresse allemande abrégée) sont toutes
+closes, mesurées avec le pipeline complet sur ce document :
+
+| Fuite | Traitement |
+|---|---|
+| DNI `12345678Z`, NIE `X1234567L` | Validateur `dniCheck` (n mod 23). Validation **stricte**, pas de masquage sur structure : « 8 chiffres + lettre » est une forme faible qu’un code produit peut prendre — même arbitrage que la carte bancaire (Luhn strict) |
+| Sécurité sociale ES, Steuer-ID DE | **Libellé obligatoire** : aucune clé vérifiable à peu de frais, et « 11 chiffres » nu est trop banal |
+| Codes postaux `08001 para Barcelona`, `20095 für Hamburg` | Un mot de liaison (≤ 5 lettres) peut désormais s’intercaler. **Le défaut valait aussi en français** (« 75001 dans Paris ») — la page multilingue a révélé un bug franco-français |
+| Téléphones nationaux ES/DE | **Libellé obligatoire** (`fijo`, `Festnetz`, `Teléfono`…). Pas de motif nu par pays : libphonenumber tourne sans pays par défaut précisément pour que « 483 921 657 » (piège SIREN) ne passe pas pour un numéro |
+| Téléphone US `(617) 555-0142`, `617-555-0143` | Sans libellé : ces deux graphies sont assez distinctives, comme le SSN (3-2-4) |
+| `Bahnhofstr. 7a`, `Calle Mayor 12` | Motif ADRESSE ES/DE. L’espagnol met le type de voie **avant** et le numéro **après** (l’inverse du français) ; l’allemand **soude** le type au nom, il faut le chercher comme suffixe |
+
+Le numéro reste exigé dans les adresses : c’est lui qui distingue une adresse
+d’une simple mention de rue, et il borne le sur-masquage.
+
+**Non corrigé, mesuré, assumé** : `SPRACHEN` est masqué en `BIC`. La forme BIC
+(4 lettres + code pays + 2 alphanum) attrape ce mot allemand car `CH` figure
+au milieu. Sur 18 mots courants testés, c’est le **seul** faux positif. Un
+correctif supposerait d’exiger un libellé pour les BIC, ce qui ferait fuir un
+BIC nu dans un bloc de coordonnées bancaires — on préfère un faux positif
+isolé à une fuite (règle du projet). Antérieur à P5, vérifié par `git stash`.
+
 ### Page 4 — anglais
 
 | Élément | Attendu | Pourquoi c'est un piège |

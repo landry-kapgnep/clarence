@@ -1,7 +1,7 @@
 // Zéro tolérance : un bug ici = fuite silencieuse (CLAUDE.md §Tests).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { luhnCheck, ibanCheck, nirCheck } from '../../src/engine/validators.js';
+import { luhnCheck, ibanCheck, nirCheck, dniCheck } from '../../src/engine/validators.js';
 
 test('Luhn — carte valide (4242…)', () => {
   assert.equal(luhnCheck('4242424242424242'), true);
@@ -42,4 +42,34 @@ test('NIR — Corse 2A accepté si clé cohérente', () => {
   const base = 1940319004021n; // 1 94 03 2A 004 021, 2A→19
   const key = String(97n - (base % 97n)).padStart(2, '0');
   assert.equal(nirCheck(`1 94 03 2A 004 021 ${key}`), true);
+});
+
+// --- DNI / NIE espagnols. Un cas valide et un invalide par validateur, comme
+// pour Luhn/IBAN/NIR : la règle « zéro tolérance » du projet.
+test('DNI — clé valide acceptée', () => {
+  // 12345678 mod 23 = 14, quinzième lettre de TRWAGMYFPDXBNJZSQVHLCKE = Z.
+  assert.equal(dniCheck('12345678Z'), true);
+  assert.equal(dniCheck('00000000T'), true);
+});
+
+test('DNI — clé fausse refusée', () => {
+  assert.equal(dniCheck('12345678A'), false);
+});
+
+test('NIE — le préfixe X/Y/Z compte comme un chiffre dans le calcul', () => {
+  // X vaut 0, donc X1234567 se calcule comme 01234567.
+  assert.equal(dniCheck('X1234567L'), true);
+  assert.equal(dniCheck('X1234567A'), false);
+});
+
+test('DNI — longueur fausse refusée', () => {
+  assert.equal(dniCheck('1234567Z'), false);   // 7 chiffres sans préfixe
+  assert.equal(dniCheck('123456789Z'), false); // 9 chiffres
+  assert.equal(dniCheck(''), false);
+  assert.equal(dniCheck(null), false);
+});
+
+test('DNI — séparateurs et casse tolérés', () => {
+  assert.equal(dniCheck('12345678-z'), true);
+  assert.equal(dniCheck(' 12345678 Z '), true);
 });

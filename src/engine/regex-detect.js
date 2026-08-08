@@ -1,6 +1,6 @@
 // Passe 1 — détection structurée déterministe (portée du prototype validé,
 // enrichie des patterns contextuels issus du pseudonymiseur Python).
-import { luhnCheck, ibanCheck, nirCheck } from './validators.js';
+import { luhnCheck, ibanCheck, nirCheck, dniCheck } from './validators.js';
 import { HONORIFIC_ALT } from './honorifics.js';
 
 // Séparateur entre les composants d'un nom capté par civilité : espaces
@@ -102,7 +102,24 @@ export const REGEX_PATTERNS = [
   // ou un IBAN sans espaces) — sinon on déchiquette le numéro et on en laisse
   // fuir une partie.
   { type: 'TELEPHONE', re: /(?<!\d)(?:(?:\+33|0033)[\s.-]?|0)[1-9](?:[\s.-]?\d{2}){4}(?!\d)/g, validate: null },
-  { type: 'CODE_POSTAL_VILLE', re: /\b\d{5}\b(?=\s+[A-ZÀ-Ü][a-zà-ÿ]+)/g, validate: null },
+  // Code postal à 5 chiffres suivi d'une ville. Le format est commun à la
+  // France, l'Espagne et l'Allemagne — le motif les couvre donc tous les trois
+  // sans rien ajouter, ce qui est le bon signe d'une règle bien posée.
+  //
+  // UN MOT DE LIAISON PEUT S'INTERCALER, et son absence était un vrai trou :
+  // « 28013 Madrid » passait mais « 08001 para Barcelona » et « 20095 für
+  // Hamburg » fuyaient — mesuré sur les pages ES/DE du document piégé. Le
+  // défaut vaut aussi en français (« 75001 dans Paris »), il n'était donc pas
+  // propre à l'i18n : la page multilingue a révélé un bug franco-français.
+  //
+  // Un SEUL mot, de 5 lettres au plus : au-delà on relierait un nombre à une
+  // ville trop lointaine (« 10000 personnes vivent à Nantes »). La majuscule
+  // exigée sur le mot suivant reste le garde-fou principal.
+  {
+    type: 'CODE_POSTAL_VILLE',
+    re: /\b\d{5}\b(?=\s+(?:[a-zà-ÿ]{1,5}\s+)?[A-ZÀ-Ü][a-zà-ÿ]+)/g,
+    validate: null
+  },
   {
     // IPv4 : structure très reconnaissable, octets bornés à 255. Peut matcher
     // un numéro de version logicielle exotique (1.2.3.4) — sur-masquage rare
@@ -167,6 +184,29 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
+    // Adresses ESPAGNOLES et ALLEMANDES.
+    //
+    // Deux constructions que le motif français ne pouvait pas couvrir :
+    //  - espagnol : le type de voie PRÉCÈDE et le numéro SUIT (« Calle Mayor 12 »,
+    //    « Avenida de la Constitución 45 »), l'inverse du français ;
+    //  - allemand : le type de voie est SOUDÉ au nom (« Hauptstraße 15 »,
+    //    « Bahnhofstr. 7a ») — aucune segmentation par espace ne le trouve, il
+    //    faut le chercher comme SUFFIXE.
+    //
+    // Le numéro reste exigé dans les deux cas : c'est lui qui distingue une
+    // adresse d'une simple mention de rue, et il borne le sur-masquage.
+    type: 'ADRESSE',
+    re: new RegExp(
+      // ES : type de voie + nom + numéro. « C/ » est l'abréviation de Calle.
+      String.raw`\b(?:C\/|Calle|Avenida|Avda\.?|Plaza|Paseo|Carrer|Rambla)\s+`
+      + String.raw`(?:de\s+la\s+|del\s+|de\s+|la\s+)?[A-ZÀ-Ü][A-Za-zÀ-ÿ'-]*`
+      + String.raw`(?:\s+[A-Za-zÀ-ÿ'-]+){0,3}\s+\d{1,4}[A-Za-z]?\b`
+      // DE : nom SOUDÉ à son type de voie, puis numéro (« 7a » possible).
+      + String.raw`|\b[A-ZÀ-Ü][A-Za-zÀ-ÿ]*(?:stra(?:ß|ss)e|str\.|weg|platz|allee|gasse|ufer)\s+\d{1,4}[A-Za-z]?\b`,
+      'g'),
+    validate: null
+  },
+  {
     // Date de naissance — contexte explicite FR **ET EN**, tous formats de date
     // (« born on March 14, 1988 » ne passait pas : motif FR-only + date
     // numérique seule). Contexte = quasi zéro faux positif.
@@ -199,12 +239,60 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Identifiants nationaux annoncés par un libellé (formats sans tirets, ou
-    // non-US). Le libellé lève l'ambiguïté d'une suite de chiffres banale.
-    type: 'ID_NATIONAL',
-    re: /(?:social\s+security(?:\s+number)?|ssn|national\s+insurance(?:\s+number)?|nhs\s+number|tax\s+id(?:entification)?(?:\s+number)?)\s*[:=]?\s*([A-Z]{0,2}\s?\d[\d\s-]{6,15}\d)\b/gi,
+    // Téléphone nord-américain au format NATIONAL. Deux graphies très
+    // distinctives — indicatif régional entre parenthèses, ou groupes 3-3-4 —
+    // qui se passent de libellé, comme le SSN juste au-dessus.
+    //
+    // À ne pas confondre avec le SSN (3-2-4) : les longueurs de groupes
+    // diffèrent, les deux motifs ne peuvent pas se recouvrir.
+    type: 'TELEPHONE',
+    re: /(?<!\d)(?:\(\d{3}\)\s?\d{3}[-.\s]?\d{4}|\d{3}-\d{3}-\d{4})(?!\d)/g,
+    validate: null
+  },
+  {
+    // Téléphone au format national ANNONCÉ PAR UN LIBELLÉ, tous pays.
+    //
+    // POURQUOI PAS DE MOTIF NU PAR PAYS. libphonenumber tourne volontairement
+    // SANS pays par défaut : avec `FR`, il prend « 483 921 657 » (le piège
+    // SIREN de la fixture) pour un numéro français. Ajouter des motifs
+    // nationaux nus réintroduirait ce risque pays par pays — une suite de 9 ou
+    // 10 chiffres est trop banale pour être masquée sans contexte.
+    //
+    // Le libellé lève l'ambiguïté, exactement comme pour les identifiants
+    // nationaux. Les formats INTERNATIONAUX (+34, +49) sont déjà couverts par
+    // libphonenumber et n'ont pas besoin de ça — mesuré : ils passaient déjà.
+    type: 'TELEPHONE',
+    re: /\b(?:t[ée]l[ée]phone|t[ée]l\.?|phone|telefon(?:nummer)?|tel[ée]fono|fijo|festnetz|mobile?|m[oó]vil|handy|portable|cell(?:ular)?)\s*[:=]?\s*(\+?\d[\d\s.()-]{6,16}\d)(?!\d)/gi,
     extract: 1,
     validate: null
+  },
+  {
+    // Identifiants nationaux annoncés par un libellé (formats sans tirets, ou
+    // non-US). Le libellé lève l'ambiguïté d'une suite de chiffres banale.
+    //
+    // Libellés ESPAGNOLS et ALLEMANDS ajoutés le 08/08/2026 : le motif était
+    // anglophone, donc « Seguridad Social : 28 1234567840 » et « Steuer-ID :
+    // 12345678901 » fuyaient. Ces deux-là n'ont pas de clé de contrôle qu'on
+    // sache vérifier à peu de frais, et « 11 chiffres » nu est une forme bien
+    // trop banale pour être masquée sans contexte : le libellé est donc
+    // INDISPENSABLE ici, contrairement au DNI qui se valide seul (voir plus bas).
+    type: 'ID_NATIONAL',
+    re: /(?:social\s+security(?:\s+number)?|ssn|national\s+insurance(?:\s+number)?|nhs\s+number|tax\s+id(?:entification)?(?:\s+number)?|seguridad\s+social|n[uú]mero\s+de\s+afiliaci[oó]n|steuer-?(?:id|nummer)|steueridentifikationsnummer|idnr|sozialversicherungsnummer|versicherungsnummer)\s*[:=]?\s*([A-Z]{0,2}\s?\d[\d\s-]{6,15}\d)\b/gi,
+    extract: 1,
+    validate: null
+  },
+  {
+    // DNI / NIE espagnols. Contrairement aux deux précédents, ceux-ci portent
+    // une clé de contrôle calculable (n mod 23 dans TRWAGMYFPDXBNJZSQVHLCKE),
+    // donc ils se passent de libellé.
+    //
+    // Validation STRICTE, sans maskIfStructureMatches : « 8 chiffres + une
+    // lettre » est une forme faible qu'un code produit ou une référence interne
+    // peut prendre par accident. Même arbitrage que la carte bancaire (Luhn
+    // strict) plutôt que l'IBAN ou le NIR, dont la structure se suffit.
+    type: 'ID_NATIONAL',
+    re: /\b[XYZ]?\d{7,8}[A-Z]\b/g,
+    validate: dniCheck
   },
   {
     // Identifiants ÉTUDIANTS français, constatés sur un vrai certificat de

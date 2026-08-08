@@ -271,3 +271,67 @@ test('adresse : type de voie abrégé, avec ou sans majuscule', () => {
   // Non-régression : la forme en minuscules marchait déjà.
   assert.equal(find('42 rue des Cordeliers', 'ADRESSE')[0].value, '42 rue des Cordeliers');
 });
+
+// ===== P5 — i18n de la couche déterministe (08/08/2026) =====================
+// Les pages EN/ES/DE du document piégé l'ont montré : 100 % des fuites étaient
+// dans cette couche, ZÉRO dans le contextuel. Le modèle se débrouille en
+// espagnol et en allemand ; c'était notre regex franco-française qui était le
+// trou. Ces tests figent la couverture ajoutée.
+
+test('DNI et NIE espagnols détectés SANS libellé (clé de contrôle)', () => {
+  assert.equal(find('DNI: 12345678Z', 'ID_NATIONAL').length, 1);
+  assert.equal(find('NIE del cónyuge: X1234567L', 'ID_NATIONAL').length, 1);
+});
+
+test('une forme « 8 chiffres + lettre » à clé FAUSSE reste en clair', () => {
+  // Validation stricte, pas maskIfStructureMatches : la forme est faible et un
+  // code produit peut la prendre par accident. Même arbitrage que la carte
+  // bancaire (Luhn strict) plutôt que l'IBAN ou le NIR.
+  assert.equal(find('Référence 12345678A du catalogue', 'ID_NATIONAL').length, 0);
+});
+
+test('identifiants ES/DE annoncés par un libellé', () => {
+  // Ni la sécurité sociale espagnole ni le Steuer-ID n'ont de clé qu'on sache
+  // vérifier à peu de frais, et « 11 chiffres » nu est trop banal pour être
+  // masqué sans contexte : le libellé est indispensable.
+  assert.equal(find('Seguridad Social: 28 1234567840', 'ID_NATIONAL').length, 1);
+  assert.equal(find('Steuer-ID: 12345678901', 'ID_NATIONAL').length, 1);
+});
+
+test('un code postal reste détecté quand un MOT s\'intercale avant la ville', () => {
+  // « 28013 Madrid » passait déjà ; « 08001 para Barcelona » et « 20095 für
+  // Hamburg » fuyaient. Le défaut valait aussi en français — la page
+  // multilingue a révélé un bug franco-français.
+  for (const t of ['Código postal 08001 para Barcelona', 'Postleitzahl 20095 für Hamburg',
+                   'Le siège est au 75001 dans Paris', 'Calle Mayor 12, 28013 Madrid']) {
+    assert.equal(find(t, 'CODE_POSTAL_VILLE').length, 1, t);
+  }
+});
+
+test('un nombre suivi d\'un mot long n\'est pas pris pour un code postal', () => {
+  // Le mot de liaison est borné à 5 lettres, sinon on relierait un nombre à
+  // une ville trop lointaine.
+  assert.equal(find('Il y a 20095 habitants recensés', 'CODE_POSTAL_VILLE').length, 0);
+  assert.equal(find('10000 personnes vivent en France', 'CODE_POSTAL_VILLE').length, 0);
+});
+
+test('téléphone nord-américain au format national, sans libellé', () => {
+  // findMerged et non find : « mobile 617-555-0143 » est vu par DEUX motifs
+  // (la forme 3-3-4 nue et le motif à libellé). La fusion doit n'en laisser
+  // qu'une — c'est justement ce qu'on vérifie ici.
+  assert.equal(findMerged('Phone: (617) 555-0142', 'TELEPHONE').length, 1);
+  assert.equal(findMerged('mobile 617-555-0143 disponible', 'TELEPHONE').length, 1);
+});
+
+test('téléphone national ES/DE via LIBELLÉ', () => {
+  assert.equal(findMerged('fijo: 91 234 56 78', 'TELEPHONE').length, 1);
+  assert.equal(findMerged('Festnetz: 030 1234567', 'TELEPHONE').length, 1);
+});
+
+test('le piège SIREN n\'est JAMAIS pris pour un téléphone', () => {
+  // libphonenumber tourne sans pays par défaut pour cette raison précise :
+  // avec `FR`, « 483 921 657 » passerait pour un numéro. Les motifs nationaux
+  // ajoutés ici ne doivent pas réintroduire ce risque — d'où le libellé requis.
+  assert.equal(find('Siren : 483 921 657', 'TELEPHONE').length, 0);
+  assert.equal(find('Le numéro 483 921 657 figure au registre', 'TELEPHONE').length, 0);
+});

@@ -31,3 +31,28 @@ export function nirCheck(nirRaw) {
   const n = BigInt(base);
   return Number(97n - (n % 97n)) === key;
 }
+
+// DNI / NIE espagnols — 8 chiffres + une lettre de contrôle CALCULÉE.
+//
+// Pourquoi un vrai validateur plutôt qu'un masquage sur structure : « 8 chiffres
+// suivis d'une lettre » est une forme FAIBLE, qu'un code produit ou une
+// référence interne peut prendre par accident. C'est exactement le raisonnement
+// déjà appliqué à la carte bancaire (Luhn strict) plutôt qu'à l'IBAN ou au NIR,
+// dont la structure se suffit à elle-même.
+//
+// Le NIE (titre de séjour étranger) suit la même clé, sa lettre initiale valant
+// un chiffre : X→0, Y→1, Z→2. Un même calcul couvre donc les deux.
+const LETTRES_DNI = 'TRWAGMYFPDXBNJZSQVHLCKE';
+const PREFIXE_NIE = { X: '0', Y: '1', Z: '2' };
+
+export function dniCheck(raw) {
+  const s = (raw || '').replace(/[\s-]/g, '').toUpperCase();
+  const m = /^([XYZ]?)(\d{7,8})([A-Z])$/.exec(s);
+  if (!m) return false;
+  const [, prefixe, chiffres, lettre] = m;
+  // Un DNI porte 8 chiffres, un NIE 7 précédés de sa lettre : dans les deux cas
+  // le nombre à diviser compte 8 chiffres une fois le préfixe substitué.
+  const nombre = prefixe ? PREFIXE_NIE[prefixe] + chiffres : chiffres;
+  if (nombre.length !== 8) return false;
+  return LETTRES_DNI[Number(nombre) % 23] === lettre;
+}
