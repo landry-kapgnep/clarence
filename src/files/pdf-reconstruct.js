@@ -249,36 +249,67 @@ export function tailleQuiTient(font, texte, taille, x, borne) {
   return Math.max(taille * (dispo / largeur), taille * REDUCTION_MIN);
 }
 
-// Écart en points sous lequel deux fragments sont réputés sur la MÊME ligne.
+// Écart en points sous lequel deux fragments sont réputés à la MÊME hauteur.
 const MEME_LIGNE = 2;
 
-// BORNE DROITE d'un fragment : le début du prochain fragment RÉELLEMENT dessiné
-// sur sa ligne, à défaut le bord de page.
+// BORNE DROITE de chaque fragment : le début du prochain fragment dessiné à la
+// même hauteur, à défaut le bord de page. Un tableau, dans l'ordre des entrées.
 //
 // LE PROBLÈME. `tailleQuiTient` ne bornait qu'au bord de page. Un placeholder
 // plus long que la valeur remplacée (« Ana » → « [PERSONNE_1] ») restait donc
 // dans la page mais mordait sur le fragment voisin : deux textes superposés,
 // illisibles tous les deux.
 //
-// POURQUOI ON NE DÉPLACE RIEN. Repousser le fragment suivant en cascade est un
-// problème GLOBAL : on résout un chevauchement en en créant un autre plus loin,
-// et le résultat peut être pire que le défaut. Rétrécir, à l'inverse, est
-// strictement LOCAL — le fragment reste dans la place qu'il occupait déjà, donc
-// l'opération ne peut par construction créer aucun chevauchement ailleurs.
+// PORTÉE : LA PAGE ENTIÈRE, pas le paragraphe. Deux fragments à la même hauteur
+// appartiennent très souvent à des unités DIFFÉRENTES — deux colonnes, deux
+// cellules d'un tableau, un titre courant et un numéro de page. Une première
+// version ne comparait qu'à l'intérieur d'une unité et laissait donc un
+// placeholder de la colonne gauche mordre sur la colonne droite.
+//
+// ON NE CHERCHE PAS À RECONSTITUER LES « LIGNES » LOGIQUES, et c'est le point
+// qui lève l'objection : savoir si deux morceaux forment une même ligne est
+// effectivement indécidable dans un PDF. Mais on n'en a pas besoin. Pour un
+// chevauchement, la vérité est GÉOMÉTRIQUE : deux fragments à la même hauteur
+// dont les plages horizontales se recoupent se superposent à l'écran, quelle
+// que soit leur parenté structurelle. C'est la seule question posée ici.
+//
+// ON RÉTRÉCIT, ON NE DÉPLACE PAS. Repousser le fragment suivant en cascade est
+// un problème GLOBAL : on résout un chevauchement en en créant un autre plus
+// loin, et le résultat peut être pire que le défaut. Rétrécir reste dans la
+// place déjà occupée, donc ne peut par construction rien casser ailleurs.
 //
 // Le cas fréquent tombe bien : quand une entité couvre plusieurs fragments, le
 // placeholder est émis dans le PREMIER et les suivants ne sont pas dessinés.
-// La place de tous ces fragments lui est donc rendue, et aucune réduction n'est
+// La place de tous ces fragments lui est rendue, et aucune réduction n'est
 // nécessaire tant que le placeholder y tient.
-export function borneDroite(runs, textes, i, largeurPage) {
-  let borne = largeurPage;
-  for (let j = 0; j < runs.length; j++) {
-    if (j === i || !textes[j]) continue;
-    if (Math.abs(runs[j].y - runs[i].y) > MEME_LIGNE) continue;
-    if (runs[j].x <= runs[i].x) continue;
-    if (runs[j].x < borne) borne = runs[j].x;
+//
+// INDEXÉ PAR BANDE : comparer chaque fragment à tous les autres est quadratique,
+// et une page dense en compte des milliers. On ne compare qu'aux fragments de
+// sa bande et des deux bandes voisines — la tolérance pouvant enjamber une
+// frontière de bande.
+export function calculerBornes(runs, textes, largeurPage) {
+  const bandes = new Map();
+  for (let i = 0; i < runs.length; i++) {
+    if (!textes[i]) continue;
+    const b = Math.round(runs[i].y / MEME_LIGNE);
+    if (!bandes.has(b)) bandes.set(b, []);
+    bandes.get(b).push(i);
   }
-  return borne;
+
+  return runs.map((run, i) => {
+    if (!textes[i]) return largeurPage;
+    let borne = largeurPage;
+    const b = Math.round(run.y / MEME_LIGNE);
+    for (const voisine of [b - 1, b, b + 1]) {
+      for (const j of bandes.get(voisine) || []) {
+        if (j === i) continue;
+        if (Math.abs(runs[j].y - run.y) > MEME_LIGNE) continue;
+        if (runs[j].x <= run.x) continue;
+        if (runs[j].x < borne) borne = runs[j].x;
+      }
+    }
+    return borne;
+  });
 }
 
 // Ré-extrait la structure géométrique page par page (convention stateless ;
@@ -380,21 +411,28 @@ export async function reconstructPdf(buffer, opts = {}) {
       } catch { /* image ignorée, jamais bloquant */ }
     }
 
+    // Tous les fragments dessinables de la PAGE sont rassemblés AVANT le
+    // dessin : la borne d'un fragment dépend de ses voisins géométriques, qui
+    // appartiennent souvent à une autre unité (colonnes, cellules d'un
+    // tableau). Voir calculerBornes.
+    const aDessiner = [];
     for (const unit of page.units) {
       const masked = distributeEntitiesOverRuns(unit.runs, entitiesById.get(unit.id) || []);
-      // Textes calculés d'ABORD, tous : la borne droite d'un fragment dépend
-      // de savoir lesquels de ses voisins seront réellement dessinés.
-      const textes = unit.runs.map((run, i) =>
-        run.draw ? sanitizeForWinAnsi(masked[i].text) : '');
       unit.runs.forEach((run, i) => {
-        if (!textes[i]) return;
-        try {
-          const borne = borneDroite(unit.runs, textes, i, page.width);
-          const size = tailleQuiTient(font, textes[i], run.size, run.x, borne);
-          pdfPage.drawText(textes[i], { x: run.x, y: run.y, size, font });
-        } catch { /* fragment non dessinable : ignoré, jamais bloquant */ }
+        if (!run.draw) return;
+        const texte = sanitizeForWinAnsi(masked[i].text);
+        if (texte) aDessiner.push({ run, texte });
       });
     }
+
+    const bornes = calculerBornes(
+      aDessiner.map(f => f.run), aDessiner.map(f => f.texte), page.width);
+    aDessiner.forEach(({ run, texte }, i) => {
+      try {
+        const size = tailleQuiTient(font, texte, run.size, run.x, bornes[i]);
+        pdfPage.drawText(texte, { x: run.x, y: run.y, size, font });
+      } catch { /* fragment non dessinable : ignoré, jamais bloquant */ }
+    });
   }
 
   const bytes = await pdfDoc.save();

@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { reconstructPdf, tailleQuiTient, borneDroite, aDeLaTransparence } from '../../src/files/pdf-reconstruct.js';
+import { reconstructPdf, tailleQuiTient, calculerBornes, aDeLaTransparence } from '../../src/files/pdf-reconstruct.js';
 
 const deps = { PDFDocument, StandardFonts };
 
@@ -225,34 +225,71 @@ test('aDeLaTransparence : image vide et image pleinement opaque', () => {
 
 // --- CHEVAUCHEMENT ENTRE FRAGMENTS VOISINS --------------------------------
 
-test('borneDroite : borne au fragment suivant de la MÊME ligne', () => {
+test('calculerBornes : borne au fragment suivant de la même hauteur', () => {
   const runs = [{ x: 40, y: 100 }, { x: 150, y: 100 }, { x: 300, y: 100 }];
-  const textes = ['a', 'b', 'c'];
+  const b = calculerBornes(runs, ['a', 'b', 'c'], 420);
   // Le plus PROCHE à droite gagne, pas le premier venu dans l'ordre du tableau.
-  assert.equal(borneDroite(runs, textes, 0, 420), 150);
-  assert.equal(borneDroite(runs, textes, 1, 420), 300);
-  // Dernier de sa ligne : le bord de page.
-  assert.equal(borneDroite(runs, textes, 2, 420), 420);
+  assert.equal(b[0], 150);
+  assert.equal(b[1], 300);
+  assert.equal(b[2], 420, 'dernier de sa ligne : le bord de page');
 });
 
-test('borneDroite : un fragment NON dessiné rend sa place au précédent', () => {
+test('calculerBornes : un fragment NON dessiné rend sa place au précédent', () => {
   // Cas fréquent : une entité couvre 3 fragments, le placeholder est émis dans
   // le premier et les deux suivants ne sont pas dessinés.
   const runs = [{ x: 40, y: 100 }, { x: 150, y: 100 }, { x: 300, y: 100 }];
-  assert.equal(borneDroite(runs, ['a', '', ''], 0, 420), 420,
+  assert.equal(calculerBornes(runs, ['a', '', ''], 420)[0], 420,
     'sans voisin dessiné, toute la largeur restante est disponible');
-  assert.equal(borneDroite(runs, ['a', '', 'c'], 0, 420), 300);
+  assert.equal(calculerBornes(runs, ['a', '', 'c'], 420)[0], 300);
 });
 
-test('borneDroite : une autre LIGNE ne borne rien', () => {
+test('calculerBornes : une autre hauteur ne borne rien', () => {
   const runs = [{ x: 40, y: 100 }, { x: 60, y: 80 }];
-  assert.equal(borneDroite(runs, ['a', 'b'], 0, 420), 420,
+  assert.equal(calculerBornes(runs, ['a', 'b'], 420)[0], 420,
     'un fragment de la ligne du dessous ne doit pas rétrécir celui du dessus');
 });
 
-test('borneDroite : un fragment à GAUCHE ne borne pas', () => {
+test('calculerBornes : un fragment à GAUCHE ne borne pas', () => {
   const runs = [{ x: 200, y: 100 }, { x: 40, y: 100 }];
-  assert.equal(borneDroite(runs, ['a', 'b'], 0, 420), 420);
+  assert.equal(calculerBornes(runs, ['a', 'b'], 420)[0], 420);
+});
+
+test('calculerBornes : la COLONNE VOISINE borne, même sans lien logique', () => {
+  // Le cas qui a motivé le passage à une portée PAGE. Deux colonnes sont des
+  // unités distinctes ; borner dans l'unité laissait la gauche mordre sur la
+  // droite. On ne cherche pas à savoir si les fragments forment « une ligne » —
+  // seulement si leurs plages se recoupent à la même hauteur.
+  const runs = [{ x: 40, y: 500 }, { x: 320, y: 500 }];
+  assert.equal(calculerBornes(runs, ['colonne gauche', 'colonne droite'], 600)[0], 320);
+});
+
+test('calculerBornes : la tolérance encaisse un décalage de ligne de base', () => {
+  // Deux fragments d'une même ligne n'ont pas toujours un y au centième près.
+  const runs = [{ x: 40, y: 100 }, { x: 150, y: 101.4 }];
+  assert.equal(calculerBornes(runs, ['a', 'b'], 420)[0], 150);
+  // Au-delà de la tolérance, ce sont deux lignes.
+  const loin = [{ x: 40, y: 100 }, { x: 150, y: 108 }];
+  assert.equal(calculerBornes(loin, ['a', 'b'], 420)[0], 420);
+});
+
+test('calculerBornes : l’indexation par bande ne perd aucun voisin', () => {
+  // L'index range par bandes de MEME_LIGNE ; un voisin peut tomber dans la
+  // bande d'à côté. On le vérifie sur 200 fragments à des y légèrement
+  // dispersés, en comparant à une recherche exhaustive naïve.
+  const runs = [], textes = [];
+  for (let i = 0; i < 200; i++) {
+    runs.push({ x: (i % 20) * 25 + 10, y: Math.floor(i / 20) * 14 + (i % 3) * 0.7 });
+    textes.push('f');
+  }
+  const rapide = calculerBornes(runs, textes, 600);
+  const naif = runs.map((r, i) => {
+    let b = 600;
+    runs.forEach((o, j) => {
+      if (j !== i && Math.abs(o.y - r.y) <= 2 && o.x > r.x && o.x < b) b = o.x;
+    });
+    return b;
+  });
+  assert.deepEqual(rapide, naif);
 });
 
 test('un placeholder plus long que la valeur ne mord pas sur son voisin', async () => {
@@ -260,7 +297,7 @@ test('un placeholder plus long que la valeur ne mord pas sur son voisin', async 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const runs = [{ x: 40, y: 100 }, { x: 120, y: 100 }];
   const textes = ['[PERSONNE_1]', 'suite'];
-  const borne = borneDroite(runs, textes, 0, 420);
+  const borne = calculerBornes(runs, textes, 420)[0];
   const size = tailleQuiTient(font, textes[0], 12, runs[0].x, borne);
   assert.ok(font.widthOfTextAtSize(textes[0], size) <= borne - runs[0].x,
     'après réduction, le fragment doit tenir AVANT le début du suivant');

@@ -169,15 +169,28 @@ function tailleQuiTient(font, texte, taille, x, borne) {
   return Math.max(taille * (dispo / largeur), taille * REDUCTION_MIN);
 }
 var MEME_LIGNE = 2;
-function borneDroite(runs, textes, i, largeurPage) {
-  let borne = largeurPage;
-  for (let j = 0; j < runs.length; j++) {
-    if (j === i || !textes[j]) continue;
-    if (Math.abs(runs[j].y - runs[i].y) > MEME_LIGNE) continue;
-    if (runs[j].x <= runs[i].x) continue;
-    if (runs[j].x < borne) borne = runs[j].x;
+function calculerBornes(runs, textes, largeurPage) {
+  const bandes = /* @__PURE__ */ new Map();
+  for (let i = 0; i < runs.length; i++) {
+    if (!textes[i]) continue;
+    const b = Math.round(runs[i].y / MEME_LIGNE);
+    if (!bandes.has(b)) bandes.set(b, []);
+    bandes.get(b).push(i);
   }
-  return borne;
+  return runs.map((run, i) => {
+    if (!textes[i]) return largeurPage;
+    let borne = largeurPage;
+    const b = Math.round(run.y / MEME_LIGNE);
+    for (const voisine of [b - 1, b, b + 1]) {
+      for (const j of bandes.get(voisine) || []) {
+        if (j === i) continue;
+        if (Math.abs(runs[j].y - run.y) > MEME_LIGNE) continue;
+        if (runs[j].x <= run.x) continue;
+        if (runs[j].x < borne) borne = runs[j].x;
+      }
+    }
+    return borne;
+  });
 }
 async function parsePages(buffer, signal) {
   const pdf = await getDocument({
@@ -251,19 +264,27 @@ async function reconstructPdf(buffer, opts = {}) {
       } catch {
       }
     }
+    const aDessiner = [];
     for (const unit of page.units) {
       const masked = distributeEntitiesOverRuns(unit.runs, entitiesById.get(unit.id) || []);
-      const textes = unit.runs.map((run, i) => run.draw ? sanitizeForWinAnsi(masked[i].text) : "");
       unit.runs.forEach((run, i) => {
-        if (!textes[i]) return;
-        try {
-          const borne = borneDroite(unit.runs, textes, i, page.width);
-          const size = tailleQuiTient(font, textes[i], run.size, run.x, borne);
-          pdfPage.drawText(textes[i], { x: run.x, y: run.y, size, font });
-        } catch {
-        }
+        if (!run.draw) return;
+        const texte = sanitizeForWinAnsi(masked[i].text);
+        if (texte) aDessiner.push({ run, texte });
       });
     }
+    const bornes = calculerBornes(
+      aDessiner.map((f) => f.run),
+      aDessiner.map((f) => f.texte),
+      page.width
+    );
+    aDessiner.forEach(({ run, texte }, i) => {
+      try {
+        const size = tailleQuiTient(font, texte, run.size, run.x, bornes[i]);
+        pdfPage.drawText(texte, { x: run.x, y: run.y, size, font });
+      } catch {
+      }
+    });
   }
   const bytes = await pdfDoc.save();
   return {
@@ -274,7 +295,7 @@ async function reconstructPdf(buffer, opts = {}) {
 }
 export {
   aDeLaTransparence,
-  borneDroite,
+  calculerBornes,
   reconstructPdf,
   tailleQuiTient
 };
