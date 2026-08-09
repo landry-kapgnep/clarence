@@ -17,9 +17,9 @@ import {
   median,
   needsSpace,
   paragraphGapThreshold,
-  ressembleAUnIntitule,
+  releverIntitules,
   splitIntoColumns
-} from "./chunk-C47KMYBO.js";
+} from "./chunk-F3OYTZZ2.js";
 import {
   GlobalWorkerOptions,
   OPS,
@@ -184,10 +184,7 @@ async function parsePages(buffer, signal) {
     let paraIdx = 0;
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
-      for (const l of lines) {
-        const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
-        if (!titre && ressembleAUnIntitule(l.text)) intitulesVus.add(l.text.trim());
-      }
+      releverIntitules(lines, dominantSize, intitulesVus);
       for (const para of paragraphsWithParts(lines, dominantSize)) {
         const unit = paragraphToRuns(para, `page${pageNum}#para${paraIdx++}`);
         unit.isHeading = para.isHeading;

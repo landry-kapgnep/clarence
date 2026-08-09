@@ -3,6 +3,7 @@ import {
   PARAGRAPH_GAP_RATIO,
   applyMask,
   extractTextUnits,
+  formesDeRubrique,
   groupIntoLines,
   intitulesRetenus,
   isLineWrapHyphen,
@@ -10,10 +11,11 @@ import {
   median,
   needsSpace,
   paragraphGapThreshold,
+  releverIntitules,
   ressembleAUnIntitule,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-C47KMYBO.js";
+} from "./chunk-F3OYTZZ2.js";
 import "./chunk-GQJ4YNB7.js";
 import "./chunk-PIRHQTI4.js";
 export {
@@ -21,6 +23,7 @@ export {
   PARAGRAPH_GAP_RATIO,
   applyMask,
   extractTextUnits,
+  formesDeRubrique,
   groupIntoLines,
   intitulesRetenus,
   isLineWrapHyphen,
@@ -28,6 +31,7 @@ export {
   median,
   needsSpace,
   paragraphGapThreshold,
+  releverIntitules,
   ressembleAUnIntitule,
   splitIntoColumns,
   stripMetadata

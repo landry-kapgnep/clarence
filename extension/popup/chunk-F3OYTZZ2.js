@@ -135,10 +135,7 @@ async function parseStructure(buffer) {
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
       if (!lines.length) continue;
-      for (const l of lines) {
-        const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
-        if (!titre && ressembleAUnIntitule(l.text)) intitules.add(l.text.trim());
-      }
+      releverIntitules(lines, dominantSize, intitules);
       for (const p of groupIntoParagraphs(lines, dominantSize)) {
         units.push({ id: `page${pageNum}#para${paraIndex++}`, text: p.text, isHeading: p.isHeading });
       }
@@ -156,6 +153,23 @@ function ressembleAUnIntitule(texte) {
   if (!new RegExp("\\p{L}", "u").test(t)) return false;
   if (/\d/.test(t.replace(NUMERO_DE_RUBRIQUE, ""))) return false;
   return t === t.toUpperCase();
+}
+var RUBRIQUE_TITRE = new RegExp("^(\\p{Lu}{3,})(\\s+\\d{1,2})?\\s*[\u2014\u2013-]\\s+\\p{L}", "u");
+function formesDeRubrique(texte) {
+  const m = RUBRIQUE_TITRE.exec((texte || "").trim());
+  if (!m) return [];
+  return m[2] ? [m[1], `${m[1]}${m[2]}`] : [m[1]];
+}
+function releverIntitules(lines, dominantSize, dans = /* @__PURE__ */ new Set()) {
+  for (const l of lines) {
+    const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
+    if (!titre) {
+      if (ressembleAUnIntitule(l.text)) dans.add(l.text.trim());
+      continue;
+    }
+    for (const forme of formesDeRubrique(l.text)) dans.add(forme);
+  }
+  return dans;
 }
 function intitulesRetenus(candidats) {
   return candidats.size >= 2 ? [...candidats] : [];
@@ -197,6 +211,8 @@ export {
   paragraphGapThreshold,
   splitIntoColumns,
   ressembleAUnIntitule,
+  formesDeRubrique,
+  releverIntitules,
   intitulesRetenus,
   marquerIntitules,
   extractTextUnits,

@@ -11,7 +11,7 @@
 // pdf-lib est injecté (deps) — comme DOMParser pour DOCX — pour rester testable
 // en Node. Le ré-encodage canvas des images (Stage B) est navigateur-only.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, marquerIntitules, ressembleAUnIntitule, intitulesRetenus, HEADING_SIZE_RATIO } from './pdf-adapter.js';
+import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, marquerIntitules, releverIntitules, intitulesRetenus, HEADING_SIZE_RATIO } from './pdf-adapter.js';
 import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { anonymizeUnits } from './anonymize-units.js';
 import { verifierAnnulation } from '../engine/annulation.js';
@@ -252,13 +252,11 @@ async function parsePages(buffer, signal) {
     let paraIdx = 0;
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
-      // MÊME relevé que pdf-adapter, AVANT le regroupement : un intitulé recollé
-      // au texte suivant n'est plus une unité à lui seul, mais il reste en tête
-      // de cette unité. Les deux chemins doivent rester alignés (leçon P1bis).
-      for (const l of lines) {
-        const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
-        if (!titre && ressembleAUnIntitule(l.text)) intitulesVus.add(l.text.trim());
-      }
+      // Relevé AVANT le regroupement, par la fonction PARTAGÉE avec le chemin
+      // Markdown. Les deux boucles étaient dupliquées « à l'identique » et ont
+      // divergé dès la première évolution de la règle — deuxième occurrence de
+      // la leçon P1bis. Ne pas la recopier ici.
+      releverIntitules(lines, dominantSize, intitulesVus);
       for (const para of paragraphsWithParts(lines, dominantSize)) {
         const unit = paragraphToRuns(para, `page${pageNum}#para${paraIdx++}`);
         // Conservé pour `marquerIntitules` : c'est le garde-fou qui épargne le

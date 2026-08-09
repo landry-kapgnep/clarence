@@ -528,7 +528,68 @@ désormais encodée dans `tests/bench/verite-terrain.mjs`.
 
 ---
 
-## P9 — Les intitulés de section : TROIS causes, pas une (mesuré 08/08/2026)
+## ~~P9 — Les intitulés de section~~ ✅ CAUSE 1 CORRIGÉE (08/08/2026)
+
+**Borne basse : préservé 82 % → 88 % (42/51 → 45/51), contextuel 95 % inchangé,
+structuré 100 %. Les 7 documents réalistes du banc : strictement inchangés.**
+
+`ANNEXE`, `ANEXO 5`, `ANLAGE 6` sont épargnés sans qu'aucun nom ne fuie.
+
+### Ce qui rend la règle sûre : positionnelle, jamais lexicale
+
+Le correctif évident — « épargner les unités-titres » — est **inapplicable**, et
+le document piégé porte son contre-exemple : `ÉLÉONORE VASSEUR`, titre de CV en
+21 pt, est **formellement indiscernable** de `COMPÉTENCES` (capitales, deux
+mots, ni ponctuation ni chiffre). Le garde `!titre` du relevé n'était donc PAS
+un oubli : il est porteur. C'est maintenant encodé dans la vérité terrain, donc
+une variante qui le franchirait le paierait immédiatement en contextuel.
+
+`formesDeRubrique` discrimine autrement : **UN SEUL** mot en capitales,
+éventuellement suivi d'un numéro de rubrique, puis un tiret, puis du contenu.
+
+| Ligne | Relevé |
+|---|---|
+| `ANNEXE — DOSSIER ADMINISTRATIF` | `ANNEXE` |
+| `ANEXO 5 — EXPEDIENTE EN ESPAÑOL` | `ANEXO`, `ANEXO 5` |
+| `ÉLÉONORE VASSEUR` | rien (pas de tiret) |
+| `ÉLÉONORE VASSEUR — DÉVELOPPEUSE DATA` | rien (**deux** mots avant le tiret) |
+
+Aucune liste de mots de rubrique n'entre dans le moteur : la classe est ouverte
+et multilingue, et la règle du projet l'interdit (voir Gotchas, `honorifics.js`).
+
+**Les deux formes comptent.** Ne relever que le mot nu laissait `ANEXO 5` et
+`ANLAGE 6` masqués : le modèle les rend d'un seul tenant, numéro compris.
+Mesuré — c'est ce qui séparait 84 % de 88 %.
+
+**Risque résiduel, assumé** : un titre du type `DUPONT — RAPPORT ANNUEL`, où le
+mot unique est un patronyme, serait épargné s'il est détecté seul et en tête.
+Rare, et à revoir s'il se présente.
+
+### Deuxième divergence des deux chemins PDF (leçon P1bis, encore)
+
+Le premier correctif n'a **rien changé au banc** : `pdf-reconstruct.js` avait sa
+PROPRE boucle de relevé, copiée « à l'identique » de `pdf-adapter.js` — et les
+deux ont divergé dès la première évolution de la règle. Le mode « Préserver »
+continuait de masquer `ANNEXE` pendant que le mode « Alléger » l'épargnait.
+
+Le relevé vit désormais dans **une seule fonction** (`releverIntitules`),
+appelée des deux côtés. Dupliquer « parce que c'est identique » a maintenant
+coûté deux fois dans ce projet.
+
+### Ce qui reste, et pourquoi ce n'est pas la même chose
+
+Les 6 termes encore sur-masqués sur la borne basse sont tous documentés :
+
+| Terme | Cause |
+|---|---|
+| `ÉTAT CIVIL` | cause 2 — l'entité déborde (`ÉTAT CIVIL Née`), arbitrage délibéré |
+| `SPRACHEN` | cause 3 — faux positif **BIC** du regex, hors de portée d'un filtre contextuel |
+| `Unternehmen`, `Abteilung` | noms communs allemands (P2bis/P2ter) |
+| `PostgreSQL`, `Kubernetes` | technos — comportement attendu **sans** le profil « Développeur / Tech » |
+
+---
+
+## P9 (diagnostic initial) — TROIS causes, pas une (mesuré 08/08/2026)
 
 Relevé sur la sortie réelle en Chrome (`tous-defauts.pdf`, mode Préserver). Le
 mécanisme d'intitulés relève bien **29 titres** avant regroupement, et pourtant

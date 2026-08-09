@@ -279,10 +279,7 @@ async function parseStructure(buffer) {
       const lines = groupIntoLines(columnItems);
       if (!lines.length) continue;
       // Relevé AVANT le regroupement : c'est tout l'objet du mécanisme.
-      for (const l of lines) {
-        const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
-        if (!titre && ressembleAUnIntitule(l.text)) intitules.add(l.text.trim());
-      }
+      releverIntitules(lines, dominantSize, intitules);
       for (const p of groupIntoParagraphs(lines, dominantSize)) {
         units.push({ id: `page${pageNum}#para${paraIndex++}`, text: p.text, isHeading: p.isHeading });
       }
@@ -379,6 +376,63 @@ export function ressembleAUnIntitule(texte) {
 // La double condition est le garde-fou : « en tête de l'unité » interdit
 // d'écarter un nom qui apparaîtrait en plein texte, et « exactement » interdit
 // d'emporter les mots voisins.
+// MOT DE RUBRIQUE d'une ligne qui EST typographiquement un titre.
+//
+// Les intitulés collés à leur paragraphe sont déjà couverts. Restait le cas
+// inverse : une ligne en gros corps, seule, du genre « ANNEXE — DOSSIER
+// ADMINISTRATIF ». Le modèle y étiquette « ANNEXE » comme entreprise, et rien
+// ne l'épargnait — `ressembleAUnIntitule` plafonne à 3 mots (le tiret compte
+// pour un), et la valeur détectée n'est de toute façon qu'un FRAGMENT de la
+// ligne, jamais son égal.
+//
+// POURQUOI PAS SIMPLEMENT « épargner les unités-titres ». Parce que le titre
+// d'un CV est une unité-titre : « ÉLÉONORE VASSEUR », seule, en capitales, sans
+// ponctuation ni chiffre, est FORMELLEMENT INDISCERNABLE de « COMPÉTENCES ».
+// Exempter les titres ferait fuir le nom de la personne — le garde `!titre` du
+// relevé n'est pas un oubli, il est porteur. C'est mesuré : la vérité terrain
+// du document piégé porte ce contre-exemple exprès.
+//
+// LA DISCRIMINATION RETENUE est donc positionnelle, jamais lexicale : UN SEUL
+// mot en capitales, éventuellement suivi d'un numéro de rubrique, puis un tiret,
+// puis autre chose. « ÉLÉONORE VASSEUR » n'a pas de tiret ; « ÉLÉONORE VASSEUR
+// — DÉVELOPPEUSE » en a un mais DEUX mots avant lui, donc ne matche pas non plus.
+//
+// RISQUE RÉSIDUEL, assumé et mesuré : un titre de la forme « DUPONT — RAPPORT
+// ANNUEL », où le mot unique est un patronyme. Le mot serait épargné s'il est
+// détecté SEUL et en tête. Cas réel mais rare ; à revoir s'il se présente.
+// DEUX FORMES sont relevées, et la seconde n'est pas un détail : le modèle
+// rend « ANEXO 5 » et « ANLAGE 6 » d'un seul tenant, numéro compris. Ne relever
+// que le mot nu laissait donc ces deux-là masqués — mesuré. Le numéro relève du
+// même motif positionnel, il n'ajoute aucun risque.
+const RUBRIQUE_TITRE = /^(\p{Lu}{3,})(\s+\d{1,2})?\s*[—–-]\s+\p{L}/u;
+
+export function formesDeRubrique(texte) {
+  const m = RUBRIQUE_TITRE.exec((texte || '').trim());
+  if (!m) return [];
+  return m[2] ? [m[1], `${m[1]}${m[2]}`] : [m[1]];
+}
+
+// LE RELEVÉ, EN UN SEUL ENDROIT. Les deux chemins PDF (Markdown et
+// reconstruction) le faisaient chacun de leur côté, à l'identique — et ont
+// aussitôt divergé dès qu'on a touché à la règle : le mot de rubrique n'existait
+// que du côté Markdown, donc le mode « Préserver » continuait de masquer
+// « ANNEXE » pendant que l'autre l'épargnait. Même leçon que P1bis, deuxième
+// occurrence. Une seule fonction, appelée des deux côtés.
+export function releverIntitules(lines, dominantSize, dans = new Set()) {
+  for (const l of lines) {
+    const titre = l.size >= dominantSize * HEADING_SIZE_RATIO;
+    if (!titre) {
+      if (ressembleAUnIntitule(l.text)) dans.add(l.text.trim());
+      continue;
+    }
+    // Ligne qui EST un titre : on ne relève que son mot de rubrique, jamais la
+    // ligne entière — voir formesDeRubrique pour le contre-exemple qui interdit
+    // d'épargner les titres en bloc.
+    for (const forme of formesDeRubrique(l.text)) dans.add(forme);
+  }
+  return dans;
+}
+
 export function intitulesRetenus(candidats) {
   // Même règle des « au moins deux » que marquerIntitules : un mot isolé en
   // capitales n'est pas un motif de mise en page, et pourrait être un patronyme.

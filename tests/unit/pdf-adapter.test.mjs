@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { extractTextUnits, applyMask, stripMetadata, groupIntoLines, isLineWrapHyphen, paragraphGapThreshold } from '../../src/files/pdf-adapter.js';
+import { extractTextUnits, applyMask, stripMetadata, groupIntoLines, isLineWrapHyphen, paragraphGapThreshold, formesDeRubrique } from '../../src/files/pdf-adapter.js';
 import { ressembleAUnIntitule, marquerIntitules, intitulesRetenus } from '../../src/files/pdf-adapter.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
 
@@ -295,4 +295,36 @@ test('intitulesRetenus applique la règle des « au moins deux »', () => {
   assert.deepEqual(intitulesRetenus(new Set(['SOMMAIRE'])), []);
   assert.deepEqual(intitulesRetenus(new Set(['SOMMAIRE', 'ANNEXE'])).sort(),
     ['ANNEXE', 'SOMMAIRE']);
+});
+
+// --- MOT DE RUBRIQUE (P9) -------------------------------------------------
+// La discrimination est POSITIONNELLE, jamais lexicale : aucune liste de mots
+// de rubrique n'est tenue dans le moteur (classe ouverte, et multilingue).
+
+test('formesDeRubrique reconnaît un titre à rubrique, dans les quatre langues', () => {
+  assert.deepEqual(formesDeRubrique('ANNEXE — DOSSIER ADMINISTRATIF'), ['ANNEXE']);
+  // Le numéro est relevé AUSSI : le modèle rend « ANEXO 5 » d'un seul tenant.
+  assert.deepEqual(formesDeRubrique('ANNEXE 2 — CAS DIFFICILES'), ['ANNEXE', 'ANNEXE 2']);
+  assert.deepEqual(formesDeRubrique('ANEXO 5 — EXPEDIENTE EN ESPAÑOL'), ['ANEXO', 'ANEXO 5']);
+  assert.deepEqual(formesDeRubrique('ANLAGE 6 — DEUTSCHE AKTE'), ['ANLAGE', 'ANLAGE 6']);
+  assert.deepEqual(formesDeRubrique('APPENDIX 3 — ENGLISH RECORD'), ['APPENDIX', 'APPENDIX 3']);
+});
+
+test('formesDeRubrique NE reconnaît PAS un nom de personne — le contre-exemple', () => {
+  // Le titre d'un CV est une unité-titre exactement comme « COMPÉTENCES ».
+  // Si ces deux cas passaient, le nom de la personne fuirait.
+  assert.deepEqual(formesDeRubrique('ÉLÉONORE VASSEUR'), [], 'pas de tiret');
+  assert.deepEqual(formesDeRubrique('ÉLÉONORE VASSEUR — DÉVELOPPEUSE DATA'), [],
+    'DEUX mots avant le tiret : ce n\'est pas une rubrique');
+  assert.deepEqual(formesDeRubrique('KAROLINE ANSELME'), []);
+});
+
+test('formesDeRubrique exige du contenu APRÈS le tiret', () => {
+  assert.deepEqual(formesDeRubrique('ANNEXE —'), []);
+  assert.deepEqual(formesDeRubrique('ANNEXE — 4'), [], 'un chiffre ne fait pas un titre');
+});
+
+test('formesDeRubrique exige des CAPITALES et au moins trois lettres', () => {
+  assert.deepEqual(formesDeRubrique('Annexe — dossier'), []);
+  assert.deepEqual(formesDeRubrique('AB — dossier'), []);
 });
