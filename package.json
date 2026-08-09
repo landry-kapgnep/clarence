@@ -10,6 +10,7 @@
     "bench": "node tests/bench/run.mjs",
     "regression": "node tests/regression/run.mjs",
     "injection": "node tests/injection/run.mjs",
+    "spike:llmlingua2": "node tests/spike-llmlingua2/run.mjs",
     "site": "node site/build.mjs"
   },
   "devDependencies": {
