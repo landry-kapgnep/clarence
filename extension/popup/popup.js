@@ -1602,7 +1602,15 @@ async function retirerDuMasquage(valeur) {
     btn.disabled = false;
   }
 }
-function showFileResults(mapping, copyable) {
+function formatDuree(ms) {
+  const s = ms / 1e3;
+  if (s < 10) return `${s.toFixed(1)} s`;
+  if (s < 60) return `${Math.round(s)} s`;
+  const min = Math.floor(s / 60);
+  const reste = Math.round(s % 60);
+  return reste ? `${min} min ${reste}` : `${min} min`;
+}
+function showFileResults(mapping, copyable, duree) {
   lastMapping = mapping;
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {
   });
@@ -1610,7 +1618,8 @@ function showFileResults(mapping, copyable) {
   $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
     (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
   ).join("")}</table>` : "<p>Aucun masque actif.</p>";
-  $("fileSummary").textContent = mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.";
+  const suffixe = duree ? ` Trait\xE9 en ${duree}.` : "";
+  $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.") + suffixe;
   $("fileSummary").className = "status active";
   $("fileResults").hidden = false;
   $("fileCopyBtn").hidden = !copyable;
@@ -2022,6 +2031,7 @@ async function processFile() {
   $("fileCancelBtn").hidden = false;
   setProcessing(true);
   setAnalyzeBtnLoading(true);
+  const debut = performance.now();
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
@@ -2033,7 +2043,7 @@ async function processFile() {
       fileOutBlob = new Blob([cleaned2], { type: kind.mime });
       fileOutName = source.name.replace(/(\.[^.]+)$/, "-nettoye$1");
       $("fileMappingWrap").innerHTML = "<p>Image : m\xE9tadonn\xE9es (EXIF/GPS/appareil) retir\xE9es. Le contenu visuel n'est pas modifi\xE9.</p>";
-      $("fileSummary").textContent = "M\xE9tadonn\xE9es retir\xE9es (EXIF, GPS, appareil).";
+      $("fileSummary").textContent = `M\xE9tadonn\xE9es retir\xE9es (EXIF, GPS, appareil). Trait\xE9 en ${formatDuree(performance.now() - debut)}.`;
       $("fileSummary").className = "status active";
       $("fileResults").hidden = false;
       $("fileCopyBtn").hidden = true;
@@ -2070,7 +2080,7 @@ async function processFile() {
       fileOutBlob = new Blob([outBuf], { type: "application/pdf" });
       fileOutName = source.name.replace(/(\.[^.]+)$/, "-anonymise$1");
       fileRegen = { mode: "pdf", tampon, entites: entitesContextuelles2, source, kind, ext };
-      showFileResults(mapping2, false);
+      showFileResults(mapping2, false, formatDuree(performance.now() - debut));
       renderEngineBadge("fileEngineBadge");
       fileSetStatus("");
       return;
@@ -2117,7 +2127,7 @@ async function processFile() {
       kind,
       ext
     };
-    showFileResults(mapping, kind.mime.startsWith("text/"));
+    showFileResults(mapping, kind.mime.startsWith("text/"), formatDuree(performance.now() - debut));
     renderEngineBadge("fileEngineBadge");
     fileSetStatus("");
   } catch (err) {

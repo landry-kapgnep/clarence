@@ -942,7 +942,20 @@ async function retirerDuMasquage(valeur) {
 
 // Affichage partagé du résultat fichier (chemin standard ET reconstruction PDF).
 // copyable : la sortie est-elle du texte copiable (md/csv) vs binaire (pdf/xlsx/docx).
-function showFileResults(mapping, copyable) {
+// « Est-ce plus lent qu'avant ? » n'avait aucune réponse possible : rien
+// n'affichait la durée, donc la question ne pouvait recevoir qu'une
+// impression. Format minimal, pensé pour l'ordre de grandeur réel (1 s à
+// quelques minutes), pas pour la précision.
+function formatDuree(ms) {
+  const s = ms / 1000;
+  if (s < 10) return `${s.toFixed(1)} s`;
+  if (s < 60) return `${Math.round(s)} s`;
+  const min = Math.floor(s / 60);
+  const reste = Math.round(s % 60);
+  return reste ? `${min} min ${reste}` : `${min} min`;
+}
+
+function showFileResults(mapping, copyable, duree) {
   lastMapping = mapping;
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {});
   // TRI PAR FRÉQUENCE, et ce n'est pas cosmétique.
@@ -964,9 +977,13 @@ function showFileResults(mapping, copyable) {
         ` title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
       ).join('')}</table>`
     : '<p>Aucun masque actif.</p>';
-  $('fileSummary').textContent = mapping.length
+  // duree : omise pour la régénération (retirerDuMasquage) — son propre
+  // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
+  // pas ce que « durée de traitement » désigne pour l'utilisateur.
+  const suffixe = duree ? ` Traité en ${duree}.` : '';
+  $('fileSummary').textContent = (mapping.length
     ? `${mapping.length} valeur(s) distincte(s) masquée(s), métadonnées nettoyées.`
-    : 'Aucune donnée sensible détectée — métadonnées nettoyées.';
+    : 'Aucune donnée sensible détectée — métadonnées nettoyées.') + suffixe;
   $('fileSummary').className = 'status active';
   $('fileResults').hidden = false;
   $('fileCopyBtn').hidden = !copyable;
@@ -1532,6 +1549,7 @@ async function processFile() {
   $('fileCancelBtn').hidden = false;
   setProcessing(true);
   setAnalyzeBtnLoading(true);
+  const debut = performance.now();
   fileSetStatus('Lecture du fichier…');
   try {
     const adapter = await kind.load();
@@ -1546,7 +1564,7 @@ async function processFile() {
       fileOutBlob = new Blob([cleaned], { type: kind.mime });
       fileOutName = source.name.replace(/(\.[^.]+)$/, '-nettoye$1');
       $('fileMappingWrap').innerHTML = '<p>Image : métadonnées (EXIF/GPS/appareil) retirées. Le contenu visuel n\'est pas modifié.</p>';
-      $('fileSummary').textContent = 'Métadonnées retirées (EXIF, GPS, appareil).';
+      $('fileSummary').textContent = `Métadonnées retirées (EXIF, GPS, appareil). Traité en ${formatDuree(performance.now() - debut)}.`;
       $('fileSummary').className = 'status active';
       $('fileResults').hidden = false;
       $('fileCopyBtn').hidden = true; // une image n'a pas de texte à copier
@@ -1587,7 +1605,7 @@ async function processFile() {
       fileOutBlob = new Blob([outBuf], { type: 'application/pdf' });
       fileOutName = source.name.replace(/(\.[^.]+)$/, '-anonymise$1');
       fileRegen = { mode: 'pdf', tampon, entites: entitesContextuelles, source, kind, ext };
-      showFileResults(mapping, false);
+      showFileResults(mapping, false, formatDuree(performance.now() - debut));
       renderEngineBadge('fileEngineBadge');
       fileSetStatus('');
       return;
@@ -1643,7 +1661,7 @@ async function processFile() {
       entites: entitesContextuelles, adapter, source, kind, ext };
 
     // Copier n'a de sens que pour une sortie TEXTE (md/csv), pas binaire.
-    showFileResults(mapping, kind.mime.startsWith('text/'));
+    showFileResults(mapping, kind.mime.startsWith('text/'), formatDuree(performance.now() - debut));
 
     renderEngineBadge('fileEngineBadge');
     fileSetStatus('');
