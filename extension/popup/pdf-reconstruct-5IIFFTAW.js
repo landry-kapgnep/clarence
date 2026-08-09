@@ -150,18 +150,34 @@ async function encodeImage(img) {
     src.getContext("2d").putImageData(new ImageData(rgba, srcW, srcH), 0, 0);
     ctx.drawImage(src, 0, 0, w, h);
   }
-  const useJpeg = w * h > 128 * 128;
+  const pixels = ctx.getImageData(0, 0, w, h).data;
+  const useJpeg = !aDeLaTransparence(pixels) && w * h > 128 * 128;
   const blob = await canvas.convertToBlob(useJpeg ? { type: "image/jpeg", quality: 0.82 } : { type: "image/png" });
   return { bytes: await blob.arrayBuffer(), jpeg: useJpeg };
 }
+function aDeLaTransparence(rgba) {
+  for (let i = 3; i < rgba.length; i += 4) if (rgba[i] < 255) return true;
+  return false;
+}
 var MARGE_DROITE = 2;
 var REDUCTION_MIN = 0.45;
-function tailleQuiTient(font, texte, taille, x, largeurPage) {
-  const dispo = largeurPage - x - MARGE_DROITE;
+function tailleQuiTient(font, texte, taille, x, borne) {
+  const dispo = borne - x - MARGE_DROITE;
   if (dispo <= 0) return taille;
   const largeur = font.widthOfTextAtSize(texte, taille);
   if (largeur <= dispo) return taille;
   return Math.max(taille * (dispo / largeur), taille * REDUCTION_MIN);
+}
+var MEME_LIGNE = 2;
+function borneDroite(runs, textes, i, largeurPage) {
+  let borne = largeurPage;
+  for (let j = 0; j < runs.length; j++) {
+    if (j === i || !textes[j]) continue;
+    if (Math.abs(runs[j].y - runs[i].y) > MEME_LIGNE) continue;
+    if (runs[j].x <= runs[i].x) continue;
+    if (runs[j].x < borne) borne = runs[j].x;
+  }
+  return borne;
 }
 async function parsePages(buffer, signal) {
   const pdf = await getDocument({
@@ -237,13 +253,13 @@ async function reconstructPdf(buffer, opts = {}) {
     }
     for (const unit of page.units) {
       const masked = distributeEntitiesOverRuns(unit.runs, entitiesById.get(unit.id) || []);
+      const textes = unit.runs.map((run, i) => run.draw ? sanitizeForWinAnsi(masked[i].text) : "");
       unit.runs.forEach((run, i) => {
-        if (!run.draw) return;
-        const text = sanitizeForWinAnsi(masked[i].text);
-        if (!text) return;
+        if (!textes[i]) return;
         try {
-          const size = tailleQuiTient(font, text, run.size, run.x, page.width);
-          pdfPage.drawText(text, { x: run.x, y: run.y, size, font });
+          const borne = borneDroite(unit.runs, textes, i, page.width);
+          const size = tailleQuiTient(font, textes[i], run.size, run.x, borne);
+          pdfPage.drawText(textes[i], { x: run.x, y: run.y, size, font });
         } catch {
         }
       });
@@ -257,6 +273,8 @@ async function reconstructPdf(buffer, opts = {}) {
   };
 }
 export {
+  aDeLaTransparence,
+  borneDroite,
   reconstructPdf,
   tailleQuiTient
 };

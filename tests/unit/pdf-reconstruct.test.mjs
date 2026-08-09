@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { reconstructPdf, tailleQuiTient } from '../../src/files/pdf-reconstruct.js';
+import { reconstructPdf, tailleQuiTient, borneDroite, aDeLaTransparence } from '../../src/files/pdf-reconstruct.js';
 
 const deps = { PDFDocument, StandardFonts };
 
@@ -200,4 +200,68 @@ test('reconstruction : un placeholder en fin de ligne reste ENTIÈREMENT extract
     assert.ok(texte.includes(m.placeholder),
       `placeholder ${m.placeholder} introuvable dans la sortie — réversibilité cassée`);
   }
+});
+
+// --- FOND NOIR DES IMAGES TRANSPARENTES -----------------------------------
+// encodeImage dépend d'OffscreenCanvas (navigateur) et n'a jamais pu être
+// couvert ici : c'est ce trou qui a laissé le bug vivre. La DÉCISION, elle,
+// est une fonction pure — donc testable.
+
+test('aDeLaTransparence : un seul pixel non opaque suffit', () => {
+  // 2 pixels opaques.
+  assert.equal(aDeLaTransparence(new Uint8ClampedArray([1, 2, 3, 255, 4, 5, 6, 255])), false);
+  // Le second est totalement transparent : c'est lui qui virerait au noir.
+  assert.equal(aDeLaTransparence(new Uint8ClampedArray([1, 2, 3, 255, 0, 0, 0, 0])), true);
+  // Semi-transparent : le JPEG l'aplatirait aussi.
+  assert.equal(aDeLaTransparence(new Uint8ClampedArray([1, 2, 3, 128])), true);
+});
+
+test('aDeLaTransparence : image vide et image pleinement opaque', () => {
+  assert.equal(aDeLaTransparence(new Uint8ClampedArray([])), false);
+  const opaque = new Uint8ClampedArray(400);
+  for (let i = 3; i < opaque.length; i += 4) opaque[i] = 255;
+  assert.equal(aDeLaTransparence(opaque), false);
+});
+
+// --- CHEVAUCHEMENT ENTRE FRAGMENTS VOISINS --------------------------------
+
+test('borneDroite : borne au fragment suivant de la MÊME ligne', () => {
+  const runs = [{ x: 40, y: 100 }, { x: 150, y: 100 }, { x: 300, y: 100 }];
+  const textes = ['a', 'b', 'c'];
+  // Le plus PROCHE à droite gagne, pas le premier venu dans l'ordre du tableau.
+  assert.equal(borneDroite(runs, textes, 0, 420), 150);
+  assert.equal(borneDroite(runs, textes, 1, 420), 300);
+  // Dernier de sa ligne : le bord de page.
+  assert.equal(borneDroite(runs, textes, 2, 420), 420);
+});
+
+test('borneDroite : un fragment NON dessiné rend sa place au précédent', () => {
+  // Cas fréquent : une entité couvre 3 fragments, le placeholder est émis dans
+  // le premier et les deux suivants ne sont pas dessinés.
+  const runs = [{ x: 40, y: 100 }, { x: 150, y: 100 }, { x: 300, y: 100 }];
+  assert.equal(borneDroite(runs, ['a', '', ''], 0, 420), 420,
+    'sans voisin dessiné, toute la largeur restante est disponible');
+  assert.equal(borneDroite(runs, ['a', '', 'c'], 0, 420), 300);
+});
+
+test('borneDroite : une autre LIGNE ne borne rien', () => {
+  const runs = [{ x: 40, y: 100 }, { x: 60, y: 80 }];
+  assert.equal(borneDroite(runs, ['a', 'b'], 0, 420), 420,
+    'un fragment de la ligne du dessous ne doit pas rétrécir celui du dessus');
+});
+
+test('borneDroite : un fragment à GAUCHE ne borne pas', () => {
+  const runs = [{ x: 200, y: 100 }, { x: 40, y: 100 }];
+  assert.equal(borneDroite(runs, ['a', 'b'], 0, 420), 420);
+});
+
+test('un placeholder plus long que la valeur ne mord pas sur son voisin', async () => {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const runs = [{ x: 40, y: 100 }, { x: 120, y: 100 }];
+  const textes = ['[PERSONNE_1]', 'suite'];
+  const borne = borneDroite(runs, textes, 0, 420);
+  const size = tailleQuiTient(font, textes[0], 12, runs[0].x, borne);
+  assert.ok(font.widthOfTextAtSize(textes[0], size) <= borne - runs[0].x,
+    'après réduction, le fragment doit tenir AVANT le début du suivant');
 });

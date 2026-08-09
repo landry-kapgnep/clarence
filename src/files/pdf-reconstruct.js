@@ -185,11 +185,32 @@ async function encodeImage(img) {
   }
 
   // JPEG pour les grandes images (photos/scans) : un PNG sans perte ferait
-  // exploser le poids du PDF de sortie. PNG pour les petites (logos, icônes),
-  // où la transparence compte et le poids est négligeable.
-  const useJpeg = w * h > 128 * 128;
+  // exploser le poids du PDF de sortie.
+  //
+  // MAIS LA TAILLE N'EST PAS LE BON CRITÈRE SEUL — bug constaté à l'usage : le
+  // fond transparent d'un PNG ressortait NOIR. Le seuil décidait sur les
+  // dimensions, alors que ce qui compte est la présence d'un canal alpha. Un
+  // canvas non peint vaut rgba(0,0,0,0) ; la conversion en JPEG supprime l'alpha
+  // en gardant le RGB tel quel, donc (0,0,0) — du noir opaque partout où la
+  // source était transparente. Toute image de plus de 128×128 était concernée,
+  // c'est-à-dire presque toutes.
+  //
+  // On mesure donc la transparence au lieu de la déduire. Le surcoût en poids
+  // quand une grande image est transparente est assumé : un aplat noir à la
+  // place d'un logo est un défaut visible, quelques kilo-octets ne le sont pas.
+  const pixels = ctx.getImageData(0, 0, w, h).data;
+  const useJpeg = !aDeLaTransparence(pixels) && w * h > 128 * 128;
   const blob = await canvas.convertToBlob(useJpeg ? { type: 'image/jpeg', quality: 0.82 } : { type: 'image/png' });
   return { bytes: await blob.arrayBuffer(), jpeg: useJpeg };
+}
+
+// Un SEUL pixel non opaque suffit à interdire le JPEG (voir encodeImage).
+// Exporté pour être testable en Node : `encodeImage` dépend d'OffscreenCanvas,
+// donc du navigateur, et n'a jamais pu être couvert — c'est exactement pour ça
+// que le bug a survécu.
+export function aDeLaTransparence(rgba) {
+  for (let i = 3; i < rgba.length; i += 4) if (rgba[i] < 255) return true;
+  return false;
 }
 
 // Marge de sécurité à droite, en points : sous cette valeur on considère que le
@@ -218,12 +239,46 @@ const REDUCTION_MIN = 0.45;
 // Réduire la taille du fragment le fait rentrer, donc le rend à la fois visible
 // et de nouveau extractible — ce qui restaure la réversibilité, l'enjeu réel
 // pour un document destiné à être recollé dans un LLM.
-export function tailleQuiTient(font, texte, taille, x, largeurPage) {
-  const dispo = largeurPage - x - MARGE_DROITE;
+// Le 5e argument est une BORNE DROITE absolue, pas nécessairement le bord de
+// page : sur une ligne partagée, c'est le début du fragment suivant.
+export function tailleQuiTient(font, texte, taille, x, borne) {
+  const dispo = borne - x - MARGE_DROITE;
   if (dispo <= 0) return taille;
   const largeur = font.widthOfTextAtSize(texte, taille);
   if (largeur <= dispo) return taille;
   return Math.max(taille * (dispo / largeur), taille * REDUCTION_MIN);
+}
+
+// Écart en points sous lequel deux fragments sont réputés sur la MÊME ligne.
+const MEME_LIGNE = 2;
+
+// BORNE DROITE d'un fragment : le début du prochain fragment RÉELLEMENT dessiné
+// sur sa ligne, à défaut le bord de page.
+//
+// LE PROBLÈME. `tailleQuiTient` ne bornait qu'au bord de page. Un placeholder
+// plus long que la valeur remplacée (« Ana » → « [PERSONNE_1] ») restait donc
+// dans la page mais mordait sur le fragment voisin : deux textes superposés,
+// illisibles tous les deux.
+//
+// POURQUOI ON NE DÉPLACE RIEN. Repousser le fragment suivant en cascade est un
+// problème GLOBAL : on résout un chevauchement en en créant un autre plus loin,
+// et le résultat peut être pire que le défaut. Rétrécir, à l'inverse, est
+// strictement LOCAL — le fragment reste dans la place qu'il occupait déjà, donc
+// l'opération ne peut par construction créer aucun chevauchement ailleurs.
+//
+// Le cas fréquent tombe bien : quand une entité couvre plusieurs fragments, le
+// placeholder est émis dans le PREMIER et les suivants ne sont pas dessinés.
+// La place de tous ces fragments lui est donc rendue, et aucune réduction n'est
+// nécessaire tant que le placeholder y tient.
+export function borneDroite(runs, textes, i, largeurPage) {
+  let borne = largeurPage;
+  for (let j = 0; j < runs.length; j++) {
+    if (j === i || !textes[j]) continue;
+    if (Math.abs(runs[j].y - runs[i].y) > MEME_LIGNE) continue;
+    if (runs[j].x <= runs[i].x) continue;
+    if (runs[j].x < borne) borne = runs[j].x;
+  }
+  return borne;
 }
 
 // Ré-extrait la structure géométrique page par page (convention stateless ;
@@ -327,13 +382,16 @@ export async function reconstructPdf(buffer, opts = {}) {
 
     for (const unit of page.units) {
       const masked = distributeEntitiesOverRuns(unit.runs, entitiesById.get(unit.id) || []);
+      // Textes calculés d'ABORD, tous : la borne droite d'un fragment dépend
+      // de savoir lesquels de ses voisins seront réellement dessinés.
+      const textes = unit.runs.map((run, i) =>
+        run.draw ? sanitizeForWinAnsi(masked[i].text) : '');
       unit.runs.forEach((run, i) => {
-        if (!run.draw) return;
-        const text = sanitizeForWinAnsi(masked[i].text);
-        if (!text) return;
+        if (!textes[i]) return;
         try {
-          const size = tailleQuiTient(font, text, run.size, run.x, page.width);
-          pdfPage.drawText(text, { x: run.x, y: run.y, size, font });
+          const borne = borneDroite(unit.runs, textes, i, page.width);
+          const size = tailleQuiTient(font, textes[i], run.size, run.x, borne);
+          pdfPage.drawText(textes[i], { x: run.x, y: run.y, size, font });
         } catch { /* fragment non dessinable : ignoré, jamais bloquant */ }
       });
     }
