@@ -482,13 +482,34 @@ le chunk change le contexte d'encodage, donc les scores de TOUS ses spans, pas
 seulement des mots accentués. À savoir avant d'attribuer un écart au seul mot
 visé.
 
-**Coût, non optimisé** : la passe double les inférences de tout chunk contenant
-un accent — en français, presque tous. L'axe temps (1 min 02 sur 75 pages) n'a
-PAS été re-mesuré. Piste de garde, non implémentée : ne déclencher la seconde
-passe que sur les chunks COURTS, où la pénalité d'accent mord le plus (peu de
-contexte pour la compenser) et où l'inférence coûte le moins. ⚠️ mesurer
-d'abord : `Éléonore` seule a été rattrapée dans une unité longue, un garde de
-longueur la reperdrait.
+### Coût mesuré — bien moindre que prévu, et aucun garde n'est nécessaire
+
+**Prédiction initialement écrite ici : « la passe double les inférences de tout
+chunk accentué ». FAUX, corrigé par la mesure.** C'était un raisonnement, pas un
+chiffre. Node/CPU, une passe par configuration (le ratio transfère au
+navigateur, pas les valeurs absolues) :
+
+| Document | Textes soumis | Temps | Surcoût |
+|---|---|---|---|
+| `piege.pdf` (6 p., FR/EN/ES/DE) | 161 → 217 | 7,9 → 11,7 s | **+48 %** |
+| `cv-fr.pdf` (français) | 24 → 26 | 1,15 → 1,36 s | **+19 %** |
+| `rapport-interligne.pdf` (français) | 11 → 11 | 0,71 → 0,68 s | **0 %** |
+| `memoire-en.pdf` (21 p., anglais) | 238 → 257 | 27,1 → 30,3 s | **+12 %** |
+
+Trois raisons à l'écart avec la prédiction : la seconde passe ne part que si le
+chunk porte VRAIMENT un accent (`rapport-interligne.pdf` n'en a aucun, coût
+nul) ; la garde `pertinent` continue de sauter des groupes entiers ; et le
+regroupement en lots absorbe une partie du surcoût (les runs croissent moins
+vite que les textes).
+
+Le pire cas, +48 %, est le document **adversarial multilingue** — pas un
+document réel. Sur un vrai document français : **+19 %**, soit environ
+1 min 02 → 1 min 14 sur le mémoire de 75 pages, à re-vérifier en navigateur.
+
+**Conclusion : le garde « chunks courts seulement » n'est PAS construit.** Il
+aurait coûté `Éléonore`, rattrapée dans une unité longue, pour économiser un
+surcoût qui n'existe pas au niveau annoncé. Mesurer avant d'optimiser a évité
+une régression gratuite.
 
 ### Pistes écartées pour l'instant
 
