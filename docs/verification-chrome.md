@@ -34,9 +34,22 @@ les gouttières INTERNES de la table de correspondance. L'évidement ne bloque q
 les rectangles du texte, jamais les boîtes — juste pour une pile de blocs pleine
 largeur, faux pour un tableau. À revoir au prochain passage.
 
-**Reste ouvert, mesuré ce jour** : le sur-masquage des intitulés de section, dont
-le diagnostic complet (trois causes distinctes) est dans
-`docs/roadmap-detection.md`.
+### Seconde passe du 08/08 — détection (P9 + P10)
+
+Même document, mode Préserver.
+
+| Point | Résultat |
+|---|---|
+| `ÉLÉONORE VASSEUR` masqué | ✅ (fuyait avant P10) |
+| `Éléonore` seule masquée | ✅ (« fuite connue restante » du README) |
+| `ANNEXE`, `ANEXO 5`, `ANLAGE 6` en clair | ✅ (P9) |
+| Durée | **non vérifiable** — voir ci-dessous |
+
+⚠️ **La durée n'est comparable par personne.** Rien dans la popup n'affiche le
+temps écoulé, donc « est-ce plus lent qu'avant ? » ne peut recevoir qu'une
+réponse d'impression. Mesuré en Node, le surcoût de la passe désaccentuée est de
++19 % sur un document français (voir roadmap P10) ; en navigateur, il n'a jamais
+été mesuré et ne le sera pas tant que rien n'affiche la durée.
 
 ## ⚠️ Feuille de route de la passe (rejouer à chaque release)
 
