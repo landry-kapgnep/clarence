@@ -127,6 +127,38 @@
           <span class="square-checkbox" aria-hidden="true"></span>
           <span class="checkbox-label-text">Pseudonymes (lieux, noms, contacts)</span>
         </label>
+
+        <!-- COMPRESSION — choisie AVANT de lancer, avec les autres options de
+             sortie. Elle était sous le bouton « Copier », ce qui donnait un
+             déroulé incompréhensible : on découvrait une option de format une
+             fois le travail fait. Le modèle se charge donc pendant le
+             traitement, sous la barre de progression, au lieu de bloquer le
+             premier clic sur Copier pendant une minute.
+             Réservée aux sorties TEXTE : compresser un .docx ou un PDF
+             reconstruit n'a aucun sens, on n'y colle pas du télégraphique. -->
+        <div id="fileCompressBloc" hidden>
+          <label class="hint pseudo-toggle" style="display:block;cursor:pointer;">
+            <input type="checkbox" id="fileCompress">
+            <span class="square-checkbox" aria-hidden="true"></span>
+            <span class="checkbox-label-text">Réduire le nombre de tokens</span>
+          </label>
+          <label class="hint pseudo-locale" style="display:block;cursor:pointer;">
+            Texte conservé
+            <select id="fileCompressTaux" class="mini-select">
+              <option value="0.7">70 % — prudent</option>
+              <option value="0.5" selected>50 % — équilibré</option>
+              <option value="0.3">30 % — agressif</option>
+            </select>
+          </label>
+          <p class="hint">
+            <strong>La prose est appauvrie et ne peut plus être relue.</strong>
+            Les données masquées et les négations sont préservées.
+            À réserver aux cas où le LLM répond <em>à partir</em> du document
+            (résumer, extraire) — jamais s'il doit travailler <em>sur</em> le
+            texte (corriger, reformuler, traduire).
+            <br>Premier usage : ~170 Mo à télécharger, une seule fois.
+          </p>
+        </div>
         <label class="hint pseudo-locale" style="display:block;cursor:pointer;">
           Langue des pseudonymes
           <select id="filePseudoLocale" class="mini-select">
@@ -202,35 +234,6 @@
             <span class="status" id="fileCopyStatus"></span>
           </div>
           <p class="status" id="fileSummary"></p>
-
-          <!-- COMPRESSION — transformation d'EXPORT, délibérément placée ICI,
-               à côté des boutons de sortie et APRÈS la table de relecture : on
-               relit le texte masqué, lisible, et la compression ne touche que
-               ce qui part au presse-papiers. L'inverse casserait l'UX
-               anti-fausse-confiance (cadrage §5). -->
-          <details id="fileCompression">
-            <summary>Réduire le nombre de tokens <span class="hint">(option)</span></summary>
-            <label class="hint pseudo-toggle" style="display:block;margin-top:8px;cursor:pointer;">
-              <input type="checkbox" id="fileCompress">
-              <span class="square-checkbox" aria-hidden="true"></span>
-              <span class="checkbox-label-text">Compresser le texte à la copie</span>
-            </label>
-            <p class="hint">
-              Supprime les mots les moins porteurs. <strong>La prose est
-              appauvrie et ne peut plus être relue</strong> — les données
-              masquées et les négations sont préservées.
-              À n'utiliser que si le LLM doit répondre <em>à partir</em> du
-              document (résumer, extraire), jamais s'il doit travailler
-              <em>sur</em> le texte (corriger, reformuler, traduire).
-            </p>
-            <label class="field-label" for="fileCompressTaux">Texte conservé</label>
-            <select id="fileCompressTaux" class="profile-select">
-              <option value="0.7">70 % — prudent</option>
-              <option value="0.5" selected>50 % — équilibré</option>
-              <option value="0.3">30 % — agressif</option>
-            </select>
-            <p class="status" id="fileCompressInfo"></p>
-          </details>
 
           <details>
             <summary>Données masquées</summary>

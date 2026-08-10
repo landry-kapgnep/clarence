@@ -1204,37 +1204,53 @@ async function ensureNER() {
     nerLoading = false;
   }
 }
-var compressionPrete = false;
+var compressionWorker = null;
+var compressionReqId = 0;
+var compressionPending = /* @__PURE__ */ new Map();
 async function ensureCompression() {
-  if (compressionPrete && nerWorker) return true;
-  await ensureNER();
-  if (!nerWorker) return false;
-  return new Promise((resolve) => {
+  if (compressionWorker) return true;
+  const worker = new Worker(chrome.runtime.getURL("popup/ner-worker.js"), { type: "module" });
+  worker.addEventListener("message", (ev) => {
+    const msg = ev.data || {};
+    if (msg.type === "progress" && msg.total) {
+      const pct = Math.round(msg.loaded / msg.total * 100);
+      fileSetStatus(`T\xE9l\xE9chargement du mod\xE8le de compression\u2026 ${pct} % (une seule fois)`);
+      return;
+    }
+    if (msg.id == null) return;
+    const p = compressionPending.get(msg.id);
+    if (!p) return;
+    compressionPending.delete(msg.id);
+    msg.type === "result" ? p.resolve(msg.flux) : p.reject(new Error(msg.message));
+  });
+  const ok = await new Promise((resolve) => {
     const onReady = (ev) => {
       const msg = ev.data || {};
       if (msg.type === "compressionReady") {
-        nerWorker.removeEventListener("message", onReady);
-        compressionPrete = true;
+        worker.removeEventListener("message", onReady);
         resolve(true);
       } else if (msg.type === "error" && msg.id == null) {
-        nerWorker.removeEventListener("message", onReady);
+        worker.removeEventListener("message", onReady);
         console.error("[clarence] compression indisponible :", msg.message);
+        worker.terminate();
         resolve(false);
       }
     };
-    nerWorker.addEventListener("message", onReady);
-    nerWorker.postMessage({
+    worker.addEventListener("message", onReady);
+    worker.postMessage({
       type: "initCompression",
       wasmPath: chrome.runtime.getURL("vendor/"),
       model: COMPRESSION_MODEL
     });
   });
+  if (ok) compressionWorker = worker;
+  return ok;
 }
 var compressionPipeline = () => (texte) => new Promise((resolve, reject) => {
-  if (!nerWorker) return reject(new OperationAnnulee());
-  const id = ++nerReqId;
-  nerPending.set(id, { resolve, reject });
-  nerWorker.postMessage({ type: "compress", id, text: texte });
+  if (!compressionWorker) return reject(new Error("compression non charg\xE9e"));
+  const id = ++compressionReqId;
+  compressionPending.set(id, { resolve, reject });
+  compressionWorker.postMessage({ type: "compress", id, text: texte });
 });
 function purgerWorkerNer(raison) {
   for (const p of nerPending.values()) p.reject(raison);
@@ -1243,7 +1259,6 @@ function purgerWorkerNer(raison) {
   nerWorker = null;
   nerPipe = null;
   nerEngine = null;
-  compressionPrete = false;
   nerLoading = false;
 }
 function contextualDetector() {
@@ -1558,6 +1573,7 @@ function setChosenFile(file) {
   $("fileChosen").hidden = false;
   $("fileOptions").hidden = !!FILE_TYPES[ext].metadataOnly;
   $("pdfModeChoice").hidden = ext !== "pdf";
+  majVisibiliteCompression(ext);
   $("fileAnalyzeBtn").textContent = FILE_TYPES[ext].metadataOnly ? "Nettoyer les m\xE9tadonn\xE9es" : "Anonymiser le fichier";
   $("fileResults").hidden = true;
   fileSetStatus("");
@@ -1636,6 +1652,17 @@ async function retirerDuMasquage(valeur) {
   } finally {
     btn.disabled = false;
   }
+}
+function sortieEstTexte(ext) {
+  if (!ext || !FILE_TYPES[ext] || FILE_TYPES[ext].metadataOnly) return false;
+  if (ext === "pdf") return !$("pdfModePreserve")?.checked;
+  return !!FILE_TYPES[ext].mime?.startsWith("text/");
+}
+function majVisibiliteCompression(ext) {
+  const bloc = $("fileCompressBloc");
+  if (!bloc) return;
+  bloc.hidden = !sortieEstTexte(ext);
+  if (bloc.hidden && $("fileCompress")) $("fileCompress").checked = false;
 }
 function formatDuree(ms) {
   const s = ms / 1e3;
@@ -2127,6 +2154,14 @@ async function processFile() {
       fileSetStatus("Aucun texte \xE0 analyser dans ce fichier.", "error");
       return;
     }
+    if ($("fileCompress")?.checked) {
+      fileSetStatus("Pr\xE9paration de la compression\u2026");
+      if (!await ensureCompression()) {
+        $("fileCompress").checked = false;
+        fileSetStatus("Compression indisponible \u2014 le fichier sera produit sans elle.", "error");
+      }
+      verifierAnnulation(signal);
+    }
     fileSetStatus("D\xE9tection en cours\u2026");
     await ensureNER();
     verifierAnnulation(signal);
@@ -2184,9 +2219,18 @@ async function processFile() {
     }
   }
 }
-function downloadFile() {
+async function downloadFile() {
   if (!fileOutBlob) return;
-  const url = URL.createObjectURL(fileOutBlob);
+  let blob = fileOutBlob;
+  if ($("fileCompress")?.checked) {
+    try {
+      blob = new Blob([await texteDExport()], { type: fileOutBlob.type });
+    } catch (err) {
+      console.error(err);
+      fileSetStatus("Compression indisponible \u2014 fichier t\xE9l\xE9charg\xE9 tel quel.", "error");
+    }
+  }
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = fileOutName;
@@ -2229,33 +2273,31 @@ $("fileResetBtn").addEventListener("click", () => {
   $("dragCard").hidden = true;
   fileSetStatus("");
 });
+for (const id of ["pdfModeLight", "pdfModePreserve"]) {
+  $(id)?.addEventListener("change", () => majVisibiliteCompression(extOf(chosenFile?.name || "")));
+}
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
+async function texteDExport() {
+  const brut = await fileOutBlob.text();
+  if (!$("fileCompress")?.checked) return brut;
+  const taux = Number($("fileCompressTaux")?.value || 0.5);
+  const r = await compresser(brut, compressionPipeline(), { taux });
+  const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
+  let info = `\u2248 ${r.tokensAvant} \u2192 ${r.tokensApres} tokens (\u2212${gain} %), ${r.motsApres}/${r.motsAvant} mots conserv\xE9s.`;
+  if (r.motsSansScore > r.motsAvant * 0.1) info += ` \u26A0 ${r.motsSansScore} mots non analys\xE9s.`;
+  fileSetStatus(info);
+  return r.texte;
+}
 $("fileCopyBtn").addEventListener("click", async () => {
   if (!fileOutBlob) return;
-  const brut = await fileOutBlob.text();
-  let texte = brut;
-  if ($("fileCompress")?.checked) {
-    const info = $("fileCompressInfo");
-    info.textContent = "Compression\u2026";
-    info.className = "status";
-    try {
-      if (!await ensureCompression()) throw new Error("mod\xE8le indisponible");
-      const taux = Number($("fileCompressTaux")?.value || 0.5);
-      const r = await compresser(brut, compressionPipeline(), { taux });
-      texte = r.texte;
-      const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
-      info.textContent = `\u2248 ${r.tokensAvant} \u2192 ${r.tokensApres} tokens (\u2212${gain} %), ${r.motsApres}/${r.motsAvant} mots.`;
-      info.className = "status active";
-      if (r.motsSansScore > r.motsAvant * 0.1) {
-        info.textContent += ` \u26A0 ${r.motsSansScore} mots non analys\xE9s.`;
-      }
-    } catch (err) {
-      console.error(err);
-      info.textContent = "Compression indisponible \u2014 texte copi\xE9 non compress\xE9.";
-      info.className = "status error";
-      texte = brut;
-    }
+  let texte;
+  try {
+    texte = await texteDExport();
+  } catch (err) {
+    console.error(err);
+    texte = await fileOutBlob.text();
+    fileSetStatus("Compression indisponible \u2014 texte copi\xE9 tel quel.", "error");
   }
   await navigator.clipboard.writeText(texte);
   $("fileCopyStatus").textContent = "Copi\xE9 \u2014 colle dans le chat.";

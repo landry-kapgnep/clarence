@@ -414,42 +414,64 @@ async function ensureNER() {
 // Il vit dans le MÊME worker que la détection : ORT n'exécute qu'une inférence
 // à la fois de toute façon, et un second worker ne ferait que dupliquer le
 // runtime WASM sans rien gagner.
-let compressionPrete = false;
+let compressionWorker = null;
+let compressionReqId = 0;
+const compressionPending = new Map();
 
+// WORKER DÉDIÉ, et ce n'est pas un luxe. Le worker de détection a déjà chargé
+// UN runtime ONNX : 1.19 pour GLiNER, ou 1.14 pour BERT — jamais les deux, car
+// `init()` n'en appelle qu'un. Charger Transformers.js (ORT 1.14) dans un
+// worker où GLiNER a déjà installé ORT 1.19 fait échouer l'initialisation :
+// c'est l'erreur « Compression indisponible » constatée à l'usage.
+// Un thread séparé donne à chaque runtime son espace, et isole au passage le
+// téléchargement de 170 Mo.
 async function ensureCompression() {
-  if (compressionPrete && nerWorker) return true;
-  // La compression a besoin d'un worker vivant ; s'il n'existe pas encore
-  // (mode texte sans détection lancée), on démarre d'abord le moteur nominal.
-  await ensureNER();
-  if (!nerWorker) return false;
-  return new Promise(resolve => {
+  if (compressionWorker) return true;
+  const worker = new Worker(chrome.runtime.getURL('popup/ner-worker.js'), { type: 'module' });
+  worker.addEventListener('message', ev => {
+    const msg = ev.data || {};
+    if (msg.type === 'progress' && msg.total) {
+      const pct = Math.round((msg.loaded / msg.total) * 100);
+      fileSetStatus(`Téléchargement du modèle de compression… ${pct} % (une seule fois)`);
+      return;
+    }
+    if (msg.id == null) return;
+    const p = compressionPending.get(msg.id);
+    if (!p) return;
+    compressionPending.delete(msg.id);
+    msg.type === 'result' ? p.resolve(msg.flux) : p.reject(new Error(msg.message));
+  });
+
+  const ok = await new Promise(resolve => {
     const onReady = ev => {
       const msg = ev.data || {};
       if (msg.type === 'compressionReady') {
-        nerWorker.removeEventListener('message', onReady);
-        compressionPrete = true;
+        worker.removeEventListener('message', onReady);
         resolve(true);
       } else if (msg.type === 'error' && msg.id == null) {
-        nerWorker.removeEventListener('message', onReady);
+        worker.removeEventListener('message', onReady);
         console.error('[clarence] compression indisponible :', msg.message);
+        worker.terminate();
         resolve(false);
       }
     };
-    nerWorker.addEventListener('message', onReady);
-    nerWorker.postMessage({
+    worker.addEventListener('message', onReady);
+    worker.postMessage({
       type: 'initCompression',
       wasmPath: chrome.runtime.getURL('vendor/'),
       model: COMPRESSION_MODEL
     });
   });
+  if (ok) compressionWorker = worker;
+  return ok;
 }
 
 // Pipeline injecté dans `compresser` : (texte) => [{ mot, garder }].
 const compressionPipeline = () => (texte) => new Promise((resolve, reject) => {
-  if (!nerWorker) return reject(new OperationAnnulee());
-  const id = ++nerReqId;
-  nerPending.set(id, { resolve, reject });
-  nerWorker.postMessage({ type: 'compress', id, text: texte });
+  if (!compressionWorker) return reject(new Error('compression non chargée'));
+  const id = ++compressionReqId;
+  compressionPending.set(id, { resolve, reject });
+  compressionWorker.postMessage({ type: 'compress', id, text: texte });
 });
 
 // Coupe court à TOUTES les inférences en attente et repart d'un worker neuf.
@@ -470,9 +492,8 @@ function purgerWorkerNer(raison) {
   nerWorker = null;
   nerPipe = null;
   nerEngine = null;
-  // Le worker terminé emporte le modèle de compression avec lui : le croire
-  // encore chargé enverrait des messages `compress` dans le vide.
-  compressionPrete = false;
+  // Le worker de compression est SÉPARÉ (voir ensureCompression) : une
+  // annulation de détection ne doit pas jeter un modèle de 170 Mo déjà chargé.
   // Sinon ensureNER() croirait un chargement encore en cours et rendrait la
   // main sans jamais reconstruire le pipeline : plus aucune détection.
   nerLoading = false;
@@ -870,6 +891,7 @@ function setChosenFile(file) {
   // pour une image (metadataOnly : pas de détection de texte) → masquées.
   $('fileOptions').hidden = !!FILE_TYPES[ext].metadataOnly;
   $('pdfModeChoice').hidden = ext !== 'pdf'; // choix Alléger/Préserver : PDF seul
+  majVisibiliteCompression(ext);
   $('fileAnalyzeBtn').textContent = FILE_TYPES[ext].metadataOnly
     ? 'Nettoyer les métadonnées' : 'Anonymiser le fichier';
   $('fileResults').hidden = true;
@@ -991,6 +1013,24 @@ async function retirerDuMasquage(valeur) {
   } finally {
     btn.disabled = false;
   }
+}
+
+// La compression ne concerne QUE les sorties texte : un .docx ou un PDF
+// reconstruit ne se colle pas dans un chat, et y coller du télégraphique n'a
+// aucun sens. CSV et PDF « Alléger » (.md) sont les seuls cas.
+function sortieEstTexte(ext) {
+  if (!ext || !FILE_TYPES[ext] || FILE_TYPES[ext].metadataOnly) return false;
+  if (ext === 'pdf') return !$('pdfModePreserve')?.checked;
+  return !!FILE_TYPES[ext].mime?.startsWith('text/');
+}
+
+function majVisibiliteCompression(ext) {
+  const bloc = $('fileCompressBloc');
+  if (!bloc) return;
+  bloc.hidden = !sortieEstTexte(ext);
+  // Une option cachée ne doit pas rester ACTIVE en coulisse : on la décoche,
+  // sinon passer en « Format original » garderait une compression invisible.
+  if (bloc.hidden && $('fileCompress')) $('fileCompress').checked = false;
 }
 
 // Affichage partagé du résultat fichier (chemin standard ET reconstruction PDF).
@@ -1679,6 +1719,18 @@ async function processFile() {
       return;
     }
 
+    // Compression demandée : on charge son modèle MAINTENANT, pendant que la
+    // barre de progression est déjà affichée. Le faire au premier clic sur
+    // « Copier » ferait figer le bouton une minute sans explication.
+    if ($('fileCompress')?.checked) {
+      fileSetStatus('Préparation de la compression…');
+      if (!await ensureCompression()) {
+        $('fileCompress').checked = false;
+        fileSetStatus('Compression indisponible — le fichier sera produit sans elle.', 'error');
+      }
+      verifierAnnulation(signal);
+    }
+
     fileSetStatus('Détection en cours…');
     await ensureNER();
     verifierAnnulation(signal);
@@ -1746,9 +1798,21 @@ async function processFile() {
   }
 }
 
-function downloadFile() {
+async function downloadFile() {
   if (!fileOutBlob) return;
-  const url = URL.createObjectURL(fileOutBlob);
+  // Le téléchargement reçoit EXACTEMENT ce que reçoit le presse-papiers,
+  // compression comprise : n'avoir la version compressée qu'à la copie était
+  // incohérent. Sur une sortie binaire, texteDExport rend le blob inchangé.
+  let blob = fileOutBlob;
+  if ($('fileCompress')?.checked) {
+    try {
+      blob = new Blob([await texteDExport()], { type: fileOutBlob.type });
+    } catch (err) {
+      console.error(err);
+      fileSetStatus('Compression indisponible — fichier téléchargé tel quel.', 'error');
+    }
+  }
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = fileOutName;
@@ -1803,47 +1867,48 @@ $('fileResetBtn').addEventListener('click', () => {
   $('dragCard').hidden = true;
   fileSetStatus('');
 });
+for (const id of ['pdfModeLight', 'pdfModePreserve']) {
+  $(id)?.addEventListener('change', () => majVisibiliteCompression(extOf(chosenFile?.name || '')));
+}
 $('fileAnalyzeBtn').addEventListener('click', processFile);
 $('fileDownloadBtn').addEventListener('click', downloadFile);
 
 // Copier le texte de sortie (sorties texte uniquement — bouton caché sinon).
 // Voie fiable pour amener le contenu dans le LLM : coller, sans fichier.
+// TEXTE D'EXPORT — partagé par « Copier » ET « Télécharger ».
+//
+// La compression s'applique aux DEUX : n'avoir la version compressée qu'au
+// presse-papiers était incohérent, l'utilisateur qui télécharge veut le même
+// résultat. Ce qui reste lisible, c'est ce qu'on RELIT : la table de
+// correspondance liste chaque valeur masquée, et c'est elle la surface de
+// relecture pour un fichier — pas la prose.
+async function texteDExport() {
+  const brut = await fileOutBlob.text();
+  if (!$('fileCompress')?.checked) return brut;
+  const taux = Number($('fileCompressTaux')?.value || 0.5);
+  const r = await compresser(brut, compressionPipeline(), { taux });
+  const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
+  // Ordre de grandeur, jamais un chiffre garanti (cadrage §10) : le vrai compte
+  // dépend du tokeniseur du modèle destinataire, qu'on ne connaît pas.
+  let info = `≈ ${r.tokensAvant} → ${r.tokensApres} tokens (−${gain} %), ${r.motsApres}/${r.motsAvant} mots conservés.`;
+  // Une compression qui ne mord pas vient presque toujours d'un flux de tokens
+  // tronqué : le dire plutôt que de laisser croire au gain affiché.
+  if (r.motsSansScore > r.motsAvant * 0.1) info += ` ⚠ ${r.motsSansScore} mots non analysés.`;
+  fileSetStatus(info);
+  return r.texte;
+}
+
 $('fileCopyBtn').addEventListener('click', async () => {
   if (!fileOutBlob) return;
-  const brut = await fileOutBlob.text();
-
-  // COMPRESSION À L'EXPORT, et nulle part ailleurs. Le fichier téléchargé et la
-  // table de relecture gardent le texte MASQUÉ, lisible ; seul le presse-papiers
-  // reçoit la version compressée. C'est la troisième contrainte produit : relire
-  // du télégraphique ne permettrait plus de repérer un nom oublié.
-  let texte = brut;
-  if ($('fileCompress')?.checked) {
-    const info = $('fileCompressInfo');
-    info.textContent = 'Compression…';
-    info.className = 'status';
-    try {
-      if (!await ensureCompression()) throw new Error('modèle indisponible');
-      const taux = Number($('fileCompressTaux')?.value || 0.5);
-      const r = await compresser(brut, compressionPipeline(), { taux });
-      texte = r.texte;
-      const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
-      // Ordre de grandeur, jamais un chiffre garanti (cadrage §10) : le vrai
-      // compte dépend du tokeniseur du modèle destinataire, qu'on ignore.
-      info.textContent = `≈ ${r.tokensAvant} → ${r.tokensApres} tokens (−${gain} %), ${r.motsApres}/${r.motsAvant} mots.`;
-      info.className = 'status active';
-      // Une compression qui ne mord pas est presque toujours un flux de tokens
-      // tronqué : le dire plutôt que de laisser croire au gain affiché.
-      if (r.motsSansScore > r.motsAvant * 0.1) {
-        info.textContent += ` ⚠ ${r.motsSansScore} mots non analysés.`;
-      }
-    } catch (err) {
-      console.error(err);
-      // On copie le texte NON compressé plutôt que rien : l'échec de l'option
-      // ne doit pas priver l'utilisateur de son résultat.
-      info.textContent = 'Compression indisponible — texte copié non compressé.';
-      info.className = 'status error';
-      texte = brut;
-    }
+  let texte;
+  try {
+    texte = await texteDExport();
+  } catch (err) {
+    console.error(err);
+    // On copie le texte NON compressé plutôt que rien : l'échec de l'option ne
+    // doit pas priver l'utilisateur de son résultat.
+    texte = await fileOutBlob.text();
+    fileSetStatus('Compression indisponible — texte copié tel quel.', 'error');
   }
 
   await navigator.clipboard.writeText(texte);
