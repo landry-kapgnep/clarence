@@ -168,7 +168,7 @@ header { display: block; }
 }
 .fairy-shell {
   position: fixed;
-  left: 65%;
+  left: 73%;
   top: 24px;
   transform: translateX(-50%);
   width: var(--fairy-size, min(220px, 44vw));
@@ -182,7 +182,7 @@ header { display: block; }
 }
 .fairy-icon {
   display: block;
-  width: 100%;
+  width: 45%;
   height: auto;
   opacity: 0.95;
 }

@@ -19,8 +19,10 @@ import {
   verifierAnnulation
 } from "./chunk-BIY2U3A5.js";
 import {
+  COMPRESSION_MODEL,
+  compresser,
   createBatchedPipeline
-} from "./chunk-IT5BP6N7.js";
+} from "./chunk-OQFD3UEJ.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -1140,7 +1142,7 @@ function createNerWorker() {
       const p = nerPending.get(msg.id);
       if (!p) return;
       nerPending.delete(msg.id);
-      msg.type === "result" ? p.resolve(msg.spansBatch ?? msg.spans ?? msg.tokens) : p.reject(new Error(msg.message));
+      msg.type === "result" ? p.resolve(msg.spansBatch ?? msg.spans ?? msg.tokens ?? msg.flux) : p.reject(new Error(msg.message));
     }
   });
   return worker;
@@ -1202,6 +1204,38 @@ async function ensureNER() {
     nerLoading = false;
   }
 }
+var compressionPrete = false;
+async function ensureCompression() {
+  if (compressionPrete && nerWorker) return true;
+  await ensureNER();
+  if (!nerWorker) return false;
+  return new Promise((resolve) => {
+    const onReady = (ev) => {
+      const msg = ev.data || {};
+      if (msg.type === "compressionReady") {
+        nerWorker.removeEventListener("message", onReady);
+        compressionPrete = true;
+        resolve(true);
+      } else if (msg.type === "error" && msg.id == null) {
+        nerWorker.removeEventListener("message", onReady);
+        console.error("[clarence] compression indisponible :", msg.message);
+        resolve(false);
+      }
+    };
+    nerWorker.addEventListener("message", onReady);
+    nerWorker.postMessage({
+      type: "initCompression",
+      wasmPath: chrome.runtime.getURL("vendor/"),
+      model: COMPRESSION_MODEL
+    });
+  });
+}
+var compressionPipeline = () => (texte) => new Promise((resolve, reject) => {
+  if (!nerWorker) return reject(new OperationAnnulee());
+  const id = ++nerReqId;
+  nerPending.set(id, { resolve, reject });
+  nerWorker.postMessage({ type: "compress", id, text: texte });
+});
 function purgerWorkerNer(raison) {
   for (const p of nerPending.values()) p.reject(raison);
   nerPending.clear();
@@ -1209,6 +1243,7 @@ function purgerWorkerNer(raison) {
   nerWorker = null;
   nerPipe = null;
   nerEngine = null;
+  compressionPrete = false;
   nerLoading = false;
 }
 function contextualDetector() {
@@ -2198,7 +2233,31 @@ $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
 $("fileCopyBtn").addEventListener("click", async () => {
   if (!fileOutBlob) return;
-  await navigator.clipboard.writeText(await fileOutBlob.text());
+  const brut = await fileOutBlob.text();
+  let texte = brut;
+  if ($("fileCompress")?.checked) {
+    const info = $("fileCompressInfo");
+    info.textContent = "Compression\u2026";
+    info.className = "status";
+    try {
+      if (!await ensureCompression()) throw new Error("mod\xE8le indisponible");
+      const taux = Number($("fileCompressTaux")?.value || 0.5);
+      const r = await compresser(brut, compressionPipeline(), { taux });
+      texte = r.texte;
+      const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
+      info.textContent = `\u2248 ${r.tokensAvant} \u2192 ${r.tokensApres} tokens (\u2212${gain} %), ${r.motsApres}/${r.motsAvant} mots.`;
+      info.className = "status active";
+      if (r.motsSansScore > r.motsAvant * 0.1) {
+        info.textContent += ` \u26A0 ${r.motsSansScore} mots non analys\xE9s.`;
+      }
+    } catch (err) {
+      console.error(err);
+      info.textContent = "Compression indisponible \u2014 texte copi\xE9 non compress\xE9.";
+      info.className = "status error";
+      texte = brut;
+    }
+  }
+  await navigator.clipboard.writeText(texte);
   $("fileCopyStatus").textContent = "Copi\xE9 \u2014 colle dans le chat.";
   $("fileCopyStatus").className = "status active";
   setTimeout(() => {

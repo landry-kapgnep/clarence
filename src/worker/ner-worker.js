@@ -23,6 +23,7 @@
 import { pipeline, env } from '@xenova/transformers';
 import { Gliner } from 'gliner';
 import { serialiser } from '../engine/batch.js';
+import { decouperEnLots, recollerScores } from '../engine/compression.js';
 
 // ORT n'exécute QU'UNE inférence à la fois : son fournisseur WebGPU pose un
 // marqueur global et lève « Session already started » si un second `run`
@@ -34,6 +35,10 @@ const enFile = serialiser();
 let moteur = null;
 let pipe = null;    // pipeline BERT (token-classification)
 let gliner = null;  // instance GLiNER
+// Compression de prompt (LLMLingua-2). INDÉPENDANT des deux moteurs de
+// détection : ce n'est pas une troisième façon de détecter, c'est une autre
+// tâche, chargée séparément et seulement si l'utilisateur l'active.
+let compresseur = null;
 // 'webgpu' ou 'wasm' — remonté à la popup avec le message `ready` : sans ça,
 // impossible de savoir si une lenteur vient d'un repli silencieux.
 let accelerateur = null;
@@ -186,6 +191,49 @@ async function init(msg) {
   moteur = msg.engine === 'gliner' ? 'gliner' : 'bert';
 }
 
+// ── COMPRESSION DE PROMPT ──────────────────────────────────────────────────
+//
+// CHARGÉ À LA DEMANDE, et c'est non négociable : 170 Mo de plus ne doivent
+// jamais être téléchargés par quelqu'un qui n'active pas l'option. La détection
+// (183 Mo) est le chemin nominal ; ceci est un supplément que l'utilisateur
+// choisit, conformément à la première des trois contraintes produit (CLAUDE.md).
+async function initCompression({ wasmPath, model }) {
+  if (compresseur) return;
+  env.allowLocalModels = false;
+  env.useBrowserCache = true;
+  env.backends.onnx.wasm.wasmPaths = wasmPath;
+  compresseur = await pipeline('token-classification', model, { quantized: true });
+}
+
+// Rend le flux COMPLET de tokens scorés attendu par src/engine/compression.js.
+//
+// Deux pièges silencieux traités ici, tous deux mesurés au spike et tous deux
+// produisant une ABSENCE de compression sans lever d'erreur :
+//   - le modèle plafonne à 512 POSITIONS, pas 512 mots → lots de 120 ;
+//   - le pipeline OMET des tokens de sa sortie (le champ `index` saute) → on
+//     retokenise soi-même et on recolle par index.
+// La logique de ces deux gardes vit dans le moteur, testée ; ici on ne fait que
+// l'appeler — la dupliquer serait rejouer la divergence P1bis une troisième fois.
+async function compresserTokens(texte) {
+  const mots = String(texte || '').split(/\s+/).filter(Boolean);
+  const flux = [];
+  for (const lot of decouperEnLots(mots)) {
+    const morceau = lot.join(' ');
+    const enc = await compresseur.tokenizer(morceau);
+    const tous = compresseur.tokenizer.model.convert_ids_to_tokens(
+      Array.from(enc.input_ids.data, Number));
+    // Même verrou ORT que partout ailleurs : une inférence à la fois.
+    const sorties = (await enFile(() => compresseur(morceau))).map(o => ({
+      index: o.index,
+      // LABEL_1 = « garder ». La config du modèle n'a pas d'id2label : la
+      // correspondance a été établie par sonde (docs/spike-llmlingua2.md).
+      garder: o.entity === 'LABEL_1' ? o.score : 1 - o.score
+    }));
+    flux.push(...recollerScores(tous, sorties));
+  }
+  return flux;
+}
+
 self.addEventListener('message', async ev => {
   const msg = ev.data;
   if (!msg) return;
@@ -198,6 +246,28 @@ self.addEventListener('message', async ev => {
       // Échec signalé, jamais silencieux : la popup replie sur l'autre moteur,
       // et si les deux échouent elle le dit (principe anti-fausse-confiance).
       self.postMessage({ type: 'error', message: String(err?.message || err) });
+    }
+    return;
+  }
+
+  // Chargement du modèle de compression — séparé de `init` à dessein : il ne
+  // part QUE si l'utilisateur active l'option.
+  if (msg.type === 'initCompression') {
+    try {
+      await initCompression(msg);
+      self.postMessage({ type: 'compressionReady' });
+    } catch (err) {
+      self.postMessage({ type: 'error', message: String(err?.message || err) });
+    }
+    return;
+  }
+
+  if (msg.type === 'compress') {
+    try {
+      if (!compresseur) throw new Error('modèle de compression non chargé');
+      self.postMessage({ type: 'result', id: msg.id, flux: await compresserTokens(msg.text) });
+    } catch (err) {
+      self.postMessage({ type: 'error', id: msg.id, message: String(err?.message || err) });
     }
     return;
   }

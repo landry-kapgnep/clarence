@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   compresser, motsDuTexte, scoresParMot,
-  estOperateurLogique, estIntouchable, OPERATEURS_LOGIQUES
+  estOperateurLogique, estIntouchable, OPERATEURS_LOGIQUES,
+  decouperEnLots, recollerScores, MOTS_PAR_LOT
 } from '../../src/engine/compression.js';
 
 // Pipeline simulé : un token par mot, score fourni par une table (0 par défaut,
@@ -165,4 +166,50 @@ test('alignement perdu → le mot est GARDÉ, jamais supprimé', async () => {
   const r = await compresser('alpha beta gamma', pipe, { taux: 0.1 });
   assert.ok(r.texte.includes('beta') && r.texte.includes('gamma'),
     'un mot sans score doit être conservé');
+});
+
+// --- ADAPTATION DU MODÈLE -------------------------------------------------
+// Les deux pannes évitées ici ne lèvent AUCUNE erreur : elles rendent un texte
+// non compressé, en silence. C'est exactement pour ça qu'elles sont testées.
+
+test('decouperEnLots : lots de 120 mots par défaut, dernier partiel', () => {
+  const mots = Array.from({ length: 250 }, (_, i) => `m${i}`);
+  const lots = decouperEnLots(mots);
+  assert.equal(lots.length, 3);
+  assert.equal(lots[0].length, 120);
+  assert.equal(lots[2].length, 10);
+  // Aucun mot perdu ni dupliqué : un lot manquant ferait taire la compression
+  // sur toute une portion du document.
+  assert.deepEqual(lots.flat(), mots);
+});
+
+test('decouperEnLots : liste vide et liste plus courte qu\'un lot', () => {
+  assert.deepEqual(decouperEnLots([]), []);
+  assert.deepEqual(decouperEnLots(['a', 'b']), [['a', 'b']]);
+});
+
+test('recollerScores : [CLS] et [SEP] sont écartés', () => {
+  const out = recollerScores(['[CLS]', 'le', 'chat', '[SEP]'],
+    [{ index: 1, garder: 0.2 }, { index: 2, garder: 0.9 }]);
+  assert.deepEqual(out, [{ mot: 'le', garder: 0.2 }, { mot: 'chat', garder: 0.9 }]);
+});
+
+test('recollerScores : un token OMIS par le pipeline reçoit 0, sans décaler', () => {
+  // Le cas réel : le pipeline saute l'index 2 (un tiret cadratin). Sans ce
+  // recollage, tout ce qui suit se retrouvait décalé d'un cran.
+  const out = recollerScores(['[CLS]', 'coût', '—', 'élevé', '[SEP]'],
+    [{ index: 1, garder: 0.9 }, { index: 3, garder: 0.8 }]);
+  assert.deepEqual(out, [
+    { mot: 'coût', garder: 0.9 },
+    { mot: '—', garder: 0 },
+    { mot: 'élevé', garder: 0.8 }
+  ]);
+});
+
+test('recollerScores : le flux rendu couvre TOUS les tokens du texte', () => {
+  const tokens = ['[CLS]', 'a', 'b', 'c', 'd', '[SEP]'];
+  // Le pipeline n'en rend que deux : le flux doit quand même en faire quatre.
+  const out = recollerScores(tokens, [{ index: 1, garder: 0.5 }]);
+  assert.equal(out.length, 4, 'un flux troué désynchroniserait l\'alignement');
+  assert.deepEqual(out.map(o => o.mot), ['a', 'b', 'c', 'd']);
 });

@@ -1,6 +1,8 @@
 import {
+  decouperEnLots,
+  recollerScores,
   serialiser
-} from "./chunk-IT5BP6N7.js";
+} from "./chunk-OQFD3UEJ.js";
 import {
   __commonJS,
   __require,
@@ -65939,6 +65941,7 @@ var enFile = serialiser();
 var moteur = null;
 var pipe = null;
 var gliner = null;
+var compresseur = null;
 var accelerateur = null;
 var DECOUPEUR_UNICODE = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
 var CACHE_MODELES = "clarence-models";
@@ -66035,6 +66038,32 @@ async function init(msg) {
   else await initBert(msg);
   moteur = msg.engine === "gliner" ? "gliner" : "bert";
 }
+async function initCompression({ wasmPath, model }) {
+  if (compresseur) return;
+  env.allowLocalModels = false;
+  env.useBrowserCache = true;
+  env.backends.onnx.wasm.wasmPaths = wasmPath;
+  compresseur = await pipeline("token-classification", model, { quantized: true });
+}
+async function compresserTokens(texte) {
+  const mots = String(texte || "").split(/\s+/).filter(Boolean);
+  const flux = [];
+  for (const lot of decouperEnLots(mots)) {
+    const morceau = lot.join(" ");
+    const enc = await compresseur.tokenizer(morceau);
+    const tous = compresseur.tokenizer.model.convert_ids_to_tokens(
+      Array.from(enc.input_ids.data, Number)
+    );
+    const sorties = (await enFile(() => compresseur(morceau))).map((o) => ({
+      index: o.index,
+      // LABEL_1 = « garder ». La config du modèle n'a pas d'id2label : la
+      // correspondance a été établie par sonde (docs/spike-llmlingua2.md).
+      garder: o.entity === "LABEL_1" ? o.score : 1 - o.score
+    }));
+    flux.push(...recollerScores(tous, sorties));
+  }
+  return flux;
+}
 self.addEventListener("message", async (ev) => {
   const msg = ev.data;
   if (!msg) return;
@@ -66044,6 +66073,24 @@ self.addEventListener("message", async (ev) => {
       self.postMessage({ type: "ready", engine: moteur, accelerateur });
     } catch (err) {
       self.postMessage({ type: "error", message: String(err?.message || err) });
+    }
+    return;
+  }
+  if (msg.type === "initCompression") {
+    try {
+      await initCompression(msg);
+      self.postMessage({ type: "compressionReady" });
+    } catch (err) {
+      self.postMessage({ type: "error", message: String(err?.message || err) });
+    }
+    return;
+  }
+  if (msg.type === "compress") {
+    try {
+      if (!compresseur) throw new Error("mod\xE8le de compression non charg\xE9");
+      self.postMessage({ type: "result", id: msg.id, flux: await compresserTokens(msg.text) });
+    } catch (err) {
+      self.postMessage({ type: "error", id: msg.id, message: String(err?.message || err) });
     }
     return;
   }

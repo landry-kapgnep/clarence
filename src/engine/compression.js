@@ -19,6 +19,13 @@
 // LE PIPELINE EST INJECTÉ, comme dans gliner.js et ner.js : le moteur reste
 // testable en Node sans charger 170 Mo.
 
+// ⚠️ MODÈLE À REMPLACER AVANT PUBLICATION. Le dépôt officiel
+// `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank` (Apache 2.0)
+// n'expose PAS de poids ONNX ; celui-ci est une conversion communautaire dont la
+// fiche ne déclare AUCUNE licence. Acceptable pour développer, pas pour livrer :
+// il faut convertir nous-mêmes depuis l'original. Voir docs/spike-llmlingua2.md.
+export const COMPRESSION_MODEL = 'ldenoue/llmlingua-2-bert-base-multilingual-cased-meetingbank';
+
 // ── Découpage en MOTS, et pourquoi pas en tokens ───────────────────────────
 //
 // Le spike a fait l'erreur : décider token par token puis rejoindre par des
@@ -116,6 +123,46 @@ export function scoresParMot(mots, tokens) {
     scores[i] = couvert.length ? max : null;
   }
   return scores;
+}
+
+// ── Adaptation du modèle : deux pièges SILENCIEUX ──────────────────────────
+//
+// Ces deux fonctions sont pures et testées ici parce que le reste de
+// l'adaptation vit dans le worker, hors de portée des tests — et que les deux
+// pannes qu'elles évitent ne lèvent AUCUNE erreur : elles produisent simplement
+// un texte non compressé, en silence.
+
+// PIÈGE 1 — le modèle plafonne à 512 POSITIONS, pas 512 mots. En français un mot
+// pèse souvent 2 à 3 sous-mots : au-delà, le pipeline TRONQUE sans rien dire, le
+// flux de tokens s'épuise, et tout mot non aligné est conservé par sécurité.
+// Résultat : aucune compression, aucun message.
+export const MOTS_PAR_LOT = 120;
+
+export function decouperEnLots(mots, taille = MOTS_PAR_LOT) {
+  const lots = [];
+  for (let i = 0; i < mots.length; i += taille) lots.push(mots.slice(i, i + taille));
+  return lots;
+}
+
+// PIÈGE 2 — le pipeline OMET des tokens de sa sortie. Vérifié sur le champ
+// `index`, qui saute (…6, 7, 9, 10…) : tirets cadratins et quelques symboles
+// disparaissent. Un curseur qui avance sur ce flux troué se désynchronise et ne
+// s'en remet jamais — la moitié des mots d'un document se retrouvait sans score.
+//
+// On reconstruit donc le flux COMPLET à partir de la tokenisation faite
+// soi-même, et on y recolle les scores par `index`. Un token absent reçoit 0 :
+// s'il accompagne d'autres tokens du même mot, le maximum l'ignore ; s'il est
+// seul (un tiret), le jeter est le comportement voulu.
+//
+// `tokens` inclut [CLS] en tête et [SEP] en queue : ils ne couvrent aucun
+// caractère du texte et sont écartés.
+export function recollerScores(tokens, sorties) {
+  const parIndex = new Map(sorties.map(s => [s.index, s.garder]));
+  const out = [];
+  for (let i = 1; i < tokens.length - 1; i++) {
+    out.push({ mot: tokens[i], garder: parIndex.get(i) ?? 0 });
+  }
+  return out;
 }
 
 // ── Compression ────────────────────────────────────────────────────────────

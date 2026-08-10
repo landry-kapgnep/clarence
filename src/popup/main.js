@@ -5,6 +5,7 @@ import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
+import { compresser, COMPRESSION_MODEL } from '../engine/compression.js';
 import { createBatchedPipeline } from '../engine/batch.js';
 import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
 import { poidsDeTraitement, expliquerPoids } from './poids.js';
@@ -319,8 +320,10 @@ function createNerWorker() {
       nerPending.delete(msg.id);
       // GLiNER renvoie des spans décodés, BERT des tokens bruts.
       // spansBatch (lot GLiNER) | spans (appel unitaire) | tokens (BERT).
+      // spansBatch (lot GLiNER) | spans (unitaire) | tokens (BERT) | flux
+      // (compression). Un seul routage par `id` pour toutes les tâches.
       msg.type === 'result'
-        ? p.resolve(msg.spansBatch ?? msg.spans ?? msg.tokens)
+        ? p.resolve(msg.spansBatch ?? msg.spans ?? msg.tokens ?? msg.flux)
         : p.reject(new Error(msg.message));
     }
   });
@@ -402,6 +405,53 @@ async function ensureNER() {
   }
 }
 
+// ── COMPRESSION DE PROMPT ──────────────────────────────────────────────────
+//
+// Le modèle (170 Mo) n'est demandé QUE si l'utilisateur active l'option — il
+// s'ajoute aux 183 Mo de la détection, et personne ne doit les payer sans
+// l'avoir choisi. Première des trois contraintes produit (CLAUDE.md).
+//
+// Il vit dans le MÊME worker que la détection : ORT n'exécute qu'une inférence
+// à la fois de toute façon, et un second worker ne ferait que dupliquer le
+// runtime WASM sans rien gagner.
+let compressionPrete = false;
+
+async function ensureCompression() {
+  if (compressionPrete && nerWorker) return true;
+  // La compression a besoin d'un worker vivant ; s'il n'existe pas encore
+  // (mode texte sans détection lancée), on démarre d'abord le moteur nominal.
+  await ensureNER();
+  if (!nerWorker) return false;
+  return new Promise(resolve => {
+    const onReady = ev => {
+      const msg = ev.data || {};
+      if (msg.type === 'compressionReady') {
+        nerWorker.removeEventListener('message', onReady);
+        compressionPrete = true;
+        resolve(true);
+      } else if (msg.type === 'error' && msg.id == null) {
+        nerWorker.removeEventListener('message', onReady);
+        console.error('[clarence] compression indisponible :', msg.message);
+        resolve(false);
+      }
+    };
+    nerWorker.addEventListener('message', onReady);
+    nerWorker.postMessage({
+      type: 'initCompression',
+      wasmPath: chrome.runtime.getURL('vendor/'),
+      model: COMPRESSION_MODEL
+    });
+  });
+}
+
+// Pipeline injecté dans `compresser` : (texte) => [{ mot, garder }].
+const compressionPipeline = () => (texte) => new Promise((resolve, reject) => {
+  if (!nerWorker) return reject(new OperationAnnulee());
+  const id = ++nerReqId;
+  nerPending.set(id, { resolve, reject });
+  nerWorker.postMessage({ type: 'compress', id, text: texte });
+});
+
 // Coupe court à TOUTES les inférences en attente et repart d'un worker neuf.
 //
 // POURQUOI TERMINER LE WORKER plutôt que juste ignorer les résultats. Le worker
@@ -420,6 +470,9 @@ function purgerWorkerNer(raison) {
   nerWorker = null;
   nerPipe = null;
   nerEngine = null;
+  // Le worker terminé emporte le modèle de compression avec lui : le croire
+  // encore chargé enverrait des messages `compress` dans le vide.
+  compressionPrete = false;
   // Sinon ensureNER() croirait un chargement encore en cours et rendrait la
   // main sans jamais reconstruire le pipeline : plus aucune détection.
   nerLoading = false;
@@ -1757,7 +1810,43 @@ $('fileDownloadBtn').addEventListener('click', downloadFile);
 // Voie fiable pour amener le contenu dans le LLM : coller, sans fichier.
 $('fileCopyBtn').addEventListener('click', async () => {
   if (!fileOutBlob) return;
-  await navigator.clipboard.writeText(await fileOutBlob.text());
+  const brut = await fileOutBlob.text();
+
+  // COMPRESSION À L'EXPORT, et nulle part ailleurs. Le fichier téléchargé et la
+  // table de relecture gardent le texte MASQUÉ, lisible ; seul le presse-papiers
+  // reçoit la version compressée. C'est la troisième contrainte produit : relire
+  // du télégraphique ne permettrait plus de repérer un nom oublié.
+  let texte = brut;
+  if ($('fileCompress')?.checked) {
+    const info = $('fileCompressInfo');
+    info.textContent = 'Compression…';
+    info.className = 'status';
+    try {
+      if (!await ensureCompression()) throw new Error('modèle indisponible');
+      const taux = Number($('fileCompressTaux')?.value || 0.5);
+      const r = await compresser(brut, compressionPipeline(), { taux });
+      texte = r.texte;
+      const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
+      // Ordre de grandeur, jamais un chiffre garanti (cadrage §10) : le vrai
+      // compte dépend du tokeniseur du modèle destinataire, qu'on ignore.
+      info.textContent = `≈ ${r.tokensAvant} → ${r.tokensApres} tokens (−${gain} %), ${r.motsApres}/${r.motsAvant} mots.`;
+      info.className = 'status active';
+      // Une compression qui ne mord pas est presque toujours un flux de tokens
+      // tronqué : le dire plutôt que de laisser croire au gain affiché.
+      if (r.motsSansScore > r.motsAvant * 0.1) {
+        info.textContent += ` ⚠ ${r.motsSansScore} mots non analysés.`;
+      }
+    } catch (err) {
+      console.error(err);
+      // On copie le texte NON compressé plutôt que rien : l'échec de l'option
+      // ne doit pas priver l'utilisateur de son résultat.
+      info.textContent = 'Compression indisponible — texte copié non compressé.';
+      info.className = 'status error';
+      texte = brut;
+    }
+  }
+
+  await navigator.clipboard.writeText(texte);
   $('fileCopyStatus').textContent = 'Copié — colle dans le chat.';
   $('fileCopyStatus').className = 'status active';
   setTimeout(() => { $('fileCopyStatus').textContent = ''; }, 4000);
