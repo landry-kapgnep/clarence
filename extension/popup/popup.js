@@ -1204,7 +1204,7 @@ async function ensureNER() {
     nerLoading = false;
   }
 }
-var fileTexteCompresse = null;
+var compressionInfo = null;
 var compressionWorker = null;
 var compressionReqId = 0;
 var compressionPending = /* @__PURE__ */ new Map();
@@ -1477,7 +1477,7 @@ function invalidateFileResult() {
   if (annulerRunFichier("Options modifi\xE9es \u2014 relance l\u2019anonymisation.")) return;
   if (!fileOutBlob) return;
   fileOutBlob = null;
-  fileTexteCompresse = null;
+  compressionInfo = null;
   fileOutName = "";
   $("fileResults").hidden = true;
   $("dragCard").hidden = true;
@@ -1550,7 +1550,7 @@ function setChosenFile(file) {
   rendreApercuTermes();
   chosenFile = file;
   fileOutBlob = null;
-  fileTexteCompresse = null;
+  compressionInfo = null;
   const fileNameEl = $("fileName");
   const fileMainEl = fileNameEl?.querySelector(".file-name-main");
   const fileExtEl = fileNameEl?.querySelector(".file-name-ext");
@@ -1683,7 +1683,7 @@ function showFileResults(mapping, copyable, duree) {
   $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
     (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
   ).join("")}</table>` : "<p>Aucun masque actif.</p>";
-  const suffixe = duree ? ` Trait\xE9 en ${duree}.` : "";
+  const suffixe = (duree ? ` Trait\xE9 en ${duree}.` : "") + (compressionInfo ? ` Texte r\xE9duit : \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
   $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.") + suffixe;
   $("fileSummary").className = "status active";
   $("fileResults").hidden = false;
@@ -2146,7 +2146,6 @@ async function processFile() {
       fileOutName = source.name.replace(/(\.[^.]+)$/, "-anonymise$1");
       fileRegen = { mode: "pdf", tampon, entites: entitesContextuelles2, source, kind, ext };
       showFileResults(mapping2, false, formatDuree(performance.now() - debut));
-      await preparerCompression();
       renderEngineBadge("fileEngineBadge");
       fileSetStatus("");
       return;
@@ -2183,6 +2182,19 @@ async function processFile() {
       disabledTypes: fileDisabledTypes,
       keepValues: termesAGarder()
     });
+    if ($("fileCompress")?.checked && compressionWorker) {
+      fileSetStatus("Compression du texte\u2026");
+      const taux = Number($("fileCompressTaux")?.value || 0.5);
+      let avant = 0, apres = 0;
+      for (const r of results) {
+        const c = await compresser(r.maskedText, compressionPipeline(), { taux });
+        r.maskedText = c.texte;
+        avant += c.tokensAvant;
+        apres += c.tokensApres;
+        verifierAnnulation(signal);
+      }
+      compressionInfo = { avant, apres };
+    }
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus("R\xE9\xE9criture du fichier\u2026");
     const masked = await adapter.applyMask(input, byId);
@@ -2202,7 +2214,6 @@ async function processFile() {
       ext
     };
     showFileResults(mapping, kind.mime.startsWith("text/"), formatDuree(performance.now() - debut));
-    await preparerCompression();
     renderEngineBadge("fileEngineBadge");
     fileSetStatus("");
   } catch (err) {
@@ -2210,7 +2221,7 @@ async function processFile() {
     console.error(err);
     if (!courant()) return;
     fileOutBlob = null;
-    fileTexteCompresse = null;
+    compressionInfo = null;
     $("fileResults").hidden = true;
     $("dragCard").hidden = true;
     fileSetStatus("Traitement \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
@@ -2227,8 +2238,7 @@ async function processFile() {
 }
 async function downloadFile() {
   if (!fileOutBlob) return;
-  const blob = fileTexteCompresse != null ? new Blob([fileTexteCompresse], { type: fileOutBlob.type }) : fileOutBlob;
-  const url = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(fileOutBlob);
   const a = document.createElement("a");
   a.href = url;
   a.download = fileOutName;
@@ -2262,7 +2272,7 @@ $("fileResetBtn").addEventListener("click", () => {
   annulerRunFichier("");
   chosenFile = null;
   fileOutBlob = null;
-  fileTexteCompresse = null;
+  compressionInfo = null;
   $("fileInput").value = "";
   $("fileChosen").hidden = true;
   $("filePoids").hidden = true;
@@ -2277,22 +2287,9 @@ for (const id of ["pdfModeLight", "pdfModePreserve"]) {
 }
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
-async function preparerCompression() {
-  fileTexteCompresse = null;
-  if (!$("fileCompress")?.checked || !compressionWorker) return;
-  const brut = await fileOutBlob.text();
-  const taux = Number($("fileCompressTaux")?.value || 0.5);
-  const r = await compresser(brut, compressionPipeline(), { taux });
-  fileTexteCompresse = r.texte;
-  const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
-  let info = `\u2248 ${r.tokensAvant} \u2192 ${r.tokensApres} tokens (\u2212${gain} %), ${r.motsApres}/${r.motsAvant} mots conserv\xE9s.`;
-  if (r.motsSansScore > r.motsAvant * 0.1) info += ` \u26A0 ${r.motsSansScore} mots non analys\xE9s.`;
-  $("fileSummary").textContent += " " + info;
-}
 $("fileCopyBtn").addEventListener("click", async () => {
   if (!fileOutBlob) return;
-  const texte = fileTexteCompresse ?? await fileOutBlob.text();
-  await navigator.clipboard.writeText(texte);
+  await navigator.clipboard.writeText(await fileOutBlob.text());
   $("fileCopyStatus").textContent = "Copi\xE9 \u2014 colle dans le chat.";
   $("fileCopyStatus").className = "status active";
   setTimeout(() => {

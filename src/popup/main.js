@@ -421,7 +421,8 @@ async function ensureNER() {
 // clic — plusieurs secondes sur un document — faisait expirer l'autorisation et
 // l'écriture échouait SANS erreur : le bouton « Copier » ne copiait rien.
 // En le calculant à l'avance, le clic n'a plus qu'à écrire une chaîne déjà prête.
-let fileTexteCompresse = null;
+// Bilan de la dernière compression, affiché avec le résumé du résultat.
+let compressionInfo = null;
 
 let compressionWorker = null;
 let compressionReqId = 0;
@@ -775,7 +776,7 @@ function invalidateFileResult() {
   if (annulerRunFichier('Options modifiées — relance l’anonymisation.')) return;
   if (!fileOutBlob) return;
   fileOutBlob = null;
-  fileTexteCompresse = null;
+  compressionInfo = null;
   fileOutName = '';
   $('fileResults').hidden = true;
   $('dragCard').hidden = true;
@@ -872,7 +873,7 @@ function setChosenFile(file) {
   rendreApercuTermes();
   chosenFile = file;
   fileOutBlob = null;
-  fileTexteCompresse = null;
+  compressionInfo = null;
   const fileNameEl = $('fileName');
   const fileMainEl = fileNameEl?.querySelector('.file-name-main');
   const fileExtEl = fileNameEl?.querySelector('.file-name-ext');
@@ -1084,7 +1085,12 @@ function showFileResults(mapping, copyable, duree) {
   // duree : omise pour la régénération (retirerDuMasquage) — son propre
   // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
   // pas ce que « durée de traitement » désigne pour l'utilisateur.
-  const suffixe = duree ? ` Traité en ${duree}.` : '';
+  const suffixe = (duree ? ` Traité en ${duree}.` : '') + (compressionInfo
+    // Ordre de grandeur, jamais un chiffre garanti (cadrage §10) : le vrai
+    // compte dépend du tokeniseur du modèle destinataire, qu'on ne connaît pas.
+    ? ` Texte réduit : ≈ ${compressionInfo.avant} → ${compressionInfo.apres} tokens ` +
+      `(−${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).`
+    : '');
   $('fileSummary').textContent = (mapping.length
     ? `${mapping.length} valeur(s) distincte(s) masquée(s), métadonnées nettoyées.`
     : 'Aucune donnée sensible détectée — métadonnées nettoyées.') + suffixe;
@@ -1710,7 +1716,6 @@ async function processFile() {
       fileOutName = source.name.replace(/(\.[^.]+)$/, '-anonymise$1');
       fileRegen = { mode: 'pdf', tampon, entites: entitesContextuelles, source, kind, ext };
       showFileResults(mapping, false, formatDuree(performance.now() - debut));
-      await preparerCompression();
       renderEngineBadge('fileEngineBadge');
       fileSetStatus('');
       return;
@@ -1761,6 +1766,28 @@ async function processFile() {
       keepValues: termesAGarder()
     });
 
+    // COMPRESSION DANS LE FICHIER, pas seulement au presse-papiers. Appliquée
+    // ICI, avant l'écriture : le fichier téléchargé porte donc le texte
+    // compressé, quel que soit son format.
+    //
+    // ⚠️ PORTÉE RÉELLE : ce point n'agit que sur `maskedText`, la forme
+    // qu'utilisent CSV, XLSX et le PDF « Alléger ». DOCX et le PDF
+    // « Préserver » réécrivent depuis les ENTITÉS et les fragments positionnés,
+    // pas depuis ce texte — ils ne sont donc PAS encore couverts, et l'option
+    // ne leur est pas proposée. Voir la note dans docs/spike-llmlingua2.md.
+    if ($('fileCompress')?.checked && compressionWorker) {
+      fileSetStatus('Compression du texte…');
+      const taux = Number($('fileCompressTaux')?.value || 0.5);
+      let avant = 0, apres = 0;
+      for (const r of results) {
+        const c = await compresser(r.maskedText, compressionPipeline(), { taux });
+        r.maskedText = c.texte;
+        avant += c.tokensAvant; apres += c.tokensApres;
+        verifierAnnulation(signal);
+      }
+      compressionInfo = { avant, apres };
+    }
+
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
     const byId = new Map(results.map(r => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus('Réécriture du fichier…');
@@ -1779,7 +1806,6 @@ async function processFile() {
 
     // Copier n'a de sens que pour une sortie TEXTE (md/csv), pas binaire.
     showFileResults(mapping, kind.mime.startsWith('text/'), formatDuree(performance.now() - debut));
-    await preparerCompression();
 
     renderEngineBadge('fileEngineBadge');
     fileSetStatus('');
@@ -1793,7 +1819,7 @@ async function processFile() {
     // Un run périmé ne doit pas afficher son erreur par-dessus le run courant.
     if (!courant()) return;
     fileOutBlob = null;
-    fileTexteCompresse = null;
+    compressionInfo = null;
     $('fileResults').hidden = true;
     $('dragCard').hidden = true;
     fileSetStatus('Traitement échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
@@ -1817,10 +1843,7 @@ async function downloadFile() {
   // Le téléchargement reçoit EXACTEMENT ce que reçoit le presse-papiers,
   // compression comprise : n'avoir la version compressée qu'à la copie était
   // incohérent. Sur une sortie binaire, texteDExport rend le blob inchangé.
-  const blob = fileTexteCompresse != null
-    ? new Blob([fileTexteCompresse], { type: fileOutBlob.type })
-    : fileOutBlob;
-  const url = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(fileOutBlob);
   const a = document.createElement('a');
   a.href = url;
   a.download = fileOutName;
@@ -1866,7 +1889,7 @@ $('fileResetBtn').addEventListener('click', () => {
   annulerRunFichier('');
   chosenFile = null;
   fileOutBlob = null;
-  fileTexteCompresse = null;
+  compressionInfo = null;
   $('fileInput').value = '';
   $('fileChosen').hidden = true;
   $('filePoids').hidden = true;
@@ -1891,32 +1914,12 @@ $('fileDownloadBtn').addEventListener('click', downloadFile);
 // résultat. Ce qui reste lisible, c'est ce qu'on RELIT : la table de
 // correspondance liste chaque valeur masquée, et c'est elle la surface de
 // relecture pour un fichier — pas la prose.
-// Calcule la version compressée à la FIN du traitement, pendant que la barre de
-// progression est encore là — jamais au clic (voir fileTexteCompresse).
-async function preparerCompression() {
-  fileTexteCompresse = null;
-  if (!$('fileCompress')?.checked || !compressionWorker) return;
-  const brut = await fileOutBlob.text();
-  const taux = Number($('fileCompressTaux')?.value || 0.5);
-  const r = await compresser(brut, compressionPipeline(), { taux });
-  fileTexteCompresse = r.texte;
-  const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
-  // Ordre de grandeur, jamais un chiffre garanti (cadrage §10) : le vrai compte
-  // dépend du tokeniseur du modèle destinataire, qu'on ne connaît pas.
-  let info = `≈ ${r.tokensAvant} → ${r.tokensApres} tokens (−${gain} %), ${r.motsApres}/${r.motsAvant} mots conservés.`;
-  // Une compression qui ne mord pas vient presque toujours d'un flux de tokens
-  // tronqué : le dire plutôt que de laisser croire au gain affiché.
-  if (r.motsSansScore > r.motsAvant * 0.1) info += ` ⚠ ${r.motsSansScore} mots non analysés.`;
-  $('fileSummary').textContent += ' ' + info;
-}
-
 $('fileCopyBtn').addEventListener('click', async () => {
   if (!fileOutBlob) return;
-  // Aucun calcul ici : la version compressée est déjà prête (voir
-  // preparerCompression). Tout `await` long avant writeText ferait expirer
-  // l'activation utilisateur et l'écriture échouerait sans erreur.
-  const texte = fileTexteCompresse ?? await fileOutBlob.text();
-  await navigator.clipboard.writeText(texte);
+  // AUCUN calcul ici. Le blob porte déjà le texte compressé s'il y a lieu, et
+  // tout `await` long avant writeText ferait expirer l'activation utilisateur :
+  // l'écriture échouerait alors SANS erreur, et le bouton ne copierait rien.
+  await navigator.clipboard.writeText(await fileOutBlob.text());
   $('fileCopyStatus').textContent = 'Copié — colle dans le chat.';
   $('fileCopyStatus').className = 'status active';
   setTimeout(() => { $('fileCopyStatus').textContent = ''; }, 4000);
