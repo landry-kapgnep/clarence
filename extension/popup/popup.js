@@ -1204,6 +1204,7 @@ async function ensureNER() {
     nerLoading = false;
   }
 }
+var fileTexteCompresse = null;
 var compressionWorker = null;
 var compressionReqId = 0;
 var compressionPending = /* @__PURE__ */ new Map();
@@ -1476,6 +1477,7 @@ function invalidateFileResult() {
   if (annulerRunFichier("Options modifi\xE9es \u2014 relance l\u2019anonymisation.")) return;
   if (!fileOutBlob) return;
   fileOutBlob = null;
+  fileTexteCompresse = null;
   fileOutName = "";
   $("fileResults").hidden = true;
   $("dragCard").hidden = true;
@@ -1548,6 +1550,7 @@ function setChosenFile(file) {
   rendreApercuTermes();
   chosenFile = file;
   fileOutBlob = null;
+  fileTexteCompresse = null;
   const fileNameEl = $("fileName");
   const fileMainEl = fileNameEl?.querySelector(".file-name-main");
   const fileExtEl = fileNameEl?.querySelector(".file-name-ext");
@@ -2143,6 +2146,7 @@ async function processFile() {
       fileOutName = source.name.replace(/(\.[^.]+)$/, "-anonymise$1");
       fileRegen = { mode: "pdf", tampon, entites: entitesContextuelles2, source, kind, ext };
       showFileResults(mapping2, false, formatDuree(performance.now() - debut));
+      await preparerCompression();
       renderEngineBadge("fileEngineBadge");
       fileSetStatus("");
       return;
@@ -2198,6 +2202,7 @@ async function processFile() {
       ext
     };
     showFileResults(mapping, kind.mime.startsWith("text/"), formatDuree(performance.now() - debut));
+    await preparerCompression();
     renderEngineBadge("fileEngineBadge");
     fileSetStatus("");
   } catch (err) {
@@ -2205,6 +2210,7 @@ async function processFile() {
     console.error(err);
     if (!courant()) return;
     fileOutBlob = null;
+    fileTexteCompresse = null;
     $("fileResults").hidden = true;
     $("dragCard").hidden = true;
     fileSetStatus("Traitement \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
@@ -2221,15 +2227,7 @@ async function processFile() {
 }
 async function downloadFile() {
   if (!fileOutBlob) return;
-  let blob = fileOutBlob;
-  if ($("fileCompress")?.checked) {
-    try {
-      blob = new Blob([await texteDExport()], { type: fileOutBlob.type });
-    } catch (err) {
-      console.error(err);
-      fileSetStatus("Compression indisponible \u2014 fichier t\xE9l\xE9charg\xE9 tel quel.", "error");
-    }
-  }
+  const blob = fileTexteCompresse != null ? new Blob([fileTexteCompresse], { type: fileOutBlob.type }) : fileOutBlob;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -2264,6 +2262,7 @@ $("fileResetBtn").addEventListener("click", () => {
   annulerRunFichier("");
   chosenFile = null;
   fileOutBlob = null;
+  fileTexteCompresse = null;
   $("fileInput").value = "";
   $("fileChosen").hidden = true;
   $("filePoids").hidden = true;
@@ -2278,27 +2277,21 @@ for (const id of ["pdfModeLight", "pdfModePreserve"]) {
 }
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
-async function texteDExport() {
+async function preparerCompression() {
+  fileTexteCompresse = null;
+  if (!$("fileCompress")?.checked || !compressionWorker) return;
   const brut = await fileOutBlob.text();
-  if (!$("fileCompress")?.checked) return brut;
   const taux = Number($("fileCompressTaux")?.value || 0.5);
   const r = await compresser(brut, compressionPipeline(), { taux });
+  fileTexteCompresse = r.texte;
   const gain = Math.round((1 - r.tokensApres / r.tokensAvant) * 100);
   let info = `\u2248 ${r.tokensAvant} \u2192 ${r.tokensApres} tokens (\u2212${gain} %), ${r.motsApres}/${r.motsAvant} mots conserv\xE9s.`;
   if (r.motsSansScore > r.motsAvant * 0.1) info += ` \u26A0 ${r.motsSansScore} mots non analys\xE9s.`;
-  fileSetStatus(info);
-  return r.texte;
+  $("fileSummary").textContent += " " + info;
 }
 $("fileCopyBtn").addEventListener("click", async () => {
   if (!fileOutBlob) return;
-  let texte;
-  try {
-    texte = await texteDExport();
-  } catch (err) {
-    console.error(err);
-    texte = await fileOutBlob.text();
-    fileSetStatus("Compression indisponible \u2014 texte copi\xE9 tel quel.", "error");
-  }
+  const texte = fileTexteCompresse ?? await fileOutBlob.text();
   await navigator.clipboard.writeText(texte);
   $("fileCopyStatus").textContent = "Copi\xE9 \u2014 colle dans le chat.";
   $("fileCopyStatus").className = "status active";
