@@ -107,6 +107,50 @@ connecteurs et n'en invente pas — contrairement aux noms ou aux entreprises.
 Imperfection restante : « n'est pas » ressort « n pas » (l'apostrophe et le
 verbe sautent). La polarité est préservée, la lisibilité non.
 
+## Le moteur, construit et mesuré (09/08/2026)
+
+`src/engine/compression.js` — pipeline injecté, 20 tests, aucun modèle chargé.
+
+**Décision au niveau du MOT, pas du token.** C'est ce qui règle le piège du
+spike sans aucun recollage : un placeholder est UN mot, donc le garder le garde
+entier. Mesuré, sur le texte masqué de la section 1 :
+
+| | Placeholders intacts |
+|---|---|
+| Modèle seul | **0/8** |
+| Via le moteur, taux 0,1 (le plus agressif) | **8/8** |
+
+Les six pièges de sens sont réparés, et le taux devient **choisi** :
+
+| Document | taux 0,5 | taux 0,3 |
+|---|---|---|
+| `rapport-fr.txt` | ×1,63 | ×2,56 |
+| `certificat-fr.txt` | ×1,71 | ×2,97 |
+| `dossier-rh.txt` | ×1,62 | ×2,60 |
+| `email-pro-en.txt` | ×1,62 | ×2,76 |
+
+### DEUX PIÈGES SILENCIEUX découverts en construisant
+
+Ils ne viennent pas du modèle mais de son enveloppe, et tous deux produisent
+**une absence de compression, sans erreur** :
+
+1. **512 POSITIONS, pas 512 mots.** En français un mot pèse souvent 2 à 3
+   sous-mots ; des lots de 300 mots dépassaient la fenêtre et le pipeline
+   tronquait sans rien dire. Lots ramenés à 120.
+2. **Le pipeline OMET des tokens de sa sortie.** Visible sur le champ `index`,
+   qui saute (…6, 7, **9**, 10…) : tirets cadratins et quelques symboles
+   disparaissent. Un alignement par curseur sur ce flux troué se désynchronise
+   et ne s'en remet jamais — la moitié des mots d'un document se retrouvaient
+   sans score, donc conservés par sécurité, donc aucune compression.
+   **Correctif : retokeniser soi-même pour obtenir le flux complet et y
+   recoller les scores par `index`.** À reproduire tel quel dans le worker.
+
+Note : `start`/`end` sont à `null`, exactement comme sur le modèle NER — même
+gotcha déjà consigné dans CLAUDE.md, donc pas d'alignement par offsets.
+
+Le moteur remonte `motsSansScore` précisément pour que ce genre de panne ne
+puisse plus être silencieuse.
+
 ## Ce qu'il resterait à faire avant de livrer
 
 1. **Convertir le modèle nous-mêmes** depuis le dépôt Apache 2.0 (réserve de
