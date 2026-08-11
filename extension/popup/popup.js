@@ -19,11 +19,13 @@ import {
   verifierAnnulation
 } from "./chunk-BIY2U3A5.js";
 import {
+  createBatchedPipeline
+} from "./chunk-IT5BP6N7.js";
+import {
   COMPRESSION_MODEL,
   compresser,
-  compresserSegments,
-  createBatchedPipeline
-} from "./chunk-X6K23J67.js";
+  compresserSegments
+} from "./chunk-YCFOBLJG.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -1206,6 +1208,7 @@ async function ensureNER() {
   }
 }
 var compressionInfo = null;
+var compressionEchouee = false;
 function crochetCompression() {
   if (!$("fileCompress")?.checked || !compressionWorker) return null;
   const taux = Number($("fileCompressTaux")?.value || 0.5);
@@ -1223,7 +1226,7 @@ var compressionReqId = 0;
 var compressionPending = /* @__PURE__ */ new Map();
 async function ensureCompression() {
   if (compressionWorker) return true;
-  const worker = new Worker(chrome.runtime.getURL("popup/ner-worker.js"), { type: "module" });
+  const worker = new Worker(chrome.runtime.getURL("popup/compression-worker.js"), { type: "module" });
   worker.addEventListener("message", (ev) => {
     const msg = ev.data || {};
     if (msg.type === "progress" && msg.total) {
@@ -1491,6 +1494,7 @@ function invalidateFileResult() {
   if (!fileOutBlob) return;
   fileOutBlob = null;
   compressionInfo = null;
+  compressionEchouee = false;
   fileOutName = "";
   $("fileResults").hidden = true;
   $("dragCard").hidden = true;
@@ -1564,6 +1568,7 @@ function setChosenFile(file) {
   chosenFile = file;
   fileOutBlob = null;
   compressionInfo = null;
+  compressionEchouee = false;
   const fileNameEl = $("fileName");
   const fileMainEl = fileNameEl?.querySelector(".file-name-main");
   const fileExtEl = fileNameEl?.querySelector(".file-name-ext");
@@ -1694,7 +1699,7 @@ function showFileResults(mapping, copyable, duree) {
   $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
     (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
   ).join("")}</table>` : "<p>Aucun masque actif.</p>";
-  const suffixe = (duree ? ` Trait\xE9 en ${duree}.` : "") + (compressionInfo ? ` Texte r\xE9duit : \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
+  const suffixe = (duree ? ` Trait\xE9 en ${duree}.` : "") + (compressionEchouee ? " \u26A0 Compression indisponible : fichier produit sans elle." : "") + (compressionInfo ? ` Texte r\xE9duit : \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
   $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.") + suffixe;
   $("fileSummary").className = "status active";
   $("fileResults").hidden = false;
@@ -2173,7 +2178,7 @@ async function processFile() {
       fileSetStatus("Pr\xE9paration de la compression\u2026");
       if (!await ensureCompression()) {
         $("fileCompress").checked = false;
-        fileSetStatus("Compression indisponible \u2014 le fichier sera produit sans elle.", "error");
+        compressionEchouee = true;
       }
       verifierAnnulation(signal);
     }
@@ -2234,6 +2239,7 @@ async function processFile() {
     if (!courant()) return;
     fileOutBlob = null;
     compressionInfo = null;
+    compressionEchouee = false;
     $("fileResults").hidden = true;
     $("dragCard").hidden = true;
     fileSetStatus("Traitement \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
@@ -2285,6 +2291,7 @@ $("fileResetBtn").addEventListener("click", () => {
   chosenFile = null;
   fileOutBlob = null;
   compressionInfo = null;
+  compressionEchouee = false;
   $("fileInput").value = "";
   $("fileChosen").hidden = true;
   $("filePoids").hidden = true;

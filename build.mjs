@@ -18,7 +18,16 @@ await build({
   // ner-worker : entry séparé, chargé via new Worker(). Transformers.js n'est
   // importé QUE par lui → il quitte le bundle popup (ouverture plus rapide) et
   // le modèle tourne hors du thread principal (UI fluide pendant la détection).
-  entryPoints: { popup: 'src/popup/main.js', 'ner-worker': 'src/worker/ner-worker.js' },
+  // compression-worker : entry SÉPARÉE de ner-worker, et c'est structurel.
+  // ner-worker importe `gliner` (ORT 1.19) ; Transformers.js embarque ORT 1.14.
+  // Les deux dans un même graphe de modules font échouer l'initialisation du
+  // second. Un second Worker sur le MÊME fichier n'y changeait rien : thread
+  // neuf, graphe identique.
+  entryPoints: {
+    popup: 'src/popup/main.js',
+    'ner-worker': 'src/worker/ner-worker.js',
+    'compression-worker': 'src/worker/compression-worker.js'
+  },
   outdir: 'extension/popup',
   bundle: true,
   splitting: true,

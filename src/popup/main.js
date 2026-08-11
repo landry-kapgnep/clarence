@@ -423,6 +423,9 @@ async function ensureNER() {
 // En le calculant à l'avance, le clic n'a plus qu'à écrire une chaîne déjà prête.
 // Bilan de la dernière compression, affiché avec le résumé du résultat.
 let compressionInfo = null;
+// Vrai si le modèle n'a pas pu être chargé : reporté jusqu'au résumé final,
+// seul endroit qui ne sera pas écrasé par l'étape suivante.
+let compressionEchouee = false;
 
 // Crochet passé aux adaptateurs qui préservent la mise en page (DOCX, PDF
 // « Préserver ») : ils redessinent des FRAGMENTS, pas un texte, et ont donc
@@ -445,16 +448,18 @@ let compressionWorker = null;
 let compressionReqId = 0;
 const compressionPending = new Map();
 
-// WORKER DÉDIÉ, et ce n'est pas un luxe. Le worker de détection a déjà chargé
-// UN runtime ONNX : 1.19 pour GLiNER, ou 1.14 pour BERT — jamais les deux, car
-// `init()` n'en appelle qu'un. Charger Transformers.js (ORT 1.14) dans un
-// worker où GLiNER a déjà installé ORT 1.19 fait échouer l'initialisation :
-// c'est l'erreur « Compression indisponible » constatée à l'usage.
-// Un thread séparé donne à chaque runtime son espace, et isole au passage le
-// téléchargement de 170 Mo.
+// FICHIER DE WORKER DÉDIÉ (compression-worker.js), et pas seulement un second
+// Worker sur ner-worker.js — la nuance a coûté un aller-retour.
+//
+// ner-worker.js importe `gliner` en TÊTE DE MODULE, ce qui installe ORT 1.19.
+// Transformers.js embarque ORT 1.14. Les deux dans le même graphe de modules
+// font échouer l'initialisation du second : c'est l'erreur « Compression
+// indisponible ». Lancer un second Worker sur le même fichier ne changeait
+// rien — thread neuf, graphe de modules identique. Il faut un point d'entrée
+// qui n'importe QUE Transformers.js.
 async function ensureCompression() {
   if (compressionWorker) return true;
-  const worker = new Worker(chrome.runtime.getURL('popup/ner-worker.js'), { type: 'module' });
+  const worker = new Worker(chrome.runtime.getURL('popup/compression-worker.js'), { type: 'module' });
   worker.addEventListener('message', ev => {
     const msg = ev.data || {};
     if (msg.type === 'progress' && msg.total) {
@@ -794,6 +799,7 @@ function invalidateFileResult() {
   if (!fileOutBlob) return;
   fileOutBlob = null;
   compressionInfo = null;
+  compressionEchouee = false;
   fileOutName = '';
   $('fileResults').hidden = true;
   $('dragCard').hidden = true;
@@ -891,6 +897,7 @@ function setChosenFile(file) {
   chosenFile = file;
   fileOutBlob = null;
   compressionInfo = null;
+  compressionEchouee = false;
   const fileNameEl = $('fileName');
   const fileMainEl = fileNameEl?.querySelector('.file-name-main');
   const fileExtEl = fileNameEl?.querySelector('.file-name-ext');
@@ -1105,7 +1112,9 @@ function showFileResults(mapping, copyable, duree) {
   // duree : omise pour la régénération (retirerDuMasquage) — son propre
   // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
   // pas ce que « durée de traitement » désigne pour l'utilisateur.
-  const suffixe = (duree ? ` Traité en ${duree}.` : '') + (compressionInfo
+  const suffixe = (duree ? ` Traité en ${duree}.` : '') +
+    (compressionEchouee ? ' ⚠ Compression indisponible : fichier produit sans elle.' : '') +
+    (compressionInfo
     // Ordre de grandeur, jamais un chiffre garanti (cadrage §10) : le vrai
     // compte dépend du tokeniseur du modèle destinataire, qu'on ne connaît pas.
     ? ` Texte réduit : ≈ ${compressionInfo.avant} → ${compressionInfo.apres} tokens ` +
@@ -1764,7 +1773,11 @@ async function processFile() {
       fileSetStatus('Préparation de la compression…');
       if (!await ensureCompression()) {
         $('fileCompress').checked = false;
-        fileSetStatus('Compression indisponible — le fichier sera produit sans elle.', 'error');
+        // PAS un fileSetStatus : la ligne suivante est « Détection en cours… »
+        // et l'écraserait aussitôt. L'échec passait donc totalement inaperçu et
+        // le fichier ressortait non compressé « sans que rien n'ait changé ».
+        // Il est mémorisé et affiché avec le résumé, qui, lui, reste.
+        compressionEchouee = true;
       }
       verifierAnnulation(signal);
     }
@@ -1842,6 +1855,7 @@ async function processFile() {
     if (!courant()) return;
     fileOutBlob = null;
     compressionInfo = null;
+  compressionEchouee = false;
     $('fileResults').hidden = true;
     $('dragCard').hidden = true;
     fileSetStatus('Traitement échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
@@ -1912,6 +1926,7 @@ $('fileResetBtn').addEventListener('click', () => {
   chosenFile = null;
   fileOutBlob = null;
   compressionInfo = null;
+  compressionEchouee = false;
   $('fileInput').value = '';
   $('fileChosen').hidden = true;
   $('filePoids').hidden = true;
