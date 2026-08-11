@@ -228,6 +228,7 @@ async function parsePages(buffer, signal) {
 async function reconstructPdf(buffer, opts = {}) {
   const { PDFDocument, StandardFonts } = opts.deps;
   const { signal } = opts;
+  const { compresserUnite } = opts;
   const pages = await parsePages(buffer, signal);
   const allUnits = marquerIntitules(pages.flatMap((p) => p.units)).map((u) => ({ id: u.id, text: u.text, structurel: u.structurel }));
   const { results, mapping, entitesContextuelles } = await anonymizeUnits(allUnits, {
@@ -267,10 +268,10 @@ async function reconstructPdf(buffer, opts = {}) {
     const aDessiner = [];
     for (const unit of page.units) {
       const masked = distributeEntitiesOverRuns(unit.runs, entitiesById.get(unit.id) || []);
+      let textes = unit.runs.map((run, i) => run.draw ? sanitizeForWinAnsi(masked[i].text) : "");
+      if (compresserUnite) textes = await compresserUnite(textes);
       unit.runs.forEach((run, i) => {
-        if (!run.draw) return;
-        const texte = sanitizeForWinAnsi(masked[i].text);
-        if (texte) aDessiner.push({ run, texte });
+        if (textes[i]) aDessiner.push({ run, texte: textes[i] });
       });
     }
     const bornes = calculerBornes(

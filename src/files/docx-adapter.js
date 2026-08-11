@@ -125,7 +125,7 @@ export function extractTextUnits(buffer, opts = {}) {
 // resultsById : Map<id, { entities }> (entities : offsets locaux + placeholder,
 // tels que retournés par anonymizeUnits — maskedText n'est pas utilisé ici,
 // c'est la redistribution par run qui reconstruit le texte final).
-export function applyMask(buffer, resultsById, opts = {}) {
+export async function applyMask(buffer, resultsById, opts = {}) {
   const DP = opts.DOMParser || globalThis.DOMParser;
   const XS = opts.XMLSerializer || globalThis.XMLSerializer;
   const zip = unzipSync(new Uint8Array(buffer));
@@ -141,9 +141,17 @@ export function applyMask(buffer, resultsById, opts = {}) {
         runs.map(r => ({ id: r.id, text: r.text })),
         result.entities || []
       );
+      // COMPRESSION DE PROMPT, optionnelle et injectée (le modèle vit dans un
+      // worker, cet adaptateur reste testable). Appliquée APRÈS le masquage et
+      // AVANT la réécriture : c'est le seul point où l'on connaît à la fois le
+      // texte final et le fragment dont il provient. Le paragraphe ENTIER est
+      // soumis d'un coup — fragment par fragment, le modèle n'aurait aucun
+      // contexte pour décider.
+      let textes = newRuns.map(r => r.text);
+      if (opts.compresserUnite) textes = await opts.compresserUnite(textes);
       runs.forEach((run, i) => {
         if (run.kind !== 't') return; // tab/br : jamais réécrits
-        const newText = newRuns[i].text;
+        const newText = textes[i];
         if (newText !== run.node.textContent) {
           run.node.textContent = newText;
           run.node.setAttribute('xml:space', 'preserve');

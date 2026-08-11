@@ -43,7 +43,7 @@ test('pipeline complet : le nom coupé sur 2 runs est masqué sans laisser de r�
   const { results } = await anonymizeUnits(units, { nerPipeline: fakePipe });
   const resultsById = new Map(results.map(r => [r.id, { entities: r.entities }]));
 
-  const outBuf = applyMask(buf, resultsById, domOpts);
+  const outBuf = await applyMask(buf, resultsById, domOpts);
   const zip = unzipSync(new Uint8Array(outBuf));
   const docXml = strFromU8(zip['word/document.xml']);
 
@@ -61,7 +61,7 @@ test('pipeline complet : l\'IBAN dans le tableau est masqué (détection regex s
   const { results } = await anonymizeUnits(units); // regex seul, sans nerPipeline
   const resultsById = new Map(results.map(r => [r.id, { entities: r.entities }]));
 
-  const outBuf = applyMask(buf, resultsById, domOpts);
+  const outBuf = await applyMask(buf, resultsById, domOpts);
   const zip = unzipSync(new Uint8Array(outBuf));
   const docXml = strFromU8(zip['word/document.xml']);
   assert.equal(docXml.includes('FR76 3000 6000 0112 3456 7890 189'), false);
@@ -73,7 +73,7 @@ test('le prologue XML n\'est jamais dupliqué en sortie', async () => {
   const { units } = extractTextUnits(buf, domOpts);
   const { results } = await anonymizeUnits(units); // regex seul suffit pour ce test
   const resultsById = new Map(results.map(r => [r.id, { entities: r.entities }]));
-  const outBuf = applyMask(buf, resultsById, domOpts);
+  const outBuf = await applyMask(buf, resultsById, domOpts);
   const zip = unzipSync(new Uint8Array(outBuf));
   const docXml = strFromU8(zip['word/document.xml']);
   assert.equal((docXml.match(/<\?xml/g) || []).length, 1, 'un seul prologue XML attendu');

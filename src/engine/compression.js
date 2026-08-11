@@ -175,9 +175,37 @@ export function recollerScores(tokens, sorties) {
 //
 // pipeline : (texte) => [{ mot, garder }] où `garder` est la probabilité de
 // conservation dans [0,1]. Injecté (voir en-tête).
-export async function compresser(texte, pipeline, { taux = 0.5 } = {}) {
+export async function compresser(texte, pipeline, options = {}) {
+  const r = await compresserSegments([texte], pipeline, options);
+  return { ...r, texte: r.segments[0] ?? '' };
+}
+
+// COMPRESSION D'UN DOCUMENT DÉCOUPÉ EN SEGMENTS, chacun rendu séparément.
+//
+// POURQUOI CETTE FORME. Les formats qui préservent la mise en page (DOCX, PDF
+// reconstruit) ne réécrivent pas un texte : ils redessinent des FRAGMENTS à
+// leurs positions d'origine. Compresser « le texte du document » ne leur sert à
+// rien — il leur faut savoir, pour chaque fragment, quels mots survivent.
+//
+// Sans ça, l'option ne pouvait exister que sur les sorties texte, ce qui la
+// vide de son intérêt : l'utilisateur veut moins de tokens dans le fichier
+// qu'il envoie RÉELLEMENT, pas dans une variante qu'il n'utilise pas.
+//
+// Le modèle voit le document ENTIER (segments recollés) : c'est indispensable,
+// il décide au contexte. Seule la restitution est refragmentée.
+export async function compresserSegments(segments, pipeline, { taux = 0.5 } = {}) {
+  // Recollage avec UNE espace : elle sépare les segments sans jamais fusionner
+  // deux mots, donc les frontières restent nettes à la redistribution.
+  const bornes = [];
+  let texte = '';
+  for (const s of segments) {
+    const debut = texte.length;
+    texte += (texte ? ' ' : '') + String(s ?? '');
+    bornes.push([debut === 0 ? 0 : debut + 1, texte.length]);
+  }
+
   const mots = motsDuTexte(texte);
-  if (!mots.length) return resultat(texte, '', mots.length, 0);
+  if (!mots.length) return resultat(texte, segments.map(() => ''), 0, 0);
 
   const tokens = pipeline ? await pipeline(texte) : [];
   const scores = scoresParMot(mots, tokens);
@@ -195,17 +223,26 @@ export async function compresser(texte, pipeline, { taux = 0.5 } = {}) {
   candidats.sort((a, b) => b.s - a.s);
   for (const c of candidats.slice(0, budget)) garde[c.i] = true;
 
-  // Reconstruction : les mots retenus, dans l'ordre, séparés par une espace.
-  // C'est ce que produit un texte compressé — et comme un placeholder est UN
-  // mot, il ressort intact.
-  const retenus = mots.filter((_, i) => garde[i]).map(m => m.texte);
-  return resultat(texte, retenus.join(' '), mots.length, retenus.length,
+  // Chaque mot retenu retourne dans SON segment, retrouvé par sa position. Un
+  // segment dont tous les mots sont tombés rend une chaîne vide — le fragment
+  // ne sera simplement pas dessiné.
+  const sortie = segments.map(() => []);
+  let retenus = 0;
+  for (let i = 0; i < mots.length; i++) {
+    if (!garde[i]) continue;
+    retenus++;
+    const j = bornes.findIndex(([d, f]) => mots[i].debut >= d && mots[i].debut < f);
+    if (j >= 0) sortie[j].push(mots[i].texte);
+  }
+
+  return resultat(texte, sortie.map(m => m.join(' ')), mots.length, retenus,
     scores.filter(s => s === null).length);
 }
 
-function resultat(avant, apres, motsAvant, motsApres, motsSansScore = 0) {
+function resultat(avant, segments, motsAvant, motsApres, motsSansScore = 0) {
+  const apres = segments.filter(Boolean).join(' ');
   return {
-    texte: apres,
+    segments,
     motsAvant,
     motsApres,
     // NOMBRE DE MOTS SANS SCORE, remonté exprès. Un mot non aligné est

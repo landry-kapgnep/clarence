@@ -127,9 +127,20 @@ function recollerScores(tokens, sorties) {
   }
   return out;
 }
-async function compresser(texte, pipeline, { taux = 0.5 } = {}) {
+async function compresser(texte, pipeline, options = {}) {
+  const r = await compresserSegments([texte], pipeline, options);
+  return { ...r, texte: r.segments[0] ?? "" };
+}
+async function compresserSegments(segments, pipeline, { taux = 0.5 } = {}) {
+  const bornes = [];
+  let texte = "";
+  for (const s of segments) {
+    const debut = texte.length;
+    texte += (texte ? " " : "") + String(s ?? "");
+    bornes.push([debut === 0 ? 0 : debut + 1, texte.length]);
+  }
   const mots = motsDuTexte(texte);
-  if (!mots.length) return resultat(texte, "", mots.length, 0);
+  if (!mots.length) return resultat(texte, segments.map(() => ""), 0, 0);
   const tokens = pipeline ? await pipeline(texte) : [];
   const scores = scoresParMot(mots, tokens);
   const candidats = [];
@@ -141,18 +152,26 @@ async function compresser(texte, pipeline, { taux = 0.5 } = {}) {
   const budget = Math.max(0, Math.round(mots.length * taux) - garde.filter(Boolean).length);
   candidats.sort((a, b) => b.s - a.s);
   for (const c of candidats.slice(0, budget)) garde[c.i] = true;
-  const retenus = mots.filter((_, i) => garde[i]).map((m) => m.texte);
+  const sortie = segments.map(() => []);
+  let retenus = 0;
+  for (let i = 0; i < mots.length; i++) {
+    if (!garde[i]) continue;
+    retenus++;
+    const j = bornes.findIndex(([d, f]) => mots[i].debut >= d && mots[i].debut < f);
+    if (j >= 0) sortie[j].push(mots[i].texte);
+  }
   return resultat(
     texte,
-    retenus.join(" "),
+    sortie.map((m) => m.join(" ")),
     mots.length,
-    retenus.length,
+    retenus,
     scores.filter((s) => s === null).length
   );
 }
-function resultat(avant, apres, motsAvant, motsApres, motsSansScore = 0) {
+function resultat(avant, segments, motsAvant, motsApres, motsSansScore = 0) {
+  const apres = segments.filter(Boolean).join(" ");
   return {
-    texte: apres,
+    segments,
     motsAvant,
     motsApres,
     // NOMBRE DE MOTS SANS SCORE, remonté exprès. Un mot non aligné est
@@ -257,6 +276,7 @@ export {
   decouperEnLots,
   recollerScores,
   compresser,
+  compresserSegments,
   serialiser,
   createBatchedPipeline
 };

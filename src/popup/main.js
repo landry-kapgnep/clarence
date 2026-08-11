@@ -5,7 +5,7 @@ import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
-import { compresser, COMPRESSION_MODEL } from '../engine/compression.js';
+import { compresser, compresserSegments, COMPRESSION_MODEL } from '../engine/compression.js';
 import { createBatchedPipeline } from '../engine/batch.js';
 import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
 import { poidsDeTraitement, expliquerPoids } from './poids.js';
@@ -423,6 +423,23 @@ async function ensureNER() {
 // En le calculant à l'avance, le clic n'a plus qu'à écrire une chaîne déjà prête.
 // Bilan de la dernière compression, affiché avec le résumé du résultat.
 let compressionInfo = null;
+
+// Crochet passé aux adaptateurs qui préservent la mise en page (DOCX, PDF
+// « Préserver ») : ils redessinent des FRAGMENTS, pas un texte, et ont donc
+// besoin d'une compression rendue fragment par fragment. `null` si l'option
+// n'est pas active — les adaptateurs sautent alors l'étape entièrement.
+function crochetCompression() {
+  if (!$('fileCompress')?.checked || !compressionWorker) return null;
+  const taux = Number($('fileCompressTaux')?.value || 0.5);
+  return async (segments) => {
+    const r = await compresserSegments(segments, compressionPipeline(), { taux });
+    compressionInfo = {
+      avant: (compressionInfo?.avant || 0) + r.tokensAvant,
+      apres: (compressionInfo?.apres || 0) + r.tokensApres
+    };
+    return r.segments;
+  };
+}
 
 let compressionWorker = null;
 let compressionReqId = 0;
@@ -1030,10 +1047,13 @@ async function retirerDuMasquage(valeur) {
 // La compression ne concerne QUE les sorties texte : un .docx ou un PDF
 // reconstruit ne se colle pas dans un chat, et y coller du télégraphique n'a
 // aucun sens. CSV et PDF « Alléger » (.md) sont les seuls cas.
+// Tout format PORTANT DU TEXTE peut être compressé, y compris ceux qui
+// préservent la mise en page : c'est le sens du crochet `compresserUnite`.
+// N'en sont exclues que les images, qui n'ont pas de texte du tout.
+// Réduire les tokens du .md mais pas du format réellement envoyé n'aurait aucun
+// intérêt pour l'utilisateur — c'est le reproche qui a motivé ce chantier.
 function sortieEstTexte(ext) {
-  if (!ext || !FILE_TYPES[ext] || FILE_TYPES[ext].metadataOnly) return false;
-  if (ext === 'pdf') return !$('pdfModePreserve')?.checked;
-  return !!FILE_TYPES[ext].mime?.startsWith('text/');
+  return !!(ext && FILE_TYPES[ext] && !FILE_TYPES[ext].metadataOnly);
 }
 
 function majVisibiliteCompression(ext) {
@@ -1709,6 +1729,7 @@ async function processFile() {
         forceTerms: termesAMasquer(),
         disabledTypes: fileDisabledTypes,
         keepValues: termesAGarder(),
+        compresserUnite: crochetCompression(),
         deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
       });
       verifierAnnulation(signal);
@@ -1766,16 +1787,17 @@ async function processFile() {
       keepValues: termesAGarder()
     });
 
-    // COMPRESSION DANS LE FICHIER, pas seulement au presse-papiers. Appliquée
-    // ICI, avant l'écriture : le fichier téléchargé porte donc le texte
-    // compressé, quel que soit son format.
+    // COMPRESSION — DEUX VOIES, selon ce que l'adaptateur réécrit.
     //
-    // ⚠️ PORTÉE RÉELLE : ce point n'agit que sur `maskedText`, la forme
-    // qu'utilisent CSV, XLSX et le PDF « Alléger ». DOCX et le PDF
-    // « Préserver » réécrivent depuis les ENTITÉS et les fragments positionnés,
-    // pas depuis ce texte — ils ne sont donc PAS encore couverts, et l'option
-    // ne leur est pas proposée. Voir la note dans docs/spike-llmlingua2.md.
-    if ($('fileCompress')?.checked && compressionWorker) {
+    //  - CSV, XLSX et PDF « Alléger » réécrivent depuis `maskedText` : on
+    //    compresse ce texte ici.
+    //  - DOCX et PDF « Préserver » réécrivent depuis les FRAGMENTS positionnés
+    //    et ignorent `maskedText` : ils reçoivent le crochet `compresserUnite`
+    //    et se compressent eux-mêmes, fragment par fragment.
+    //
+    // D'où la condition : sans elle, DOCX paierait DEUX passes du modèle dont
+    // une pour rien.
+    if ($('fileCompress')?.checked && compressionWorker && ext !== 'docx') {
       fileSetStatus('Compression du texte…');
       const taux = Number($('fileCompressTaux')?.value || 0.5);
       let avant = 0, apres = 0;
@@ -1791,7 +1813,7 @@ async function processFile() {
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
     const byId = new Map(results.map(r => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus('Réécriture du fichier…');
-    const masked = await adapter.applyMask(input, byId);
+    const masked = await adapter.applyMask(input, byId, { compresserUnite: crochetCompression() });
     const cleaned = await adapter.stripMetadata(masked);
     verifierAnnulation(signal);
     fileOutBlob = new Blob([cleaned], { type: kind.mime });

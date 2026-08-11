@@ -21,8 +21,9 @@ import {
 import {
   COMPRESSION_MODEL,
   compresser,
+  compresserSegments,
   createBatchedPipeline
-} from "./chunk-OQFD3UEJ.js";
+} from "./chunk-X6K23J67.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js
@@ -1205,6 +1206,18 @@ async function ensureNER() {
   }
 }
 var compressionInfo = null;
+function crochetCompression() {
+  if (!$("fileCompress")?.checked || !compressionWorker) return null;
+  const taux = Number($("fileCompressTaux")?.value || 0.5);
+  return async (segments) => {
+    const r = await compresserSegments(segments, compressionPipeline(), { taux });
+    compressionInfo = {
+      avant: (compressionInfo?.avant || 0) + r.tokensAvant,
+      apres: (compressionInfo?.apres || 0) + r.tokensApres
+    };
+    return r.segments;
+  };
+}
 var compressionWorker = null;
 var compressionReqId = 0;
 var compressionPending = /* @__PURE__ */ new Map();
@@ -1446,7 +1459,7 @@ var MAX_FILE_BYTES = 5 * 1024 * 1024;
 var FILE_TYPES = {
   csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-WGD4I4OD.js") },
   xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-6GL77ULE.js") },
-  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-YOBWEEHD.js") },
+  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-PHJB7HDT.js") },
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
@@ -1618,7 +1631,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-2VIYL3JI.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-BPG53NNQ.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -1657,9 +1670,7 @@ async function retirerDuMasquage(valeur) {
   }
 }
 function sortieEstTexte(ext) {
-  if (!ext || !FILE_TYPES[ext] || FILE_TYPES[ext].metadataOnly) return false;
-  if (ext === "pdf") return !$("pdfModePreserve")?.checked;
-  return !!FILE_TYPES[ext].mime?.startsWith("text/");
+  return !!(ext && FILE_TYPES[ext] && !FILE_TYPES[ext].metadataOnly);
 }
 function majVisibiliteCompression(ext) {
   const bloc = $("fileCompressBloc");
@@ -2120,7 +2131,7 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-2VIYL3JI.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-BPG53NNQ.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -2139,6 +2150,7 @@ async function processFile() {
         forceTerms: termesAMasquer(),
         disabledTypes: fileDisabledTypes,
         keepValues: termesAGarder(),
+        compresserUnite: crochetCompression(),
         deps: { PDFDocument: pdflib.PDFDocument, StandardFonts: pdflib.StandardFonts }
       });
       verifierAnnulation(signal);
@@ -2182,7 +2194,7 @@ async function processFile() {
       disabledTypes: fileDisabledTypes,
       keepValues: termesAGarder()
     });
-    if ($("fileCompress")?.checked && compressionWorker) {
+    if ($("fileCompress")?.checked && compressionWorker && ext !== "docx") {
       fileSetStatus("Compression du texte\u2026");
       const taux = Number($("fileCompressTaux")?.value || 0.5);
       let avant = 0, apres = 0;
@@ -2197,7 +2209,7 @@ async function processFile() {
     }
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus("R\xE9\xE9criture du fichier\u2026");
-    const masked = await adapter.applyMask(input, byId);
+    const masked = await adapter.applyMask(input, byId, { compresserUnite: crochetCompression() });
     const cleaned = await adapter.stripMetadata(masked);
     verifierAnnulation(signal);
     fileOutBlob = new Blob([cleaned], { type: kind.mime });

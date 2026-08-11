@@ -363,6 +363,16 @@ async function parsePages(buffer, signal) {
 export async function reconstructPdf(buffer, opts = {}) {
   const { PDFDocument, StandardFonts } = opts.deps;
   const { signal } = opts;
+  // COMPRESSION DE PROMPT, optionnelle. Reçoit les textes des fragments d'UNE
+  // unité et rend la même liste, mots peu porteurs retirés. Injectée plutôt que
+  // branchée ici : le modèle vit dans un worker, ce module reste testable.
+  //
+  // Elle s'applique APRÈS le masquage et AVANT le dessin — c'est le seul point
+  // où l'on connaît à la fois le texte final et le fragment dont il provient.
+  // Sans elle, l'option n'existerait que pour les sorties texte, ce qui la vide
+  // de son sens : l'utilisateur veut moins de tokens dans le fichier qu'il
+  // envoie RÉELLEMENT.
+  const { compresserUnite } = opts;
   const pages = await parsePages(buffer, signal);
 
   // UNE seule passe de détection sur toutes les unités de toutes les pages
@@ -418,10 +428,13 @@ export async function reconstructPdf(buffer, opts = {}) {
     const aDessiner = [];
     for (const unit of page.units) {
       const masked = distributeEntitiesOverRuns(unit.runs, entitiesById.get(unit.id) || []);
+      let textes = unit.runs.map((run, i) =>
+        run.draw ? sanitizeForWinAnsi(masked[i].text) : '');
+      // L'unité ENTIÈRE est soumise d'un coup : le modèle décide au contexte, et
+      // fragment par fragment il n'en aurait aucun.
+      if (compresserUnite) textes = await compresserUnite(textes);
       unit.runs.forEach((run, i) => {
-        if (!run.draw) return;
-        const texte = sanitizeForWinAnsi(masked[i].text);
-        if (texte) aDessiner.push({ run, texte });
+        if (textes[i]) aDessiner.push({ run, texte: textes[i] });
       });
     }
 

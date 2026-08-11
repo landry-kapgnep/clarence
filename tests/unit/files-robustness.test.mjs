@@ -111,7 +111,7 @@ test('DOCX : le texte des notes de bas de page est extrait (sinon fuite silencie
   // pipeline complet : l'email de la note est masqué dans la partie réécrite
   const { results } = await anonymizeUnits(units);
   const byId = new Map(results.map(r => [r.id, { entities: r.entities }]));
-  const zip = unzipSync(new Uint8Array(docx.applyMask(buf, byId, domOpts)));
+  const zip = unzipSync(new Uint8Array(await docx.applyMask(buf, byId, domOpts)));
   const notesXml = strFromU8(zip['word/footnotes.xml']);
   assert.equal(notesXml.includes('jean.dupont@ex.fr'), false, 'fuite : email de note de bas de page');
   assert.match(notesXml, /\[EMAIL_1\]/);
@@ -125,7 +125,7 @@ test('DOCX sans docProps ni commentaires : stripMetadata ne plante pas', () => {
   assert.ok(strFromU8(zip['word/document.xml']).includes('Bonjour.'));
 });
 
-test('DOCX : paragraphe vide et partie sans texte — aucune unité, pas de plantage', () => {
+test('DOCX : paragraphe vide et partie sans texte — aucune unité, pas de plantage', async () => {
   const buf = makeDocxBuffer({
     'word/document.xml': `${prolog}<w:document ${W}><w:body><w:p></w:p><w:p><w:r><w:tab/><w:br/></w:r></w:p></w:body></w:document>`
   });
@@ -133,6 +133,6 @@ test('DOCX : paragraphe vide et partie sans texte — aucune unité, pas de plan
   // le 2e paragraphe ne contient que \t\n : une "unité" sans texte utile est
   // acceptable tant qu'elle ne fait pas planter le pipeline complet
   assert.ok(Array.isArray(units));
-  const outBuf = docx.applyMask(buf, new Map(), domOpts);
+  const outBuf = await docx.applyMask(buf, new Map(), domOpts);
   assert.ok(unzipSync(new Uint8Array(outBuf))['word/document.xml']);
 });

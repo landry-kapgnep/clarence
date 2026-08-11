@@ -90,7 +90,7 @@ function extractTextUnits(buffer, opts = {}) {
   }
   return { units };
 }
-function applyMask(buffer, resultsById, opts = {}) {
+async function applyMask(buffer, resultsById, opts = {}) {
   const DP = opts.DOMParser || globalThis.DOMParser;
   const XS = opts.XMLSerializer || globalThis.XMLSerializer;
   const zip = unzipSync(new Uint8Array(buffer));
@@ -104,9 +104,11 @@ function applyMask(buffer, resultsById, opts = {}) {
         runs.map((r) => ({ id: r.id, text: r.text })),
         result.entities || []
       );
+      let textes = newRuns.map((r) => r.text);
+      if (opts.compresserUnite) textes = await opts.compresserUnite(textes);
       runs.forEach((run, i) => {
         if (run.kind !== "t") return;
-        const newText = newRuns[i].text;
+        const newText = textes[i];
         if (newText !== run.node.textContent) {
           run.node.textContent = newText;
           run.node.setAttribute("xml:space", "preserve");

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {
   compresser, motsDuTexte, scoresParMot,
   estOperateurLogique, estIntouchable, OPERATEURS_LOGIQUES,
-  decouperEnLots, recollerScores, MOTS_PAR_LOT
+  decouperEnLots, recollerScores, MOTS_PAR_LOT, compresserSegments
 } from '../../src/engine/compression.js';
 
 // Pipeline simulé : un token par mot, score fourni par une table (0 par défaut,
@@ -212,4 +212,45 @@ test('recollerScores : le flux rendu couvre TOUS les tokens du texte', () => {
   const out = recollerScores(tokens, [{ index: 1, garder: 0.5 }]);
   assert.equal(out.length, 4, 'un flux troué désynchroniserait l\'alignement');
   assert.deepEqual(out.map(o => o.mot), ['a', 'b', 'c', 'd']);
+});
+
+// --- SEGMENTS (mise en page préservée) ------------------------------------
+// DOCX et PDF « Préserver » ne réécrivent pas un texte : ils redessinent des
+// FRAGMENTS à leurs positions. Sans restitution par segment, l'option ne
+// pouvait exister que sur les sorties texte — ce qui la vide de son intérêt,
+// puisque l'utilisateur veut moins de tokens dans le fichier qu'il ENVOIE.
+
+test('compresserSegments : chaque mot retourne dans SON segment', async () => {
+  const r = await compresserSegments(['alpha beta', 'gamma delta'],
+    fauxPipe({ alpha: 0.9, beta: 0.1, gamma: 0.1, delta: 0.9 }), { taux: 0.5 });
+  assert.deepEqual(r.segments, ['alpha', 'delta']);
+});
+
+test('compresserSegments : un segment entièrement supprimé rend une chaîne vide', async () => {
+  const r = await compresserSegments(['garder', 'jeter ceci'],
+    fauxPipe({ garder: 0.9 }), { taux: 0.34 });
+  assert.equal(r.segments.length, 2);
+  assert.equal(r.segments[1], '', 'le fragment ne sera simplement pas dessiné');
+});
+
+test('compresserSegments : le nombre de segments rendus est TOUJOURS celui reçu', async () => {
+  // Un décalage ici collerait le texte d'un fragment sur un autre — donc du
+  // texte à la mauvaise position dans le document reconstruit.
+  const entree = ['un', '', 'deux trois', 'quatre'];
+  const r = await compresserSegments(entree, fauxPipe(), { taux: 1 });
+  assert.equal(r.segments.length, entree.length);
+});
+
+test('compresserSegments : un placeholder reste dans son segment d\u2019origine', async () => {
+  const r = await compresserSegments(['texte [PERSONNE_1] ici', 'autre'],
+    fauxPipe(), { taux: 0 });
+  assert.ok(r.segments[0].includes('[PERSONNE_1]'));
+  assert.ok(!r.segments[1].includes('[PERSONNE_1]'));
+});
+
+test('compresser reste un cas particulier de compresserSegments', async () => {
+  // Une seule implémentation : deux copies « identiques » divergent toujours.
+  const r = await compresser('alpha beta', fauxPipe({ alpha: 0.9 }), { taux: 0.5 });
+  assert.equal(r.texte, 'alpha');
+  assert.equal(r.motsAvant, 2);
 });
