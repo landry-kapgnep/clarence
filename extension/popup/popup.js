@@ -1208,24 +1208,30 @@ async function ensureNER() {
   }
 }
 var compressionInfo = null;
-var compressionEchouee = false;
+var compressionEchouee = null;
 function crochetCompression() {
   if (!$("fileCompress")?.checked || !compressionWorker) return null;
   const taux = Number($("fileCompressTaux")?.value || 0.5);
   return async (segments) => {
-    const r = await compresserSegments(segments, compressionPipeline(), { taux });
-    compressionInfo = {
-      avant: (compressionInfo?.avant || 0) + r.tokensAvant,
-      apres: (compressionInfo?.apres || 0) + r.tokensApres
-    };
-    return r.segments;
+    try {
+      const r = await compresserSegments(segments, compressionPipeline(), { taux });
+      compressionInfo = {
+        avant: (compressionInfo?.avant || 0) + r.tokensAvant,
+        apres: (compressionInfo?.apres || 0) + r.tokensApres
+      };
+      return r.segments;
+    } catch (err) {
+      console.error("[clarence] compression interrompue :", err);
+      compressionEchouee = compressionEchouee || String(err?.message || err);
+      return segments;
+    }
   };
 }
 var compressionWorker = null;
 var compressionReqId = 0;
 var compressionPending = /* @__PURE__ */ new Map();
 async function ensureCompression() {
-  if (compressionWorker) return true;
+  if (compressionWorker) return { ok: true };
   const worker = new Worker(chrome.runtime.getURL("popup/compression-worker.js"), { type: "module" });
   worker.addEventListener("message", (ev) => {
     const msg = ev.data || {};
@@ -1240,28 +1246,35 @@ async function ensureCompression() {
     compressionPending.delete(msg.id);
     msg.type === "result" ? p.resolve(msg.flux) : p.reject(new Error(msg.message));
   });
-  const ok = await new Promise((resolve) => {
+  const issue = await new Promise((resolve) => {
     const onReady = (ev) => {
       const msg = ev.data || {};
       if (msg.type === "compressionReady") {
         worker.removeEventListener("message", onReady);
-        resolve(true);
+        resolve({ ok: true });
       } else if (msg.type === "error" && msg.id == null) {
         worker.removeEventListener("message", onReady);
         console.error("[clarence] compression indisponible :", msg.message);
         worker.terminate();
-        resolve(false);
+        resolve({ ok: false, message: msg.message });
       }
     };
+    const minuteur = setTimeout(() => {
+      worker.removeEventListener("message", onReady);
+      worker.terminate();
+      resolve({ ok: false, message: "d\xE9lai d\xE9pass\xE9 au chargement du mod\xE8le" });
+    }, 18e4);
     worker.addEventListener("message", onReady);
     worker.postMessage({
       type: "initCompression",
       wasmPath: chrome.runtime.getURL("vendor/"),
       model: COMPRESSION_MODEL
     });
+    const stop = () => clearTimeout(minuteur);
+    worker.addEventListener("message", stop, { once: true });
   });
-  if (ok) compressionWorker = worker;
-  return ok;
+  if (issue.ok) compressionWorker = worker;
+  return issue;
 }
 var compressionPipeline = () => (texte) => new Promise((resolve, reject) => {
   if (!compressionWorker) return reject(new Error("compression non charg\xE9e"));
@@ -1494,7 +1507,7 @@ function invalidateFileResult() {
   if (!fileOutBlob) return;
   fileOutBlob = null;
   compressionInfo = null;
-  compressionEchouee = false;
+  compressionEchouee = null;
   fileOutName = "";
   $("fileResults").hidden = true;
   $("dragCard").hidden = true;
@@ -1568,7 +1581,7 @@ function setChosenFile(file) {
   chosenFile = file;
   fileOutBlob = null;
   compressionInfo = null;
-  compressionEchouee = false;
+  compressionEchouee = null;
   const fileNameEl = $("fileName");
   const fileMainEl = fileNameEl?.querySelector(".file-name-main");
   const fileExtEl = fileNameEl?.querySelector(".file-name-ext");
@@ -1699,7 +1712,7 @@ function showFileResults(mapping, copyable, duree) {
   $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
     (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
   ).join("")}</table>` : "<p>Aucun masque actif.</p>";
-  const suffixe = (duree ? ` Trait\xE9 en ${duree}.` : "") + (compressionEchouee ? " \u26A0 Compression indisponible : fichier produit sans elle." : "") + (compressionInfo ? ` Texte r\xE9duit : \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
+  const suffixe = (duree ? ` Trait\xE9 en ${duree}.` : "") + (compressionEchouee ? ` \u26A0 Compression indisponible (${compressionEchouee}) \u2014 fichier produit sans elle.` : "") + (compressionInfo ? ` Texte r\xE9duit : \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
   $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.") + suffixe;
   $("fileSummary").className = "status active";
   $("fileResults").hidden = false;
@@ -2176,9 +2189,10 @@ async function processFile() {
     }
     if ($("fileCompress")?.checked) {
       fileSetStatus("Pr\xE9paration de la compression\u2026");
-      if (!await ensureCompression()) {
+      const dispo = await ensureCompression();
+      if (!dispo.ok) {
         $("fileCompress").checked = false;
-        compressionEchouee = true;
+        compressionEchouee = dispo.message || "raison inconnue";
       }
       verifierAnnulation(signal);
     }
@@ -2203,14 +2217,20 @@ async function processFile() {
       fileSetStatus("Compression du texte\u2026");
       const taux = Number($("fileCompressTaux")?.value || 0.5);
       let avant = 0, apres = 0;
-      for (const r of results) {
-        const c = await compresser(r.maskedText, compressionPipeline(), { taux });
-        r.maskedText = c.texte;
-        avant += c.tokensAvant;
-        apres += c.tokensApres;
-        verifierAnnulation(signal);
+      try {
+        for (const r of results) {
+          const c = await compresser(r.maskedText, compressionPipeline(), { taux });
+          r.maskedText = c.texte;
+          avant += c.tokensAvant;
+          apres += c.tokensApres;
+          verifierAnnulation(signal);
+        }
+        compressionInfo = { avant, apres };
+      } catch (err) {
+        if (estAnnulation(err)) throw err;
+        console.error("[clarence] compression interrompue :", err);
+        compressionEchouee = String(err?.message || err);
       }
-      compressionInfo = { avant, apres };
     }
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus("R\xE9\xE9criture du fichier\u2026");
@@ -2239,7 +2259,7 @@ async function processFile() {
     if (!courant()) return;
     fileOutBlob = null;
     compressionInfo = null;
-    compressionEchouee = false;
+    compressionEchouee = null;
     $("fileResults").hidden = true;
     $("dragCard").hidden = true;
     fileSetStatus("Traitement \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
@@ -2291,7 +2311,7 @@ $("fileResetBtn").addEventListener("click", () => {
   chosenFile = null;
   fileOutBlob = null;
   compressionInfo = null;
-  compressionEchouee = false;
+  compressionEchouee = null;
   $("fileInput").value = "";
   $("fileChosen").hidden = true;
   $("filePoids").hidden = true;

@@ -425,7 +425,10 @@ async function ensureNER() {
 let compressionInfo = null;
 // Vrai si le modèle n'a pas pu être chargé : reporté jusqu'au résumé final,
 // seul endroit qui ne sera pas écrasé par l'étape suivante.
-let compressionEchouee = false;
+// Porte le message d'erreur RÉEL, pas un libellé générique : sans lui, un
+// échec de chargement et un échec d'inférence sont indiscernables à l'écran, et
+// on en est réduit à deviner. C'est exactement ce qui s'est passé.
+let compressionEchouee = null;
 
 // Crochet passé aux adaptateurs qui préservent la mise en page (DOCX, PDF
 // « Préserver ») : ils redessinent des FRAGMENTS, pas un texte, et ont donc
@@ -435,12 +438,22 @@ function crochetCompression() {
   if (!$('fileCompress')?.checked || !compressionWorker) return null;
   const taux = Number($('fileCompressTaux')?.value || 0.5);
   return async (segments) => {
-    const r = await compresserSegments(segments, compressionPipeline(), { taux });
-    compressionInfo = {
-      avant: (compressionInfo?.avant || 0) + r.tokensAvant,
-      apres: (compressionInfo?.apres || 0) + r.tokensApres
-    };
-    return r.segments;
+    // ÉCHEC NON DESTRUCTIF. Sans ce garde, une erreur de compression remonte
+    // jusqu'au try/catch du traitement et fait perdre TOUT le résultat — alors
+    // que l'anonymisation, elle, a réussi. On rend les segments intacts, on
+    // note la raison, et le fichier sort simplement non compressé.
+    try {
+      const r = await compresserSegments(segments, compressionPipeline(), { taux });
+      compressionInfo = {
+        avant: (compressionInfo?.avant || 0) + r.tokensAvant,
+        apres: (compressionInfo?.apres || 0) + r.tokensApres
+      };
+      return r.segments;
+    } catch (err) {
+      console.error('[clarence] compression interrompue :', err);
+      compressionEchouee = compressionEchouee || String(err?.message || err);
+      return segments;
+    }
   };
 }
 
@@ -458,7 +471,7 @@ const compressionPending = new Map();
 // rien — thread neuf, graphe de modules identique. Il faut un point d'entrée
 // qui n'importe QUE Transformers.js.
 async function ensureCompression() {
-  if (compressionWorker) return true;
+  if (compressionWorker) return { ok: true };
   const worker = new Worker(chrome.runtime.getURL('popup/compression-worker.js'), { type: 'module' });
   worker.addEventListener('message', ev => {
     const msg = ev.data || {};
@@ -474,28 +487,38 @@ async function ensureCompression() {
     msg.type === 'result' ? p.resolve(msg.flux) : p.reject(new Error(msg.message));
   });
 
-  const ok = await new Promise(resolve => {
+  const issue = await new Promise(resolve => {
     const onReady = ev => {
       const msg = ev.data || {};
       if (msg.type === 'compressionReady') {
         worker.removeEventListener('message', onReady);
-        resolve(true);
+        resolve({ ok: true });
       } else if (msg.type === 'error' && msg.id == null) {
         worker.removeEventListener('message', onReady);
         console.error('[clarence] compression indisponible :', msg.message);
         worker.terminate();
-        resolve(false);
+        resolve({ ok: false, message: msg.message });
       }
     };
+    // Un worker qui ne répond NI ready NI erreur laisserait la promesse en
+    // suspens et le traitement figé sans explication — déjà vu sur pdfjs.
+    const minuteur = setTimeout(() => {
+      worker.removeEventListener('message', onReady);
+      worker.terminate();
+      resolve({ ok: false, message: 'délai dépassé au chargement du modèle' });
+    }, 180000);
     worker.addEventListener('message', onReady);
     worker.postMessage({
       type: 'initCompression',
       wasmPath: chrome.runtime.getURL('vendor/'),
       model: COMPRESSION_MODEL
     });
+    // Le minuteur est annulé dès qu'une réponse arrive.
+    const stop = () => clearTimeout(minuteur);
+    worker.addEventListener('message', stop, { once: true });
   });
-  if (ok) compressionWorker = worker;
-  return ok;
+  if (issue.ok) compressionWorker = worker;
+  return issue;
 }
 
 // Pipeline injecté dans `compresser` : (texte) => [{ mot, garder }].
@@ -799,7 +822,7 @@ function invalidateFileResult() {
   if (!fileOutBlob) return;
   fileOutBlob = null;
   compressionInfo = null;
-  compressionEchouee = false;
+  compressionEchouee = null;
   fileOutName = '';
   $('fileResults').hidden = true;
   $('dragCard').hidden = true;
@@ -897,7 +920,7 @@ function setChosenFile(file) {
   chosenFile = file;
   fileOutBlob = null;
   compressionInfo = null;
-  compressionEchouee = false;
+  compressionEchouee = null;
   const fileNameEl = $('fileName');
   const fileMainEl = fileNameEl?.querySelector('.file-name-main');
   const fileExtEl = fileNameEl?.querySelector('.file-name-ext');
@@ -1113,7 +1136,7 @@ function showFileResults(mapping, copyable, duree) {
   // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
   // pas ce que « durée de traitement » désigne pour l'utilisateur.
   const suffixe = (duree ? ` Traité en ${duree}.` : '') +
-    (compressionEchouee ? ' ⚠ Compression indisponible : fichier produit sans elle.' : '') +
+    (compressionEchouee ? ` ⚠ Compression indisponible (${compressionEchouee}) — fichier produit sans elle.` : '') +
     (compressionInfo
     // Ordre de grandeur, jamais un chiffre garanti (cadrage §10) : le vrai
     // compte dépend du tokeniseur du modèle destinataire, qu'on ne connaît pas.
@@ -1771,13 +1794,14 @@ async function processFile() {
     // « Copier » ferait figer le bouton une minute sans explication.
     if ($('fileCompress')?.checked) {
       fileSetStatus('Préparation de la compression…');
-      if (!await ensureCompression()) {
+      const dispo = await ensureCompression();
+      if (!dispo.ok) {
         $('fileCompress').checked = false;
         // PAS un fileSetStatus : la ligne suivante est « Détection en cours… »
         // et l'écraserait aussitôt. L'échec passait donc totalement inaperçu et
         // le fichier ressortait non compressé « sans que rien n'ait changé ».
         // Il est mémorisé et affiché avec le résumé, qui, lui, reste.
-        compressionEchouee = true;
+        compressionEchouee = dispo.message || 'raison inconnue';
       }
       verifierAnnulation(signal);
     }
@@ -1814,13 +1838,22 @@ async function processFile() {
       fileSetStatus('Compression du texte…');
       const taux = Number($('fileCompressTaux')?.value || 0.5);
       let avant = 0, apres = 0;
-      for (const r of results) {
-        const c = await compresser(r.maskedText, compressionPipeline(), { taux });
-        r.maskedText = c.texte;
-        avant += c.tokensAvant; apres += c.tokensApres;
-        verifierAnnulation(signal);
+      try {
+        for (const r of results) {
+          const c = await compresser(r.maskedText, compressionPipeline(), { taux });
+          r.maskedText = c.texte;
+          avant += c.tokensAvant; apres += c.tokensApres;
+          verifierAnnulation(signal);
+        }
+        compressionInfo = { avant, apres };
+      } catch (err) {
+        // Même principe que le crochet : l'anonymisation a réussi, on ne la
+        // jette pas parce que l'option a échoué. Une annulation, elle, doit
+        // continuer de remonter.
+        if (estAnnulation(err)) throw err;
+        console.error('[clarence] compression interrompue :', err);
+        compressionEchouee = String(err?.message || err);
       }
-      compressionInfo = { avant, apres };
     }
 
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
@@ -1855,7 +1888,7 @@ async function processFile() {
     if (!courant()) return;
     fileOutBlob = null;
     compressionInfo = null;
-  compressionEchouee = false;
+  compressionEchouee = null;
     $('fileResults').hidden = true;
     $('dragCard').hidden = true;
     fileSetStatus('Traitement échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
@@ -1926,7 +1959,7 @@ $('fileResetBtn').addEventListener('click', () => {
   chosenFile = null;
   fileOutBlob = null;
   compressionInfo = null;
-  compressionEchouee = false;
+  compressionEchouee = null;
   $('fileInput').value = '';
   $('fileChosen').hidden = true;
   $('filePoids').hidden = true;
