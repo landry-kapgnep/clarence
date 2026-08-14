@@ -143,6 +143,7 @@
         <label class="hint pseudo-toggle" style="display:block;margin-top:8px;cursor:pointer;">
           <input type="checkbox" id="fileRealisticToggle">
           <span class="square-checkbox" aria-hidden="true"></span>
+          <img class="opt-icone" src="img/ClarencePsButtonW.png" alt="" aria-hidden="true">
           <span class="checkbox-label-text">Pseudonymes</span>
           <span class="info-tip" tabindex="0" role="note"
                 aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. Le texte reste lisible et la même personne garde le même pseudonyme.">?
@@ -168,6 +169,7 @@
           <label class="hint pseudo-toggle" style="display:block;cursor:pointer;">
             <input type="checkbox" id="fileCompress">
             <span class="square-checkbox" aria-hidden="true"></span>
+            <img class="opt-icone" src="img/ClarenceTkButtonW.png" alt="" aria-hidden="true">
             <span class="checkbox-label-text">Économiser des tokens</span>
             <span class="info-tip" tabindex="0" role="note"
                   aria-label="Supprime les mots peu porteurs. La prose est appauvrie et ne peut plus être relue. Données masquées et négations préservées. Premier usage : 170 Mo à télécharger.">?
@@ -191,6 +193,24 @@
               <option value="0.3">30 %</option>
             </select>
           </label>
+        </div>
+
+        <!-- Termes propres à CE document, hors profil. Volontairement à
+             l'extérieur de « Personnaliser le masquage » : les champs qui s'y
+             trouvent sont ÉCRASÉS au chargement d'un profil, et « Enregistrer »
+             y pousserait des termes qui ne valent que pour un fichier.
+             Sans titre de section : les deux libellés suffisent. -->
+        <div id="docTerms">
+          <div class="doc-terms-grid">
+            <label class="hint" for="docKeep">Ne jamais masquer
+              <textarea id="docKeep" class="mini" placeholder="ChatGPT, MT, OpenAI"></textarea>
+              <span class="termes-lus" id="docKeepLus"></span>
+            </label>
+            <label class="hint" for="docMask">Toujours masquer
+              <textarea id="docMask" class="mini" placeholder="nom du client, nom de code"></textarea>
+              <span class="termes-lus" id="docMaskLus"></span>
+            </label>
+          </div>
         </div>
 
         <details id="fileCustomRules">

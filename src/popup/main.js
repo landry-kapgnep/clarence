@@ -63,7 +63,10 @@ const parseLines = parseTermes;
 // programmatique ne déclenche PAS `input`, et le déclencher à la main
 // appellerait `invalidateFileResult`, qui détruirait le résultat qu'on est en
 // train de régénérer. On rafraîchit donc explicitement.
-const APERCUS_TERMES = [['fileAlwaysKeep', 'fileAlwaysKeepLus'], ['fileAlwaysMask', 'fileAlwaysMaskLus']];
+const APERCUS_TERMES = [
+  ['docKeep', 'docKeepLus'], ['docMask', 'docMaskLus'],
+  ['fileAlwaysKeep', 'fileAlwaysKeepLus'], ['fileAlwaysMask', 'fileAlwaysMaskLus']
+];
 
 function rendreApercuTermes() {
   for (const [idChamp, idApercu] of APERCUS_TERMES) {
@@ -839,7 +842,7 @@ function invalidateFileResult() {
 for (const id of ['pdfModeLight', 'pdfModePreserve', 'fileRealisticToggle', 'filePseudoLocale']) {
   $(id)?.addEventListener('change', invalidateFileResult);
 }
-for (const id of ['fileAlwaysMask', 'fileAlwaysKeep']) {
+for (const id of ['fileAlwaysMask', 'fileAlwaysKeep', 'docKeep', 'docMask']) {
   $(id)?.addEventListener('input', invalidateFileResult);
 }
 
@@ -924,6 +927,12 @@ function setChosenFile(file) {
   fileOutBlob = null;
   compressionInfo = null;
   compressionEchouee = null;
+  if ($('docKeep')) $('docKeep').value = '';
+  if ($('docMask')) $('docMask').value = '';
+  // Écriture PROGRAMMATIQUE : elle ne déclenche pas `input`, donc l'aperçu doit
+  // être rafraîchi à la main. L'oublier laisserait afficher les termes du
+  // document précédent.
+  rendreApercuTermes();
   const fileNameEl = $('fileName');
   const fileMainEl = fileNameEl?.querySelector('.file-name-main');
   const fileExtEl = fileNameEl?.querySelector('.file-name-ext');
@@ -987,23 +996,22 @@ function fileMaskOptions(units = []) {
 // 45 secondes d'inférence et le geste cesserait d'être utilisable.
 let fileRegen = null;
 
-// UN SEUL vocabulaire, celui du profil. Le bloc « Termes de ce document » a été
-// retiré : deux endroits pour la même intention encombraient plus qu'ils
-// n'aidaient.
-//
-// ⚠️ CONTREPARTIE ASSUMÉE : ces champs sont ÉCRASÉS au chargement d'un profil.
-// Un terme retiré via la table de correspondance y atterrit, et changer de
-// profil le perd. C'est le défaut qui avait motivé la séparation ; il revient
-// avec la simplification.
+// Vocabulaire du PROFIL (réutilisable, écrasé au changement de profil) FUSIONNÉ
+// avec celui du DOCUMENT courant (#docKeep / #docMask, effacés au changement de
+// fichier). Les deux endroits restent SÉPARÉS pour une raison fonctionnelle :
+// les champs de profil sont écrasés à son chargement, y ranger le vocabulaire
+// d'un document le perdrait au premier changement.
 //
 // Deux fonctions plutôt que des lectures dispersées : quatre points d'appel, et
 // en oublier un donnerait un masquage différent selon le chemin — un écart
 // qu'on ne voit qu'en comparant deux sorties.
 const termesAGarder = () => [
   ...parseLines($('fileAlwaysKeep')?.value),
+  ...parseLines($('docKeep')?.value)
 ];
 const termesAMasquer = () => [
   ...parseLines($('fileAlwaysMask')?.value),
+  ...parseLines($('docMask')?.value),
   ...identityForceTerms()
 ];
 // Retire un terme du masquage et REJOUE le masquage sur le fichier entier,
@@ -1020,7 +1028,7 @@ const termesAMasquer = () => [
 // jamais par surprise. Et il n'y a qu'une seule liste, donc rien à
 // resynchroniser.
 async function retirerDuMasquage(valeur) {
-  const champ = $('fileAlwaysKeep');
+  const champ = $('docKeep');
   if (!fileRegen || !champ) return;
   const avant = champ.value;
   champ.value = ajouterTerme(avant, valeur);

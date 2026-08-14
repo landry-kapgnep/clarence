@@ -328,6 +328,14 @@ footer {
 /* ===== Images de marque (variantes blanches) ===== */
 .logo { width: 200px; height: auto; flex-shrink: 0; margin: auto; }
 .dlbtn { width: 20px; height: auto; flex-shrink: 0; }
+/* Icône d'option, alignée sur le libellé. Même échelle que .cpbtn. */
+.opt-icone {
+  width: 15px;
+  height: auto;
+  vertical-align: middle;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
 .cpbtn { width: 15px; height: auto; flex-shrink: 0; }
 /* Les pictos de bouton sont blancs ; sur un bouton clair il faut les inverser. */
 .btn-primary .dlbtn, .btn-primary .cpbtn { filter: invert(1); }

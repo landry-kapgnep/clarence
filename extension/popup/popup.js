@@ -978,7 +978,12 @@ var TYPE_DISPLAY = {
   PERSONNALISE: "Perso"
 };
 var parseLines = parseTermes;
-var APERCUS_TERMES = [["fileAlwaysKeep", "fileAlwaysKeepLus"], ["fileAlwaysMask", "fileAlwaysMaskLus"]];
+var APERCUS_TERMES = [
+  ["docKeep", "docKeepLus"],
+  ["docMask", "docMaskLus"],
+  ["fileAlwaysKeep", "fileAlwaysKeepLus"],
+  ["fileAlwaysMask", "fileAlwaysMaskLus"]
+];
 function rendreApercuTermes() {
   for (const [idChamp, idApercu] of APERCUS_TERMES) {
     const champ = $(idChamp), apercu = $(idApercu);
@@ -1519,7 +1524,7 @@ function invalidateFileResult() {
 for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle", "filePseudoLocale"]) {
   $(id)?.addEventListener("change", invalidateFileResult);
 }
-for (const id of ["fileAlwaysMask", "fileAlwaysKeep"]) {
+for (const id of ["fileAlwaysMask", "fileAlwaysKeep", "docKeep", "docMask"]) {
   $(id)?.addEventListener("input", invalidateFileResult);
 }
 function fileSetStatus(msg, cls = "") {
@@ -1582,6 +1587,9 @@ function setChosenFile(file) {
   fileOutBlob = null;
   compressionInfo = null;
   compressionEchouee = null;
+  if ($("docKeep")) $("docKeep").value = "";
+  if ($("docMask")) $("docMask").value = "";
+  rendreApercuTermes();
   const fileNameEl = $("fileName");
   const fileMainEl = fileNameEl?.querySelector(".file-name-main");
   const fileExtEl = fileNameEl?.querySelector(".file-name-ext");
@@ -1625,14 +1633,16 @@ function fileMaskOptions(units = []) {
 }
 var fileRegen = null;
 var termesAGarder = () => [
-  ...parseLines($("fileAlwaysKeep")?.value)
+  ...parseLines($("fileAlwaysKeep")?.value),
+  ...parseLines($("docKeep")?.value)
 ];
 var termesAMasquer = () => [
   ...parseLines($("fileAlwaysMask")?.value),
+  ...parseLines($("docMask")?.value),
   ...identityForceTerms()
 ];
 async function retirerDuMasquage(valeur) {
-  const champ = $("fileAlwaysKeep");
+  const champ = $("docKeep");
   if (!fileRegen || !champ) return;
   const avant = champ.value;
   champ.value = ajouterTerme(avant, valeur);
