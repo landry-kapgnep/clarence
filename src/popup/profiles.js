@@ -32,12 +32,31 @@ const TECH_KEEP = [
   'GPT-4o', 'Llama', 'Mistral', 'Claude', 'Gemini', 'Transformers.js', 'WebAssembly'
 ];
 
+// PLATEFORMES ET PRODUITS PUBLICS. Même statut que les technos : jamais une
+// donnée personnelle, et pourtant massivement masqués — mesuré sur un mémoire
+// réel, « ChatGPT » ressortait 41 fois et « Facebook » 6 fois, dans un document
+// QUI PORTE SUR eux.
+//
+// Ils vont dans un profil ÉDITABLE, pas dans le moteur : la classe est ouverte
+// (il s'en crée tous les mois), et une liste cachée dans le moteur serait
+// exactement ce que la règle du projet interdit.
+const PUBLIC_KEEP = [
+  'ChatGPT', 'OpenAI', 'GPT-4', 'GPT-4o', 'Claude', 'Anthropic', 'Gemini',
+  'Copilot', 'Mistral', 'LLaMA', 'DeepSeek', 'DeepL', 'Google Translate',
+  'Google', 'Microsoft', 'Meta', 'Facebook', 'Instagram', 'LinkedIn', 'Bing',
+  'YouTube', 'Reddit', 'Wikipedia', 'Twitter', 'Slack', 'Zoom', 'Teams'
+];
+
 // Profils livrés. seedDefaults les ajoute SEULEMENT s'ils n'existent pas déjà
 // (jamais d'écrasement d'une version éditée par l'utilisateur).
 export function defaultProfiles() {
   return [
     { name: 'Vierge', alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: 'Développeur / Tech', alwaysKeep: [...TECH_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
+    { name: 'Développeur / Tech', alwaysKeep: [...TECH_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
+    // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
+    // document technique : ce profil sert le rédacteur, l'étudiant, le
+    // chercheur — sans leur imposer la liste des frameworks.
+    { name: 'Rédaction / Recherche', alwaysKeep: [...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
   ];
 }
 

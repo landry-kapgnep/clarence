@@ -207,8 +207,47 @@ function estUneDate(valeur) {
   return /\d/.test(reste);
 }
 
+// PRONOMS — jamais un nom propre, quelle que soit la confiance du modèle.
+//
+// Mesuré sur un vrai mémoire : « I've » sort en PERSONNE, quatre fois. Le
+// modèle voit un pronom en tête de phrase, donc en majuscule, et le prend pour
+// un nom. Aucun seuil ne sépare ce cas — c'est une question de nature, pas de
+// score.
+//
+// UNE LISTE STATIQUE EST ADMISSIBLE ICI, et seulement parce que la classe est
+// FERMÉE : même règle que honorifics.js et que les opérateurs logiques de
+// compression.js. Une langue compte une poignée de pronoms et n'en invente pas,
+// contrairement aux noms, aux entreprises ou aux sigles — qu'on refuse
+// catégoriquement de lister.
+//
+// NE PAS Y GLISSER de noms communs (« Universities », « Contents »…) : ce sont
+// des classes OUVERTES, et leur place est dans un profil éditable, jamais ici.
+const PRONOMS = new Set([
+  'i', 'me', 'my', 'mine', 'myself', 'you', 'your', 'yours', 'he', 'him', 'his',
+  'she', 'her', 'hers', 'it', 'its', 'we', 'us', 'our', 'ours', 'they', 'them',
+  'their', 'theirs', 'this', 'that', 'these', 'those', 'who', 'whom', 'whose',
+  'je', 'me', 'moi', 'tu', 'toi', 'il', 'elle', 'on', 'nous', 'vous', 'ils',
+  'elles', 'lui', 'leur', 'leurs', 'celui', 'celle', 'ceux', 'celles', 'ceci',
+  'cela', 'qui', 'que', 'dont',
+  'yo', 'tu', 'el', 'ella', 'nosotros', 'vosotros', 'ellos', 'ellas',
+  'ich', 'du', 'er', 'sie', 'es', 'wir', 'ihr', 'sein', 'ihre'
+]);
+
+// Les contractions anglaises (« I've », « he's », « they'll ») portent encore un
+// pronom : on compare sur la partie qui PRÉCÈDE l'apostrophe. « O'Brien » n'est
+// pas concerné, « O » n'étant pas un pronom.
+export function estPronom(valeur) {
+  const nu = String(valeur || '').trim().toLowerCase();
+  const avantApostrophe = nu.split(/['’]/)[0];
+  return PRONOMS.has(nu) || (nu.includes("'") || nu.includes('’')
+    ? PRONOMS.has(avantApostrophe) : false);
+}
+
 function estPlausiblePourLeType(type, valeur) {
-  if (TYPES_NOMS_PROPRES.has(type)) return /\p{Lu}/u.test(valeur);
+  if (TYPES_NOMS_PROPRES.has(type)) {
+    if (estPronom(valeur)) return false;
+    return /\p{Lu}/u.test(valeur);
+  }
   if (type === 'DATE_NAISSANCE') return estUneDate(valeur);
   return true;
 }

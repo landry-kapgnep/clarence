@@ -2,7 +2,7 @@
 // Pipeline SIMULÉ (comme ner-chunk.test.mjs) — aucun modèle chargé ici.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs, desaccentuer } from '../../src/engine/gliner.js';
+import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs, desaccentuer, estPronom } from '../../src/engine/gliner.js';
 import { mergeEntities } from '../../src/engine/merge.js';
 import { maskText } from '../../src/engine/masking.js';
 
@@ -515,4 +515,37 @@ test('sans accent dans le texte, AUCUNE passe supplémentaire n\'est payée', as
   appels = 0;
   await detectGliner('MARTÎN DUBOIS habite Paris', pipe);
   assert.ok(appels > sansAccents, 'un texte accentué doit déclencher la seconde passe');
+});
+
+// --- PRONOMS (sur-masquage P11) -------------------------------------------
+// Mesuré sur un vrai mémoire : « I've » sortait en PERSONNE, quatre fois. Le
+// modèle voit un pronom en tête de phrase, donc en majuscule, et le prend pour
+// un nom. Aucun seuil ne sépare ce cas : c'est une question de nature.
+
+test('un pronom n\'est jamais un nom propre, même très bien noté', async () => {
+  const pipe = fakePipe({ "I've": [{ label: 'person', len: 4, score: 0.99 }] });
+  assert.equal((await detectGliner("I've seen the report", pipe)).length, 0);
+});
+
+test('estPronom couvre les contractions et les quatre langues', () => {
+  for (const m of ["I've", "he's", "they'll", 'I', 'we', 'their',
+                   'je', 'il', 'elles', 'nous',
+                   'yo', 'ella', 'ich', 'wir']) {
+    assert.equal(estPronom(m), true, m);
+  }
+});
+
+test('un patronyme à apostrophe n\'est PAS pris pour un pronom', () => {
+  // « O'Brien » : ce qui précède l'apostrophe n'est pas un pronom.
+  for (const nom of ["O'Brien", "D'Angelo", "O'Neill", 'Moorkens', 'Vasseur']) {
+    assert.equal(estPronom(nom), false, nom);
+  }
+});
+
+test('la liste des pronoms reste FERMÉE : aucun nom commun dedans', () => {
+  // Les noms communs sur-masqués (« Universities », « Contents ») sont une
+  // classe OUVERTE : leur place est dans un profil éditable, jamais ici.
+  for (const mot of ['Universities', 'Contents', 'Overview', 'Company', 'Report']) {
+    assert.equal(estPronom(mot), false, mot);
+  }
 });

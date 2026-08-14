@@ -120,8 +120,90 @@ function estUneDate(valeur) {
   const reste = valeur.slice(0, annee.index) + valeur.slice(annee.index + annee[0].length);
   return /\d/.test(reste);
 }
+var PRONOMS = /* @__PURE__ */ new Set([
+  "i",
+  "me",
+  "my",
+  "mine",
+  "myself",
+  "you",
+  "your",
+  "yours",
+  "he",
+  "him",
+  "his",
+  "she",
+  "her",
+  "hers",
+  "it",
+  "its",
+  "we",
+  "us",
+  "our",
+  "ours",
+  "they",
+  "them",
+  "their",
+  "theirs",
+  "this",
+  "that",
+  "these",
+  "those",
+  "who",
+  "whom",
+  "whose",
+  "je",
+  "me",
+  "moi",
+  "tu",
+  "toi",
+  "il",
+  "elle",
+  "on",
+  "nous",
+  "vous",
+  "ils",
+  "elles",
+  "lui",
+  "leur",
+  "leurs",
+  "celui",
+  "celle",
+  "ceux",
+  "celles",
+  "ceci",
+  "cela",
+  "qui",
+  "que",
+  "dont",
+  "yo",
+  "tu",
+  "el",
+  "ella",
+  "nosotros",
+  "vosotros",
+  "ellos",
+  "ellas",
+  "ich",
+  "du",
+  "er",
+  "sie",
+  "es",
+  "wir",
+  "ihr",
+  "sein",
+  "ihre"
+]);
+function estPronom(valeur) {
+  const nu = String(valeur || "").trim().toLowerCase();
+  const avantApostrophe = nu.split(/['’]/)[0];
+  return PRONOMS.has(nu) || (nu.includes("'") || nu.includes("\u2019") ? PRONOMS.has(avantApostrophe) : false);
+}
 function estPlausiblePourLeType(type, valeur) {
-  if (TYPES_NOMS_PROPRES.has(type)) return new RegExp("\\p{Lu}", "u").test(valeur);
+  if (TYPES_NOMS_PROPRES.has(type)) {
+    if (estPronom(valeur)) return false;
+    return new RegExp("\\p{Lu}", "u").test(valeur);
+  }
   if (type === "DATE_NAISSANCE") return estUneDate(valeur);
   return true;
 }
@@ -809,10 +891,43 @@ var TECH_KEEP = [
   "Transformers.js",
   "WebAssembly"
 ];
+var PUBLIC_KEEP = [
+  "ChatGPT",
+  "OpenAI",
+  "GPT-4",
+  "GPT-4o",
+  "Claude",
+  "Anthropic",
+  "Gemini",
+  "Copilot",
+  "Mistral",
+  "LLaMA",
+  "DeepSeek",
+  "DeepL",
+  "Google Translate",
+  "Google",
+  "Microsoft",
+  "Meta",
+  "Facebook",
+  "Instagram",
+  "LinkedIn",
+  "Bing",
+  "YouTube",
+  "Reddit",
+  "Wikipedia",
+  "Twitter",
+  "Slack",
+  "Zoom",
+  "Teams"
+];
 function defaultProfiles() {
   return [
     { name: "Vierge", alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...TECH_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
+    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...TECH_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
+    // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
+    // document technique : ce profil sert le rédacteur, l'étudiant, le
+    // chercheur — sans leur imposer la liste des frameworks.
+    { name: "R\xE9daction / Recherche", alwaysKeep: [...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
   ];
 }
 function normalizeProfile(p) {

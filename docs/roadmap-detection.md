@@ -415,6 +415,71 @@ que `Meteojob` en début de ligne restait en clair.
 
 ---
 
+## P11 — Sur-masquage sur un mémoire réel : reproduit et trié (12/08/2026)
+
+Signalé à l'usage sur un mémoire de 21 pages : « les pronoms passent pour des
+personnes », et les auteurs cités en bibliographie sont masqués.
+
+**Reproduit — et la première moitié du signalement ne tient pas.** Sur 77 valeurs
+masquées, un SEUL pronom : `I've`, en PERSONNE, ×4. Le modèle voit un pronom en
+tête de phrase, donc en majuscule. Ce qui ressemblait à des pronoms partout
+venait du texte COMPRESSÉ, où les fragments en donnent l'illusion.
+
+### Le vrai sur-masquage, par ordre de poids
+
+| Valeur | × | Nature |
+|---|---|---|
+| `ChatGPT` | 41 | le SUJET du mémoire |
+| `MT` | 25 | sigle (machine translation) |
+| `Universities` | 8 | nom commun, masqué en LIEU |
+| `Moorkens`, `Rivas Ginel`, `Lankford`, `Andy Way`… | ~25 | auteurs CITÉS |
+| `Facebook`, `ProZ.com`, `Study.com`, `Bing` | ~15 | entités publiques |
+| `LLCER`, `LEA`, `UE` | ~13 | sigles de filières |
+| `Vanmassenhove et al., 2019).” (Moorkens` | 3 | span ayant avalé la ponctuation |
+
+### ✅ Corrigé — les pronoms, classe FERMÉE
+
+`estPronom` dans `gliner.js`, appliqué avant le filtre de majuscule. Admissible
+au sens de la règle du projet (même statut que `honorifics.js` et les opérateurs
+logiques) : une langue compte une poignée de pronoms et n'en invente pas. Les
+contractions sont couvertes en comparant ce qui PRÉCÈDE l'apostrophe, ce qui
+laisse `O'Brien` intact.
+
+Mesuré : `I've` disparaît (77 → 76 valeurs), banc **strictement inchangé**
+(100/83/98, borne basse 88 %).
+
+### ✅ Atténué — les plateformes publiques, dans un PROFIL
+
+`ChatGPT`, `Facebook`, `Bing`, `Google`, `Meta`… rejoignent la liste « ne jamais
+masquer » du profil livré, et un second profil **« Rédaction / Recherche »**
+apparaît : un document qui PARLE d'IA n'est pas forcément un document technique,
+et l'utilisateur n'a pas à hériter de la liste des frameworks pour autant.
+
+Dans un profil, jamais dans le moteur : la classe est OUVERTE (il s'en crée tous
+les mois), et une liste cachée serait exactement ce que la règle interdit.
+
+### ❌ NON corrigé, et probablement pas corrigible ici
+
+**Les auteurs cités.** Ce sont de vraies personnes, et leur nom EST une donnée
+personnelle au sens strict. Les masquer n'est pas un bug — c'est le bon
+comportement pour un contrat ou un dossier RH, et le mauvais pour une revue de
+littérature. Aucune règle de forme ne distingue « auteur publié » de « mon
+client » : c'est du CONTEXTE, et le contexte appartient à l'utilisateur. Le
+champ « ne jamais masquer » est fait pour ça, et depuis `1ebe7dc` il suffit de
+taper `Moorkens` pour épargner `Dr Joss Moorkens`.
+
+**`Universities`, `Contents`** — noms communs capitalisés. Classe ouverte, même
+raisonnement.
+
+**`MT`, `LEA`, `LLCER`** — sigles. Classe ouverte et propre à chaque domaine.
+
+**Le span à ponctuation de citation.** Le rejeter ferait FUIR les noms qu'il
+contient (`Vanmassenhove` n'apparaît nulle part ailleurs) ; le découper demande
+de décider où, et le mauvais découpage fuit aussi. Laissé en l'état, à traiter
+avec une mesure dédiée si le cas se répète.
+
+---
+
 ## ~~P10 — FUITE : un nom TOUT-MAJUSCULE accentué passe sous le seuil~~ ✅ CORRIGÉ (08/08/2026)
 
 Trouvé par le banc dès que le document piégé y a été branché — donc jamais vu
