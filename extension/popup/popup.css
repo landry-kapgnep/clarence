@@ -756,6 +756,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   align-items: stretch;
 }
 
+/* CHOIX EXCLUSIF : un socle noir COMMUN aux deux formats, segments jointifs.
+   Deux boutons séparés se liraient comme deux réglages indépendants qu'on
+   pourrait activer tous les deux ; ici l'un exclut l'autre, et la forme doit le
+   dire avant le texte. */
+#pdfModeChoice {
+  gap: 0;
+  padding: 3px;
+  background: #000000;
+}
+#pdfModeChoice .option-btn { background: transparent; }
+#pdfModeChoice .option-btn:hover { background: rgba(237, 230, 211, 0.06); }
+
 .option-btn {
   display: flex;
   align-items: center;
@@ -782,7 +794,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   background: var(--seal-lit);
   color: var(--seal);
 }
-.option-btn.teinte-tokens:has(input:checked) { background: var(--tan); }
+/* Une teinte par FONCTION. Le vert dit un gain, l'orange une transformation du
+   contenu. Le violet reste au choix de format, qui n'est ni l'un ni l'autre. */
+.option-btn.teinte-pseudo:has(input:checked) { background: var(--tan); }
+.option-btn.teinte-tokens:has(input:checked) { background: var(--moss); }
 .option-btn:has(input:checked) .claire { display: none; }
 .option-btn:has(input:checked) .sombre { display: block; }
 .option-btn:has(input:focus-visible) { outline: 2px solid var(--paper); outline-offset: 1px; }
@@ -969,16 +984,23 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   font-size: 9px;
   vertical-align: super;
   line-height: 0;
-  color: var(--paper-dim);
+  color: currentColor;
+  opacity: 0.6;
   cursor: help;
 }
-.info-tip:hover, .info-tip:focus { color: var(--tan); }
+.info-tip:hover, .info-tip:focus { opacity: 1; }
 .info-tip-box {
   position: absolute;
-  left: 0;
-  top: calc(100% + 6px);
+  /* Ancrée à DROITE du « ? » : elle se déploie vers la gauche, donc vers
+     l'intérieur de la popup quelle que soit la colonne. Ancrée à gauche, celle
+     de la colonne de droite sortait du cadre et se faisait couper.
+     Ancrée AU-DESSUS : sous le curseur, la main la masque en partie. */
+  right: 0;
+  left: auto;
+  bottom: calc(100% + 8px);
   z-index: 5;
-  width: 260px;
+  width: max-content;
+  max-width: 240px;
   padding: 8px 10px;
   font-size: 11px;
   line-height: 1.45;
@@ -1007,7 +1029,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 /* La teinte distingue les étapes. Le tan n'est pas une couleur nouvelle : c'est
    déjà l'une des quatre de la grille de fond (LETTER_GRID_TINT_VARS). */
 .progress-fill.teinte-tan {
-  background: linear-gradient(90deg, var(--tan), var(--moss));
+  /* Part du vert, la teinte de l'option « Économiser des tokens » : une même
+     fonction garde sa couleur d'un bout à l'autre du parcours. */
+  background: linear-gradient(90deg, var(--moss), var(--tan));
 }
 
 /* ===== Fond permanent : grille de lettres =====
