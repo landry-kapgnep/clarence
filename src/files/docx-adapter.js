@@ -131,8 +131,14 @@ export async function applyMask(buffer, resultsById, opts = {}) {
   const zip = unzipSync(new Uint8Array(buffer));
   const out = new Map(Object.entries(zip));
 
-  for (const partName of partNamesOf([...out.keys()])) {
-    const { doc, perParagraphRuns } = processPart(strFromU8(out.get(partName)), partName, DP);
+  // Total d'unités sur TOUTES les parties, calculé d'avance : le crochet de
+  // compression est appelé une fois par paragraphe et ne connaît pas l'échelle.
+  const parties = partNamesOf([...out.keys()]).map(nom =>
+    [nom, processPart(strFromU8(out.get(nom)), nom, DP)]);
+  const totalUnites = parties.reduce((n, [, p]) => n + p.perParagraphRuns.length, 0);
+  let uniteFaite = 0;
+
+  for (const [partName, { doc, perParagraphRuns }] of parties) {
 
     for (const { unitId, runs } of perParagraphRuns) {
       const result = resultsById.get(unitId);
@@ -148,7 +154,9 @@ export async function applyMask(buffer, resultsById, opts = {}) {
       // soumis d'un coup — fragment par fragment, le modèle n'aurait aucun
       // contexte pour décider.
       let textes = newRuns.map(r => r.text);
-      if (opts.compresserUnite) textes = await opts.compresserUnite(textes);
+      if (opts.compresserUnite) {
+        textes = await opts.compresserUnite(textes, { fait: ++uniteFaite, total: totalUnites });
+      }
       runs.forEach((run, i) => {
         if (run.kind !== 't') return; // tab/br : jamais réécrits
         const newText = textes[i];

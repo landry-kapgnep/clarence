@@ -95,8 +95,10 @@ async function applyMask(buffer, resultsById, opts = {}) {
   const XS = opts.XMLSerializer || globalThis.XMLSerializer;
   const zip = unzipSync(new Uint8Array(buffer));
   const out = new Map(Object.entries(zip));
-  for (const partName of partNamesOf([...out.keys()])) {
-    const { doc, perParagraphRuns } = processPart(strFromU8(out.get(partName)), partName, DP);
+  const parties = partNamesOf([...out.keys()]).map((nom) => [nom, processPart(strFromU8(out.get(nom)), nom, DP)]);
+  const totalUnites = parties.reduce((n, [, p]) => n + p.perParagraphRuns.length, 0);
+  let uniteFaite = 0;
+  for (const [partName, { doc, perParagraphRuns }] of parties) {
     for (const { unitId, runs } of perParagraphRuns) {
       const result = resultsById.get(unitId);
       if (!result || runs.length === 0) continue;
@@ -105,7 +107,9 @@ async function applyMask(buffer, resultsById, opts = {}) {
         result.entities || []
       );
       let textes = newRuns.map((r) => r.text);
-      if (opts.compresserUnite) textes = await opts.compresserUnite(textes);
+      if (opts.compresserUnite) {
+        textes = await opts.compresserUnite(textes, { fait: ++uniteFaite, total: totalUnites });
+      }
       runs.forEach((run, i) => {
         if (run.kind !== "t") return;
         const newText = textes[i];

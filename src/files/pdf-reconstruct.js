@@ -398,6 +398,11 @@ export async function reconstructPdf(buffer, opts = {}) {
 
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  // Total d'unités, calculé d'avance : le crochet de compression est appelé une
+  // fois par unité et n'a aucun moyen de connaître l'échelle. Sans elle, sa
+  // barre de progression n'aurait rien à mesurer.
+  const totalUnites = pages.reduce((n, p) => n + p.units.length, 0);
+  let uniteFaite = 0;
 
   for (const page of pages) {
     // Le ré-encodage des images est le second poste long : il doit s'arrêter
@@ -432,7 +437,9 @@ export async function reconstructPdf(buffer, opts = {}) {
         run.draw ? sanitizeForWinAnsi(masked[i].text) : '');
       // L'unité ENTIÈRE est soumise d'un coup : le modèle décide au contexte, et
       // fragment par fragment il n'en aurait aucun.
-      if (compresserUnite) textes = await compresserUnite(textes);
+      if (compresserUnite) {
+        textes = await compresserUnite(textes, { fait: ++uniteFaite, total: totalUnites });
+      }
       unit.runs.forEach((run, i) => {
         if (textes[i]) aDessiner.push({ run, texte: textes[i] });
       });

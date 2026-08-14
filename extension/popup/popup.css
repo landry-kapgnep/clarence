@@ -822,6 +822,32 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   transition: transform .18s ease-out;
 }
 
+/* Une ligne = une ÉTAPE : la jauge, puis la coche qui la clôt. La coche occupe
+   toujours sa place (visibility, pas display) pour que la barre ne se décale
+   pas au moment où l'étape se termine. */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.progress-row .progress-track { flex: 1; margin-top: 0; }
+.progress-check {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--moss);
+  width: 9px;
+}
+.progress-check[hidden] { display: inline-block; visibility: hidden; }
+
+/* Compression : MÊME dégradé que la détection, teinte de départ changée. Le tan
+   n'est pas une couleur nouvelle — c'est déjà l'une des quatre teintes de la
+   grille de fond (LETTER_GRID_TINT_VARS dans main.js). Deux étapes se
+   distinguent ainsi sans introduire quoi que ce soit dans la palette. */
+.progress-fill.compression {
+  background: linear-gradient(90deg, var(--tan), var(--moss));
+}
+
 /* ===== Fond permanent : grille de lettres =====
    Grille de lettres (c/l/a/r/e/n) sur toute la surface de la popup, en blobs
    de lampe à lave. Toujours visible, pas seulement pendant le traitement :

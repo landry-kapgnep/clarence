@@ -437,7 +437,13 @@ let compressionEchouee = null;
 function crochetCompression() {
   if (!$('fileCompress')?.checked || !compressionWorker) return null;
   const taux = Number($('fileCompressTaux')?.value || 0.5);
-  return async (segments) => {
+  let fait = 0;
+  return async (segments, info) => {
+    // `info.total` vient de l'adaptateur, seul à connaître son nombre d'unités.
+    // Sans lui la barre n'aurait aucune échelle : on préfère alors ne rien
+    // afficher plutôt qu'une jauge qui ment.
+    fait++;
+    if (info?.total) await compressionProgress({ fait, total: info.total });
     // ÉCHEC NON DESTRUCTIF. Sans ce garde, une erreur de compression remonte
     // jusqu'au try/catch du traitement et fait perdre TOUT le résultat — alors
     // que l'anonymisation, elle, a réussi. On rend les segments intacts, on
@@ -1082,16 +1088,19 @@ async function retirerDuMasquage(valeur) {
 // N'en sont exclues que les images, qui n'ont pas de texte du tout.
 // Réduire les tokens du .md mais pas du format réellement envoyé n'aurait aucun
 // intérêt pour l'utilisateur — c'est le reproche qui a motivé ce chantier.
-function sortieEstTexte(ext) {
+// La compression s'applique à TOUS les formats porteurs de texte, y compris
+// ceux qui préservent la mise en page — ils reçoivent le crochet fragment par
+// fragment. Seules les images en sont exclues : elles n'ont pas de texte.
+function compressionApplicable(ext) {
   return !!(ext && FILE_TYPES[ext] && !FILE_TYPES[ext].metadataOnly);
 }
 
 function majVisibiliteCompression(ext) {
   const bloc = $('fileCompressBloc');
   if (!bloc) return;
-  bloc.hidden = !sortieEstTexte(ext);
-  // Une option cachée ne doit pas rester ACTIVE en coulisse : on la décoche,
-  // sinon passer en « Format original » garderait une compression invisible.
+  bloc.hidden = !compressionApplicable(ext);
+  // Une option cachée ne doit jamais rester ACTIVE en coulisse : sans ça, une
+  // compression tournerait sans que rien ne l'annonce.
   if (bloc.hidden && $('fileCompress')) $('fileCompress').checked = false;
 }
 
@@ -1172,8 +1181,35 @@ function setProgress(trackId, fillId, ratio) {
   track.hidden = false;
   fill.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
 }
-const setFileProgress = r => setProgress('fileProgress', 'fileProgressFill', r);
+const setFileProgress = r => setProgress('fileProgressRow', 'fileProgressFill', r);
 const setTextProgress = r => setProgress('textProgress', 'textProgressFill', r);
+const setCompressProgress = r => setProgress('fileCompressProgressRow', 'fileCompressProgressFill', r);
+
+// DEUX ÉTAPES, DEUX BARRES, et une coche pour clore la première.
+//
+// La compression tourne APRÈS la détection. Avec une seule jauge, elle
+// repartait de zéro sur une barre déjà pleine — ou n'affichait plus rien du
+// tout : on ne savait ni ce qui tournait, ni pour combien de temps. La coche
+// dit « cette étape-là est finie », de sorte qu'une barre vide en dessous se
+// lise comme un début et non comme un blocage.
+function etapeTerminee(checkId) {
+  const c = $(checkId);
+  if (c) c.hidden = false;
+}
+function reinitEtapes() {
+  for (const id of ['fileProgressCheck', 'fileCompressProgressCheck']) {
+    const c = $(id);
+    if (c) c.hidden = true;
+  }
+  setFileProgress(null);
+  setCompressProgress(null);
+}
+
+const compressionProgress = ({ fait, total }) => {
+  fileSetStatus(`Compression du texte… ${fait}/${total}`);
+  setCompressProgress(total ? fait / total : null);
+  return new Promise(r => setTimeout(r, 0));
+};
 
 const nerProgress = ({ done, total }) => {
   fileSetStatus(`Détection en cours… ${done}/${total}`);
@@ -1712,6 +1748,7 @@ async function processFile() {
   setProcessing(true);
   setAnalyzeBtnLoading(true);
   const debut = performance.now();
+  reinitEtapes();
   fileSetStatus('Lecture du fichier…');
   try {
     const adapter = await kind.load();
@@ -1840,13 +1877,16 @@ async function processFile() {
       const taux = Number($('fileCompressTaux')?.value || 0.5);
       let avant = 0, apres = 0;
       try {
+        let fait = 0;
         for (const r of results) {
           const c = await compresser(r.maskedText, compressionPipeline(), { taux });
           r.maskedText = c.texte;
           avant += c.tokensAvant; apres += c.tokensApres;
+          await compressionProgress({ fait: ++fait, total: results.length });
           verifierAnnulation(signal);
         }
         compressionInfo = { avant, apres };
+        etapeTerminee('fileCompressProgressCheck');
       } catch (err) {
         // Même principe que le crochet : l'anonymisation a réussi, on ne la
         // jette pas parce que l'option a échoué. Une annulation, elle, doit
@@ -1856,6 +1896,10 @@ async function processFile() {
         compressionEchouee = String(err?.message || err);
       }
     }
+
+    // La détection est finie : on le MONTRE. Une barre pleine sans rien d'autre
+    // ne distingue pas « terminé » de « figé ».
+    etapeTerminee('fileProgressCheck');
 
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
     const byId = new Map(results.map(r => [r.id, { maskedText: r.maskedText, entities: r.entities }]));

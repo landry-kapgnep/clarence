@@ -247,6 +247,8 @@ async function reconstructPdf(buffer, opts = {}) {
   const entitiesById = new Map(results.map((r) => [r.id, r.entities || []]));
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const totalUnites = pages.reduce((n, p) => n + p.units.length, 0);
+  let uniteFaite = 0;
   for (const page of pages) {
     verifierAnnulation(signal);
     const pdfPage = pdfDoc.addPage([page.width, page.height]);
@@ -269,7 +271,9 @@ async function reconstructPdf(buffer, opts = {}) {
     for (const unit of page.units) {
       const masked = distributeEntitiesOverRuns(unit.runs, entitiesById.get(unit.id) || []);
       let textes = unit.runs.map((run, i) => run.draw ? sanitizeForWinAnsi(masked[i].text) : "");
-      if (compresserUnite) textes = await compresserUnite(textes);
+      if (compresserUnite) {
+        textes = await compresserUnite(textes, { fait: ++uniteFaite, total: totalUnites });
+      }
       unit.runs.forEach((run, i) => {
         if (textes[i]) aDessiner.push({ run, texte: textes[i] });
       });

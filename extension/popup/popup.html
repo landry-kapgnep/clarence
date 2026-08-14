@@ -134,8 +134,10 @@
              fois le travail fait. Le modèle se charge donc pendant le
              traitement, sous la barre de progression, au lieu de bloquer le
              premier clic sur Copier pendant une minute.
-             Réservée aux sorties TEXTE : compresser un .docx ou un PDF
-             reconstruit n'a aucun sens, on n'y colle pas du télégraphique. -->
+             S'applique à TOUS les formats porteurs de texte, mise en page
+             préservée comprise : réduire les tokens du .md sans le faire du
+             format qu'on envoie vraiment n'aurait servi à rien. Seules les
+             images en sont exclues. -->
         <div id="fileCompressBloc" hidden>
           <label class="hint pseudo-toggle" style="display:block;cursor:pointer;">
             <input type="checkbox" id="fileCompress">
@@ -216,8 +218,22 @@
           </div>
         </div>
 
-        <div class="progress-track" id="fileProgress" hidden>
-          <div class="progress-fill" id="fileProgressFill"></div>
+        <!-- DEUX étapes, deux barres. La compression tourne APRÈS la
+             détection : avec une seule barre, elle repartait de zéro sur une
+             jauge déjà pleine, ou pire ne bougeait plus du tout — on ne savait
+             ni ce qui se passait ni combien de temps ça durerait.
+             La coche à droite marque l'étape franchie. -->
+        <div class="progress-row" id="fileProgressRow" hidden>
+          <div class="progress-track">
+            <div class="progress-fill" id="fileProgressFill"></div>
+          </div>
+          <span class="progress-check" id="fileProgressCheck" hidden aria-hidden="true">✓</span>
+        </div>
+        <div class="progress-row" id="fileCompressProgressRow" hidden>
+          <div class="progress-track">
+            <div class="progress-fill compression" id="fileCompressProgressFill"></div>
+          </div>
+          <span class="progress-check" id="fileCompressProgressCheck" hidden aria-hidden="true">✓</span>
         </div>
         <div class="engine-badge" id="fileEngineBadge" hidden></div>
         <div class="status" id="fileStatus"></div>

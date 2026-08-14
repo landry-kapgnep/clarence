@@ -1212,7 +1212,10 @@ var compressionEchouee = null;
 function crochetCompression() {
   if (!$("fileCompress")?.checked || !compressionWorker) return null;
   const taux = Number($("fileCompressTaux")?.value || 0.5);
-  return async (segments) => {
+  let fait = 0;
+  return async (segments, info) => {
+    fait++;
+    if (info?.total) await compressionProgress({ fait, total: info.total });
     try {
       const r = await compresserSegments(segments, compressionPipeline(), { taux });
       compressionInfo = {
@@ -1475,7 +1478,7 @@ var MAX_FILE_BYTES = 5 * 1024 * 1024;
 var FILE_TYPES = {
   csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-WGD4I4OD.js") },
   xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-6GL77ULE.js") },
-  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-PHJB7HDT.js") },
+  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-DOKUCGU6.js") },
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
   // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
@@ -1649,7 +1652,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-BPG53NNQ.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-LDW2KWKT.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -1687,13 +1690,13 @@ async function retirerDuMasquage(valeur) {
     btn.disabled = false;
   }
 }
-function sortieEstTexte(ext) {
+function compressionApplicable(ext) {
   return !!(ext && FILE_TYPES[ext] && !FILE_TYPES[ext].metadataOnly);
 }
 function majVisibiliteCompression(ext) {
   const bloc = $("fileCompressBloc");
   if (!bloc) return;
-  bloc.hidden = !sortieEstTexte(ext);
+  bloc.hidden = !compressionApplicable(ext);
   if (bloc.hidden && $("fileCompress")) $("fileCompress").checked = false;
 }
 function formatDuree(ms) {
@@ -1732,8 +1735,26 @@ function setProgress(trackId, fillId, ratio) {
   track.hidden = false;
   fill.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
 }
-var setFileProgress = (r) => setProgress("fileProgress", "fileProgressFill", r);
+var setFileProgress = (r) => setProgress("fileProgressRow", "fileProgressFill", r);
 var setTextProgress = (r) => setProgress("textProgress", "textProgressFill", r);
+var setCompressProgress = (r) => setProgress("fileCompressProgressRow", "fileCompressProgressFill", r);
+function etapeTerminee(checkId) {
+  const c = $(checkId);
+  if (c) c.hidden = false;
+}
+function reinitEtapes() {
+  for (const id of ["fileProgressCheck", "fileCompressProgressCheck"]) {
+    const c = $(id);
+    if (c) c.hidden = true;
+  }
+  setFileProgress(null);
+  setCompressProgress(null);
+}
+var compressionProgress = ({ fait, total }) => {
+  fileSetStatus(`Compression du texte\u2026 ${fait}/${total}`);
+  setCompressProgress(total ? fait / total : null);
+  return new Promise((r) => setTimeout(r, 0));
+};
 var nerProgress = ({ done, total }) => {
   fileSetStatus(`D\xE9tection en cours\u2026 ${done}/${total}`);
   setFileProgress(total ? done / total : null);
@@ -2126,6 +2147,7 @@ async function processFile() {
   setProcessing(true);
   setAnalyzeBtnLoading(true);
   const debut = performance.now();
+  reinitEtapes();
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
@@ -2158,7 +2180,7 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-BPG53NNQ.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-LDW2KWKT.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -2218,20 +2240,24 @@ async function processFile() {
       const taux = Number($("fileCompressTaux")?.value || 0.5);
       let avant = 0, apres = 0;
       try {
+        let fait = 0;
         for (const r of results) {
           const c = await compresser(r.maskedText, compressionPipeline(), { taux });
           r.maskedText = c.texte;
           avant += c.tokensAvant;
           apres += c.tokensApres;
+          await compressionProgress({ fait: ++fait, total: results.length });
           verifierAnnulation(signal);
         }
         compressionInfo = { avant, apres };
+        etapeTerminee("fileCompressProgressCheck");
       } catch (err) {
         if (estAnnulation(err)) throw err;
         console.error("[clarence] compression interrompue :", err);
         compressionEchouee = String(err?.message || err);
       }
     }
+    etapeTerminee("fileProgressCheck");
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus("R\xE9\xE9criture du fichier\u2026");
     const masked = await adapter.applyMask(input, byId, { compresserUnite: crochetCompression() });
