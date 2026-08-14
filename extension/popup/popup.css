@@ -843,12 +843,65 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   align-items: center;
   gap: 6px;
   margin-top: 8px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   font-size: 12px;
-  background: var(--control-ghost-bg);
+  /* Fond OPAQUE : la teinte fantôme des contrôles (7 % d'alpha) était
+     invisible sur la coquille, la puce ne se distinguait pas du vide. */
+  background: var(--bg-raised);
   color: var(--paper-dim);
 }
 .etape-faite .coche { color: var(--moss); }
+
+/* INFOBULLE — un « ! » qui déplie son avertissement au survol.
+   Remplace un paragraphe permanent : la contrepartie de la compression doit
+   rester lisible sans encombrer l'option en permanence.
+   Même parti pris que la carte « Voir tout » : le fond est FLOUTÉ derrière, ce
+   qui détache la boîte sans avoir à l'assombrir. */
+.info-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  font-size: 10px;
+  line-height: 1;
+  background: var(--tan);
+  color: var(--seal);
+  cursor: help;
+  position: relative;
+  vertical-align: middle;
+}
+.info-tip-box {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 5;
+  width: 260px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--paper);
+  background: rgba(23, 26, 34, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  /* `visibility` et non `display` : une règle display explicite écraserait
+     l'attribut hidden si on l'utilisait ailleurs — piège déjà rencontré sur
+     les barres de progression. */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .14s ease-out;
+  pointer-events: none;
+  text-align: left;
+  cursor: auto;
+}
+.info-tip:hover .info-tip-box,
+.info-tip:focus .info-tip-box,
+.info-tip:focus-visible .info-tip-box {
+  visibility: visible;
+  opacity: 1;
+}
 
 /* La teinte distingue les étapes. Le tan n'est pas une couleur nouvelle : c'est
    déjà l'une des quatre de la grille de fond (LETTER_GRID_TINT_VARS). */

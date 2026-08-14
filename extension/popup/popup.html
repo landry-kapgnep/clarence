@@ -128,21 +128,24 @@
           <span class="checkbox-label-text">Pseudonymes (lieux, noms, contacts)</span>
         </label>
 
-        <!-- COMPRESSION — choisie AVANT de lancer, avec les autres options de
-             sortie. Elle était sous le bouton « Copier », ce qui donnait un
-             déroulé incompréhensible : on découvrait une option de format une
-             fois le travail fait. Le modèle se charge donc pendant le
-             traitement, sous la barre de progression, au lieu de bloquer le
-             premier clic sur Copier pendant une minute.
-             S'applique à TOUS les formats porteurs de texte, mise en page
-             préservée comprise : réduire les tokens du .md sans le faire du
-             format qu'on envoie vraiment n'aurait servi à rien. Seules les
-             images en sont exclues. -->
+        <!-- COMPRESSION — choisie AVANT de lancer (le modèle se charge pendant
+             le traitement, pas au premier clic sur Copier). S'applique à tous
+             les formats porteurs de texte, mise en page préservée comprise. -->
         <div id="fileCompressBloc" hidden>
           <label class="hint pseudo-toggle" style="display:block;cursor:pointer;">
             <input type="checkbox" id="fileCompress">
             <span class="square-checkbox" aria-hidden="true"></span>
             <span class="checkbox-label-text">Réduire le nombre de tokens</span>
+            <span class="info-tip" tabindex="0" role="note"
+                  aria-label="La prose est appauvrie et ne peut plus être relue. Les données masquées et les négations sont préservées. À réserver aux cas où le LLM répond à partir du document.">!
+              <span class="info-tip-box">
+                <strong>La prose est appauvrie</strong> et ne peut plus être
+                relue. Données masquées et négations préservées.<br>
+                Pour « résume », « quelles dates ? » — pas pour « corrige »,
+                « reformule », « traduis ».<br>
+                Premier usage : ~170 Mo, une fois.
+              </span>
+            </span>
           </label>
           <label class="hint pseudo-locale" style="display:block;cursor:pointer;">
             Texte conservé
@@ -152,14 +155,6 @@
               <option value="0.3">30 % — agressif</option>
             </select>
           </label>
-          <p class="hint">
-            <strong>La prose est appauvrie et ne peut plus être relue.</strong>
-            Les données masquées et les négations sont préservées.
-            À réserver aux cas où le LLM répond <em>à partir</em> du document
-            (résumer, extraire) — jamais s'il doit travailler <em>sur</em> le
-            texte (corriger, reformuler, traduire).
-            <br>Premier usage : ~170 Mo à télécharger, une seule fois.
-          </p>
         </div>
         <label class="hint pseudo-locale" style="display:block;cursor:pointer;">
           Langue des pseudonymes

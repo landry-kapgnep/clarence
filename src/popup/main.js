@@ -307,7 +307,7 @@ function createNerWorker() {
     const msg = ev.data || {};
     if (msg.type === 'progress' && msg.total) {
       const pct = Math.round((msg.loaded / msg.total) * 100);
-      setStatus(`Téléchargement du modèle… ${pct} % (une seule fois)`);
+      setStatus(`Modèle… ${pct} %`);
       // Le premier vrai temps d'attente, c'est ce téléchargement (~180 Mo) :
       // la barre du mode actif le montre aussi.
       const ratio = msg.loaded / msg.total;
@@ -483,7 +483,7 @@ async function ensureCompression() {
     const msg = ev.data || {};
     if (msg.type === 'progress' && msg.total) {
       const pct = Math.round((msg.loaded / msg.total) * 100);
-      fileSetStatus(`Téléchargement du modèle de compression… ${pct} % (une seule fois)`);
+      fileSetStatus(`Modèle de compression… ${pct} %`);
       return;
     }
     if (msg.id == null) return;
@@ -832,7 +832,7 @@ function invalidateFileResult() {
   fileOutName = '';
   $('fileResults').hidden = true;
   $('dragCard').hidden = true;
-  fileSetStatus('Options modifiées — relance l’anonymisation.');
+  fileSetStatus('Options modifiées — relance.');
 }
 
 // Toutes les options qui changent la SORTIE invalident le résultat.
@@ -904,7 +904,7 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus('Format non pris en charge. Accepté : CSV, XLSX, DOCX, PDF, JPG/PNG.', 'error');
+    fileSetStatus('Format non pris en charge.', 'error');
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -1074,7 +1074,7 @@ async function retirerDuMasquage(valeur) {
     // résultat à moitié réécrit.
     champ.value = avant;
     rendreApercuTermes();
-    fileSetStatus('Impossible de mettre à jour le fichier. Détail dans la console.', 'error');
+    fileSetStatus('Mise à jour impossible. Détail en console.', 'error');
   } finally {
     btn.disabled = false;
   }
@@ -1144,16 +1144,16 @@ function showFileResults(mapping, copyable, duree) {
   // duree : omise pour la régénération (retirerDuMasquage) — son propre
   // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
   // pas ce que « durée de traitement » désigne pour l'utilisateur.
-  const suffixe = (duree ? ` Traité en ${duree}.` : '') +
-    (compressionEchouee ? ` ⚠ Compression indisponible (${compressionEchouee}) — fichier produit sans elle.` : '') +
+  const suffixe = (duree ? ` ${duree}.` : '') +
+    (compressionEchouee ? ` ⚠ Compression indisponible : ${compressionEchouee}.` : '') +
     (compressionInfo
     // Ordre de grandeur, jamais un chiffre garanti (cadrage §10) : le vrai
     // compte dépend du tokeniseur du modèle destinataire, qu'on ne connaît pas.
-    ? ` Texte réduit : ≈ ${compressionInfo.avant} → ${compressionInfo.apres} tokens ` +
+    ? ` ≈ ${compressionInfo.avant} → ${compressionInfo.apres} tokens ` +
       `(−${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).`
     : '');
   $('fileSummary').textContent = (mapping.length
-    ? `${mapping.length} valeur(s) distincte(s) masquée(s), métadonnées nettoyées.`
+    ? `${mapping.length} valeurs masquées, métadonnées nettoyées.`
     : 'Aucune donnée sensible détectée — métadonnées nettoyées.') + suffixe;
   $('fileSummary').className = 'status active';
   $('fileResults').hidden = false;
@@ -1229,7 +1229,7 @@ function rendreEtapes() {
     if (e.etat === 'faite') {
       const puce = document.createElement('div');
       puce.className = 'etape-faite';
-      puce.append(`${e.libelle} terminée`);
+      puce.append(e.libelle);
       const coche = document.createElement('span');
       coche.className = 'coche';
       coche.setAttribute('aria-hidden', 'true');
@@ -1805,7 +1805,7 @@ async function processFile() {
   // Les étapes sont déclarées ICI, en fonction des options réellement cochées :
   // une étape non demandée n'apparaît jamais, même vide.
   declarerEtapes([
-    { id: 'detection', libelle: 'Détection des données sensibles' },
+    { id: 'detection', libelle: 'Détection' },
     ...($('fileCompress')?.checked && !FILE_TYPES[extOf(source.name)]?.metadataOnly
       ? [{ id: 'compression', libelle: 'Réduction des tokens', teinte: 'teinte-tan' }]
       : [])
@@ -1818,7 +1818,7 @@ async function processFile() {
     // Images : pas de PII textuelle, juste des métadonnées à retirer.
     // Court-circuit total du pipeline détection/masquage/NER.
     if (kind.metadataOnly) {
-      fileSetStatus('Nettoyage des métadonnées…');
+      fileSetStatus('Métadonnées…');
       const cleaned = await adapter.stripMetadata(await source.arrayBuffer(), { mime: kind.mime });
       verifierAnnulation(signal);
       fileOutBlob = new Blob([cleaned], { type: kind.mime });
@@ -1840,7 +1840,7 @@ async function processFile() {
     // pendant que le .md, lui, fonctionnait. Tout ce qui doit valoir pour TOUS
     // les formats se place avant l'aiguillage, pas après.
     if ($('fileCompress')?.checked) {
-      fileSetStatus('Préparation de la compression…');
+      fileSetStatus('Préparation…');
       const dispo = await ensureCompression();
       if (!dispo.ok) {
         $('fileCompress').checked = false;
@@ -1901,7 +1901,7 @@ async function processFile() {
     // indispensable pour PDF (pdfjs-dist est intrinsèquement asynchrone).
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
-      fileSetStatus('Aucun texte à analyser dans ce fichier.', 'error');
+      fileSetStatus('Aucun texte à analyser.', 'error');
       return;
     }
 
@@ -1997,7 +1997,7 @@ async function processFile() {
   compressionEchouee = null;
     $('fileResults').hidden = true;
     $('dragCard').hidden = true;
-    fileSetStatus('Traitement échoué — le fichier n’a pas été anonymisé. Détail dans la console.', 'error');
+    fileSetStatus('Échec — fichier non anonymisé. Détail en console.', 'error');
   } finally {
     // Seul le run COURANT rend l'UI à l'utilisateur. Sans cette garde, un run
     // abandonné réactivait le bouton et effaçait la barre pendant que le run
@@ -2095,7 +2095,7 @@ $('fileCopyBtn').addEventListener('click', async () => {
   // tout `await` long avant writeText ferait expirer l'activation utilisateur :
   // l'écriture échouerait alors SANS erreur, et le bouton ne copierait rien.
   await navigator.clipboard.writeText(await fileOutBlob.text());
-  $('fileCopyStatus').textContent = 'Copié — colle dans le chat.';
+  $('fileCopyStatus').textContent = 'Copié.';
   $('fileCopyStatus').className = 'status active';
   setTimeout(() => { $('fileCopyStatus').textContent = ''; }, 4000);
 });

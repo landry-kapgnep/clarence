@@ -1135,7 +1135,7 @@ function createNerWorker() {
     const msg = ev.data || {};
     if (msg.type === "progress" && msg.total) {
       const pct = Math.round(msg.loaded / msg.total * 100);
-      setStatus(`T\xE9l\xE9chargement du mod\xE8le\u2026 ${pct} % (une seule fois)`);
+      setStatus(`Mod\xE8le\u2026 ${pct} %`);
       const ratio = msg.loaded / msg.total;
       if (!$("fileMode")?.hidden) avancerEtape("detection", ratio);
       else setTextProgress(ratio);
@@ -1240,7 +1240,7 @@ async function ensureCompression() {
     const msg = ev.data || {};
     if (msg.type === "progress" && msg.total) {
       const pct = Math.round(msg.loaded / msg.total * 100);
-      fileSetStatus(`T\xE9l\xE9chargement du mod\xE8le de compression\u2026 ${pct} % (une seule fois)`);
+      fileSetStatus(`Mod\xE8le de compression\u2026 ${pct} %`);
       return;
     }
     if (msg.id == null) return;
@@ -1514,7 +1514,7 @@ function invalidateFileResult() {
   fileOutName = "";
   $("fileResults").hidden = true;
   $("dragCard").hidden = true;
-  fileSetStatus("Options modifi\xE9es \u2014 relance l\u2019anonymisation.");
+  fileSetStatus("Options modifi\xE9es \u2014 relance.");
 }
 for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle", "filePseudoLocale"]) {
   $(id)?.addEventListener("change", invalidateFileResult);
@@ -1569,7 +1569,7 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus("Format non pris en charge. Accept\xE9 : CSV, XLSX, DOCX, PDF, JPG/PNG.", "error");
+    fileSetStatus("Format non pris en charge.", "error");
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -1685,7 +1685,7 @@ async function retirerDuMasquage(valeur) {
     console.error(err);
     champ.value = avant;
     rendreApercuTermes();
-    fileSetStatus("Impossible de mettre \xE0 jour le fichier. D\xE9tail dans la console.", "error");
+    fileSetStatus("Mise \xE0 jour impossible. D\xE9tail en console.", "error");
   } finally {
     btn.disabled = false;
   }
@@ -1715,8 +1715,8 @@ function showFileResults(mapping, copyable, duree) {
   $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
     (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
   ).join("")}</table>` : "<p>Aucun masque actif.</p>";
-  const suffixe = (duree ? ` Trait\xE9 en ${duree}.` : "") + (compressionEchouee ? ` \u26A0 Compression indisponible (${compressionEchouee}) \u2014 fichier produit sans elle.` : "") + (compressionInfo ? ` Texte r\xE9duit : \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
-  $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeur(s) distincte(s) masqu\xE9e(s), m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.") + suffixe;
+  const suffixe = (duree ? ` ${duree}.` : "") + (compressionEchouee ? ` \u26A0 Compression indisponible : ${compressionEchouee}.` : "") + (compressionInfo ? ` \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
+  $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeurs masqu\xE9es, m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.") + suffixe;
   $("fileSummary").className = "status active";
   $("fileResults").hidden = false;
   $("fileCopyBtn").hidden = !copyable;
@@ -1762,7 +1762,7 @@ function rendreEtapes() {
     if (e.etat === "faite") {
       const puce = document.createElement("div");
       puce.className = "etape-faite";
-      puce.append(`${e.libelle} termin\xE9e`);
+      puce.append(e.libelle);
       const coche = document.createElement("span");
       coche.className = "coche";
       coche.setAttribute("aria-hidden", "true");
@@ -2184,7 +2184,7 @@ async function processFile() {
   setAnalyzeBtnLoading(true);
   const debut = performance.now();
   declarerEtapes([
-    { id: "detection", libelle: "D\xE9tection des donn\xE9es sensibles" },
+    { id: "detection", libelle: "D\xE9tection" },
     ...$("fileCompress")?.checked && !FILE_TYPES[extOf(source.name)]?.metadataOnly ? [{ id: "compression", libelle: "R\xE9duction des tokens", teinte: "teinte-tan" }] : []
   ]);
   fileSetStatus("Lecture du fichier\u2026");
@@ -2192,7 +2192,7 @@ async function processFile() {
     const adapter = await kind.load();
     verifierAnnulation(signal);
     if (kind.metadataOnly) {
-      fileSetStatus("Nettoyage des m\xE9tadonn\xE9es\u2026");
+      fileSetStatus("M\xE9tadonn\xE9es\u2026");
       const cleaned2 = await adapter.stripMetadata(await source.arrayBuffer(), { mime: kind.mime });
       verifierAnnulation(signal);
       fileOutBlob = new Blob([cleaned2], { type: kind.mime });
@@ -2207,7 +2207,7 @@ async function processFile() {
       return;
     }
     if ($("fileCompress")?.checked) {
-      fileSetStatus("Pr\xE9paration de la compression\u2026");
+      fileSetStatus("Pr\xE9paration\u2026");
       const dispo = await ensureCompression();
       if (!dispo.ok) {
         $("fileCompress").checked = false;
@@ -2254,7 +2254,7 @@ async function processFile() {
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
-      fileSetStatus("Aucun texte \xE0 analyser dans ce fichier.", "error");
+      fileSetStatus("Aucun texte \xE0 analyser.", "error");
       return;
     }
     fileSetStatus("D\xE9tection en cours\u2026");
@@ -2327,7 +2327,7 @@ async function processFile() {
     compressionEchouee = null;
     $("fileResults").hidden = true;
     $("dragCard").hidden = true;
-    fileSetStatus("Traitement \xE9chou\xE9 \u2014 le fichier n\u2019a pas \xE9t\xE9 anonymis\xE9. D\xE9tail dans la console.", "error");
+    fileSetStatus("\xC9chec \u2014 fichier non anonymis\xE9. D\xE9tail en console.", "error");
   } finally {
     if (courant()) {
       fileRun = null;
@@ -2393,7 +2393,7 @@ $("fileDownloadBtn").addEventListener("click", downloadFile);
 $("fileCopyBtn").addEventListener("click", async () => {
   if (!fileOutBlob) return;
   await navigator.clipboard.writeText(await fileOutBlob.text());
-  $("fileCopyStatus").textContent = "Copi\xE9 \u2014 colle dans le chat.";
+  $("fileCopyStatus").textContent = "Copi\xE9.";
   $("fileCopyStatus").className = "status active";
   setTimeout(() => {
     $("fileCopyStatus").textContent = "";
