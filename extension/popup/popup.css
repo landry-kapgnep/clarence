@@ -760,32 +760,48 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 10px;
-  min-height: 42px;
+  /* Ni marge ni gouttière : le carré d'icône est COLLÉ au texte, comme la
+     pastille d'extension l'est au nom de fichier. C'est le motif de la DA. */
+  padding: 0;
+  gap: 0;
+  min-height: 34px;
   font-size: 13px;
   line-height: 1.25;
   background: var(--bg-field);
   color: var(--paper-dim);
   cursor: pointer;
-  transition: background .12s ease, color .12s ease;
 }
 .option-btn:hover { background: var(--bg-raised); }
+
+/* SEUL LE CARRÉ SE COLORE. Teinter le bouton entier en faisait un pavé de
+   couleur qui écrasait le reste de l'écran ; ici la couleur signale l'état sans
+   changer la lecture du texte — exactement ce que fait .file-name-ext. */
+.opt-carre {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 34px;
+  flex-shrink: 0;
+  background: var(--bg-raised);
+  transition: background .12s ease;
+}
+.option-btn .option-texte { flex: 1; padding: 0 9px 0 9px; }
+/* Le bouton n'a plus de marge propre : sans ça le « ? » toucherait le bord. */
+.option-btn .info-tip { margin-right: 9px; }
 /* L'entrée native reste dans le DOM (sémantique, clavier, formulaire) mais ne
    se voit pas : c'est le bouton entier qui joue le rôle de case. */
 .option-btn input { position: absolute; opacity: 0; width: 0; height: 0; }
 .option-btn .opt-icone { width: 18px; height: auto; flex-shrink: 0; }
 .option-btn .sombre { display: none; }
-.option-btn .option-texte { flex: 1; }
 
-/* ALLUMÉ : la couleur devient le fond du bouton, l'icône passe en sombre. */
-.option-btn:has(input:checked) {
-  background: var(--seal-lit);
-  color: var(--seal);
-}
-/* Une teinte par FONCTION. Le vert dit un gain, l'orange une transformation du
-   contenu. Le violet reste au choix de format, qui n'est ni l'un ni l'autre. */
-.option-btn.teinte-pseudo:has(input:checked) { background: var(--tan); }
-.option-btn.teinte-tokens:has(input:checked) { background: var(--moss); }
+/* ALLUMÉ : le CARRÉ prend la couleur, l'icône passe en sombre. Le fond et la
+   couleur du texte, eux, ne bougent pas.
+   Une teinte par FONCTION : l'orange dit une transformation du contenu, le vert
+   un gain. */
+.option-btn:has(input:checked) { color: var(--paper); }
+.option-btn.teinte-pseudo:has(input:checked) .opt-carre { background: var(--tan); }
+.option-btn.teinte-tokens:has(input:checked) .opt-carre { background: var(--moss); }
 .option-btn:has(input:checked) .claire { display: none; }
 .option-btn:has(input:checked) .sombre { display: block; }
 .option-btn:has(input:focus-visible) { outline: 2px solid var(--paper); outline-offset: 1px; }
