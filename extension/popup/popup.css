@@ -66,6 +66,12 @@
 
 * { box-sizing: border-box; }
 
+/* L'attribut `hidden` doit TOUJOURS l'emporter. Sans ça, la moindre règle
+   `display` explicite sur un élément masqué le rend visible malgré tout — ce
+   qui a déjà affiché deux barres de progression avant l'heure. Le masquage
+   piloté en JS doit être fiable, pas dépendre de l'ordre des feuilles. */
+[hidden] { display: none !important; }
+
 * , *::before, *::after {
   border-radius: 0 !important;
 }
@@ -739,12 +745,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
    centre. Le carré intérieur (::after) n'a donc plus lieu d'être ici, il
    passerait par-dessus l'icône. */
 .square-checkbox.avec-icone::after { display: none; }
+.pseudo-toggle .square-checkbox.avec-icone { width: 26px; height: 26px; }
+/* Le libellé se décale d'autant, sinon il chevaucherait la case élargie. */
+.pseudo-toggle:has(.avec-icone) { padding-left: 34px; }
 .square-checkbox.avec-icone .opt-icone {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 13px;
+  width: 17px;
   height: auto;
 }
 .square-checkbox.avec-icone .sombre { visibility: hidden; }
@@ -889,20 +898,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
    Même parti pris que la carte « Voir tout » : le fond est FLOUTÉ derrière, ce
    qui détache la boîte sans avoir à l'assombrir. */
 .info-tip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  margin-left: 6px;
-  font-size: 10px;
-  line-height: 1;
-  background: var(--tan);
-  color: var(--seal);
-  cursor: help;
+  /* Discret comme un appel de note : pas de pastille colorée, juste un signe
+     en exposant. Il n'a pas à attirer l'œil — seulement à se laisser trouver. */
   position: relative;
-  vertical-align: middle;
+  display: inline;
+  margin-left: 2px;
+  font-size: 9px;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--paper-dim);
+  cursor: help;
 }
+.info-tip:hover, .info-tip:focus { color: var(--tan); }
 .info-tip-box {
   position: absolute;
   left: 0;

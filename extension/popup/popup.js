@@ -1705,10 +1705,18 @@ function majVisibiliteCompression(ext) {
   if (bloc.hidden && $("fileCompress")) $("fileCompress").checked = false;
   majVisibiliteTaux();
 }
-function majVisibiliteTaux() {
-  const l = $("fileCompressTauxLabel");
-  if (l) l.hidden = !$("fileCompress")?.checked;
+function majSousOptions() {
+  const paires = [
+    ["fileCompress", "fileCompressTauxLabel"],
+    ["fileRealisticToggle", "filePseudoLocaleLabel"],
+    ["realisticToggle", "pseudoLocaleLabel"]
+  ];
+  for (const [idCase, idSousOption] of paires) {
+    const l = $(idSousOption);
+    if (l) l.hidden = !$(idCase)?.checked;
+  }
 }
+var majVisibiliteTaux = majSousOptions;
 function formatDuree(ms) {
   const s = ms / 1e3;
   if (s < 10) return `${s.toFixed(1)} s`;
@@ -2398,7 +2406,10 @@ $("fileResetBtn").addEventListener("click", () => {
 for (const id of ["pdfModeLight", "pdfModePreserve"]) {
   $(id)?.addEventListener("change", () => majVisibiliteCompression(extOf(chosenFile?.name || "")));
 }
-$("fileCompress")?.addEventListener("change", majVisibiliteTaux);
+for (const id of ["fileCompress", "fileRealisticToggle", "realisticToggle"]) {
+  $(id)?.addEventListener("change", majSousOptions);
+}
+majSousOptions();
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
 $("fileCopyBtn").addEventListener("click", async () => {
@@ -2490,6 +2501,8 @@ bindProfileBar({
     if ($("alwaysMask")) $("alwaysMask").value = p.alwaysMask.join("\n");
     disabledTypes = new Set(p.disabledTypes);
     if ($("realisticToggle")) $("realisticToggle").checked = p.realistic;
+    majSousOptions();
+    rendreApercuTermes();
     renderTypeChips("typeToggles", disabledTypes);
     if (currentText) render();
   }
@@ -2510,6 +2523,8 @@ bindProfileBar({
     if ($("fileAlwaysMask")) $("fileAlwaysMask").value = p.alwaysMask.join("\n");
     fileDisabledTypes = new Set(p.disabledTypes);
     if ($("fileRealisticToggle")) $("fileRealisticToggle").checked = p.realistic;
+    majSousOptions();
+    rendreApercuTermes();
     renderTypeChips("fileTypeToggles", fileDisabledTypes);
   }
 });

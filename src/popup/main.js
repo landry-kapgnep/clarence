@@ -1115,12 +1115,21 @@ function majVisibiliteCompression(ext) {
   majVisibiliteTaux();
 }
 
-// Le taux ne veut rien dire tant que l'option n'est pas cochée : il n'apparaît
-// qu'à ce moment-là plutôt que d'occuper l'écran en permanence.
-function majVisibiliteTaux() {
-  const l = $('fileCompressTauxLabel');
-  if (l) l.hidden = !$('fileCompress')?.checked;
+// SOUS-OPTIONS : une option réglant une autre n'a rien à montrer tant que la
+// première est éteinte. On/off strict — elle disparaît dès qu'on décoche,
+// plutôt que de rester grisée à occuper une ligne.
+function majSousOptions() {
+  const paires = [
+    ['fileCompress', 'fileCompressTauxLabel'],
+    ['fileRealisticToggle', 'filePseudoLocaleLabel'],
+    ['realisticToggle', 'pseudoLocaleLabel']
+  ];
+  for (const [idCase, idSousOption] of paires) {
+    const l = $(idSousOption);
+    if (l) l.hidden = !$(idCase)?.checked;
+  }
 }
+const majVisibiliteTaux = majSousOptions;
 
 // Affichage partagé du résultat fichier (chemin standard ET reconstruction PDF).
 // copyable : la sortie est-elle du texte copiable (md/csv) vs binaire (pdf/xlsx/docx).
@@ -2095,7 +2104,10 @@ $('fileResetBtn').addEventListener('click', () => {
 for (const id of ['pdfModeLight', 'pdfModePreserve']) {
   $(id)?.addEventListener('change', () => majVisibiliteCompression(extOf(chosenFile?.name || '')));
 }
-$('fileCompress')?.addEventListener('change', majVisibiliteTaux);
+for (const id of ['fileCompress', 'fileRealisticToggle', 'realisticToggle']) {
+  $(id)?.addEventListener('change', majSousOptions);
+}
+majSousOptions();
 $('fileAnalyzeBtn').addEventListener('click', processFile);
 $('fileDownloadBtn').addEventListener('click', downloadFile);
 
@@ -2218,6 +2230,11 @@ bindProfileBar({
     if ($('alwaysMask')) $('alwaysMask').value = p.alwaysMask.join('\n');
     disabledTypes = new Set(p.disabledTypes);
     if ($('realisticToggle')) $('realisticToggle').checked = p.realistic;
+    // Écriture PROGRAMMATIQUE : elle ne déclenche pas `change`, donc les
+    // sous-options ne suivraient pas. Charger un profil sans pseudonymes
+    // laisserait « Langue des pseudonymes » à l'écran.
+    majSousOptions();
+    rendreApercuTermes();
     renderTypeChips('typeToggles', disabledTypes);
     if (currentText) render();
   }
@@ -2236,6 +2253,8 @@ bindProfileBar({
     if ($('fileAlwaysMask')) $('fileAlwaysMask').value = p.alwaysMask.join('\n');
     fileDisabledTypes = new Set(p.disabledTypes);
     if ($('fileRealisticToggle')) $('fileRealisticToggle').checked = p.realistic;
+    majSousOptions();
+    rendreApercuTermes();
     renderTypeChips('fileTypeToggles', fileDisabledTypes);
   }
 });
