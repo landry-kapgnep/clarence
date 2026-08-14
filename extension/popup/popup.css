@@ -739,6 +739,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   transition: background .12s ease, transform .12s ease, opacity .12s ease;
   opacity: 0;
 }
+/* Les options touchaient la zone de dépôt : rien ne les en séparait, aucune
+   marge n'étant définie ici. Un choix de réglage ne doit pas sembler collé à la
+   zone qui reçoit le fichier. */
+#fileOptions { margin-top: 16px; }
+#pdfModeChoice { margin-bottom: 12px; }
+
 /* ===== GRILLE D'OPTIONS =====
    POURQUOI UNE GRILLE. Les options étaient des `inline-block` dont la case
    vivait en `position: absolute` : hors du flux, elle DÉBORDAIT de sa ligne et

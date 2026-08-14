@@ -34,7 +34,7 @@
       </div>
 
       <div id="textMode">
-      <label class="field-label" for="input"></label> Anonymisation texte
+      <label class="field-label" for="input"></label> Texte
       <textarea id="input" placeholder="..."></textarea>
 
       <div class="controls">
@@ -77,9 +77,9 @@
             <button class="btn-ghost profile-btn" id="profileNewBtn" title="Nouveau profil depuis ces réglages">Nouveau</button>
             <button class="btn-ghost profile-btn" id="profileDeleteBtn" title="Supprimer ce profil">Suppr.</button>
           </div>
-          <div class="field-label">Types à masquer <span class="hint">(décoche pour garder)</span></div>
+          <div class="field-label">Types à masquer</div>
           <div id="typeToggles" class="type-toggles"></div>
-          <label class="field-label" for="alwaysMask">Toujours masquer <span class="hint">(séparés par des virgules)</span></label>
+          <label class="field-label" for="alwaysMask">Toujours masquer</label>
           <textarea id="alwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
           <label class="field-label" for="alwaysKeep">Ne jamais masquer</label>
           <textarea id="alwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
@@ -107,14 +107,14 @@
         </div>
 
         <details>
-          <summary>Table de correspondance</summary>
+          <summary>Correspondances</summary>
           <div id="mappingWrap"></div>
         </details>
       </section>
       </div>
 
       <div id="fileMode" hidden>
-        <label class="field-label" for="input"></label> Anonymisation fichier
+        <label class="field-label" for="input"></label> Fichier
         <div class="dropzone" id="dropzone">
           <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf,.jpg,.jpeg,.png" hidden>
           <p class="dropzone-main"><button class="link-btn" id="filePickBtn"><img src="img/ClarenceFlW.png" class ="cpbtn"></button></p>
@@ -243,9 +243,9 @@
               <button class="btn-ghost profile-btn" id="fileProfileNewBtn" title="Nouveau profil depuis ces réglages">Nouveau</button>
               <button class="btn-ghost profile-btn" id="fileProfileDeleteBtn" title="Supprimer ce profil">Suppr.</button>
             </div>
-            <div class="field-label">Types à masquer <span class="hint">(décoche pour garder)</span></div>
+            <div class="field-label">Types à masquer</div>
             <div id="fileTypeToggles" class="type-toggles"></div>
-            <label class="field-label" for="fileAlwaysMask">Toujours masquer <span class="hint">(séparés par des virgules)</span></label>
+            <label class="field-label" for="fileAlwaysMask">Toujours masquer</label>
             <textarea id="fileAlwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
             <span class="termes-lus" id="fileAlwaysMaskLus"></span>
             <label class="field-label" for="fileAlwaysKeep">Ne jamais masquer</label>
@@ -274,36 +274,36 @@
         <div class="status" id="fileStatus"></div>
 
         <section id="fileResults" hidden>
-          <h2>Fichier anonymisé</h2>
+          <h2>Résultat</h2>
           <div class="controls">
             <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png"></button>
-            <button class="btn-ghost" id="fileCopyBtn" hidden>Copier le texte</button>
+            <button class="btn-ghost" id="fileCopyBtn" hidden>Copier</button>
             <button id="dragCard" class="drag-card" hidden>
               <span class="drag-card-icon">⇢</span>
-              <span>Envoyer dans la page</span>
+              <span>Dans la page</span>
             </button>
             <span class="status" id="fileCopyStatus"></span>
           </div>
           <p class="status" id="fileSummary"></p>
 
           <details>
-            <summary>Données masquées</summary>
+            <summary>Correspondances</summary>
             <div id="fileMappingWrap"></div>
           </details>
-          <p class="hint">⚠ Relis le fichier avant de l'utiliser</p>
+          <p class="hint">⚠ Relis avant d'utiliser — la détection n'est pas infaillible</p>
         </section>
       </div>
 
       <section class="reinject" id="reinjectSection" hidden>
         <div class="controls">
-          <button class="btn-ghost" id="toggleReinjectBtn">Désanonymiser une réponse…</button>
+          <button class="btn-ghost" id="toggleReinjectBtn">Désanonymiser une réponse</button>
         </div>
         <div id="reinjectZone" hidden>
-          <h2>Désanonymiser <span class="hint">— les vraies valeurs sont restituées</span></h2>
+          <h2>Désanonymiser </h2>
           <textarea id="reinjectInput" placeholder="Colle la réponse contenant [PERSONNE_1], [EMAIL_1]…"></textarea>
           <div class="controls">
             <button class="btn-primary" id="reinjectBtn">Désanonymiser</button>
-            <button class="btn-ghost" id="copyReinjectBtn" hidden>Copier le résultat</button>
+            <button class="btn-ghost" id="copyReinjectBtn" hidden>Copier</button>
             <span class="status" id="reinjectStatus"></span>
           </div>
           <div class="panel" id="reinjected" hidden></div>
@@ -312,7 +312,7 @@
       </section>
 
       <footer>
-        ⚠ Relire systématiquement le rendu avant utilisation : la détection n'est pas infaillible.
+        ⚠ Relis avant de coller — la détection n'est pas infaillible.
         <button class="link-btn" id="identityOpenBtn">Mon identité</button>
       </footer>
     </div>
@@ -336,11 +336,13 @@
   <div class="overlay" id="identityOverlay" hidden>
     <div class="overlay-card">
       <div class="overlay-head">
-        <strong>Ton identité, masquée une fois pour toutes</strong>
+        <strong>Ton identité</strong>
       </div>
       <div class="overlay-body identity-body">
-        <p class="hint">Ces valeurs seront <strong>toujours masquées</strong>, sans dépendre de la détection.
-        Tout reste <strong>sur cette machine</strong> — rien n'est envoyé nulle part, et tu peux tout effacer d'un clic.</p>
+        <!-- Les deux garanties tiennent en une ligne : ce que ça fait, et où
+             ça reste. Le reste était de la réassurance répétée. -->
+        <p class="hint"><strong>Toujours masquées</strong>, sans dépendre de la
+        détection. Tout reste <strong>sur cette machine</strong>.</p>
         <div id="identityFields" class="identity-fields"></div>
         <div class="controls identity-actions">
           <button class="btn-primary" id="identitySaveBtn">Enregistrer</button>
