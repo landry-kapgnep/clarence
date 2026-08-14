@@ -822,29 +822,37 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   transition: transform .18s ease-out;
 }
 
-/* Une ligne = une ÉTAPE : la jauge, puis la coche qui la clôt. La coche occupe
-   toujours sa place (visibility, pas display) pour que la barre ne se décale
-   pas au moment où l'étape se termine. */
-.progress-row {
-  display: flex;
+/* ÉTAPES DU TRAITEMENT.
+   Une étape EN COURS montre sa jauge ; une étape FINIE devient une puce, et sa
+   jauge disparaît. Deux jauges pleines empilées ne disaient plus rien — on ne
+   savait pas laquelle attendait encore.
+
+   ⚠️ AUCUNE règle `display` sur un élément qu'on masque par l'attribut
+   `hidden` : une déclaration explicite écrase le `display: none` du navigateur,
+   et l'élément reste visible. C'est ce qui affichait deux barres vides avant
+   même qu'on lance quoi que ce soit. Ici, rien n'est masqué par attribut : ce
+   qui n'a pas lieu d'être n'est tout simplement pas dans le DOM. */
+.etape { margin-top: 8px; }
+.etape-libelle {
+  font-size: 12px;
+  color: var(--paper-dim);
+  margin-bottom: 4px;
+}
+.etape-faite {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-top: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+  background: var(--control-ghost-bg);
+  color: var(--paper-dim);
 }
-.progress-row .progress-track { flex: 1; margin-top: 0; }
-.progress-check {
-  font-size: 11px;
-  line-height: 1;
-  color: var(--moss);
-  width: 9px;
-}
-.progress-check[hidden] { display: inline-block; visibility: hidden; }
+.etape-faite .coche { color: var(--moss); }
 
-/* Compression : MÊME dégradé que la détection, teinte de départ changée. Le tan
-   n'est pas une couleur nouvelle — c'est déjà l'une des quatre teintes de la
-   grille de fond (LETTER_GRID_TINT_VARS dans main.js). Deux étapes se
-   distinguent ainsi sans introduire quoi que ce soit dans la palette. */
-.progress-fill.compression {
+/* La teinte distingue les étapes. Le tan n'est pas une couleur nouvelle : c'est
+   déjà l'une des quatre de la grille de fond (LETTER_GRID_TINT_VARS). */
+.progress-fill.teinte-tan {
   background: linear-gradient(90deg, var(--tan), var(--moss));
 }
 

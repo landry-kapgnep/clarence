@@ -218,23 +218,12 @@
           </div>
         </div>
 
-        <!-- DEUX étapes, deux barres. La compression tourne APRÈS la
-             détection : avec une seule barre, elle repartait de zéro sur une
-             jauge déjà pleine, ou pire ne bougeait plus du tout — on ne savait
-             ni ce qui se passait ni combien de temps ça durerait.
-             La coche à droite marque l'étape franchie. -->
-        <div class="progress-row" id="fileProgressRow" hidden>
-          <div class="progress-track">
-            <div class="progress-fill" id="fileProgressFill"></div>
-          </div>
-          <span class="progress-check" id="fileProgressCheck" hidden aria-hidden="true">✓</span>
-        </div>
-        <div class="progress-row" id="fileCompressProgressRow" hidden>
-          <div class="progress-track">
-            <div class="progress-fill compression" id="fileCompressProgressFill"></div>
-          </div>
-          <span class="progress-check" id="fileCompressProgressCheck" hidden aria-hidden="true">✓</span>
-        </div>
+        <!-- ÉTAPES DU TRAITEMENT — liste pilotée par les données (voir
+             main.js). Vide tant que rien n'est lancé ; une étape en cours
+             affiche sa jauge, une étape finie devient une puce « terminé ✓ ».
+             Ajouter une étape optionnelle plus tard = une ligne de déclaration,
+             aucun markup à écrire. -->
+        <div id="fileEtapes"></div>
         <div class="engine-badge" id="fileEngineBadge" hidden></div>
         <div class="status" id="fileStatus"></div>
 

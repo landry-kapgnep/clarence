@@ -1137,7 +1137,7 @@ function createNerWorker() {
       const pct = Math.round(msg.loaded / msg.total * 100);
       setStatus(`T\xE9l\xE9chargement du mod\xE8le\u2026 ${pct} % (une seule fois)`);
       const ratio = msg.loaded / msg.total;
-      if (!$("fileMode")?.hidden) setFileProgress(ratio);
+      if (!$("fileMode")?.hidden) avancerEtape("detection", ratio);
       else setTextProgress(ratio);
       return;
     }
@@ -1735,29 +1735,65 @@ function setProgress(trackId, fillId, ratio) {
   track.hidden = false;
   fill.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
 }
-var setFileProgress = (r) => setProgress("fileProgressRow", "fileProgressFill", r);
 var setTextProgress = (r) => setProgress("textProgress", "textProgressFill", r);
-var setCompressProgress = (r) => setProgress("fileCompressProgressRow", "fileCompressProgressFill", r);
-function etapeTerminee(checkId) {
-  const c = $(checkId);
-  if (c) c.hidden = false;
+var etapes = [];
+function declarerEtapes(liste) {
+  etapes = liste.map((e) => ({ ...e, etat: "attente", ratio: 0 }));
+  rendreEtapes();
 }
-function reinitEtapes() {
-  for (const id of ["fileProgressCheck", "fileCompressProgressCheck"]) {
-    const c = $(id);
-    if (c) c.hidden = true;
+function majEtape(id, champs) {
+  const e = etapes.find((x) => x.id === id);
+  if (!e) return;
+  Object.assign(e, champs);
+  rendreEtapes();
+}
+var avancerEtape = (id, ratio) => majEtape(id, { etat: "cours", ratio: ratio ?? 0 });
+var terminerEtape = (id) => majEtape(id, { etat: "faite", ratio: 1 });
+var effacerEtapes = () => {
+  etapes = [];
+  rendreEtapes();
+};
+function rendreEtapes() {
+  const hote = $("fileEtapes");
+  if (!hote) return;
+  hote.textContent = "";
+  for (const e of etapes) {
+    if (e.etat === "attente") continue;
+    if (e.etat === "faite") {
+      const puce = document.createElement("div");
+      puce.className = "etape-faite";
+      puce.append(`${e.libelle} termin\xE9e`);
+      const coche = document.createElement("span");
+      coche.className = "coche";
+      coche.setAttribute("aria-hidden", "true");
+      coche.textContent = "\u2713";
+      puce.append(coche);
+      hote.append(puce);
+      continue;
+    }
+    const bloc = document.createElement("div");
+    bloc.className = "etape";
+    const libelle = document.createElement("div");
+    libelle.className = "etape-libelle";
+    libelle.textContent = e.libelle;
+    const piste = document.createElement("div");
+    piste.className = "progress-track";
+    const jauge = document.createElement("div");
+    jauge.className = `progress-fill${e.teinte ? " " + e.teinte : ""}`;
+    jauge.style.transform = `scaleX(${Math.max(0, Math.min(1, e.ratio))})`;
+    piste.append(jauge);
+    bloc.append(libelle, piste);
+    hote.append(bloc);
   }
-  setFileProgress(null);
-  setCompressProgress(null);
 }
 var compressionProgress = ({ fait, total }) => {
-  fileSetStatus(`Compression du texte\u2026 ${fait}/${total}`);
-  setCompressProgress(total ? fait / total : null);
+  if (total && fait >= total) terminerEtape("compression");
+  else avancerEtape("compression", total ? fait / total : 0);
   return new Promise((r) => setTimeout(r, 0));
 };
 var nerProgress = ({ done, total }) => {
-  fileSetStatus(`D\xE9tection en cours\u2026 ${done}/${total}`);
-  setFileProgress(total ? done / total : null);
+  if (total && done >= total) terminerEtape("detection");
+  else avancerEtape("detection", total ? done / total : 0);
   return new Promise((r) => setTimeout(r, 0));
 };
 var LETTER_GRID_LETTERS = ["c", "l", "a", "r", "e", "n"];
@@ -2123,7 +2159,7 @@ function annulerRunFichier(motif) {
   run.controller.abort(new OperationAnnulee());
   purgerWorkerNer(new OperationAnnulee());
   setProcessing(false);
-  setFileProgress(null);
+  effacerEtapes();
   setAnalyzeBtnLoading(false);
   $("fileAnalyzeBtn").disabled = false;
   $("fileCancelBtn").hidden = true;
@@ -2147,7 +2183,10 @@ async function processFile() {
   setProcessing(true);
   setAnalyzeBtnLoading(true);
   const debut = performance.now();
-  reinitEtapes();
+  declarerEtapes([
+    { id: "detection", libelle: "D\xE9tection des donn\xE9es sensibles" },
+    ...$("fileCompress")?.checked && !FILE_TYPES[extOf(source.name)]?.metadataOnly ? [{ id: "compression", libelle: "R\xE9duction des tokens", teinte: "teinte-tan" }] : []
+  ]);
   fileSetStatus("Lecture du fichier\u2026");
   try {
     const adapter = await kind.load();
@@ -2250,14 +2289,14 @@ async function processFile() {
           verifierAnnulation(signal);
         }
         compressionInfo = { avant, apres };
-        etapeTerminee("fileCompressProgressCheck");
+        terminerEtape("compression");
       } catch (err) {
         if (estAnnulation(err)) throw err;
         console.error("[clarence] compression interrompue :", err);
         compressionEchouee = String(err?.message || err);
       }
     }
-    etapeTerminee("fileProgressCheck");
+    terminerEtape("detection");
     const byId = new Map(results.map((r) => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus("R\xE9\xE9criture du fichier\u2026");
     const masked = await adapter.applyMask(input, byId, { compresserUnite: crochetCompression() });
@@ -2293,7 +2332,6 @@ async function processFile() {
     if (courant()) {
       fileRun = null;
       setProcessing(false);
-      setFileProgress(null);
       setAnalyzeBtnLoading(false);
       btn.disabled = false;
       $("fileCancelBtn").hidden = true;

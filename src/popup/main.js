@@ -311,7 +311,7 @@ function createNerWorker() {
       // Le premier vrai temps d'attente, c'est ce téléchargement (~180 Mo) :
       // la barre du mode actif le montre aussi.
       const ratio = msg.loaded / msg.total;
-      if (!$('fileMode')?.hidden) setFileProgress(ratio); else setTextProgress(ratio);
+      if (!$('fileMode')?.hidden) avancerEtape('detection', ratio); else setTextProgress(ratio);
       return;
     }
     if (msg.type === 'result' || (msg.type === 'error' && msg.id != null)) {
@@ -1181,39 +1181,93 @@ function setProgress(trackId, fillId, ratio) {
   track.hidden = false;
   fill.style.transform = `scaleX(${Math.max(0, Math.min(1, ratio))})`;
 }
-const setFileProgress = r => setProgress('fileProgressRow', 'fileProgressFill', r);
 const setTextProgress = r => setProgress('textProgress', 'textProgressFill', r);
-const setCompressProgress = r => setProgress('fileCompressProgressRow', 'fileCompressProgressFill', r);
 
-// DEUX ÉTAPES, DEUX BARRES, et une coche pour clore la première.
+// ===== ÉTAPES DU TRAITEMENT =====
 //
-// La compression tourne APRÈS la détection. Avec une seule jauge, elle
-// repartait de zéro sur une barre déjà pleine — ou n'affichait plus rien du
-// tout : on ne savait ni ce qui tournait, ni pour combien de temps. La coche
-// dit « cette étape-là est finie », de sorte qu'une barre vide en dessous se
-// lise comme un début et non comme un blocage.
-function etapeTerminee(checkId) {
-  const c = $(checkId);
-  if (c) c.hidden = false;
+// POURQUOI UNE LISTE PILOTÉE PAR LES DONNÉES plutôt que des barres écrites en
+// dur. Quatre défauts constatés à l'usage venaient tous du markup figé :
+//   - les deux jauges s'affichaient AVANT qu'on ait lancé quoi que ce soit ;
+//   - la seconde apparaissait même sans l'option qui la justifie ;
+//   - une jauge pleine et une jauge vide côte à côte ne disaient plus laquelle
+//     travaillait ;
+//   - la première semblait « se vider » quand la seconde se remplissait.
+//
+// Une étape n'existe donc dans le DOM que si elle a lieu d'être : ABSENTE tant
+// qu'elle n'a pas commencé, JAUGE pendant, PUCE « terminé ✓ » après. Ajouter
+// une étape optionnelle plus tard ne demande qu'une ligne de déclaration.
+let etapes = [];
+
+// `teinte` : classe CSS du dégradé. Une étape sans teinte prend celle par
+// défaut (violet), comme la détection.
+function declarerEtapes(liste) {
+  etapes = liste.map(e => ({ ...e, etat: 'attente', ratio: 0 }));
+  rendreEtapes();
 }
-function reinitEtapes() {
-  for (const id of ['fileProgressCheck', 'fileCompressProgressCheck']) {
-    const c = $(id);
-    if (c) c.hidden = true;
+
+function majEtape(id, champs) {
+  const e = etapes.find(x => x.id === id);
+  if (!e) return;
+  Object.assign(e, champs);
+  rendreEtapes();
+}
+
+const demarrerEtape = (id) => majEtape(id, { etat: 'cours', ratio: 0 });
+const avancerEtape = (id, ratio) => majEtape(id, { etat: 'cours', ratio: ratio ?? 0 });
+const terminerEtape = (id) => majEtape(id, { etat: 'faite', ratio: 1 });
+const effacerEtapes = () => { etapes = []; rendreEtapes(); };
+
+function rendreEtapes() {
+  const hote = $('fileEtapes');
+  if (!hote) return;
+  hote.textContent = '';
+  for (const e of etapes) {
+    // ATTENTE : rien du tout. Une jauge vide pour une étape qui n'a pas
+    // commencé se lit comme un blocage.
+    if (e.etat === 'attente') continue;
+
+    if (e.etat === 'faite') {
+      const puce = document.createElement('div');
+      puce.className = 'etape-faite';
+      puce.append(`${e.libelle} terminée`);
+      const coche = document.createElement('span');
+      coche.className = 'coche';
+      coche.setAttribute('aria-hidden', 'true');
+      coche.textContent = '✓';
+      puce.append(coche);
+      hote.append(puce);
+      continue;
+    }
+
+    const bloc = document.createElement('div');
+    bloc.className = 'etape';
+    const libelle = document.createElement('div');
+    libelle.className = 'etape-libelle';
+    libelle.textContent = e.libelle;
+    const piste = document.createElement('div');
+    piste.className = 'progress-track';
+    const jauge = document.createElement('div');
+    jauge.className = `progress-fill${e.teinte ? ' ' + e.teinte : ''}`;
+    jauge.style.transform = `scaleX(${Math.max(0, Math.min(1, e.ratio))})`;
+    piste.append(jauge);
+    bloc.append(libelle, piste);
+    hote.append(bloc);
   }
-  setFileProgress(null);
-  setCompressProgress(null);
 }
 
 const compressionProgress = ({ fait, total }) => {
-  fileSetStatus(`Compression du texte… ${fait}/${total}`);
-  setCompressProgress(total ? fait / total : null);
+  if (total && fait >= total) terminerEtape('compression');
+  else avancerEtape('compression', total ? fait / total : 0);
   return new Promise(r => setTimeout(r, 0));
 };
 
+// La clôture se fait ICI, sur la progression, et pas à un jalon écrit dans le
+// flux : le PDF « Préserver » enchaîne détection et compression À L'INTÉRIEUR de
+// reconstructPdf, hors de portée de la popup. Un seul mécanisme couvre les deux
+// chemins.
 const nerProgress = ({ done, total }) => {
-  fileSetStatus(`Détection en cours… ${done}/${total}`);
-  setFileProgress(total ? done / total : null);
+  if (total && done >= total) terminerEtape('detection');
+  else avancerEtape('detection', total ? done / total : 0);
   return new Promise(r => setTimeout(r, 0));
 };
 
@@ -1706,7 +1760,7 @@ function annulerRunFichier(motif) {
   // purge qui libère réellement le modèle pour le run suivant.
   purgerWorkerNer(new OperationAnnulee());
   setProcessing(false);
-  setFileProgress(null);
+  effacerEtapes();
   setAnalyzeBtnLoading(false);
   $('fileAnalyzeBtn').disabled = false;
   $('fileCancelBtn').hidden = true;
@@ -1748,7 +1802,14 @@ async function processFile() {
   setProcessing(true);
   setAnalyzeBtnLoading(true);
   const debut = performance.now();
-  reinitEtapes();
+  // Les étapes sont déclarées ICI, en fonction des options réellement cochées :
+  // une étape non demandée n'apparaît jamais, même vide.
+  declarerEtapes([
+    { id: 'detection', libelle: 'Détection des données sensibles' },
+    ...($('fileCompress')?.checked && !FILE_TYPES[extOf(source.name)]?.metadataOnly
+      ? [{ id: 'compression', libelle: 'Réduction des tokens', teinte: 'teinte-tan' }]
+      : [])
+  ]);
   fileSetStatus('Lecture du fichier…');
   try {
     const adapter = await kind.load();
@@ -1886,7 +1947,7 @@ async function processFile() {
           verifierAnnulation(signal);
         }
         compressionInfo = { avant, apres };
-        etapeTerminee('fileCompressProgressCheck');
+        terminerEtape('compression');
       } catch (err) {
         // Même principe que le crochet : l'anonymisation a réussi, on ne la
         // jette pas parce que l'option a échoué. Une annulation, elle, doit
@@ -1897,9 +1958,9 @@ async function processFile() {
       }
     }
 
-    // La détection est finie : on le MONTRE. Une barre pleine sans rien d'autre
-    // ne distingue pas « terminé » de « figé ».
-    etapeTerminee('fileProgressCheck');
+    // La détection est finie : sa jauge disparaît et devient une puce. Deux
+    // jauges pleines empilées ne disaient plus laquelle attendait encore.
+    terminerEtape('detection');
 
     // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
     const byId = new Map(results.map(r => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
@@ -1944,7 +2005,6 @@ async function processFile() {
     if (courant()) {
       fileRun = null;
       setProcessing(false);
-      setFileProgress(null);
       setAnalyzeBtnLoading(false);
       btn.disabled = false;
       $('fileCancelBtn').hidden = true;
