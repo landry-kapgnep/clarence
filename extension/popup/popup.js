@@ -1699,7 +1699,7 @@ function compressionApplicable(ext) {
   return !!(ext && FILE_TYPES[ext] && !FILE_TYPES[ext].metadataOnly);
 }
 function majVisibiliteCompression(ext) {
-  const bloc = $("fileCompressBloc");
+  const bloc = $("fileCompressBtn");
   if (!bloc) return;
   bloc.hidden = !compressionApplicable(ext);
   if (bloc.hidden && $("fileCompress")) $("fileCompress").checked = false;

@@ -1106,7 +1106,9 @@ function compressionApplicable(ext) {
 }
 
 function majVisibiliteCompression(ext) {
-  const bloc = $('fileCompressBloc');
+  // Le bouton seul est masqué, pas un conteneur : sa colonne de grille se vide
+  // sans déplacer celle d'à côté.
+  const bloc = $('fileCompressBtn');
   if (!bloc) return;
   bloc.hidden = !compressionApplicable(ext);
   // Une option cachée ne doit jamais rester ACTIVE en coulisse : sans ça, une

@@ -739,6 +739,69 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   transition: background .12s ease, transform .12s ease, opacity .12s ease;
   opacity: 0;
 }
+/* ===== GRILLE D'OPTIONS =====
+   POURQUOI UNE GRILLE. Les options étaient des `inline-block` dont la case
+   vivait en `position: absolute` : hors du flux, elle DÉBORDAIT de sa ligne et
+   sa couleur mordait sur l'option du dessus. Ce n'était pas un défaut de marge
+   mais de positionnement — aucune valeur de `margin` ne l'aurait réglé.
+
+   Un bouton qui contient son icône ET son texte ne peut plus déborder : la
+   couleur reste dans sa propre boîte. La grille, elle, garantit des proportions
+   identiques sans qu'on les règle à la main. */
+.options-grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+  align-items: stretch;
+}
+
+.option-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  min-height: 42px;
+  font-size: 13px;
+  line-height: 1.25;
+  background: var(--bg-field);
+  color: var(--paper-dim);
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.option-btn:hover { background: var(--bg-raised); }
+/* L'entrée native reste dans le DOM (sémantique, clavier, formulaire) mais ne
+   se voit pas : c'est le bouton entier qui joue le rôle de case. */
+.option-btn input { position: absolute; opacity: 0; width: 0; height: 0; }
+.option-btn .opt-icone { width: 18px; height: auto; flex-shrink: 0; }
+.option-btn .sombre { display: none; }
+.option-btn .option-texte { flex: 1; }
+
+/* ALLUMÉ : la couleur devient le fond du bouton, l'icône passe en sombre. */
+.option-btn:has(input:checked) {
+  background: var(--seal-lit);
+  color: var(--seal);
+}
+.option-btn.teinte-tokens:has(input:checked) { background: var(--tan); }
+.option-btn:has(input:checked) .claire { display: none; }
+.option-btn:has(input:checked) .sombre { display: block; }
+.option-btn:has(input:focus-visible) { outline: 2px solid var(--paper); outline-offset: 1px; }
+
+/* SOUS-OPTION : deuxième rangée, épinglée SOUS son bouton. Sans ces colonnes
+   explicites, masquer l'une ferait glisser l'autre à sa place. */
+.option-sous {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  font-size: 12px;
+  color: var(--paper-dim);
+  cursor: pointer;
+}
+#filePseudoLocaleLabel, #pseudoLocaleLabel { grid-column: 1; grid-row: 2; }
+#fileCompressTauxLabel { grid-column: 2; grid-row: 2; }
+.option-sous .mini-select { flex: 1; min-width: 0; }
+
 /* CASE PORTANT UNE ICÔNE.
    Décochée : fond noir, icône BLANCHE. Cochée : le carré entier se colore et
    l'icône passe en NOIR — la couleur devient le fond, pas une pastille au

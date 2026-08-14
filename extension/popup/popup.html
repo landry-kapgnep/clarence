@@ -42,18 +42,29 @@
         <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage, puis clique ici">Masquer la sélection</button>
       </div>
       <div id="textOptions" hidden>
-      <label class="hint pseudo-toggle" style="display:block;margin-top:8px;cursor:pointer;">
-        <input type="checkbox" id="realisticToggle">
-        <span class="square-checkbox" aria-hidden="true"></span>
-        <span class="checkbox-label-text">Pseudonymes (lieux, noms, contacts)</span>
-      </label>
-      <label class="hint pseudo-locale" style="display:block;cursor:pointer;" id="pseudoLocaleLabel" hidden>
-        Langue des pseudonymes
-        <select id="pseudoLocale" class="mini-select">
-          <option value="fr">Français</option>
-          <option value="en">Anglais</option>
-        </select>
-      </label>
+      <div class="options-grille">
+        <label class="option-btn">
+          <input type="checkbox" id="realisticToggle">
+          <img class="opt-icone claire" src="img/ClarencePsButtonW.png" alt="" aria-hidden="true">
+          <img class="opt-icone sombre" src="img/ClarencePsButton.png" alt="" aria-hidden="true">
+          <span class="option-texte">Pseudonymes</span>
+          <span class="info-tip" tabindex="0" role="note"
+                aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. La même personne garde le même pseudonyme.">?
+            <span class="info-tip-box">
+              Remplace par des noms <strong>plausibles</strong> plutôt que
+              <code>[PERSONNE_1]</code>. La même personne garde le même
+              pseudonyme d'un bout à l'autre.
+            </span>
+          </span>
+        </label>
+        <label class="option-sous" id="pseudoLocaleLabel" hidden>
+          Langue
+          <select id="pseudoLocale" class="mini-select">
+            <option value="fr">Français</option>
+            <option value="en">Anglais</option>
+          </select>
+        </label>
+      </div>
 
       <details id="customRules">
         <summary>Personnaliser le masquage</summary>
@@ -111,12 +122,10 @@
         <div id="fileOptions" hidden>
         <!-- Chaque option porte un « ? » : le libellé reste court, le détail
              vit dans l'infobulle. -->
-        <div id="pdfModeChoice" hidden>
-          <div class="field-label"></div>
-          <label class="hint pdf-radio" style="display:block;cursor:pointer;">
+        <div id="pdfModeChoice" class="options-grille" hidden>
+          <label class="option-btn">
             <input type="radio" name="pdfMode" id="pdfModeLight" value="md" checked>
-            <span class="square-radio" aria-hidden="true"></span>
-            <span class="radio-label-text">Format allégé</span>
+            <span class="option-texte">Format allégé</span>
             <span class="info-tip" tabindex="0" role="note"
                   aria-label="Sortie en Markdown : le texte seul, sans les images. Copiable directement dans le chat.">?
               <span class="info-tip-box">
@@ -125,12 +134,11 @@
               </span>
             </span>
           </label>
-          <label class="hint pdf-radio" style="display:block;cursor:pointer;">
+          <label class="option-btn">
             <input type="radio" name="pdfMode" id="pdfModePreserve" value="pdf">
-            <span class="square-radio" aria-hidden="true"></span>
-            <span class="radio-label-text">Format original</span>
+            <span class="option-texte">Format original</span>
             <span class="info-tip" tabindex="0" role="note"
-                  aria-label="PDF reconstruit depuis des pages neuves, images conservées. Fidélité visuelle approximative : police unique, positions au fragment.">?
+                  aria-label="PDF reconstruit depuis des pages neuves, images conservées. Fidélité visuelle approximative.">?
               <span class="info-tip-box">
                 PDF reconstruit depuis des pages <strong>neuves</strong> — aucun
                 texte d'origine ne subsiste dessous. Images conservées.<br>
@@ -140,41 +148,31 @@
           </label>
         </div>
 
-        <label class="hint pseudo-toggle" style="display:block;margin-top:8px;cursor:pointer;">
-          <input type="checkbox" id="fileRealisticToggle">
-          <span class="square-checkbox avec-icone" aria-hidden="true">
-            <img class="opt-icone claire" src="img/ClarencePsButtonW.png" alt="">
-            <img class="opt-icone sombre" src="img/ClarencePsButton.png" alt="">
-          </span>
-          <span class="checkbox-label-text">Pseudonymes</span>
-          <span class="info-tip" tabindex="0" role="note"
-                aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. Le texte reste lisible et la même personne garde le même pseudonyme.">?
-            <span class="info-tip-box">
-              Remplace par des noms <strong>plausibles</strong> plutôt que
-              <code>[PERSONNE_1]</code>. Le texte reste lisible, et la même
-              personne garde le même pseudonyme d'un bout à l'autre.
+        <!-- GRILLE D'OPTIONS. Deux colonnes de largeur égale : les boutons ont
+             la même proportion sans qu'on la règle à la main. Les sous-options
+             occupent la RANGÉE DU DESSOUS, chacune épinglée sous son bouton —
+             celle qui apparaît ne déplace donc pas l'autre. -->
+        <div class="options-grille" id="fileOptionsGrille">
+          <label class="option-btn" id="fileRealisticBtn">
+            <input type="checkbox" id="fileRealisticToggle">
+            <img class="opt-icone claire" src="img/ClarencePsButtonW.png" alt="" aria-hidden="true">
+            <img class="opt-icone sombre" src="img/ClarencePsButton.png" alt="" aria-hidden="true">
+            <span class="option-texte">Pseudonymes</span>
+            <span class="info-tip" tabindex="0" role="note"
+                  aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. La même personne garde le même pseudonyme.">?
+              <span class="info-tip-box">
+                Remplace par des noms <strong>plausibles</strong> plutôt que
+                <code>[PERSONNE_1]</code>. Le texte reste lisible, et la même
+                personne garde le même pseudonyme d'un bout à l'autre.
+              </span>
             </span>
-          </span>
-        </label>
-        <label class="hint pseudo-locale" style="display:block;cursor:pointer;" id="filePseudoLocaleLabel" hidden>
-          Langue des pseudonymes
-          <select id="filePseudoLocale" class="mini-select">
-            <option value="fr">Français</option>
-            <option value="en">Anglais</option>
-          </select>
-        </label>
+          </label>
 
-        <!-- COMPRESSION — choisie AVANT de lancer (le modèle se charge pendant
-             le traitement, pas au premier clic sur Copier). S'applique à tous
-             les formats porteurs de texte, mise en page préservée comprise. -->
-        <div id="fileCompressBloc" hidden>
-          <label class="hint pseudo-toggle" style="display:block;cursor:pointer;">
+          <label class="option-btn teinte-tokens" id="fileCompressBtn">
             <input type="checkbox" id="fileCompress">
-            <span class="square-checkbox avec-icone teinte-tokens" aria-hidden="true">
-              <img class="opt-icone claire" src="img/ClarenceTkButtonW.png" alt="">
-              <img class="opt-icone sombre" src="img/ClarenceTkButton.png" alt="">
-            </span>
-            <span class="checkbox-label-text">Économiser des tokens</span>
+            <img class="opt-icone claire" src="img/ClarenceTkButtonW.png" alt="" aria-hidden="true">
+            <img class="opt-icone sombre" src="img/ClarenceTkButton.png" alt="" aria-hidden="true">
+            <span class="option-texte">Économiser des tokens</span>
             <span class="info-tip" tabindex="0" role="note"
                   aria-label="Supprime les mots peu porteurs. La prose est appauvrie et ne peut plus être relue. Données masquées et négations préservées. Premier usage : 170 Mo à télécharger.">?
               <span class="info-tip-box">
@@ -187,9 +185,15 @@
               </span>
             </span>
           </label>
-          <!-- Le taux n'a de sens que si l'option est cochée : masqué sinon. -->
-          <label class="hint pseudo-locale" style="display:block;cursor:pointer;"
-                 id="fileCompressTauxLabel" hidden>
+
+          <label class="option-sous" id="filePseudoLocaleLabel" hidden>
+            Langue
+            <select id="filePseudoLocale" class="mini-select">
+              <option value="fr">Français</option>
+              <option value="en">Anglais</option>
+            </select>
+          </label>
+          <label class="option-sous" id="fileCompressTauxLabel" hidden>
             Texte conservé
             <select id="fileCompressTaux" class="mini-select">
               <option value="0.7">70 %</option>
