@@ -122,10 +122,16 @@
         <div id="fileOptions" hidden>
         <!-- Chaque option porte un « ? » : le libellé reste court, le détail
              vit dans l'infobulle. -->
-        <div id="pdfModeChoice" class="options-grille" hidden>
-          <label class="option-btn">
+        <!-- CHOIX DE FORMAT — volontairement en radios empilées, PAS dans la
+             grille de boutons. Ce n'est pas une fonction qu'on ajoute mais une
+             destination qu'on choisit : lui donner la même forme que
+             « Pseudonymes » ou « Économiser des tokens » brouillait les deux
+             natures. La forme distingue ce que le texte ne dit pas. -->
+        <div id="pdfModeChoice" hidden>
+          <label class="hint pdf-radio" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModeLight" value="md" checked>
-            <span class="option-texte">Format allégé</span>
+            <span class="square-radio" aria-hidden="true"></span>
+            <span class="radio-label-text">Format allégé</span>
             <span class="info-tip" tabindex="0" role="note"
                   aria-label="Sortie en Markdown : le texte seul, sans les images. Copiable directement dans le chat.">?
               <span class="info-tip-box">
@@ -134,9 +140,10 @@
               </span>
             </span>
           </label>
-          <label class="option-btn">
+          <label class="hint pdf-radio" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModePreserve" value="pdf">
-            <span class="option-texte">Format original</span>
+            <span class="square-radio" aria-hidden="true"></span>
+            <span class="radio-label-text">Format original</span>
             <span class="info-tip" tabindex="0" role="note"
                   aria-label="PDF reconstruit depuis des pages neuves, images conservées. Fidélité visuelle approximative.">?
               <span class="info-tip-box">
