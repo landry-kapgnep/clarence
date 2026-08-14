@@ -2145,6 +2145,15 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
+    if ($("fileCompress")?.checked) {
+      fileSetStatus("Pr\xE9paration de la compression\u2026");
+      const dispo = await ensureCompression();
+      if (!dispo.ok) {
+        $("fileCompress").checked = false;
+        compressionEchouee = dispo.message || "raison inconnue";
+      }
+      verifierAnnulation(signal);
+    }
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
@@ -2186,15 +2195,6 @@ async function processFile() {
     if (!units.length) {
       fileSetStatus("Aucun texte \xE0 analyser dans ce fichier.", "error");
       return;
-    }
-    if ($("fileCompress")?.checked) {
-      fileSetStatus("Pr\xE9paration de la compression\u2026");
-      const dispo = await ensureCompression();
-      if (!dispo.ok) {
-        $("fileCompress").checked = false;
-        compressionEchouee = dispo.message || "raison inconnue";
-      }
-      verifierAnnulation(signal);
     }
     fileSetStatus("D\xE9tection en cours\u2026");
     await ensureNER();

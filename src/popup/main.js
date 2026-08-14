@@ -1735,6 +1735,24 @@ async function processFile() {
       return;
     }
 
+    // Compression demandée : le modèle se charge ICI, AVANT tout aiguillage par
+    // format. Il était chargé plus bas, dans le chemin standard — or la branche
+    // PDF « Préserver » RETOURNE avant d'y arriver : le crochet y valait donc
+    // toujours `null` et le PDF ressortait anonymisé mais jamais compressé,
+    // pendant que le .md, lui, fonctionnait. Tout ce qui doit valoir pour TOUS
+    // les formats se place avant l'aiguillage, pas après.
+    if ($('fileCompress')?.checked) {
+      fileSetStatus('Préparation de la compression…');
+      const dispo = await ensureCompression();
+      if (!dispo.ok) {
+        $('fileCompress').checked = false;
+        // PAS un fileSetStatus : l'étape suivante l'écraserait aussitôt et
+        // l'échec passerait inaperçu. Reporté au résumé final, qui reste.
+        compressionEchouee = dispo.message || 'raison inconnue';
+      }
+      verifierAnnulation(signal);
+    }
+
     // PDF + choix « Préserver » : reconstruction d'un PDF (images gardées),
     // chemin indépendant de l'extraction Markdown. Une seule passe de détection
     // à l'intérieur de reconstructPdf. Sortie binaire .pdf (pas copiable texte).
@@ -1787,23 +1805,6 @@ async function processFile() {
     if (!units.length) {
       fileSetStatus('Aucun texte à analyser dans ce fichier.', 'error');
       return;
-    }
-
-    // Compression demandée : on charge son modèle MAINTENANT, pendant que la
-    // barre de progression est déjà affichée. Le faire au premier clic sur
-    // « Copier » ferait figer le bouton une minute sans explication.
-    if ($('fileCompress')?.checked) {
-      fileSetStatus('Préparation de la compression…');
-      const dispo = await ensureCompression();
-      if (!dispo.ok) {
-        $('fileCompress').checked = false;
-        // PAS un fileSetStatus : la ligne suivante est « Détection en cours… »
-        // et l'écraserait aussitôt. L'échec passait donc totalement inaperçu et
-        // le fichier ressortait non compressé « sans que rien n'ait changé ».
-        // Il est mémorisé et affiché avec le résumé, qui, lui, reste.
-        compressionEchouee = dispo.message || 'raison inconnue';
-      }
-      verifierAnnulation(signal);
     }
 
     fileSetStatus('Détection en cours…');
