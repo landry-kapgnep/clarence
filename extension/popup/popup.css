@@ -761,12 +761,19 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
    pourrait activer tous les deux ; ici l'un exclut l'autre, et la forme doit le
    dire avant le texte. */
 #pdfModeChoice {
-  gap: 0;
+  gap: 3px;
   padding: 3px;
   background: #000000;
 }
-#pdfModeChoice .option-btn { background: transparent; }
-#pdfModeChoice .option-btn:hover { background: rgba(237, 230, 211, 0.06); }
+/* La règle de sélection doit porter l'IDENTIFIANT elle aussi.
+   `#pdfModeChoice .option-btn` (1 id) l'emportait sur
+   `.option-btn:has(input:checked)` (0 id) : la couleur du bouton choisi était
+   écrite, puis écrasée — d'où deux boutons noirs et aucune sélection visible.
+   Un fond posé dans un contexte identifié doit être repris au même niveau. */
+#pdfModeChoice .option-btn:has(input:checked) {
+  background: var(--seal-lit);
+  color: var(--seal);
+}
 
 .option-btn {
   display: flex;
