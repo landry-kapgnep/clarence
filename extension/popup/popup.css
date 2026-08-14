@@ -328,14 +328,6 @@ footer {
 /* ===== Images de marque (variantes blanches) ===== */
 .logo { width: 200px; height: auto; flex-shrink: 0; margin: auto; }
 .dlbtn { width: 20px; height: auto; flex-shrink: 0; }
-/* Icône d'option, alignée sur le libellé. Même échelle que .cpbtn. */
-.opt-icone {
-  width: 15px;
-  height: auto;
-  vertical-align: middle;
-  margin-right: 5px;
-  flex-shrink: 0;
-}
 .cpbtn { width: 15px; height: auto; flex-shrink: 0; }
 /* Les pictos de bouton sont blancs ; sur un bouton clair il faut les inverser. */
 .btn-primary .dlbtn, .btn-primary .cpbtn { filter: invert(1); }
@@ -741,6 +733,32 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   transition: background .12s ease, transform .12s ease, opacity .12s ease;
   opacity: 0;
 }
+/* CASE PORTANT UNE ICÔNE.
+   Décochée : fond noir, icône BLANCHE. Cochée : le carré entier se colore et
+   l'icône passe en NOIR — la couleur devient le fond, pas une pastille au
+   centre. Le carré intérieur (::after) n'a donc plus lieu d'être ici, il
+   passerait par-dessus l'icône. */
+.square-checkbox.avec-icone::after { display: none; }
+.square-checkbox.avec-icone .opt-icone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 13px;
+  height: auto;
+}
+.square-checkbox.avec-icone .sombre { visibility: hidden; }
+.pseudo-toggle input[type="checkbox"]:checked + .square-checkbox.avec-icone {
+  background: var(--seal-lit);
+}
+/* L'option « tokens » reprend le tan de sa barre de progression : une même
+   fonction garde sa teinte d'un bout à l'autre du parcours. */
+.pseudo-toggle input[type="checkbox"]:checked + .square-checkbox.teinte-tokens {
+  background: var(--tan);
+}
+.pseudo-toggle input[type="checkbox"]:checked + .square-checkbox.avec-icone .claire { visibility: hidden; }
+.pseudo-toggle input[type="checkbox"]:checked + .square-checkbox.avec-icone .sombre { visibility: visible; }
+
 .pseudo-toggle input[type="checkbox"]:checked + .square-checkbox::after {
   background: #8D93D6;
   opacity: 1;
