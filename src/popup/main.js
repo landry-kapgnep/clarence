@@ -63,7 +63,7 @@ const parseLines = parseTermes;
 // programmatique ne déclenche PAS `input`, et le déclencher à la main
 // appellerait `invalidateFileResult`, qui détruirait le résultat qu'on est en
 // train de régénérer. On rafraîchit donc explicitement.
-const APERCUS_TERMES = [['docKeep', 'docKeepLus'], ['docMask', 'docMaskLus']];
+const APERCUS_TERMES = [['fileAlwaysKeep', 'fileAlwaysKeepLus'], ['fileAlwaysMask', 'fileAlwaysMaskLus']];
 
 function rendreApercuTermes() {
   for (const [idChamp, idApercu] of APERCUS_TERMES) {
@@ -839,7 +839,7 @@ function invalidateFileResult() {
 for (const id of ['pdfModeLight', 'pdfModePreserve', 'fileRealisticToggle', 'filePseudoLocale']) {
   $(id)?.addEventListener('change', invalidateFileResult);
 }
-for (const id of ['fileAlwaysMask', 'fileAlwaysKeep', 'docKeep', 'docMask']) {
+for (const id of ['fileAlwaysMask', 'fileAlwaysKeep']) {
   $(id)?.addEventListener('input', invalidateFileResult);
 }
 
@@ -920,9 +920,6 @@ function setChosenFile(file) {
   // silencieusement le fichier suivant avec le vocabulaire du précédent.
   // Les règles de PROFIL, elles, ne sont pas touchées : elles sont durables.
   fileRegen = null;
-  if ($('docKeep')) $('docKeep').value = '';
-  if ($('docMask')) $('docMask').value = '';
-  rendreApercuTermes();
   chosenFile = file;
   fileOutBlob = null;
   compressionInfo = null;
@@ -990,18 +987,23 @@ function fileMaskOptions(units = []) {
 // 45 secondes d'inférence et le geste cesserait d'être utilisable.
 let fileRegen = null;
 
-// Vocabulaire du PROFIL (réutilisable, écrasé au changement de profil) FUSIONNÉ
-// avec celui du DOCUMENT courant (#docKeep / #docMask, effacés au changement de
-// fichier). Deux fonctions plutôt que deux lectures dispersées : il y a quatre
-// points d'appel, et en oublier un donnerait un masquage différent selon le
-// chemin — le genre d'écart qu'on ne voit qu'en comparant deux sorties.
+// UN SEUL vocabulaire, celui du profil. Le bloc « Termes de ce document » a été
+// retiré : deux endroits pour la même intention encombraient plus qu'ils
+// n'aidaient.
+//
+// ⚠️ CONTREPARTIE ASSUMÉE : ces champs sont ÉCRASÉS au chargement d'un profil.
+// Un terme retiré via la table de correspondance y atterrit, et changer de
+// profil le perd. C'est le défaut qui avait motivé la séparation ; il revient
+// avec la simplification.
+//
+// Deux fonctions plutôt que des lectures dispersées : quatre points d'appel, et
+// en oublier un donnerait un masquage différent selon le chemin — un écart
+// qu'on ne voit qu'en comparant deux sorties.
 const termesAGarder = () => [
   ...parseLines($('fileAlwaysKeep')?.value),
-  ...parseLines($('docKeep')?.value)
 ];
 const termesAMasquer = () => [
   ...parseLines($('fileAlwaysMask')?.value),
-  ...parseLines($('docMask')?.value),
   ...identityForceTerms()
 ];
 // Retire un terme du masquage et REJOUE le masquage sur le fichier entier,
@@ -1018,7 +1020,7 @@ const termesAMasquer = () => [
 // jamais par surprise. Et il n'y a qu'une seule liste, donc rien à
 // resynchroniser.
 async function retirerDuMasquage(valeur) {
-  const champ = $('docKeep');
+  const champ = $('fileAlwaysKeep');
   if (!fileRegen || !champ) return;
   const avant = champ.value;
   champ.value = ajouterTerme(avant, valeur);
@@ -1102,6 +1104,14 @@ function majVisibiliteCompression(ext) {
   // Une option cachée ne doit jamais rester ACTIVE en coulisse : sans ça, une
   // compression tournerait sans que rien ne l'annonce.
   if (bloc.hidden && $('fileCompress')) $('fileCompress').checked = false;
+  majVisibiliteTaux();
+}
+
+// Le taux ne veut rien dire tant que l'option n'est pas cochée : il n'apparaît
+// qu'à ce moment-là plutôt que d'occuper l'écran en permanence.
+function majVisibiliteTaux() {
+  const l = $('fileCompressTauxLabel');
+  if (l) l.hidden = !$('fileCompress')?.checked;
 }
 
 // Affichage partagé du résultat fichier (chemin standard ET reconstruction PDF).
@@ -2077,6 +2087,7 @@ $('fileResetBtn').addEventListener('click', () => {
 for (const id of ['pdfModeLight', 'pdfModePreserve']) {
   $(id)?.addEventListener('change', () => majVisibiliteCompression(extOf(chosenFile?.name || '')));
 }
+$('fileCompress')?.addEventListener('change', majVisibiliteTaux);
 $('fileAnalyzeBtn').addEventListener('click', processFile);
 $('fileDownloadBtn').addEventListener('click', downloadFile);
 

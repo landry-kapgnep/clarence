@@ -978,7 +978,7 @@ var TYPE_DISPLAY = {
   PERSONNALISE: "Perso"
 };
 var parseLines = parseTermes;
-var APERCUS_TERMES = [["docKeep", "docKeepLus"], ["docMask", "docMaskLus"]];
+var APERCUS_TERMES = [["fileAlwaysKeep", "fileAlwaysKeepLus"], ["fileAlwaysMask", "fileAlwaysMaskLus"]];
 function rendreApercuTermes() {
   for (const [idChamp, idApercu] of APERCUS_TERMES) {
     const champ = $(idChamp), apercu = $(idApercu);
@@ -1519,7 +1519,7 @@ function invalidateFileResult() {
 for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle", "filePseudoLocale"]) {
   $(id)?.addEventListener("change", invalidateFileResult);
 }
-for (const id of ["fileAlwaysMask", "fileAlwaysKeep", "docKeep", "docMask"]) {
+for (const id of ["fileAlwaysMask", "fileAlwaysKeep"]) {
   $(id)?.addEventListener("input", invalidateFileResult);
 }
 function fileSetStatus(msg, cls = "") {
@@ -1578,9 +1578,6 @@ function setChosenFile(file) {
   }
   annulerRunFichier("");
   fileRegen = null;
-  if ($("docKeep")) $("docKeep").value = "";
-  if ($("docMask")) $("docMask").value = "";
-  rendreApercuTermes();
   chosenFile = file;
   fileOutBlob = null;
   compressionInfo = null;
@@ -1628,16 +1625,14 @@ function fileMaskOptions(units = []) {
 }
 var fileRegen = null;
 var termesAGarder = () => [
-  ...parseLines($("fileAlwaysKeep")?.value),
-  ...parseLines($("docKeep")?.value)
+  ...parseLines($("fileAlwaysKeep")?.value)
 ];
 var termesAMasquer = () => [
   ...parseLines($("fileAlwaysMask")?.value),
-  ...parseLines($("docMask")?.value),
   ...identityForceTerms()
 ];
 async function retirerDuMasquage(valeur) {
-  const champ = $("docKeep");
+  const champ = $("fileAlwaysKeep");
   if (!fileRegen || !champ) return;
   const avant = champ.value;
   champ.value = ajouterTerme(avant, valeur);
@@ -1698,6 +1693,11 @@ function majVisibiliteCompression(ext) {
   if (!bloc) return;
   bloc.hidden = !compressionApplicable(ext);
   if (bloc.hidden && $("fileCompress")) $("fileCompress").checked = false;
+  majVisibiliteTaux();
+}
+function majVisibiliteTaux() {
+  const l = $("fileCompressTauxLabel");
+  if (l) l.hidden = !$("fileCompress")?.checked;
 }
 function formatDuree(ms) {
   const s = ms / 1e3;
@@ -2388,6 +2388,7 @@ $("fileResetBtn").addEventListener("click", () => {
 for (const id of ["pdfModeLight", "pdfModePreserve"]) {
   $(id)?.addEventListener("change", () => majVisibiliteCompression(extOf(chosenFile?.name || "")));
 }
+$("fileCompress")?.addEventListener("change", majVisibiliteTaux);
 $("fileAnalyzeBtn").addEventListener("click", processFile);
 $("fileDownloadBtn").addEventListener("click", downloadFile);
 $("fileCopyBtn").addEventListener("click", async () => {

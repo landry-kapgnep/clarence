@@ -839,16 +839,21 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   margin-bottom: 4px;
 }
 .etape-faite {
-  display: inline-flex;
+  /* `flex` + `fit-content` et non `inline-flex` : deux puces consécutives se
+     mettaient côte à côte sur la même ligne. Elles s'empilent désormais, une
+     étape par ligne. */
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: 6px;
   margin-top: 8px;
   padding: 3px 9px;
   font-size: 12px;
-  /* Fond OPAQUE : la teinte fantôme des contrôles (7 % d'alpha) était
-     invisible sur la coquille, la puce ne se distinguait pas du vide. */
-  background: var(--bg-raised);
-  color: var(--paper-dim);
+  /* Teinte VERDÂTRE, dérivée du moss déjà utilisé pour les détections du
+     modèle — une étape franchie se lit du premier coup d'œil. Le fond des
+     contrôles (7 % d'alpha) était invisible sur la coquille. */
+  background: color-mix(in srgb, var(--moss) 22%, var(--bg-raised));
+  color: var(--paper);
 }
 .etape-faite .coche { color: var(--moss); }
 

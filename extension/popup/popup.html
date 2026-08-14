@@ -109,23 +109,56 @@
         </div>
 
         <div id="fileOptions" hidden>
+        <!-- Chaque option porte un « ? » : le libellé reste court, le détail
+             vit dans l'infobulle. -->
         <div id="pdfModeChoice" hidden>
           <div class="field-label"></div>
           <label class="hint pdf-radio" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModeLight" value="md" checked>
             <span class="square-radio" aria-hidden="true"></span>
-            <span class="radio-label-text">Format allégé (.md)</span>
+            <span class="radio-label-text">Format allégé</span>
+            <span class="info-tip" tabindex="0" role="note"
+                  aria-label="Sortie en Markdown : le texte seul, sans les images. Copiable directement dans le chat.">?
+              <span class="info-tip-box">
+                Sortie <strong>.md</strong> : le texte seul, sans les images.
+                Copiable directement dans le chat.
+              </span>
+            </span>
           </label>
           <label class="hint pdf-radio" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModePreserve" value="pdf">
             <span class="square-radio" aria-hidden="true"></span>
             <span class="radio-label-text">Format original</span>
+            <span class="info-tip" tabindex="0" role="note"
+                  aria-label="PDF reconstruit depuis des pages neuves, images conservées. Fidélité visuelle approximative : police unique, positions au fragment.">?
+              <span class="info-tip-box">
+                PDF reconstruit depuis des pages <strong>neuves</strong> — aucun
+                texte d'origine ne subsiste dessous. Images conservées.<br>
+                Fidélité approximative : police unique, positions au fragment.
+              </span>
+            </span>
           </label>
         </div>
+
         <label class="hint pseudo-toggle" style="display:block;margin-top:8px;cursor:pointer;">
           <input type="checkbox" id="fileRealisticToggle">
           <span class="square-checkbox" aria-hidden="true"></span>
-          <span class="checkbox-label-text">Pseudonymes (lieux, noms, contacts)</span>
+          <span class="checkbox-label-text">Pseudonymes</span>
+          <span class="info-tip" tabindex="0" role="note"
+                aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. Le texte reste lisible et la même personne garde le même pseudonyme.">?
+            <span class="info-tip-box">
+              Remplace par des noms <strong>plausibles</strong> plutôt que
+              <code>[PERSONNE_1]</code>. Le texte reste lisible, et la même
+              personne garde le même pseudonyme d'un bout à l'autre.
+            </span>
+          </span>
+        </label>
+        <label class="hint pseudo-locale" style="display:block;cursor:pointer;" id="filePseudoLocaleLabel">
+          Langue des pseudonymes
+          <select id="filePseudoLocale" class="mini-select">
+            <option value="fr">Français</option>
+            <option value="en">Anglais</option>
+          </select>
         </label>
 
         <!-- COMPRESSION — choisie AVANT de lancer (le modèle se charge pendant
@@ -135,58 +168,33 @@
           <label class="hint pseudo-toggle" style="display:block;cursor:pointer;">
             <input type="checkbox" id="fileCompress">
             <span class="square-checkbox" aria-hidden="true"></span>
-            <span class="checkbox-label-text">Réduire le nombre de tokens</span>
+            <span class="checkbox-label-text">Économiser des tokens</span>
             <span class="info-tip" tabindex="0" role="note"
-                  aria-label="La prose est appauvrie et ne peut plus être relue. Les données masquées et les négations sont préservées. À réserver aux cas où le LLM répond à partir du document.">!
+                  aria-label="Supprime les mots peu porteurs. La prose est appauvrie et ne peut plus être relue. Données masquées et négations préservées. Premier usage : 170 Mo à télécharger.">?
               <span class="info-tip-box">
+                Supprime les mots peu porteurs.
                 <strong>La prose est appauvrie</strong> et ne peut plus être
-                relue. Données masquées et négations préservées.<br>
+                relue — données masquées et négations préservées.<br>
                 Pour « résume », « quelles dates ? » — pas pour « corrige »,
                 « reformule », « traduis ».<br>
                 Premier usage : ~170 Mo, une fois.
               </span>
             </span>
           </label>
-          <label class="hint pseudo-locale" style="display:block;cursor:pointer;">
+          <!-- Le taux n'a de sens que si l'option est cochée : masqué sinon. -->
+          <label class="hint pseudo-locale" style="display:block;cursor:pointer;"
+                 id="fileCompressTauxLabel" hidden>
             Texte conservé
             <select id="fileCompressTaux" class="mini-select">
-              <option value="0.7">70 % — prudent</option>
-              <option value="0.5" selected>50 % — équilibré</option>
-              <option value="0.3">30 % — agressif</option>
+              <option value="0.7">70 %</option>
+              <option value="0.5" selected>50 %</option>
+              <option value="0.3">30 %</option>
             </select>
           </label>
         </div>
-        <label class="hint pseudo-locale" style="display:block;cursor:pointer;">
-          Langue des pseudonymes
-          <select id="filePseudoLocale" class="mini-select">
-            <option value="fr">Français</option>
-            <option value="en">Anglais</option>
-          </select>
-        </label>
-
-        <!-- Termes propres à CE document, hors profil.
-             Volontairement à l'extérieur de « Personnaliser le masquage » : les
-             champs qui s'y trouvent sont ÉCRASÉS au chargement d'un profil, et
-             « Enregistrer » y pousserait des termes qui ne valent que pour un
-             fichier. Deux vocabulaires distincts, deux endroits distincts. -->
-        <div id="docTerms">
-          <div class="field-label">Termes de ce document
-            <span class="hint">(séparés par des virgules ; effacés au changement de fichier)</span>
-          </div>
-          <div class="doc-terms-grid">
-            <label class="hint" for="docKeep">Ne jamais masquer
-              <textarea id="docKeep" class="mini" placeholder="ChatGPT, MT, OpenAI"></textarea>
-              <span class="termes-lus" id="docKeepLus"></span>
-            </label>
-            <label class="hint" for="docMask">Toujours masquer
-              <textarea id="docMask" class="mini" placeholder="nom du client, nom de code"></textarea>
-              <span class="termes-lus" id="docMaskLus"></span>
-            </label>
-          </div>
-        </div>
 
         <details id="fileCustomRules">
-          <summary>Personnaliser le masquage <span class="hint">(profil réutilisable)</span></summary>
+          <summary>Personnaliser le masquage</summary>
           <div class="custom-body">
             <div class="profile-bar">
               <select id="fileProfileSelect" class="profile-select"></select>
@@ -198,8 +206,10 @@
             <div id="fileTypeToggles" class="type-toggles"></div>
             <label class="field-label" for="fileAlwaysMask">Toujours masquer <span class="hint">(séparés par des virgules)</span></label>
             <textarea id="fileAlwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
+            <span class="termes-lus" id="fileAlwaysMaskLus"></span>
             <label class="field-label" for="fileAlwaysKeep">Ne jamais masquer</label>
             <textarea id="fileAlwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
+            <span class="termes-lus" id="fileAlwaysKeepLus"></span>
           </div>
         </details>
         </div>
