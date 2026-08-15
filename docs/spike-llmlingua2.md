@@ -31,13 +31,13 @@ compatible avec le principe du cadrage §8.
 | Fenêtre | 512 positions — même contrainte que le NER BERT |
 | Étiquettes | pas d'`id2label` ; **LABEL_1 = garder**, identifié par sonde |
 
-⚠️ **Réserve de licence — LEVÉE le 15/08/2026, voir plus bas.** Le dépôt
-officiel Microsoft n'a **pas** de poids ONNX. Le spike passait par une
-conversion communautaire (`ldenoue/llmlingua-2-…`) dont la fiche **ne déclare
-aucune licence** — donc « tous droits réservés » par défaut, impossible à
-redistribuer. La conversion est désormais faite maison
-(`tools/convertir-llmlingua2.py`) ; il reste à la **publier** sur un compte
-HuggingFace et à repointer `COMPRESSION_MODEL`.
+✅ **Réserve de licence — LEVÉE le 15/08/2026.** Le dépôt officiel Microsoft
+n'a **pas** de poids ONNX. Le spike passait par une conversion communautaire
+(`ldenoue/llmlingua-2-…`) dont la fiche **ne déclarait aucune licence** — donc
+« tous droits réservés » par défaut, impossible à redistribuer. La conversion
+est désormais faite maison (`tools/convertir-llmlingua2.py`) et publiée sous
+**`clarenceorg/llmlingua-2-onnx`**, Apache 2.0 déclarée, `NOTICE` d'attribution
+inclus. Chiffres et pièges plus bas.
 
 ## 1. Les placeholders survivent — question rédhibitoire levée
 
@@ -192,17 +192,41 @@ du modèle communautaire. La seule différence apparaît au taux le plus agressi
 (0,3), où « associés » cède la place à « prévisionnel » — deux noms communs
 voisins au classement. Aucun placeholder, aucun opérateur logique perdu.
 
+### Publication — faite le 15/08/2026
+
+`clarenceorg/llmlingua-2-onnx`, sous une **organisation** HuggingFace et non un
+compte personnel : cette URL est visible dans l'onglet Network, là même où le
+produit invite l'utilisateur à vérifier que rien ne sort. Elle survit donc à un
+transfert futur sans imposer une mise à jour d'extension.
+
+Deux pièges, tous deux rencontrés :
+
+- **La fiche porte la licence.** Le dépôt a d'abord été publié **sans** en-tête
+  `license:` — donc réputé « tous droits réservés », exactement le défaut
+  reproché à la conversion communautaire. Toute la conversion n'aurait servi à
+  rien, et rien dans le code ne l'aurait signalé. La fiche est désormais un
+  **artefact de build** (`tools/carte-modele.md`, recopiée par le script) et non
+  un geste manuel oubliable.
+- **Le fp32 (710 Mo) n'est pas publié** : l'extension ne charge que le
+  quantifié. `--exclude "onnx/model.onnx"` ramène le téléversement de 890 à
+  183 Mo, et il se régénère en une commande.
+
+`node tools/verifier-publication.mjs` vérifie ce qu'aucun autre script ne peut
+voir — les autres chargent les poids depuis un dossier local et valident donc le
+modèle, jamais sa publication. Il part d'un cache **vide** et télécharge comme
+le fera l'extension. Mesuré sur le dépôt en ligne : **179 Mo en 55 s**, licence
+`apache-2.0` déclarée, **5/5 placeholders intacts au taux 0,1**, négation
+conservée, zéro mot sans score.
+
 ## Ce qu'il resterait à faire avant de livrer
 
-1. **Publier** le dossier converti sur un compte HuggingFace et repointer
-   `COMPRESSION_MODEL` (`src/engine/compression.js`). Voir `tools/README.md`.
-2. **Préserver l'espacement d'origine** à la reconstruction — sinon les
+1. **Préserver l'espacement d'origine** à la reconstruction — sinon les
    placeholders conservés sont cassés à l'écriture.
-3. **Exposer un taux cible**, pas le seuil brut.
-4. Respecter les **trois contraintes produit** déjà consignées dans CLAUDE.md :
+2. **Exposer un taux cible**, pas le seuil brut.
+3. Respecter les **trois contraintes produit** déjà consignées dans CLAUDE.md :
    option explicite, prose appauvrie annoncée, transformation d'**export** et
    non étape du pipeline.
-5. Trancher les **+170 Mo** en plus des 183 Mo de GLiNER.
+4. Trancher les **+179 Mo** en plus des 183 Mo de GLiNER.
 
 ## Ce que ce spike ne dit pas
 
