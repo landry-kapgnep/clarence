@@ -16,6 +16,8 @@
 // ce module est EXCLU d'office de cette synchronisation.
 // ==========================================================================
 
+import { estComposantNonIdentifiant } from '../engine/honorifics.js';
+
 export const IDENTITY_KEY = 'clarenceIdentity';
 
 // status : 'neuf' (jamais proposé) | 'configuré' | 'refusé' (« Plus tard » —
@@ -72,6 +74,47 @@ export function identityTerms(identity) {
   return out;
 }
 
+// COMPOSANTS D'UN NOM MULTI-MOTS — le nom protège chacune de ses parties.
+//
+// LE DÉFAUT QUE ÇA CORRIGE (P12, trouvé sur un vrai casier judiciaire). Un
+// formulaire officiel éclate le nom sur deux lignes : « Nom KAPGNEP » puis
+// « Prénom(s) LANDRY ». Qui a saisi son nom complet dans une seule case ne
+// voyait donc masquer NI l'un NI l'autre, puisque `forcedMasks` cherche la
+// chaîne LITTÉRALE « Landry Kapgnep », qui n'apparaît nulle part sous cette
+// forme. Le garde-fou déterministe — celui qui ne dépend d'aucun score — ne
+// jouait pas dans le cas précis où il aurait été le plus utile.
+//
+// C'est la MÊME leçon que les pseudonymes par composant (03/08) : un nom
+// existe entier ET en morceaux. Elle avait été appliquée à `pseudonyms.js`,
+// jamais reportée ici.
+//
+// SEULEMENT LES CHAMPS DE NOMS, et c'est le point délicat. Décomposer une
+// adresse (« 18 rue des Glycines ») masquerait « rue » et « des » dans tout le
+// document ; décomposer un employeur (« Korrigane Labs ») masquerait « Labs ».
+// Ces champs restent donc cherchés en entier. Un prénom ou un patronyme, lui,
+// est un terme légitime à masquer seul, quel que soit son voisinage.
+const CHAMPS_DECOMPOSABLES = ['prenom', 'nom'];
+
+// Particules et civilités : liste et RÈGLE DE POSITION partagées avec
+// pseudonyms.js (voir honorifics.js). « de » devant un nom ne désigne
+// personne ; « Le » employé comme patronyme, si — d'où la position.
+function composantsDeNom(identity) {
+  const { champs } = normalizeIdentity(identity);
+  const out = [];
+  for (const cle of CHAMPS_DECOMPOSABLES) {
+    for (const terme of champs[cle]) {
+      const parts = terme.split(/\s+/).filter(Boolean);
+      if (parts.length < 2) continue;      // déjà un composant unique
+      parts.forEach((p, i) => {
+        if (p.length < MIN_TERM_LENGTH) return;
+        if (estComposantNonIdentifiant(p, i, parts.length)) return;
+        out.push(p);
+      });
+    }
+  }
+  return out;
+}
+
 // Variantes de casse d'un terme : forcedMasks est LITTÉRAL, or l'utilisateur
 // déclare « Landry Kapgnep » quand son CV affiche « LANDRY KAPGNEP » — le cas
 // exact qui a motivé ce module. On génère donc, pour chaque terme déclaré :
@@ -89,7 +132,7 @@ function caseVariants(terme) {
 export function identitySearchTerms(identity) {
   const vus = new Set();
   const out = [];
-  for (const terme of identityTerms(identity)) {
+  for (const terme of [...identityTerms(identity), ...composantsDeNom(identity)]) {
     for (const v of caseVariants(terme)) {
       if (vus.has(v)) continue;
       vus.add(v);

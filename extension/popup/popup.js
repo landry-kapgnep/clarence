@@ -8,16 +8,16 @@ import {
   detectRegex,
   entityKey,
   estAnnulation,
+  estComposantNonIdentifiant,
   filterByRules,
   forcedMasks,
-  isHonorificAt,
   maskText,
   mergeEntities,
   reinject,
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-BIY2U3A5.js";
+} from "./chunk-ZYJ3LWBN.js";
 import {
   createBatchedPipeline
 } from "./chunk-IT5BP6N7.js";
@@ -723,23 +723,7 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
     return null;
   }
   const tokenMap = /* @__PURE__ */ new Map();
-  const PARTICULES = /* @__PURE__ */ new Set([
-    "de",
-    "du",
-    "des",
-    "la",
-    "le",
-    "von",
-    "van",
-    "da",
-    "di",
-    "d'",
-    "l'",
-    "del",
-    "bin",
-    "ben"
-  ]);
-  const estConserve = (token, rang, total) => total > 1 && rang < total - 1 && PARTICULES.has(token.toLowerCase()) || isHonorificAt(token, rang, total);
+  const estConserve = estComposantNonIdentifiant;
   const applyCase = (pseudo, original) => original === original.toUpperCase() && new RegExp("\\p{L}{2}", "u").test(original) ? pseudo.toUpperCase() : pseudo;
   function pseudoToken(token, rang, total) {
     const isLast = rang === total - 1;
@@ -1032,6 +1016,23 @@ function identityTerms(identity) {
   }
   return out;
 }
+var CHAMPS_DECOMPOSABLES = ["prenom", "nom"];
+function composantsDeNom(identity) {
+  const { champs } = normalizeIdentity(identity);
+  const out = [];
+  for (const cle of CHAMPS_DECOMPOSABLES) {
+    for (const terme of champs[cle]) {
+      const parts = terme.split(/\s+/).filter(Boolean);
+      if (parts.length < 2) continue;
+      parts.forEach((p, i) => {
+        if (p.length < MIN_TERM_LENGTH) return;
+        if (estComposantNonIdentifiant(p, i, parts.length)) return;
+        out.push(p);
+      });
+    }
+  }
+  return out;
+}
 function caseVariants(terme) {
   const title = terme.replace(
     new RegExp("\\p{L}[\\p{L}'\u2019-]*", "gu"),
@@ -1042,7 +1043,7 @@ function caseVariants(terme) {
 function identitySearchTerms(identity) {
   const vus = /* @__PURE__ */ new Set();
   const out = [];
-  for (const terme of identityTerms(identity)) {
+  for (const terme of [...identityTerms(identity), ...composantsDeNom(identity)]) {
     for (const v of caseVariants(terme)) {
       if (vus.has(v)) continue;
       vus.add(v);
@@ -1787,7 +1788,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-JVUDTBKP.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-YNF3KT7U.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -1800,7 +1801,7 @@ async function retirerDuMasquage(valeur) {
       fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
       mapping = res.mapping;
     } else {
-      const { anonymizeUnits } = await import("./anonymize-units-MAGN2IQP.js");
+      const { anonymizeUnits } = await import("./anonymize-units-MTNNNYVS.js");
       const { results, mapping: m } = await anonymizeUnits(r.units, {
         entitesConnues: r.entites,
         intitules: r.intitules,
@@ -2367,7 +2368,7 @@ async function processFile() {
       fileSetStatus("Lecture du PDF\u2026");
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-JVUDTBKP.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-YNF3KT7U.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -2398,7 +2399,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-MAGN2IQP.js");
+    const { anonymizeUnits } = await import("./anonymize-units-MTNNNYVS.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {

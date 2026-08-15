@@ -12,7 +12,7 @@
 // il faut le brancher explicitement (voir main.js) tant qu'il n'y a pas de
 // détection de langue du document.
 
-import { isHonorificAt } from './honorifics.js';
+import { estComposantNonIdentifiant } from './honorifics.js';
 
 const LOCALES = {
   fr: {
@@ -170,12 +170,8 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   // appartenance à une liste : un composant n'est une particule ou une
   // civilité que s'il précède un autre composant. Sinon « Miss » ou « Le »
   // employés comme vrais patronymes fuiraient tels quels.
-  const PARTICULES = new Set([
-    'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben'
-  ]);
-  const estConserve = (token, rang, total) =>
-    (total > 1 && rang < total - 1 && PARTICULES.has(token.toLowerCase())) ||
-    isHonorificAt(token, rang, total);
+  // Liste et règle de position partagées avec identity.js — voir honorifics.js.
+  const estConserve = estComposantNonIdentifiant;
 
   // Reproduit la casse de l'original : un patronyme en TOUT-MAJUSCULE (usage
   // courant sur un CV français) reste en majuscules dans le pseudo.

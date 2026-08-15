@@ -74,6 +74,29 @@ export function isHonorificAt(token, rang, total) {
   return HONORIFICS.has(normalizeHonorific(token));
 }
 
+// --- Particules nobiliaires et patronymiques -------------------------------
+//
+// Deuxième classe FERMÉE de composants non identifiants, régie par EXACTEMENT
+// la même règle de position que les civilités : « de », « van », « bin » ne
+// désignent personne quand ils précèdent un nom, mais « Le » et « Da » sont
+// aussi de vrais patronymes. L'appartenance à la liste ne suffit donc jamais.
+//
+// Vivait en local dans `pseudonyms.js`. Sortie ici quand `identity.js` en a eu
+// besoin à son tour : deux copies d'une même liste finissent toujours par
+// diverger, et ce projet l'a déjà payé deux fois (leçon P1bis).
+export const PARTICULES = new Set([
+  'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben'
+]);
+
+// Un composant de nom est-il NON IDENTIFIANT à cette position ? — civilité ou
+// particule. C'est la question que se posent `pseudonyms.js` (quel composant
+// remplacer) et `identity.js` (quel composant masquer isolément) ; poser la
+// même question deux fois, c'est risquer deux réponses.
+export function estComposantNonIdentifiant(token, rang, total) {
+  return (total > 1 && rang < total - 1 && PARTICULES.has(String(token).toLowerCase()))
+    || isHonorificAt(token, rang, total);
+}
+
 // --- Fragment de regex pour la détection déterministe ----------------------
 // Chaque lettre devient une classe [Xx] : la civilité doit matcher quelle que
 // soit sa casse (« miss Deva », « Miss Deva », « MISS DEVA »), alors que le

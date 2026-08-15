@@ -81,3 +81,56 @@ test('identitySearchTerms : casse Titre générée pour un terme déclaré en ma
   assert.ok(terms.includes('Acme Corp'));
   assert.ok(terms.includes('acme corp'));
 });
+
+// --- COMPOSANTS D'UN NOM MULTI-MOTS (P12) ---------------------------------
+// Trouvé sur un vrai casier judiciaire : un formulaire éclate le nom sur deux
+// lignes (« Nom KAPGNEP », « Prénom(s) LANDRY »). Qui saisit son nom complet
+// dans une seule case ne voyait masquer NI l'un NI l'autre, forcedMasks étant
+// littéral. Le garde-fou déterministe manquait là où il servait le plus.
+
+test('un nom complet saisi dans UNE case protège chacun de ses composants', () => {
+  const texte = 'IDENTITÉ  Nom  KAPGNEP  Prénom(s)  LANDRY  Sexe  Masculin';
+  const terms = identitySearchTerms({
+    status: 'configuré', champs: { prenom: 'Landry Kapgnep' }
+  });
+  const { masked } = maskText(texte, selectActive([], forcedMasks(texte, terms), new Set()));
+  assert.ok(!/landry/i.test(masked), 'le prénom isolé fuit : ' + masked);
+  assert.ok(!/kapgnep/i.test(masked), 'le patronyme isolé fuit : ' + masked);
+  // Le libellé du formulaire, lui, doit survivre.
+  assert.match(masked, /Masculin/);
+});
+
+test('les particules et civilités ne deviennent PAS des termes isolés', () => {
+  // Masquer « de » ou « M » séparément couperait le document en morceaux.
+  const terms = identitySearchTerms({
+    status: 'configuré', champs: { nom: 'M. Charles de La Fontaine' }
+  });
+  for (const interdit of ['de', 'De', 'DE', 'M.', 'la', 'La']) {
+    assert.ok(!terms.includes(interdit), `particule/civilité isolée : « ${interdit} »`);
+  }
+  assert.ok(terms.includes('Charles'));
+  // DERNIER composant : « Fontaine » est un vrai patronyme, jamais une
+  // particule — c'est la règle de POSITION, pas la seule appartenance.
+  assert.ok(terms.includes('Fontaine'));
+});
+
+test('« Le » en DERNIER composant reste masqué (règle de position)', () => {
+  const terms = identitySearchTerms({
+    status: 'configuré', champs: { nom: 'Marie Le' }
+  });
+  assert.ok(terms.includes('Le'), 'un patronyme qui ressemble à une particule doit être masqué');
+});
+
+test('les champs NON décomposables restent cherchés en entier', () => {
+  // Décomposer une adresse masquerait « rue » et « des » partout ; décomposer
+  // un employeur masquerait « Labs ». Ces champs gardent leur terme complet.
+  const terms = identitySearchTerms({
+    status: 'configuré',
+    champs: { adresse: '18 rue des Glycines', employeurs: 'Korrigane Labs' }
+  });
+  for (const interdit of ['rue', 'des', 'Glycines', 'Labs', 'Korrigane']) {
+    assert.ok(!terms.includes(interdit), `composant isolé indésirable : « ${interdit} »`);
+  }
+  assert.ok(terms.includes('18 rue des Glycines'));
+  assert.ok(terms.includes('Korrigane Labs'));
+});

@@ -119,6 +119,25 @@ function isHonorificAt(token, rang, total) {
   if (total < 2 || rang >= total - 1) return false;
   return HONORIFICS.has(normalizeHonorific(token));
 }
+var PARTICULES = /* @__PURE__ */ new Set([
+  "de",
+  "du",
+  "des",
+  "la",
+  "le",
+  "von",
+  "van",
+  "da",
+  "di",
+  "d'",
+  "l'",
+  "del",
+  "bin",
+  "ben"
+]);
+function estComposantNonIdentifiant(token, rang, total) {
+  return total > 1 && rang < total - 1 && PARTICULES.has(String(token).toLowerCase()) || isHonorificAt(token, rang, total);
+}
 var anyCase = (terme) => terme.split("").map((c) => {
   const haut = c.toUpperCase();
   const bas = c.toLowerCase();
@@ -4294,7 +4313,7 @@ function maskText(text, entities, opts = {}) {
   }
   return { masked: out, mapping };
 }
-var PARTICULES = /* @__PURE__ */ new Set([
+var PARTICULES2 = /* @__PURE__ */ new Set([
   "de",
   "du",
   "des",
@@ -4320,7 +4339,7 @@ function composantsDeNoms(mapping) {
     parts.forEach((p, i) => {
       if (p.length < 4) return;
       const bas = p.toLowerCase();
-      if (PARTICULES.has(bas) || HONORIFICS.has(bas)) return;
+      if (PARTICULES2.has(bas) || HONORIFICS.has(bas)) return;
       out.push({ placeholder: subs ? subs[i] : m.placeholder, value: p, exactCase: true });
     });
   }
@@ -4357,7 +4376,7 @@ function reinject(text, mapping) {
 }
 
 export {
-  isHonorificAt,
+  estComposantNonIdentifiant,
   detectRegex,
   detectPhonesIntl,
   NER_MODEL,

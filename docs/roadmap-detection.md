@@ -1508,12 +1508,22 @@ CV allemand). Borne basse **inchangée** (100/95/88 %).
 - Le débordement de bornes reste possible : la passe adoucie a produit
   « LANDRY Sexe Masculin » comme un seul span PER, et la fusion garde le plus
   long. C'est du sur-masquage, pas une fuite.
-- **Le garde-fou déterministe reste le profil d'identité.** Il n'a pas joué ici
-  parce qu'il était vidé volontairement — mais il a un trou propre, non corrigé
-  à ce jour : `caseVariants` fait varier la casse et jamais les **composants**,
-  donc déclarer « Landry Kapgnep » ne protège pas « LANDRY » isolé. Même leçon
-  que celle appliquée aux pseudonymes le 03/08, jamais reportée sur
-  `identity.js`. À faire.
+- **Le garde-fou déterministe reste le profil d'identité**, vidé volontairement
+  pendant ce test. Il avait un trou propre, **corrigé le 15/08** : `caseVariants`
+  faisait varier la casse et jamais les **composants**, donc un nom complet
+  saisi dans une seule case ne protégeait ni le prénom ni le patronyme isolés —
+  précisément la forme d'un formulaire (« Nom KAPGNEP » / « Prénom(s) LANDRY »).
+  Même leçon que les pseudonymes par composant du 03/08, enfin reportée.
+
+  Périmètre volontairement étroit : **seuls `prenom` et `nom`** sont décomposés.
+  Éclater une adresse masquerait « rue » et « des » dans tout le document, un
+  employeur masquerait « Labs ». Particules et civilités sont écartées par la
+  règle de POSITION partagée avec `pseudonyms.js` (sortie dans `honorifics.js`
+  pour ne pas en tenir deux copies).
+
+  Vérifié : profil rempli → `KAPGNEP`, `LANDRY` **et** `SARCELLES` masqués
+  (ce dernier par le champ « Ville », qui existait déjà). Le seul raté restant
+  du modèle est donc couvert dès que le profil est renseigné.
 
 ## P13 — Quatre types sans vivier de pseudonymes (ouvert)
 
