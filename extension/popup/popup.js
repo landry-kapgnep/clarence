@@ -215,6 +215,17 @@ function desaccentuer(texte) {
   }
   return sortie;
 }
+var MOT_TOUT_CAPITALES = new RegExp("\\p{Lu}[\\p{Lu}'\u2019-]{2,}", "gu");
+function adoucirCasse(texte) {
+  return String(texte || "").replace(MOT_TOUT_CAPITALES, (mot) => {
+    const lettres = [...mot];
+    const suite = lettres.slice(1).map((ch) => {
+      const bas = ch.toLowerCase();
+      return bas.length === ch.length ? bas : ch;
+    }).join("");
+    return lettres[0] + suite;
+  });
+}
 async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: disabledTypes2 } = {}) {
   if (!glinerPipeline) return [];
   const desactives = disabledTypes2 || /* @__PURE__ */ new Set();
@@ -230,10 +241,14 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
   for (const { offset, text: chunk } of chunks) {
     const duChunk = [];
     const chunkNu = desaccentuer(chunk);
+    const chunkCasse = adoucirCasse(chunk);
+    const variantes = [chunk];
+    if (chunkNu !== chunk) variantes.push(chunkNu);
+    if (chunkCasse !== chunk) variantes.push(chunkCasse);
     for (const groupe of groupesActifs) {
       if (groupe.pertinent && !groupe.pertinent(chunk)) continue;
       const seuil = groupe.seuil ?? GLINER_THRESHOLD;
-      for (const variante of chunkNu === chunk ? [chunk] : [chunk, chunkNu]) {
+      for (const variante of variantes) {
         const spans = await glinerPipeline(variante, groupe.labels);
         for (const s of spans || []) {
           const type = groupe.types[s.label];
@@ -1664,15 +1679,15 @@ function afficherPoids(file, ext) {
   (async () => {
     try {
       const pdfjs = await import("./pdf-ITQTBJLX.js");
-      if (chrome?.runtime?.getURL) {
-        pdfjs.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("vendor/pdf.worker.min.mjs");
-      }
+      const { configurerPdfjs, ressourcesPdfjs } = await import("./pdf-adapter-AJNLKGKK.js");
+      configurerPdfjs();
       const buf = await pourCeFichier.arrayBuffer();
       const doc = await pdfjs.getDocument({
         data: new Uint8Array(buf),
         useWorkerFetch: false,
         isEvalSupported: false,
-        disableFontFace: true
+        disableFontFace: true,
+        ...ressourcesPdfjs()
       }).promise;
       if (chosenFile !== pourCeFichier) return;
       rendre(poidsDeTraitement({ ext, taille: file.size, pages: doc.numPages }));

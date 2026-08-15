@@ -2,7 +2,7 @@
 // Pipeline SIMULÉ (comme ner-chunk.test.mjs) — aucun modèle chargé ici.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs, desaccentuer, estPronom } from '../../src/engine/gliner.js';
+import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs, desaccentuer, adoucirCasse, estPronom } from '../../src/engine/gliner.js';
 import { mergeEntities } from '../../src/engine/merge.js';
 import { maskText } from '../../src/engine/masking.js';
 
@@ -510,11 +510,70 @@ test('une entité vue SEULEMENT sur la copie désaccentuée est retenue', async 
 test('sans accent dans le texte, AUCUNE passe supplémentaire n\'est payée', async () => {
   let appels = 0;
   const pipe = async () => { appels++; return []; };
-  await detectGliner('MARTIN DUBOIS habite Paris', pipe);
+  // Témoin sans accent NI capitales de suite : sinon la passe P12 se
+  // déclencherait aussi et le témoin ne témoignerait plus de rien.
+  await detectGliner('Martin Dubois habite Paris', pipe);
   const sansAccents = appels;
   appels = 0;
-  await detectGliner('MARTÎN DUBOIS habite Paris', pipe);
+  await detectGliner('Martîn Dubois habite Paris', pipe);
   assert.ok(appels > sansAccents, 'un texte accentué doit déclencher la seconde passe');
+});
+
+// --- PASSE À CASSE ADOUCIE (P12) ------------------------------------------
+// Même invariant porteur que P10 : la LONGUEUR. Les passes partagent un seul
+// repère d'offsets ; un décalage d'un caractère masquerait la mauvaise
+// sous-chaîne, soit une corruption silencieuse.
+
+test('adoucirCasse : longueur strictement préservée', () => {
+  for (const s of [
+    'LANDRY KAPGNEP', 'NANTES CEDEX 3', 'Sébastien PIEVE', 'ÉLÉONORE VASSEUR',
+    // « İ » minusculise en DEUX points de code : le garde-fou doit le laisser
+    // intact plutôt que d'allonger la chaîne.
+    'BİLGİ', 'STRAßE', 'L\'ÉTAT', '', 'rien en capitales', 'BIC', 'A',
+  ]) {
+    assert.equal(adoucirCasse(s).length, s.length, `longueur changée sur « ${s} »`);
+  }
+});
+
+test('adoucirCasse : garde l\'initiale, n\'adoucit que la suite', () => {
+  assert.equal(adoucirCasse('LANDRY KAPGNEP'), 'Landry Kapgnep');
+  assert.equal(adoucirCasse('NANTES CEDEX 3'), 'Nantes Cedex 3');
+  // La majuscule initiale est le signal dont se sert un modèle « cased » : la
+  // retirer a été mesuré et REJETÉ (spike POS, 3 fuites).
+  assert.equal(adoucirCasse('Sébastien PIEVE'), 'Sébastien Pieve');
+  assert.equal(adoucirCasse('BIC AGRIFRPP882'), 'Bic Agrifrpp882');
+  // MOINS DE TROIS LETTRES : épargné. « IL » et « A » restent intacts, seul
+  // « DIT » est adouci — la borne évite de brouiller les sigles courts, que le
+  // déterministe traite déjà.
+  assert.equal(adoucirCasse('IL A DIT'), 'IL A Dit');
+  assert.equal(adoucirCasse('rien à faire ici'), 'rien à faire ici');
+});
+
+test('une entité vue SEULEMENT sur la copie à casse adoucie est retenue', async () => {
+  // Cas réel P12 : « LANDRY KAPGNEP » sort en company 0,72 sur le texte
+  // naturel et en person 0,99 une fois la casse adoucie.
+  const pipe = async (texte, labels) => {
+    const i = texte.indexOf('Landry Kapgnep');
+    if (i === -1 || !labels.includes('person')) return [];
+    return [{ label: 'person', score: 0.99, start: i, end: i + 14, spanText: 'Landry Kapgnep' }];
+  };
+  const [e] = await detectGliner('LANDRY KAPGNEP', pipe);
+  assert.equal(e.type, 'PER');
+  // La VALEUR se relit sur le texte d'ORIGINE : c'est elle qu'on masque et
+  // qu'on réinjecte, pas la copie de travail.
+  assert.equal(e.value, 'LANDRY KAPGNEP');
+  assert.equal(e.start, 0);
+  assert.equal(e.end, 14);
+});
+
+test('sans capitales de suite, la passe P12 n\'est pas payée', async () => {
+  let appels = 0;
+  const pipe = async () => { appels++; return []; };
+  await detectGliner('Martin Dubois habite Paris', pipe);
+  const sansCapitales = appels;
+  appels = 0;
+  await detectGliner('MARTIN Dubois habite Paris', pipe);
+  assert.ok(appels > sansCapitales, 'un texte en capitales doit déclencher la passe P12');
 });
 
 // --- PRONOMS (sur-masquage P11) -------------------------------------------

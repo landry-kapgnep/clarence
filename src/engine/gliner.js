@@ -288,6 +288,54 @@ export function desaccentuer(texte) {
   return sortie;
 }
 
+// COPIE À CASSE ADOUCIE, À LONGUEUR STRICTEMENT ÉGALE — l'autre moitié du même
+// axe que `desaccentuer`, et celle qui porte le plus.
+//
+// POURQUOI. Mesuré sur un vrai casier judiciaire — un FORMULAIRE, dont les
+// valeurs sont en capitales, classe de document absente du corpus (fait de CV
+// et de mémoires), ce qui explique que le défaut ait survécu si longtemps :
+//
+//   « LANDRY KAPGNEP »   company 0,72   →  person   0,99
+//   « FOSSES »           person  0,36   →  location 0,70
+//   « NANTES »           location 0,40  →  location 0,53   (0,40 était SOUS le seuil)
+//
+// Le nom de l'utilisateur sortait donc en ENTREPRISE : il recevait un
+// pseudonyme tiré du vivier des sociétés, et surtout la décomposition par
+// composant (réservée aux PER) ne s'appliquait pas — le prénom isolé après
+// « Prénom(s) » n'était jamais masqué. Une fuite, pas un défaut cosmétique.
+//
+// ⚠️ CE N'EST PAS LA MINUSCULISATION, mesurée et REJETÉE au spike POS
+// (+7 démasquages mais 3 FUITES). On garde l'initiale majuscule — le signal
+// dont un modèle « cased » se sert pour délimiter un nom propre — et on
+// n'enlève que l'anomalie TOUT-MAJUSCULE. Retirer la majuscule initiale
+// brouille la frontière ; retirer les capitales de suite ne la touche pas.
+//
+// LONGUEUR PRÉSERVÉE, même exigence que ci-dessus, et elle n'est pas
+// gratuite : `toLowerCase()` peut ALLONGER (le « İ » turc donne deux points de
+// code). On ne remplace donc un caractère que si sa minuscule fait exactement
+// la même longueur — c'est ce que la passe `boostCase` de `ner.js` ne pouvait
+// pas garantir (« ß » → « SS »).
+//
+// TROIS LETTRES AU MOINS : en dessous, ce sont des sigles (BIC, RIB, TVA) que
+// le déterministe traite déjà et qu'il ne sert à rien de brouiller. La passe
+// est de toute façon ADDITIVE — elle ne peut qu'ajouter des candidats, jamais
+// en retirer à la passe naturelle.
+//
+// CORRECTIF PARTIEL, ASSUMÉ : « SARCELLES » reste à 0,43, sous le seuil, avant
+// comme après. Ne pas le lire comme un rattrapage total des capitales.
+const MOT_TOUT_CAPITALES = /\p{Lu}[\p{Lu}'’-]{2,}/gu;
+
+export function adoucirCasse(texte) {
+  return String(texte || '').replace(MOT_TOUT_CAPITALES, (mot) => {
+    const lettres = [...mot];
+    const suite = lettres.slice(1).map(ch => {
+      const bas = ch.toLowerCase();
+      return bas.length === ch.length ? bas : ch;
+    }).join('');
+    return lettres[0] + suite;
+  });
+}
+
 export async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes } = {}) {
   if (!glinerPipeline) return [];
   const desactives = disabledTypes || new Set();
@@ -308,6 +356,13 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
   for (const { offset, text: chunk } of chunks) {
     const duChunk = [];
     const chunkNu = desaccentuer(chunk);
+    const chunkCasse = adoucirCasse(chunk);
+    // Les variantes ne sont ajoutées QUE si elles changent quelque chose : une
+    // prose sans accent ni capitales ne paie aucune passe supplémentaire, et le
+    // coût se concentre sur les documents qui en ont besoin (formulaires, CV).
+    const variantes = [chunk];
+    if (chunkNu !== chunk) variantes.push(chunkNu);
+    if (chunkCasse !== chunk) variantes.push(chunkCasse);
     for (const groupe of groupesActifs) {
       // NE PAS PAYER UNE INFÉRENCE DONT ON JETTERA LE RÉSULTAT.
       //
@@ -323,10 +378,11 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
       // nombre de labels. Or 65 % des unités n'ont aucun chiffre.
       if (groupe.pertinent && !groupe.pertinent(chunk)) continue;
       const seuil = groupe.seuil ?? GLINER_THRESHOLD;
-      // Seconde passe sur la copie désaccentuée, uniquement si le texte en
-      // contient (voir desaccentuer : P10). La longueur étant préservée, les
-      // deux passes partagent le même repère d'offsets.
-      for (const variante of chunkNu === chunk ? [chunk] : [chunk, chunkNu]) {
+      // Passes supplémentaires sur les copies désaccentuée (P10) et à casse
+      // adoucie (P12). La longueur étant préservée dans les deux cas, toutes
+      // partagent le même repère d'offsets et la valeur se relit sur
+      // l'original — c'est ce qui rend l'axe utilisable.
+      for (const variante of variantes) {
         const spans = await glinerPipeline(variante, groupe.labels);
         for (const s of spans || []) {
           const type = groupe.types[s.label];

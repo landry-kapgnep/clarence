@@ -1439,3 +1439,86 @@ Vocabulaire taillé aux scripts latins (~32 k) et 6 couches au lieu de 12 :
 **67 M de paramètres, ~134 Mo en fp16** — moins de la moitié du GLiNER actuel.
 Le projet serait donc une COMPRESSION vers une référence déjà mesurée, pas un
 entraînement dans l'inconnu. Piste vivante, non engagée.
+
+## P12 — Le formulaire administratif : les valeurs en CAPITALES (15/08/2026)
+
+Signalé à l'usage sur un vrai casier judiciaire, profil d'identité **vidé
+exprès** pour éprouver le modèle seul : le prénom de l'utilisateur survivait en
+clair, et des valeurs recevaient `[TYPE_N]` au lieu d'un pseudonyme.
+
+**Une seule cause pour les deux symptômes : le nom sortait en `ORG`.**
+
+| détecté | type | conséquence |
+|---|---|---|
+| `LANDRY KAPGNEP` ×1 | ORG | pseudonyme tiré du vivier des sociétés |
+| `KAPGNEP` ×2 | ORG | idem |
+| `LANDRY` seul | *rien* | **fuite** |
+| `NANTES`, `SARCELLES`, `FOSSES` | *rien* | lieux en clair |
+
+Classé en entreprise, le nom n'hérite pas de la **décomposition par composant**
+(réservée aux `PER`, voir `pseudonyms.js`) : le prénom isolé derrière son
+libellé « Prénom(s) » n'était donc jamais masqué.
+
+### Le motif : casse mixte → juste, TOUT-MAJUSCULE → faux
+
+Dans le même document, « Sébastien PIEVE » (casse mixte) sortait correctement en
+`PER`. Tout ce qui est en capitales sortait en `ORG` ou pas du tout. D'où une
+**troisième variante de texte**, sur le modèle de la passe désaccentuée (P10) :
+
+|  | texte naturel | casse adoucie |
+|---|---|---|
+| `LANDRY KAPGNEP` | company 0,72 | **person 0,99** |
+| `FOSSES` | person 0,36 | **location 0,70** |
+| `NANTES` | location 0,40 *(sous seuil)* | **location 0,53** |
+| `SARCELLES` | location 0,43 | 0,43 — **non réglé** |
+
+⚠️ **Ce n'est PAS la minusculisation**, mesurée et rejetée au spike POS
+(+7 démasquages mais 3 fuites) : on garde l'initiale majuscule — le signal dont
+un modèle « cased » se sert — et on n'enlève que l'anomalie tout-majuscule.
+Longueur préservée, donc offsets partagés et valeur relue sur l'original.
+
+### Le corpus était le vrai coupable
+
+Tout le banc était fait de **CV et de mémoires**, où les noms sont en casse
+mixte. Aucun **formulaire** — casier, état civil, attestation — où le libellé
+est en casse normale et la **valeur en capitales**. Le défaut ne pouvait pas
+être vu. `tests/bench/corpus/formulaire-fr.txt` comble ce trou (données
+entièrement inventées ; le document réel n'est jamais entré dans le dépôt).
+
+Mesure sur ce document, la seule qui montre les deux côtés :
+
+|  | sans P12 | avec P12 |
+|---|---|---|
+| rappel contextuel | 29 % (2/7) | **71 % (5/7)** |
+| termes préservés | 100 % | 82 % |
+
+`THIBAULT`, `MONTLUÇON`, `BEAUVAIS` passent de fuite à masqué ; « Sexe » et
+« Masculin » deviennent sur-masqués. **Trois fuites contre deux faux positifs**
+— l'arbitrage du projet, appliqué tel quel.
+
+Sur le banc complet : structuré **100 % inchangé**, contextuel **83 → 86 %**,
+préservé **98 → 96 %** (le terme perdu est `SPRACHEN`, intitulé de section d'un
+CV allemand). Borne basse **inchangée** (100/95/88 %).
+
+### Ce que ça ne règle pas
+
+- `MARCHESSEAU` — le **patronyme seul** derrière son libellé reste raté, comme
+  `SARCELLES`. Le correctif est partiel, jamais total.
+- L'adresse en capitales n'est pas détectée.
+- Le débordement de bornes reste possible : la passe adoucie a produit
+  « LANDRY Sexe Masculin » comme un seul span PER, et la fusion garde le plus
+  long. C'est du sur-masquage, pas une fuite.
+- **Le garde-fou déterministe reste le profil d'identité.** Il n'a pas joué ici
+  parce qu'il était vidé volontairement — mais il a un trou propre, non corrigé
+  à ce jour : `caseVariants` fait varier la casse et jamais les **composants**,
+  donc déclarer « Landry Kapgnep » ne protège pas « LANDRY » isolé. Même leçon
+  que celle appliquée aux pseudonymes le 03/08, jamais reportée sur
+  `identity.js`. À faire.
+
+## P13 — Quatre types sans vivier de pseudonymes (ouvert)
+
+`REALISTIC_TYPES` (`pseudonyms.js`) s'arrête à PER/ORG/LOC/ADRESSE/EMAIL/
+TELEPHONE/DATE_NAISSANCE. Les quatre types ajoutés le 02/08 — POSTE,
+NATIONALITE, ETABLISSEMENT, SANTE — n'y figurent pas et retombent **toujours**
+en `[TYPE_N]`, même quand l'option Pseudonymes est cochée. C'est l'incohérence
+visible signalée avec P12. Sans effet sur les fuites ; purement lisibilité.

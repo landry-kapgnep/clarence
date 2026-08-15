@@ -181,7 +181,12 @@ async function anonymiser(fichier, glinerPipe) {
 // réellement, pas ce que le pipeline croit avoir écrit.
 async function texteDuPdf(buffer) {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+  // Mêmes ressources que la production : sans les métriques de polices, le
+  // banc relirait des largeurs qui n'existent que chez lui.
+  const { ressourcesPdfjs } = await import('../../src/files/pdf-adapter.js');
+  const doc = await pdfjs.getDocument({
+    data: new Uint8Array(buffer), ...ressourcesPdfjs()
+  }).promise;
   let out = '';
   for (let i = 1; i <= doc.numPages; i++) {
     const tc = await (await doc.getPage(i)).getTextContent();

@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { reconstructPdf, tailleQuiTient, calculerBornes, aDeLaTransparence } from '../../src/files/pdf-reconstruct.js';
+import { ressourcesPdfjs } from '../../src/files/pdf-adapter.js';
 
 const deps = { PDFDocument, StandardFonts };
 
@@ -20,7 +21,9 @@ async function makePdf(lines) {
 }
 
 async function extractText(buf) {
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise;
+  const pdf = await pdfjs.getDocument({
+    data: new Uint8Array(buf), isEvalSupported: false, ...ressourcesPdfjs()
+  }).promise;
   let out = '';
   for (let i = 1; i <= pdf.numPages; i++) {
     const p = await pdf.getPage(i);

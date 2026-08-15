@@ -118,6 +118,44 @@ export const CORPUS = [
   },
 
   {
+    fichier: 'formulaire-fr.txt',
+    quoi: 'FORMULAIRE administratif : libellé en casse normale, VALEUR EN CAPITALES',
+    // Ce document manquait, et son absence a coûté une fuite chez un vrai
+    // utilisateur (P12). Tout le corpus était fait de CV et de mémoires, où les
+    // noms sont en casse mixte — or dans un formulaire officiel (casier
+    // judiciaire, acte d'état civil, attestation), les VALEURS sont en
+    // capitales et les libellés ne le sont pas.
+    //
+    // Mesuré : « LANDRY KAPGNEP » sortait en ENTREPRISE à 0,72 sur le texte
+    // naturel, et en PERSONNE à 0,99 une fois la casse adoucie. Le nom recevait
+    // donc un pseudonyme d'entreprise, et le prénom isolé n'était jamais
+    // masqué — la décomposition par composant ne vaut que pour les PER.
+    //
+    // Données ENTIÈREMENT INVENTÉES : le document réel qui a servi au
+    // diagnostic n'est jamais entré dans le dépôt, et aucune de ses valeurs
+    // n'est reprise ici.
+    aMasquer: [
+      { valeur: 'MARCHESSEAU', type: 'PER' },
+      // Le prénom SEUL derrière son libellé : c'est lui qui fuyait.
+      { valeur: 'THIBAULT', type: 'PER' },
+      { valeur: 'Camille DUVERNOY', type: 'PER' },
+      { valeur: 'MONTLUÇON', type: 'LOC' },
+      { valeur: 'BEAUVAIS', type: 'LOC' },
+      { valeur: '18 RUE DES GLYCINES', type: 'ADRESSE' },
+      { valeur: '16 octobre 1994', type: 'DATE_NAISSANCE' }
+    ],
+    // L'AUTRE MOITIÉ DU MARCHÉ, et c'est pour ça que ce document est une garde :
+    // adoucir la casse rend les intitulés en capitales plus « nom propre » aux
+    // yeux du modèle. Si ceux-ci repartent, la passe P12 coûte plus qu'elle ne
+    // rapporte et il faut la resserrer.
+    aGarder: [
+      'RÉPUBLIQUE FRANÇAISE', 'MINISTÈRE DE LA JUSTICE', 'IDENTITÉ',
+      'ADRESSE DÉCLARÉE', 'MENTIONS', 'NÉANT', 'Masculin',
+      'Nom', 'Sexe', 'Date de naissance', 'Lieu de naissance'
+    ]
+  },
+
+  {
     fichier: 'dossier-rh.txt',
     quoi: 'Le SEUL document qui éprouve POSITIVEMENT poste/santé/établissement',
     // Ce document manquait, et son absence bloquait une décision : le 3e groupe

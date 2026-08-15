@@ -882,12 +882,15 @@ function afficherPoids(file, ext) {
   (async () => {
     try {
       const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-      if (chrome?.runtime?.getURL) {
-        pdfjs.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('vendor/pdf.worker.min.mjs');
-      }
+      // Worker ET ressources externes : la configuration vit dans pdf-adapter,
+      // jamais recopiée ici. Ce point d'appel-là l'avait été, et il a donc
+      // gardé l'ancienne version quand les quatre ressources ont été ajoutées.
+      const { configurerPdfjs, ressourcesPdfjs } = await import('../files/pdf-adapter.js');
+      configurerPdfjs();
       const buf = await pourCeFichier.arrayBuffer();
       const doc = await pdfjs.getDocument({
-        data: new Uint8Array(buf), useWorkerFetch: false, isEvalSupported: false, disableFontFace: true
+        data: new Uint8Array(buf), useWorkerFetch: false, isEvalSupported: false, disableFontFace: true,
+        ...ressourcesPdfjs()
       }).promise;
       // L'utilisateur a pu changer de fichier entre-temps : ne jamais écrire un
       // badge périmé par-dessus le fichier courant (même règle que les runs).
