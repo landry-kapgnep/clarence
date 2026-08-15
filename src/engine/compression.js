@@ -19,21 +19,24 @@
 // LE PIPELINE EST INJECTÉ, comme dans gliner.js et ner.js : le moteur reste
 // testable en Node sans charger 170 Mo.
 
-// ⚠️ MODÈLE À REMPLACER AVANT PUBLICATION — il ne reste qu'une étape, et elle
-// demande un compte HuggingFace (voir tools/README.md).
+// NOTRE PROPRE CONVERSION des poids Apache 2.0 de Microsoft, sous une licence
+// explicite — bloquant de publication levé le 15/08/2026.
 //
 // Le dépôt officiel `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`
-// (Apache 2.0) n'expose PAS de poids ONNX, seulement du PyTorch. Celui pointé
-// ici est une conversion communautaire dont la fiche ne déclare AUCUNE licence
-// — donc « tous droits réservés » par défaut : bon pour développer, impossible
-// à redistribuer sur le Chrome Web Store.
+// n'expose que du PyTorch, or le navigateur ne sait exécuter que de l'ONNX. Le
+// développement s'appuyait sur une conversion communautaire dont la fiche ne
+// déclarait AUCUNE licence — donc « tous droits réservés » par défaut, et
+// impossible à redistribuer sur le Chrome Web Store.
 //
-// Notre propre conversion existe désormais (`python tools/convertir-llmlingua2.py`)
-// et elle est MESURÉE meilleure : écart nul en fp32 contre le vrai PyTorch, et
-// en int8 moins de décisions retournées que la communautaire (1 contre 2). Elle
-// produit 5 textes sur 6 rigoureusement identiques à ceux d'ici. Il ne manque
-// que sa PUBLICATION pour pouvoir remplacer cet identifiant.
-export const COMPRESSION_MODEL = 'ldenoue/llmlingua-2-bert-base-multilingual-cased-meetingbank';
+// La nôtre est MESURÉE meilleure, pas simplement conforme : écart nul en fp32
+// contre le vrai PyTorch (l'export est exact), et en int8 moins de décisions
+// retournées que la communautaire (1 contre 2), grâce à une quantification par
+// canal choisie sur six recettes comparées. Voir tools/README.md pour la
+// reproduire, docs/spike-llmlingua2.md pour les chiffres.
+//
+// Rappel : télécharger un modèle est une requête ENTRANTE. Rien du texte de
+// l'utilisateur ne sort jamais du navigateur — le principe du projet tient.
+export const COMPRESSION_MODEL = 'clarenceorg/llmlingua-2-onnx';
 
 // ── Découpage en MOTS, et pourquoi pas en tokens ───────────────────────────
 //

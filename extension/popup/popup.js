@@ -25,7 +25,7 @@ import {
   COMPRESSION_MODEL,
   compresser,
   compresserSegments
-} from "./chunk-YCFOBLJG.js";
+} from "./chunk-VTU65RIR.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/gliner.js

@@ -82,7 +82,14 @@ quantize_dynamic(
     extra_options=dict(EnableSubgraph=True),
 )
 
-print("[4/4] NOTICE d'attribution…")
+print("[4/4] Fiche du modèle et NOTICE d'attribution…")
+# LA FICHE PORTE LA LICENCE, et c'est tout l'objet de cette conversion : un
+# dépôt HuggingFace SANS `license:` dans son en-tête est réputé « tous droits
+# réservés » — exactement le défaut qu'on reproche à la conversion
+# communautaire. Publier sans elle reviendrait à refaire le problème qu'on
+# corrige. La source est committée (tools/carte-modele.md) pour que toute
+# reconversion la réémette, au lieu de dépendre d'un geste manuel.
+shutil.copy(Path(__file__).parent / "carte-modele.md", SORTIE / "README.md")
 # Apache 2.0 §4 : toute redistribution doit conserver l'attribution. Ce fichier
 # n'est pas une formalité — c'est la condition qui rend la redistribution licite.
 (SORTIE / "NOTICE").write_text(

@@ -1,5 +1,5 @@
 // src/engine/compression.js
-var COMPRESSION_MODEL = "ldenoue/llmlingua-2-bert-base-multilingual-cased-meetingbank";
+var COMPRESSION_MODEL = "clarenceorg/llmlingua-2-onnx";
 function motsDuTexte(texte) {
   const mots = [];
   const re = /\S+/g;
