@@ -7,9 +7,22 @@ import {
 function configurerPdfjs() {
   if (typeof chrome === "undefined" || !chrome.runtime?.getURL) return;
   GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("vendor/pdf.worker.min.mjs");
-  GlobalWorkerOptions.standardFontDataUrl = chrome.runtime.getURL("vendor/standard_fonts/");
 }
 configurerPdfjs();
+function racineNode() {
+  return decodeURIComponent(new URL("../../node_modules/pdfjs-dist/", import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, "$1");
+}
+function ressourcesPdfjs() {
+  const base = typeof chrome !== "undefined" && chrome.runtime?.getURL ? (d) => chrome.runtime.getURL(`vendor/${d}/`) : (d) => `${racineNode()}${d}/`;
+  return {
+    standardFontDataUrl: base("standard_fonts"),
+    cMapUrl: base("cmaps"),
+    cMapPacked: true,
+    // pdfjs-dist livre des .bcmap compressés
+    iccUrl: base("iccs"),
+    wasmUrl: base("wasm")
+  };
+}
 var PARAGRAPH_GAP_RATIO = 1.6;
 var MIN_ECARTS_CALIBRAGE = 8;
 var ECART_PARAGRAPHE_RATIO = 1.3;
@@ -124,7 +137,8 @@ async function parseStructure(buffer) {
     data: new Uint8Array(buffer.slice(0)),
     useWorkerFetch: false,
     isEvalSupported: false,
-    disableFontFace: true
+    disableFontFace: true,
+    ...ressourcesPdfjs()
   }).promise;
   const units = [];
   const intitules = /* @__PURE__ */ new Set();
@@ -206,6 +220,7 @@ function stripMetadata(markdown) {
 
 export {
   configurerPdfjs,
+  ressourcesPdfjs,
   PARAGRAPH_GAP_RATIO,
   HEADING_SIZE_RATIO,
   needsSpace,

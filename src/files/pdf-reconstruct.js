@@ -11,7 +11,7 @@
 // pdf-lib est injecté (deps) — comme DOMParser pour DOCX — pour rester testable
 // en Node. Le ré-encodage canvas des images (Stage B) est navigateur-only.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, marquerIntitules, releverIntitules, intitulesRetenus, HEADING_SIZE_RATIO, configurerPdfjs } from './pdf-adapter.js';
+import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, marquerIntitules, releverIntitules, intitulesRetenus, HEADING_SIZE_RATIO, configurerPdfjs, ressourcesPdfjs } from './pdf-adapter.js';
 import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { anonymizeUnits } from './anonymize-units.js';
 import { verifierAnnulation } from '../engine/annulation.js';
@@ -317,7 +317,8 @@ export function calculerBornes(runs, textes, largeurPage) {
 async function parsePages(buffer, signal) {
   const pdf = await pdfjsLib.getDocument({
     data: new Uint8Array(buffer.slice(0)),
-    useWorkerFetch: false, isEvalSupported: false, disableFontFace: true
+    useWorkerFetch: false, isEvalSupported: false, disableFontFace: true,
+    ...ressourcesPdfjs()
   }).promise;
 
   const pages = [];

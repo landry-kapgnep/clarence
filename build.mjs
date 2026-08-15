@@ -71,19 +71,30 @@ for (const [dirs, f] of WASM) {
 // les .wasm : local, CSP 'self', jamais de code distant (MV3).
 cpSync('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs', 'extension/vendor/pdf.worker.min.mjs');
 
-// Polices standard PDF (804 Ko). MÊME PIÈGE QUE workerSrc : pdfjs va les
-// chercher par URL et n'a aucun repli en navigateur. Sans elles, la console
-// crache « Ensure that the standardFontDataUrl API parameter is provided »
-// dès qu'un PDF n'embarque pas ses polices — cas le plus courant pour les
-// 14 polices standard (Helvetica, Times…).
+// Ressources externes de pdfjs (3,8 Mo). MÊME PIÈGE QUE workerSrc : pdfjs va
+// les chercher par URL et n'a AUCUN repli en navigateur, or MV3 interdit le
+// CDN. Différence cruciale : workerSrc plante bruyamment, celles-ci dégradent
+// EN SILENCE — c'est pour ça qu'elles sont restées absentes si longtemps.
 //
-// Ce n'est pas cosmétique : privé des métriques, pdfjs mesure mal la largeur
-// des glyphes, et c'est exactement ce dont dépend la reconstruction pour
-// décider qu'un fragment rentre (`tailleQuiTient`) ou qu'il en chevauche un
-// autre (`calculerBornes`). Un chantier de mise en page réglé sur des largeurs
-// fausses se règle deux fois.
-if (!existsSync('node_modules/pdfjs-dist/standard_fonts')) {
-  throw new Error('build : polices standard pdfjs introuvables (node_modules/pdfjs-dist/standard_fonts)');
+//   standard_fonts  les 14 polices standard. Sans elles, pdfjs mesure mal la
+//                   largeur des glyphes, dont dépendent tailleQuiTient et
+//                   calculerBornes : la mise en page se réglerait sur des
+//                   chiffres faux, donc deux fois.
+//   cmaps           encodages CID (PDF asiatiques) — texte sinon illisible.
+//   iccs            profils colorimétriques.
+//   wasm            décodeurs JBIG2 / JPEG2000 : sans eux une image de PDF
+//                   scanné ne se décode pas, et la reconstruction la perd.
+//
+// `quickjs-eval.*` est volontairement ÉCARTÉ : il ne sert qu'à exécuter le
+// JavaScript embarqué dans un PDF, ce qu'on ne fait jamais (isEvalSupported:
+// false). Ne pas embarquer un moteur d'exécution dont on n'a pas l'usage.
+for (const d of ['standard_fonts', 'cmaps', 'iccs', 'wasm']) {
+  if (!existsSync(`node_modules/pdfjs-dist/${d}`)) {
+    throw new Error(`build : ressource pdfjs introuvable (node_modules/pdfjs-dist/${d})`);
+  }
+  cpSync(`node_modules/pdfjs-dist/${d}`, `extension/vendor/${d}`, {
+    recursive: true,
+    filter: (src) => !/quickjs-eval/.test(src)
+  });
 }
-cpSync('node_modules/pdfjs-dist/standard_fonts', 'extension/vendor/standard_fonts', { recursive: true });
 console.log('Build OK → extension/');

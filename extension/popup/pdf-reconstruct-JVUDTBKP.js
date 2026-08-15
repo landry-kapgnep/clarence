@@ -19,8 +19,9 @@ import {
   needsSpace,
   paragraphGapThreshold,
   releverIntitules,
+  ressourcesPdfjs,
   splitIntoColumns
-} from "./chunk-DYAARXT5.js";
+} from "./chunk-GQCNBVHA.js";
 import {
   OPS,
   getDocument
@@ -195,7 +196,8 @@ async function parsePages(buffer, signal) {
     data: new Uint8Array(buffer.slice(0)),
     useWorkerFetch: false,
     isEvalSupported: false,
-    disableFontFace: true
+    disableFontFace: true,
+    ...ressourcesPdfjs()
   }).promise;
   const pages = [];
   const intitulesVus = /* @__PURE__ */ new Set();

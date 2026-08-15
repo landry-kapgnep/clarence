@@ -14,9 +14,10 @@ import {
   paragraphGapThreshold,
   releverIntitules,
   ressembleAUnIntitule,
+  ressourcesPdfjs,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-DYAARXT5.js";
+} from "./chunk-GQCNBVHA.js";
 import "./chunk-GQJ4YNB7.js";
 import "./chunk-PIRHQTI4.js";
 export {
@@ -35,6 +36,7 @@ export {
   paragraphGapThreshold,
   releverIntitules,
   ressembleAUnIntitule,
+  ressourcesPdfjs,
   splitIntoColumns,
   stripMetadata
 };

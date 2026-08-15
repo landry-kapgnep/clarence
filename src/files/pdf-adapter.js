@@ -24,19 +24,62 @@ import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // Configuration pdfjs, EN UN SEUL ENDROIT. Les deux chemins PDF (Markdown et
 // reconstruction) la faisaient chacun de leur côté ; c'est le motif qui a déjà
-// divergé une fois dans ce projet (leçon P1bis, deux fois payée). Fonction
-// idempotente appelée par les deux, plutôt qu'un effet de bord d'import dont
+// divergé une fois dans ce projet (leçon P1bis, deux fois payée). Fonctions
+// partagées appelées par les deux, plutôt qu'un effet de bord d'import dont
 // l'ordre déciderait du résultat.
-//
-// Tout est servi depuis vendor/ : local, CSP 'self', jamais de code distant.
 export function configurerPdfjs() {
   if (typeof chrome === 'undefined' || !chrome.runtime?.getURL) return;
   pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('vendor/pdf.worker.min.mjs');
-  // La barre oblique finale n'est PAS optionnelle : pdfjs concatène le nom de
-  // fichier directement derrière.
-  pdfjsLib.GlobalWorkerOptions.standardFontDataUrl = chrome.runtime.getURL('vendor/standard_fonts/');
 }
 configurerPdfjs();
+
+// ── Ressources externes de pdfjs ───────────────────────────────────────────
+//
+// pdfjs va chercher QUATRE familles de ressources par URL, et n'a AUCUN repli
+// en navigateur. `workerSrc` est la seule qui plante bruyamment ; les autres
+// dégradent en silence, ce qui est pire.
+//
+// ⚠️ ELLES NE VONT PAS SUR `GlobalWorkerOptions` — qui n'accepte que
+// `workerSrc` et `workerPort`. Ce sont des paramètres de `getDocument()`.
+// Erreur commise ici même : le réglage semblait posé, la console continuait
+// d'avertir, et rien ne signalait que la valeur partait à la poubelle.
+//
+//   standard_fonts/  les 14 polices standard (Helvetica, Times…). Sans elles,
+//                    pdfjs mesure mal la LARGEUR des glyphes — exactement ce
+//                    dont dépendent `tailleQuiTient` et `calculerBornes` pour
+//                    décider qu'un fragment rentre ou en chevauche un autre.
+//   cmaps/           encodages CID (PDF asiatiques) — texte sinon illisible.
+//   iccs/            profils colorimétriques.
+//   wasm/            décodeurs JBIG2 / JPEG2000. Sans eux, une image d'un PDF
+//                    scanné ne se décode pas, et la reconstruction la perd.
+//
+// En Node (tests et bancs), on pointe vers node_modules : les mesures de
+// largeur du banc doivent être les MÊMES que celles du navigateur, sinon on
+// règle la mise en page sur des chiffres qui n'existent que chez nous.
+// En Node, pdfjs LIT LE DISQUE : il lui faut un chemin de fichier, pas une URL
+// `file://` (essayé — « Unable to load font data at: file:///… »). On repasse
+// donc du href au chemin, en retirant la barre oblique que `pathname` ajoute
+// devant une lettre de lecteur Windows (`/C:/…`), sans toucher aux chemins
+// POSIX qui, eux, commencent légitimement par `/`.
+function racineNode() {
+  return decodeURIComponent(new URL('../../node_modules/pdfjs-dist/', import.meta.url).pathname)
+    .replace(/^\/([A-Za-z]:)/, '$1');
+}
+
+export function ressourcesPdfjs() {
+  // La barre oblique finale n'est PAS optionnelle : pdfjs concatène le nom de
+  // fichier directement derrière.
+  const base = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
+    ? (d) => chrome.runtime.getURL(`vendor/${d}/`)
+    : (d) => `${racineNode()}${d}/`;
+  return {
+    standardFontDataUrl: base('standard_fonts'),
+    cMapUrl: base('cmaps'),
+    cMapPacked: true,           // pdfjs-dist livre des .bcmap compressés
+    iccUrl: base('iccs'),
+    wasmUrl: base('wasm'),
+  };
+}
 
 // Un écart vertical supérieur à ce multiple de la taille de police de la
 // ligne précédente marque un nouveau paragraphe (ligne vide en Markdown) ;
@@ -266,7 +309,8 @@ async function parseStructure(buffer) {
     data: new Uint8Array(buffer.slice(0)),
     useWorkerFetch: false,
     isEvalSupported: false,
-    disableFontFace: true
+    disableFontFace: true,
+    ...ressourcesPdfjs()
   }).promise;
 
   const units = [];
