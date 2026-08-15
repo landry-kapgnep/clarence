@@ -70,4 +70,20 @@ for (const [dirs, f] of WASM) {
 // pas de repli automatique, contrairement à Node). Servi depuis vendor/ comme
 // les .wasm : local, CSP 'self', jamais de code distant (MV3).
 cpSync('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs', 'extension/vendor/pdf.worker.min.mjs');
+
+// Polices standard PDF (804 Ko). MÊME PIÈGE QUE workerSrc : pdfjs va les
+// chercher par URL et n'a aucun repli en navigateur. Sans elles, la console
+// crache « Ensure that the standardFontDataUrl API parameter is provided »
+// dès qu'un PDF n'embarque pas ses polices — cas le plus courant pour les
+// 14 polices standard (Helvetica, Times…).
+//
+// Ce n'est pas cosmétique : privé des métriques, pdfjs mesure mal la largeur
+// des glyphes, et c'est exactement ce dont dépend la reconstruction pour
+// décider qu'un fragment rentre (`tailleQuiTient`) ou qu'il en chevauche un
+// autre (`calculerBornes`). Un chantier de mise en page réglé sur des largeurs
+// fausses se règle deux fois.
+if (!existsSync('node_modules/pdfjs-dist/standard_fonts')) {
+  throw new Error('build : polices standard pdfjs introuvables (node_modules/pdfjs-dist/standard_fonts)');
+}
+cpSync('node_modules/pdfjs-dist/standard_fonts', 'extension/vendor/standard_fonts', { recursive: true });
 console.log('Build OK → extension/');

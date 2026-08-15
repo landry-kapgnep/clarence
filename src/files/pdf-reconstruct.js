@@ -11,14 +11,14 @@
 // pdf-lib est injecté (deps) — comme DOMParser pour DOCX — pour rester testable
 // en Node. Le ré-encodage canvas des images (Stage B) est navigateur-only.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, marquerIntitules, releverIntitules, intitulesRetenus, HEADING_SIZE_RATIO } from './pdf-adapter.js';
+import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, marquerIntitules, releverIntitules, intitulesRetenus, HEADING_SIZE_RATIO, configurerPdfjs } from './pdf-adapter.js';
 import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { anonymizeUnits } from './anonymize-units.js';
 import { verifierAnnulation } from '../engine/annulation.js';
 
-if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('vendor/pdf.worker.min.mjs');
-}
+// Worker et polices standard : configuration partagée avec pdf-adapter, jamais
+// dupliquée ici (voir le commentaire de configurerPdfjs).
+configurerPdfjs();
 
 // StandardFonts.Helvetica encode WinAnsi/CP1252 — le français passe quasi tout,
 // mais quelques caractères typographiques feraient planter drawText. On les

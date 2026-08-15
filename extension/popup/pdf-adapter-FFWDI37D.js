@@ -2,6 +2,7 @@ import {
   HEADING_SIZE_RATIO,
   PARAGRAPH_GAP_RATIO,
   applyMask,
+  configurerPdfjs,
   extractTextUnits,
   formesDeRubrique,
   groupIntoLines,
@@ -15,13 +16,14 @@ import {
   ressembleAUnIntitule,
   splitIntoColumns,
   stripMetadata
-} from "./chunk-F3OYTZZ2.js";
+} from "./chunk-DYAARXT5.js";
 import "./chunk-GQJ4YNB7.js";
 import "./chunk-PIRHQTI4.js";
 export {
   HEADING_SIZE_RATIO,
   PARAGRAPH_GAP_RATIO,
   applyMask,
+  configurerPdfjs,
   extractTextUnits,
   formesDeRubrique,
   groupIntoLines,

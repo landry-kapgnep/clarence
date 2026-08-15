@@ -22,9 +22,21 @@
 //   scope v1, comme les zones de texte/notes pour DOCX à l'origine.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+// Configuration pdfjs, EN UN SEUL ENDROIT. Les deux chemins PDF (Markdown et
+// reconstruction) la faisaient chacun de leur côté ; c'est le motif qui a déjà
+// divergé une fois dans ce projet (leçon P1bis, deux fois payée). Fonction
+// idempotente appelée par les deux, plutôt qu'un effet de bord d'import dont
+// l'ordre déciderait du résultat.
+//
+// Tout est servi depuis vendor/ : local, CSP 'self', jamais de code distant.
+export function configurerPdfjs() {
+  if (typeof chrome === 'undefined' || !chrome.runtime?.getURL) return;
   pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('vendor/pdf.worker.min.mjs');
+  // La barre oblique finale n'est PAS optionnelle : pdfjs concatène le nom de
+  // fichier directement derrière.
+  pdfjsLib.GlobalWorkerOptions.standardFontDataUrl = chrome.runtime.getURL('vendor/standard_fonts/');
 }
+configurerPdfjs();
 
 // Un écart vertical supérieur à ce multiple de la taille de police de la
 // ligne précédente marque un nouveau paragraphe (ligne vide en Markdown) ;

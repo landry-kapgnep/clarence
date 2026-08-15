@@ -4,9 +4,12 @@ import {
 } from "./chunk-GQJ4YNB7.js";
 
 // src/files/pdf-adapter.js
-if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
+function configurerPdfjs() {
+  if (typeof chrome === "undefined" || !chrome.runtime?.getURL) return;
   GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("vendor/pdf.worker.min.mjs");
+  GlobalWorkerOptions.standardFontDataUrl = chrome.runtime.getURL("vendor/standard_fonts/");
 }
+configurerPdfjs();
 var PARAGRAPH_GAP_RATIO = 1.6;
 var MIN_ECARTS_CALIBRAGE = 8;
 var ECART_PARAGRAPHE_RATIO = 1.3;
@@ -202,6 +205,7 @@ function stripMetadata(markdown) {
 }
 
 export {
+  configurerPdfjs,
   PARAGRAPH_GAP_RATIO,
   HEADING_SIZE_RATIO,
   needsSpace,

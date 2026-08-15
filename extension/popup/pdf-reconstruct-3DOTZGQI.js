@@ -10,6 +10,7 @@ import {
 } from "./chunk-3WGABFPD.js";
 import {
   HEADING_SIZE_RATIO,
+  configurerPdfjs,
   groupIntoLines,
   intitulesRetenus,
   isLineWrapHyphen,
@@ -19,18 +20,15 @@ import {
   paragraphGapThreshold,
   releverIntitules,
   splitIntoColumns
-} from "./chunk-F3OYTZZ2.js";
+} from "./chunk-DYAARXT5.js";
 import {
-  GlobalWorkerOptions,
   OPS,
   getDocument
 } from "./chunk-GQJ4YNB7.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/files/pdf-reconstruct.js
-if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
-  GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("vendor/pdf.worker.min.mjs");
-}
+configurerPdfjs();
 function sanitizeForWinAnsi(str) {
   return str.replace(/[‘’‚‛]/g, "'").replace(/[“”„‟]/g, '"').replace(/[–—―]/g, "-").replace(/…/g, "...").replace(/ /g, " ").replace(/[^\x09\x0A\x0D\x20-\xFF]/g, "?");
 }
