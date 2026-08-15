@@ -75,9 +75,23 @@ Il faut donc un dépôt sur **ton** compte HuggingFace. Ce choix t'appartient
 
 ```bash
 python -m pip install huggingface_hub
-huggingface-cli login
-huggingface-cli upload <ton-compte>/llmlingua-2-onnx tools/llmlingua2-onnx . --repo-type model
+hf auth login
+hf upload <ton-compte>/llmlingua-2-onnx "<racine-du-dépôt>/tools/llmlingua2-onnx" . --repo-type model --exclude "onnx/model.onnx"
 ```
+
+Deux pièges, tous deux rencontrés :
+
+- **`huggingface-cli` est déprécié** au profit de `hf` (`hf auth login`,
+  `hf upload`). L'ancienne forme marche encore, avec un avertissement.
+- **Le chemin est relatif au répertoire courant**, pas à la racine du dépôt.
+  Depuis `C:\Users\Landry`, `tools/llmlingua2-onnx` n'existe pas et la commande
+  échoue sur un `FileNotFoundError` peu parlant. D'où le chemin absolu ci-dessus.
+
+`--exclude "onnx/model.onnx"` écarte le **fp32 de 710 Mo**, dont l'extension ne
+se sert jamais : elle ne charge que `model_quantized.onnx`. Sans ça on
+téléverse 890 Mo au lieu de 183, pour aucun bénéfice au runtime — et le fp32 se
+régénère en une commande. Le garder en ligne pour la traçabilité reste un choix
+défendable ; il suffit de retirer l'option.
 
 Puis, dans `src/engine/compression.js` :
 
