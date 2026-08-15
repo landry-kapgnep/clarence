@@ -31,11 +31,13 @@ compatible avec le principe du cadrage §8.
 | Fenêtre | 512 positions — même contrainte que le NER BERT |
 | Étiquettes | pas d'`id2label` ; **LABEL_1 = garder**, identifié par sonde |
 
-⚠️ **Réserve de licence.** Le dépôt officiel Microsoft n'a **pas** de poids
-ONNX. Le spike passe par une conversion communautaire
-(`ldenoue/llmlingua-2-bert-base-multilingual-cased-meetingbank`) dont la fiche
-**ne déclare aucune licence**. Pour livrer, il faudra convertir nous-mêmes
-depuis le dépôt Apache 2.0 — ne pas embarquer cette conversion telle quelle.
+⚠️ **Réserve de licence — LEVÉE le 15/08/2026, voir plus bas.** Le dépôt
+officiel Microsoft n'a **pas** de poids ONNX. Le spike passait par une
+conversion communautaire (`ldenoue/llmlingua-2-…`) dont la fiche **ne déclare
+aucune licence** — donc « tous droits réservés » par défaut, impossible à
+redistribuer. La conversion est désormais faite maison
+(`tools/convertir-llmlingua2.py`) ; il reste à la **publier** sur un compte
+HuggingFace et à repointer `COMPRESSION_MODEL`.
 
 ## 1. Les placeholders survivent — question rédhibitoire levée
 
@@ -151,10 +153,49 @@ gotcha déjà consigné dans CLAUDE.md, donc pas d'alignement par offsets.
 Le moteur remonte `motsSansScore` précisément pour que ce genre de panne ne
 puisse plus être silencieuse.
 
+## Conversion maison — faite le 15/08/2026
+
+`python tools/convertir-llmlingua2.py` exporte les poids Apache 2.0 de Microsoft
+en ONNX, les quantifie en int8 (**179 Mo**) et écrit le `NOTICE` d'attribution
+qu'exige la licence. Trois choses ont été vérifiées plutôt que supposées.
+
+**1. L'export est exact.** `tools/verifier-fidelite.py` compare chaque
+conversion au vrai modèle PyTorch, la seule référence qui fasse autorité :
+
+| conversion | écart moyen | max | décisions ≠ |
+|---|---|---|---|
+| notre export **fp32** | **0,00000** | 0,0000 | **0** |
+| notre int8, par tenseur (1er essai) | 0,02916 | 0,2154 | 1 |
+| notre int8, **par canal** (retenu) | **0,01217** | **0,1049** | **1** |
+| communautaire int8 | 0,01197 | 0,1247 | 2 |
+
+Le fp32 à 0,00000 est le résultat qui compte : **la conversion elle-même n'a
+aucun défaut**. Tout l'écart restant vient de la quantification.
+
+**2. `per_channel=True` n'est pas un détail.** La première recette dégradait
+2,4× plus que la conversion communautaire. Six recettes ont été comparées
+(`tools/comparer-quantifications.py`) : un facteur d'échelle **par canal de
+sortie** au lieu d'un seul pour toute la matrice divise l'erreur par ~3, pour
+1 Mo de plus. Notre modèle est alors à égalité de moyenne avec la version
+communautaire, et **meilleur** sur le maximum (0,105 contre 0,125) et sur les
+décisions retournées (1 contre 2). Contre-intuitif au passage :
+`reduce_range=True`, qui sonne prudent, **dégrade** (0,042 / 5 décisions ≠).
+
+**3. Ça tourne vraiment dans le navigateur.** La quantification par canal était
+le vrai risque : ORT Web est en **1.14** (2023) et son support ne se devine pas.
+Vérifié dans un navigateur réel sur ce runtime exact — modèle chargé en 878 ms,
+inférence OK, et les placeholders tous au-dessus de **0,99**.
+
+**Effet sur le texte produit** (`node tools/verifier-conversion.mjs`, qui fait
+tourner le vrai moteur) : **5 sorties sur 6 rigoureusement identiques** à celles
+du modèle communautaire. La seule différence apparaît au taux le plus agressif
+(0,3), où « associés » cède la place à « prévisionnel » — deux noms communs
+voisins au classement. Aucun placeholder, aucun opérateur logique perdu.
+
 ## Ce qu'il resterait à faire avant de livrer
 
-1. **Convertir le modèle nous-mêmes** depuis le dépôt Apache 2.0 (réserve de
-   licence ci-dessus).
+1. **Publier** le dossier converti sur un compte HuggingFace et repointer
+   `COMPRESSION_MODEL` (`src/engine/compression.js`). Voir `tools/README.md`.
 2. **Préserver l'espacement d'origine** à la reconstruction — sinon les
    placeholders conservés sont cassés à l'écriture.
 3. **Exposer un taux cible**, pas le seuil brut.

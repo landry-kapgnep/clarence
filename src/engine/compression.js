@@ -19,11 +19,20 @@
 // LE PIPELINE EST INJECTÉ, comme dans gliner.js et ner.js : le moteur reste
 // testable en Node sans charger 170 Mo.
 
-// ⚠️ MODÈLE À REMPLACER AVANT PUBLICATION. Le dépôt officiel
-// `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank` (Apache 2.0)
-// n'expose PAS de poids ONNX ; celui-ci est une conversion communautaire dont la
-// fiche ne déclare AUCUNE licence. Acceptable pour développer, pas pour livrer :
-// il faut convertir nous-mêmes depuis l'original. Voir docs/spike-llmlingua2.md.
+// ⚠️ MODÈLE À REMPLACER AVANT PUBLICATION — il ne reste qu'une étape, et elle
+// demande un compte HuggingFace (voir tools/README.md).
+//
+// Le dépôt officiel `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`
+// (Apache 2.0) n'expose PAS de poids ONNX, seulement du PyTorch. Celui pointé
+// ici est une conversion communautaire dont la fiche ne déclare AUCUNE licence
+// — donc « tous droits réservés » par défaut : bon pour développer, impossible
+// à redistribuer sur le Chrome Web Store.
+//
+// Notre propre conversion existe désormais (`python tools/convertir-llmlingua2.py`)
+// et elle est MESURÉE meilleure : écart nul en fp32 contre le vrai PyTorch, et
+// en int8 moins de décisions retournées que la communautaire (1 contre 2). Elle
+// produit 5 textes sur 6 rigoureusement identiques à ceux d'ici. Il ne manque
+// que sa PUBLICATION pour pouvoir remplacer cet identifiant.
 export const COMPRESSION_MODEL = 'ldenoue/llmlingua-2-bert-base-multilingual-cased-meetingbank';
 
 // ── Découpage en MOTS, et pourquoi pas en tokens ───────────────────────────

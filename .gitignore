@@ -7,6 +7,12 @@ tests/bench/.modeles/
 # Sortie de build du site vitrine (prototype, régénérée par `npm run site`)
 site/dist/
 
+# Poids convertis de LLMLingua-2 (710 Mo en fp32 + 179 Mo en int8). Ils se
+# régénèrent par `python tools/convertir-llmlingua2.py` et leur place est sur
+# HuggingFace, pas dans un dépôt git — ce sont des artefacts de build.
+tools/llmlingua2-onnx/
+tools/.quant-essais/
+
 # Corpus de non-régression : de VRAIS documents, souvent personnels.
 # Règle absolue du projet — jamais de données réelles dans le dépôt, même
 # anonymisées. Seuls les INSTANTANÉS sont committés, et ils ne contiennent que
