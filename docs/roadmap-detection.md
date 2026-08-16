@@ -1525,10 +1525,55 @@ CV allemand). Borne basse **inchangée** (100/95/88 %).
   (ce dernier par le champ « Ville », qui existait déjà). Le seul raté restant
   du modèle est donc couvert dès que le profil est renseigné.
 
-## P13 — Quatre types sans vivier de pseudonymes (ouvert)
+## P13 — Quatre types sans vivier de pseudonymes (tranché le 15/08/2026)
 
-`REALISTIC_TYPES` (`pseudonyms.js`) s'arrête à PER/ORG/LOC/ADRESSE/EMAIL/
-TELEPHONE/DATE_NAISSANCE. Les quatre types ajoutés le 02/08 — POSTE,
-NATIONALITE, ETABLISSEMENT, SANTE — n'y figurent pas et retombent **toujours**
-en `[TYPE_N]`, même quand l'option Pseudonymes est cochée. C'est l'incohérence
-visible signalée avec P12. Sans effet sur les fuites ; purement lisibilité.
+Signalé avec P12 : l'option Pseudonymes cochée, POSTE, NATIONALITE,
+ETABLISSEMENT et SANTE recevaient quand même `[TYPE_N]`. Ils avaient été
+ajoutés au moteur le 02/08 sans être ajoutés à `REALISTIC_TYPES`.
+
+**Ce n'est pas quatre oublis, c'est un oubli et trois refus.**
+
+La ligne de partage n'est pas « type connu ou pas », c'est **identifiant ou
+attribut ?** Les sept types déjà réalistes sont tous des identifiants : nom,
+société, ville, adresse, email, téléphone, date. Échanger l'un contre un autre
+préserve son RÔLE dans le texte sans toucher à ce sur quoi le LLM raisonne —
+une personne reste une personne.
+
+POSTE, NATIONALITE et SANTE sont des **attributs** : leur valeur EST le sujet
+du raisonnement.
+
+| substitution | ce que ça produit |
+|---|---|
+| « diabète de type 2 » → « asthme » | réponse médicale confiante et fausse |
+| « aide-soignante de nuit » → « comptable » | analyse de contrat faussée |
+| « portugaise » → « italienne » | démarche administrative faussée |
+
+Un placeholder annonce qu'on a retiré quelque chose ; un faux attribut
+plausible n'annonce rien et induit en erreur. C'est l'UX anti-fausse-confiance
+du cadrage §5 appliquée à la SORTIE, et non plus seulement à la relecture.
+**Ces trois-là resteront en placeholder.**
+
+**ETABLISSEMENT, lui, est un identifiant** au même titre qu'une entreprise, et
+il est désormais pseudonymisé — avec une précaution : le MOT D'INSTITUTION
+d'origine est conservé, seule la partie distinctive change.
+
+    Lycée Camille-Claudel   →  Lycée Girard
+    Université de Bordeaux  →  Université Legrand
+    Westfield College       →  Boyer College
+    Sciences Po             →  École Faure        (mot inconnu → défaut locale)
+
+Sans ça, un lycée deviendrait une université : le niveau d'études n'est pas une
+donnée identifiante, et le LLM le lirait comme un fait. La POSITION du mot est
+reprise de l'original plutôt que déduite de la locale — aucun réglage à tenir,
+et les deux ordres sortent justes. La partie distinctive vient du vivier des
+patronymes, qui est exactement la façon dont ces établissements se nomment.
+
+**Trouvé en passant** : `pseudonymFor` n'est PAS déterministe par valeur — deux
+appels sur la même valeur donnent deux pseudonymes (vrai aussi pour ORG et
+LOC). La stabilité vient du cache de `maskText`. Ce n'est pas un défaut, mais
+un test écrit contre le générateur seul teste une garantie qui n'existe pas :
+elle se vérifie à travers `maskText`.
+
+**Reste** : l'UI dit maintenant pourquoi ces trois types gardent leur étiquette
+(infobulle de l'option Pseudonymes). Sans ça, le choix se lit comme un bug —
+c'est d'ailleurs comme ça qu'il a été signalé.

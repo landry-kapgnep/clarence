@@ -189,3 +189,64 @@ test('une date numérique reste numérique (non-régression)', () => {
   assert.match(p('DATE_NAISSANCE', '12/03/1985'), /^\d{2}\/\d{2}\/\d{4}$/);
   assert.match(p('DATE_NAISSANCE', '12-03-1985'), /^\d{2}-\d{2}-\d{4}$/);
 });
+
+// --- ÉTABLISSEMENT, et le REFUS des trois autres types (P13) ---------------
+// La ligne de partage est « identifiant ou attribut ? ». Un nom d'établissement
+// s'échange comme un nom d'entreprise ; un poste, une nationalité ou une donnée
+// de santé sont ce sur quoi le LLM RAISONNE — les remplacer par du plausible
+// produit une réponse confiante et fausse.
+
+test('un poste, une nationalité et une donnée de santé restent en placeholder', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  for (const [type, valeur] of [
+    ['SANTE', 'diabète de type 2'],
+    ['POSTE', 'aide-soignante de nuit'],
+    ['NATIONALITE', 'portugaise']
+  ]) {
+    assert.equal(p(type, valeur), null, `${type} ne doit JAMAIS recevoir de pseudonyme`);
+  }
+});
+
+test('établissement : le MOT D\'INSTITUTION est conservé, pas le nom', () => {
+  const p = createPseudonymizer({ seed: 's1' });
+  // Un lycée ne doit pas devenir une université : le niveau d'études n'est pas
+  // une donnée identifiante, et le LLM le lirait comme un fait.
+  assert.match(p('ETABLISSEMENT', 'Lycée Camille-Claudel'), /^Lycée \S+$/);
+  assert.match(p('ETABLISSEMENT', 'Université de Bordeaux'), /^Université \S+$/);
+  // Le nom d'origine ne doit jamais survivre.
+  assert.ok(!/Camille|Claudel/.test(p('ETABLISSEMENT', 'Lycée Camille-Claudel')));
+  assert.ok(!/Bordeaux/.test(p('ETABLISSEMENT', 'Université de Bordeaux')));
+});
+
+test('établissement : la POSITION du mot d\'institution suit l\'original', () => {
+  const p = createPseudonymizer({ seed: 's2' });
+  // Anglais : le mot vient après. Aucun réglage de locale à maintenir.
+  assert.match(p('ETABLISSEMENT', 'Westfield College'), /^\S+ College$/);
+  assert.match(p('ETABLISSEMENT', 'Harvard University'), /^\S+ University$/);
+});
+
+test('établissement : mot d\'institution inconnu → libellé par défaut de la locale', () => {
+  assert.match(createPseudonymizer({ seed: 's3' })('ETABLISSEMENT', 'Sciences Po'), /^École \S+$/);
+  assert.match(createPseudonymizer({ seed: 's3', locale: 'en' })('ETABLISSEMENT', 'Sciences Po'), /^\S+ School$/);
+});
+
+test('établissement : cohérent dans tout un document, et distinct d\'un autre', () => {
+  // La stabilité par valeur vient du cache de maskText, PAS du générateur —
+  // deux appels directs à pseudonymFor donnent volontairement deux valeurs
+  // (vrai aussi pour ORG et LOC). C'est donc ici qu'il faut la vérifier :
+  // c'est la garantie qui compte, un établissement doit rester le même d'un
+  // bout à l'autre du texte.
+  const texte = 'Formé au Lycée Voltaire, puis au Lycée Rimbaud, retour au Lycée Voltaire.';
+  const ents = [
+    e('ETABLISSEMENT', 'Lycée Voltaire', 9),
+    e('ETABLISSEMENT', 'Lycée Rimbaud', 33),
+    e('ETABLISSEMENT', 'Lycée Voltaire', 58)
+  ];
+  const { masked } = maskText(texte, ents,
+    { pseudonymize: createPseudonymizer({ seed: 's4' }) });
+  assert.ok(!/Voltaire|Rimbaud/.test(masked), 'un vrai nom survit : ' + masked);
+  const trouves = masked.match(/Lycée \S+/g).map(s => s.replace(/[.,]$/, ''));
+  assert.equal(trouves.length, 3);
+  assert.equal(trouves[0], trouves[2], 'le même établissement a reçu deux pseudos');
+  assert.notEqual(trouves[0], trouves[1], 'deux établissements confondus');
+});

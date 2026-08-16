@@ -105,8 +105,45 @@ const LOCALES = {
 };
 
 // Types éligibles au réalisme ; tout le reste garde son placeholder [TYPE_N].
+//
+// LA LIGNE DE PARTAGE EST « IDENTIFIANT OU ATTRIBUT ? », pas « type connu ou
+// pas ». Tous ceux d'ici sont des IDENTIFIANTS : échanger un nom contre un
+// autre nom, une ville contre une autre ville, préserve le RÔLE de la valeur
+// dans le texte sans toucher à ce sur quoi le LLM raisonne — une personne
+// reste une personne.
+//
+// POSTE, NATIONALITE et SANTE sont volontairement ABSENTS, et ce n'est pas un
+// oubli (question posée le 15/08 : « il manque des pseudonymes »). Ce sont des
+// ATTRIBUTS : leur valeur EST le sujet du raisonnement.
+//
+//   « diabète de type 2 » → « asthme »            réponse médicale fausse
+//   « aide-soignante de nuit » → « comptable »    contrat de travail faussé
+//   « portugaise » → « italienne »                démarche administrative faussée
+//
+// Un placeholder annonce qu'on a retiré quelque chose ; un faux attribut
+// plausible n'annonce rien et induit en erreur — exactement ce que l'UX
+// anti-fausse-confiance du cadrage §5 refuse. Le silence vaut mieux que le
+// vraisemblable quand l'utilisateur ne peut pas vérifier.
+//
+// ETABLISSEMENT fait exception : un nom d'établissement est un identifiant, au
+// même titre qu'une entreprise. Sa substitution préserve en plus le MOT
+// D'INSTITUTION d'origine (voir le générateur) pour qu'un lycée ne devienne
+// pas une université.
 const REALISTIC_TYPES = new Set([
-  'PER', 'ORG', 'LOC', 'ADRESSE', 'EMAIL', 'TELEPHONE', 'DATE_NAISSANCE'
+  'PER', 'ORG', 'LOC', 'ADRESSE', 'EMAIL', 'TELEPHONE', 'DATE_NAISSANCE',
+  'ETABLISSEMENT'
+]);
+
+// Mots d'institution conservés tels quels. MÊME RÈGLE D'ADMISSIBILITÉ que les
+// civilités (honorifics.js) : classe FERMÉE dans une langue donnée, et non
+// identifiante en elle-même. Un mot inconnu n'est pas une erreur — on retombe
+// simplement sur le libellé par défaut de la locale.
+const MOTS_ETABLISSEMENT = new Set([
+  'universite', 'lycee', 'college', 'ecole', 'institut', 'academie',
+  'conservatoire', 'faculte', 'centre',
+  'university', 'school', 'academy', 'institute', 'polytechnic',
+  'universitat', 'hochschule', 'gymnasium', 'universidad', 'escuela',
+  'instituto', 'scuola', 'liceo'
 ]);
 
 const stripAccents = s =>
@@ -224,6 +261,27 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
       return !avoid(out) ? out : null;
     },
     ORG: h => unique((h2, i) => pick(L.orgs, h2, i), h),
+    // Le MOT D'INSTITUTION d'origine est conservé, seule la partie distinctive
+    // change : « Lycée Camille-Claudel » → « Lycée Rousseau », jamais
+    // « Université de Valmont ». Sans ça on changerait le NIVEAU d'études, qui
+    // n'est pas une donnée identifiante et que le LLM lira comme un fait.
+    //
+    // La POSITION du mot est reprise de l'original plutôt que déduite de la
+    // locale : « Université de Bordeaux » le met devant, « Westfield College »
+    // derrière. Aucun réglage à maintenir, et les deux ordres sortent justes.
+    //
+    // Le vivier des patronymes sert de partie distinctive — c'est exactement
+    // ainsi que se nomment les établissements (Lycée Rousseau, École Perrin).
+    ETABLISSEMENT: (h, original) => unique((h2, i) => {
+      const mots = String(original).trim().split(/\s+/);
+      const distinctif = pick(L.noms, h2, i);
+      if (mots.length > 1) {
+        if (MOTS_ETABLISSEMENT.has(stripAccents(mots[0]))) return `${mots[0]} ${distinctif}`;
+        const fin = mots[mots.length - 1];
+        if (MOTS_ETABLISSEMENT.has(stripAccents(fin))) return `${distinctif} ${fin}`;
+      }
+      return locale === 'en' ? `${distinctif} School` : `École ${distinctif}`;
+    }, h),
     LOC: h => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: h => unique((h2, i) => `${((h2 + i * 7) % 98) + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
     EMAIL: h => unique((h2, i) => {
