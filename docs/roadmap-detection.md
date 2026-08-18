@@ -1507,7 +1507,24 @@ CV allemand). Borne basse **inchangée** (100/95/88 %).
 - L'adresse en capitales n'est pas détectée.
 - Le débordement de bornes reste possible : la passe adoucie a produit
   « LANDRY Sexe Masculin » comme un seul span PER, et la fusion garde le plus
-  long. C'est du sur-masquage, pas une fuite.
+  long. C'est du sur-masquage, pas une fuite. Revu sur un vrai CV :
+  « COMPÉTENCES CLÉS Data & IA » avale l'intitulé de section.
+
+### Coût mesuré sur un CV réel (15/08, après coup)
+
+Détection avant/après sur le même document, à code identique par ailleurs :
+
+| | |
+|---|---|
+| **gain** | `IUT de la Sorbonne Paris Nord` capté en entier, contre `IUT` seul avant |
+| **coût** | `BDD` et `LAMP` masqués en ENTREPRISE ; l'intitulé avalé ci-dessus |
+
+29 → 31 valeurs masquées. Les sigles de trois lettres en capitales sont le
+profil type du faux positif de cette passe : adoucis, ils ressemblent à des
+noms propres. Traités là où ce projet traite les classes OUVERTES — le
+profil « Développeur / Tech », éditable, jamais une liste dans le moteur.
+`Ollama` y figurait déjà ; il n'était pas protégé parce que le document avait
+été passé avec le profil « Rédaction / Recherche ».
 - **Le garde-fou déterministe reste le profil d'identité**, vidé volontairement
   pendant ce test. Il avait un trou propre, **corrigé le 15/08** : `caseVariants`
   faisait varier la casse et jamais les **composants**, donc un nom complet

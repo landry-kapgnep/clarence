@@ -29,7 +29,16 @@ const TECH_KEEP = [
   'AWS', 'Azure', 'GCP', 'Vercel', 'Netlify', 'Heroku', 'Cloudflare',
   'Kafka', 'Spark', 'Airflow', 'Hadoop', 'Hive', 'Sqoop', 'RabbitMQ', 'GraphQL',
   'Power BI', 'Tableau', 'Excel', 'n8n', 'Zapier', 'Figma',
-  'GPT-4o', 'Llama', 'Mistral', 'Claude', 'Gemini', 'Transformers.js', 'WebAssembly'
+  'GPT-4o', 'Llama', 'Mistral', 'Claude', 'Gemini', 'Transformers.js', 'WebAssembly',
+  // Tests, qualité, build — absents du premier jet, et masqués sur un vrai CV.
+  'JUnit', 'JaCoCo', 'Pytest', 'Jest', 'Vitest', 'Selenium', 'Cypress',
+  'Maven', 'Gradle', 'SonarQube', 'Postman', 'Swagger',
+  // SIGLES DE MÉTIER. Trois lettres en capitales, donc happés en priorité
+  // par la passe à casse adoucie (P12) : « LAMP » et « BDD » sortaient en
+  // ENTREPRISE sur un CV réel. Jamais des données personnelles.
+  'SQL', 'BDD', 'ETL', 'API', 'REST', 'SOAP', 'gRPC', 'JWT', 'CRUD', 'ORM',
+  'HTML', 'CSS', 'SCSS', 'JSON', 'XML', 'CSV', 'LAMP', 'MERN', 'CI/CD',
+  'Sankey', 'BeautifulSoup', 'Requests', 'Matplotlib', 'Seaborn'
 ];
 
 // PLATEFORMES ET PRODUITS PUBLICS. Même statut que les technos : jamais une
