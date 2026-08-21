@@ -843,6 +843,7 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
 
 // src/popup/profiles.js
 var PROFILES_KEY = "clarenceProfiles";
+var PROFILES_ECARTES_KEY = "clarenceProfilsEcartes";
 var TECH_KEEP = [
   "React",
   "Angular",
@@ -1005,14 +1006,163 @@ var PUBLIC_KEEP = [
   "Zoom",
   "Teams"
 ];
+var STRUCTURE_KEEP = [
+  "SOMMAIRE",
+  "INTRODUCTION",
+  "CONCLUSION",
+  "REMERCIEMENTS",
+  "ANNEXE",
+  "ANNEXES",
+  "BIBLIOGRAPHIE",
+  "R\xC9F\xC9RENCES",
+  "GLOSSAIRE",
+  "R\xC9SUM\xC9",
+  "ABSTRACT",
+  "PR\xC9AMBULE",
+  "PROFIL",
+  "COMP\xC9TENCES",
+  "EXP\xC9RIENCES",
+  "EXP\xC9RIENCE",
+  "FORMATION",
+  "FORMATIONS",
+  "PROJETS",
+  "LANGUES",
+  "INT\xC9R\xCATS",
+  "DISTINCTIONS",
+  "CERTIFICATIONS",
+  "OUTILS",
+  "SYST\xC8MES",
+  "SP\xC9CIALIT\xC9S",
+  "OBJECTIF",
+  "MENTIONS",
+  "IDENTIT\xC9",
+  "COORDONN\xC9ES",
+  "SUMMARY",
+  "CONTENTS",
+  "APPENDIX",
+  "REFERENCES",
+  "SKILLS",
+  "EXPERIENCE",
+  "EDUCATION",
+  "PROJECTS",
+  "LANGUAGES",
+  "INTERESTS",
+  "TOOLS",
+  "AWARDS",
+  "INHALT",
+  "ZUSAMMENFASSUNG",
+  "SPRACHEN",
+  "KENNTNISSE",
+  "BERUFSERFAHRUNG"
+];
+var ADMIN_KEEP = [
+  "R\xC9PUBLIQUE FRAN\xC7AISE",
+  "MINIST\xC8RE",
+  "PR\xC9FECTURE",
+  "SOUS-PR\xC9FECTURE",
+  "MAIRIE",
+  "ADMINISTRATION",
+  "SERVICE PUBLIC",
+  "GREFFE",
+  "TRIBUNAL",
+  "COUR",
+  "ATTESTATION",
+  "CERTIFICAT",
+  "R\xC9C\xC9PISS\xC9",
+  "FORMULAIRE",
+  "BULLETIN",
+  "EXTRAIT",
+  "D\xC9CLARATION",
+  "JUSTIFICATIF",
+  "CONVOCATION",
+  "NOTIFICATION",
+  "AVIS",
+  "N\xC9ANT",
+  "SANS OBJET",
+  "PI\xC8CE JOINTE",
+  "ARTICLE",
+  "ALIN\xC9A",
+  "D\xC9CRET",
+  "ARR\xCAT\xC9",
+  "CODE",
+  "LOI",
+  "SIGNATURE",
+  "CACHET",
+  "Nom",
+  "Pr\xE9nom",
+  "Sexe",
+  "Masculin",
+  "F\xE9minin",
+  "Date de naissance",
+  "Lieu de naissance",
+  "Nationalit\xE9",
+  "Adresse",
+  "D\xE9livr\xE9 le"
+];
+var PARCOURS_KEEP = [
+  "Baccalaur\xE9at",
+  "Licence",
+  "Master",
+  "Doctorat",
+  "BUT",
+  "BTS",
+  "DUT",
+  "CAP",
+  "Dipl\xF4me",
+  "Mention",
+  "Promotion",
+  "Cohorte",
+  "Cohortes",
+  "Sp\xE9cialit\xE9",
+  "Sp\xE9cialit\xE9s",
+  "Option",
+  "G\xE9n\xE9ral",
+  "Technologique",
+  "Professionnel",
+  "Alternance",
+  "Apprentissage",
+  "Stage",
+  "Bachelor"
+];
+var ECOLE_KEEP = [
+  "Pr\xE9pa",
+  "Classe pr\xE9paratoire",
+  "Semestre",
+  "Trimestre",
+  "M\xE9moire",
+  "Th\xE8se",
+  "Soutenance",
+  "Rapport de stage",
+  "Tuteur",
+  "ECTS",
+  "Cr\xE9dits",
+  "Module",
+  "Mati\xE8re",
+  "Travaux dirig\xE9s",
+  "Travaux pratiques",
+  "Cours magistral",
+  "Contr\xF4le continu",
+  "Moyenne",
+  "Coefficient",
+  "Relev\xE9 de notes",
+  "Coursework",
+  "Dissertation",
+  "Semester",
+  "Transcript"
+];
 function defaultProfiles() {
   return [
+    // « Vierge » reste VIDE, et doit le rester : c'est le profil qui ne
+    // présuppose rien, donc le témoin quand on soupçonne qu'une liste blanche
+    // cache un défaut de détection.
     { name: "Vierge", alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...TECH_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...TECH_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "Administratif", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ADMIN_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "\xC9cole / \xC9tudes", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
     // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
     // document technique : ce profil sert le rédacteur, l'étudiant, le
     // chercheur — sans leur imposer la liste des frameworks.
-    { name: "R\xE9daction / Recherche", alwaysKeep: [...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
+    { name: "R\xE9daction / Recherche", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
   ];
 }
 function normalizeProfile(p) {
@@ -1038,16 +1188,19 @@ function empreinteDe(profil) {
   return h.toString(16).padStart(8, "0");
 }
 var EMPREINTES_HISTORIQUES = {
-  // Version expédiée jusqu'au 15/08/2026, avant l'ajout des sigles de métier
-  // et de l'outillage de test (commit 115b097).
-  "D\xE9veloppeur / Tech": ["2cb8ce1c"],
+  // 2cb8ce1c : jusqu'au 15/08/2026, avant les sigles de métier et l'outillage
+  //            de test (commit 115b097).
+  // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de STRUCTURE_KEEP.
+  "D\xE9veloppeur / Tech": ["2cb8ce1c", "5a83db13"],
   "R\xE9daction / Recherche": ["a8805ca9"],
   "Vierge": ["1727123c"]
 };
-function seedDefaults(existing) {
+function seedDefaults(existing, ecartes = []) {
   const list = (Array.isArray(existing) ? existing : []).map(normalizeProfile);
   const parNom = new Map(list.map((p) => [p.name, p]));
+  const ecarte = new Set(Array.isArray(ecartes) ? ecartes : []);
   for (const d of defaultProfiles()) {
+    if (ecarte.has(d.name) && !parNom.has(d.name)) continue;
     const courant = { ...d, empreinte: empreinteDe(d) };
     const stocke = parNom.get(d.name);
     if (!stocke) {
@@ -1065,11 +1218,25 @@ function hasStore() {
 }
 async function loadProfiles() {
   if (!hasStore()) return seedDefaults([]);
-  const r = await chrome.storage.local.get(PROFILES_KEY).catch(() => ({}));
-  const seeded = seedDefaults(r?.[PROFILES_KEY]);
+  const r = await chrome.storage.local.get([PROFILES_KEY, PROFILES_ECARTES_KEY]).catch(() => ({}));
+  const seeded = seedDefaults(r?.[PROFILES_KEY], r?.[PROFILES_ECARTES_KEY]);
   if (!r?.[PROFILES_KEY]) await chrome.storage.local.set({ [PROFILES_KEY]: seeded }).catch(() => {
   });
   return seeded;
+}
+async function lireEcartes() {
+  if (!hasStore()) return [];
+  const r = await chrome.storage.local.get(PROFILES_ECARTES_KEY).catch(() => ({}));
+  const v = r?.[PROFILES_ECARTES_KEY];
+  return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+}
+async function ecrireEcartes(noms) {
+  if (!hasStore()) return;
+  await chrome.storage.local.set({ [PROFILES_ECARTES_KEY]: [...new Set(noms)] }).catch(() => {
+  });
+}
+function estProfilLivre(name) {
+  return defaultProfiles().some((d) => d.name === name);
 }
 async function saveAllProfiles(list) {
   if (!hasStore()) return;
@@ -1083,11 +1250,16 @@ async function upsertProfile(profile) {
   if (idx >= 0) list[idx] = p;
   else list.push(p);
   await saveAllProfiles(list);
+  if (estProfilLivre(p.name)) {
+    const restants = (await lireEcartes()).filter((n) => n !== p.name);
+    await ecrireEcartes(restants);
+  }
   return list;
 }
 async function deleteProfile(name) {
   const list = (await loadProfiles()).filter((p) => p.name !== name);
   await saveAllProfiles(list);
+  if (estProfilLivre(name)) await ecrireEcartes([...await lireEcartes(), name]);
   return list;
 }
 
