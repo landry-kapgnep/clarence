@@ -70,23 +70,90 @@ export function defaultProfiles() {
 }
 
 // Normalise un profil arbitraire (défensif : storage édité à la main, versions).
+// `empreinte` est reportée telle quelle : c'est elle qui dira plus tard si
+// l'utilisateur a touché à un profil livré (voir seedDefaults).
 export function normalizeProfile(p) {
   const arr = v => Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
-  return {
+  const out = {
     name: typeof p?.name === 'string' && p.name.trim() ? p.name.trim() : 'Sans nom',
     alwaysKeep: arr(p?.alwaysKeep),
     alwaysMask: arr(p?.alwaysMask),
     disabledTypes: arr(p?.disabledTypes),
     realistic: !!p?.realistic
   };
+  if (typeof p?.empreinte === 'string') out.empreinte = p.empreinte;
+  return out;
 }
 
-// Complète une liste existante avec les profils par défaut manquants (par nom).
-// Ne touche jamais un profil déjà présent (l'utilisateur a pu l'éditer).
+// Empreinte du CONTENU d'un profil — le nom en est exclu, puisqu'il sert de
+// clé. FNV-1a : déterministe, sans dépendance, suffisant ici (on compare une
+// valeur à elle-même, il n'y a rien à attaquer).
+export function empreinteDe(profil) {
+  const p = normalizeProfile(profil);
+  const s = JSON.stringify([p.alwaysKeep, p.alwaysMask, p.disabledTypes, p.realistic]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+// Empreintes des versions DÉJÀ EXPÉDIÉES d'un profil livré.
+//
+// POURQUOI CETTE LISTE. Les profils installés avant l'introduction du champ
+// `empreinte` n'en portent pas : impossible de dire, pour eux, s'ils ont été
+// édités ou non. Sans repère, on ne pourrait que les laisser tels quels — et
+// un utilisateur garderait à vie la liste du jour de sa première installation.
+// C'est exactement ce qui s'est produit : « BDD », « LAMP » et « JaCoCo »
+// ajoutés aux technos n'atteignaient personne d'installé.
+//
+// Une empreinte connue vaut donc preuve de non-édition. AJOUTER UNE LIGNE ICI
+// à chaque fois qu'on modifie un profil livré, avec l'empreinte de la version
+// remplacée — sinon la mise à jour cessera d'atteindre les installations
+// existantes, en silence.
+const EMPREINTES_HISTORIQUES = {
+  // Version expédiée jusqu'au 15/08/2026, avant l'ajout des sigles de métier
+  // et de l'outillage de test (commit 115b097).
+  'Développeur / Tech': ['2cb8ce1c'],
+  'Rédaction / Recherche': ['a8805ca9'],
+  'Vierge': ['1727123c']
+};
+
+// Complète une liste existante avec les profils par défaut manquants, ET met à
+// jour ceux que l'utilisateur n'a JAMAIS touchés.
+//
+// LE DÉFAUT QUE ÇA CORRIGE. L'ancienne version n'ajoutait un profil que si son
+// nom était absent. Conséquence : enrichir une liste livrée n'atteignait
+// personne d'installé, et c'était SILENCIEUX — on voit un profil au bon nom,
+// rien ne dit qu'il date de la première installation. Mesuré sur un vrai CV :
+// « BDD », « LAMP » et « JaCoCo » restaient masqués malgré leur ajout.
+//
+// LA RÈGLE : on ne remplace un profil livré que si son contenu correspond
+// encore EXACTEMENT à une version qu'on a expédiée. Une seule différence, et
+// on n'y touche plus — l'édition de l'utilisateur prime toujours.
+//
+// CE QU'ON NE FAIT SURTOUT PAS : fusionner les listes. Ce serait plus simple,
+// mais ça ressusciterait les termes que l'utilisateur a volontairement RETIRÉS
+// d'un « ne jamais masquer » — donc ça conserverait en clair ce qu'il voulait
+// masquer. Mauvais sens, au regard de « zéro-fuite d'abord ».
 export function seedDefaults(existing) {
   const list = (Array.isArray(existing) ? existing : []).map(normalizeProfile);
-  const names = new Set(list.map(p => p.name));
-  for (const d of defaultProfiles()) if (!names.has(d.name)) list.push(d);
+  const parNom = new Map(list.map(p => [p.name, p]));
+
+  for (const d of defaultProfiles()) {
+    const courant = { ...d, empreinte: empreinteDe(d) };
+    const stocke = parNom.get(d.name);
+    if (!stocke) { list.push(courant); continue; }
+
+    // Intact ? Soit il porte son empreinte et elle correspond toujours, soit
+    // son contenu est celui d'une version expédiée avant l'existence du champ.
+    const actuelle = empreinteDe(stocke);
+    const intact = stocke.empreinte
+      ? stocke.empreinte === actuelle
+      : (EMPREINTES_HISTORIQUES[d.name] || []).includes(actuelle);
+    if (intact) list[list.indexOf(stocke)] = courant;
+  }
   return list;
 }
 

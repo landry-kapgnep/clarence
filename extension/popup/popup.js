@@ -1017,18 +1017,47 @@ function defaultProfiles() {
 }
 function normalizeProfile(p) {
   const arr = (v) => Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
-  return {
+  const out = {
     name: typeof p?.name === "string" && p.name.trim() ? p.name.trim() : "Sans nom",
     alwaysKeep: arr(p?.alwaysKeep),
     alwaysMask: arr(p?.alwaysMask),
     disabledTypes: arr(p?.disabledTypes),
     realistic: !!p?.realistic
   };
+  if (typeof p?.empreinte === "string") out.empreinte = p.empreinte;
+  return out;
 }
+function empreinteDe(profil) {
+  const p = normalizeProfile(profil);
+  const s = JSON.stringify([p.alwaysKeep, p.alwaysMask, p.disabledTypes, p.realistic]);
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+var EMPREINTES_HISTORIQUES = {
+  // Version expédiée jusqu'au 15/08/2026, avant l'ajout des sigles de métier
+  // et de l'outillage de test (commit 115b097).
+  "D\xE9veloppeur / Tech": ["2cb8ce1c"],
+  "R\xE9daction / Recherche": ["a8805ca9"],
+  "Vierge": ["1727123c"]
+};
 function seedDefaults(existing) {
   const list = (Array.isArray(existing) ? existing : []).map(normalizeProfile);
-  const names = new Set(list.map((p) => p.name));
-  for (const d of defaultProfiles()) if (!names.has(d.name)) list.push(d);
+  const parNom = new Map(list.map((p) => [p.name, p]));
+  for (const d of defaultProfiles()) {
+    const courant = { ...d, empreinte: empreinteDe(d) };
+    const stocke = parNom.get(d.name);
+    if (!stocke) {
+      list.push(courant);
+      continue;
+    }
+    const actuelle = empreinteDe(stocke);
+    const intact = stocke.empreinte ? stocke.empreinte === actuelle : (EMPREINTES_HISTORIQUES[d.name] || []).includes(actuelle);
+    if (intact) list[list.indexOf(stocke)] = courant;
+  }
   return list;
 }
 function hasStore() {
