@@ -611,3 +611,29 @@ Un document sûr et illisible ne se vend pas. Le banc mesure ça
 Cette liste protège contre la **répétition** des bugs connus. Elle ne dit rien
 du fichier d'un inconnu — même limite que le banc d'essai. Le seul vrai signal
 de « prêt », c'est **des fichiers réels de gens qui ne sont pas nous**.
+
+## 18/08/2026 — P12 / P13 / mise à jour des profils livrés
+
+Document : un CV réel de 1 page (jamais committé), profil d'identité **vide**,
+profil « Développeur / Tech », types peu fiables **décochés**.
+
+| attendu | résultat |
+|---|---|
+| identité masquée (nom, prénom, email, 2 URL de profil) | ✅ |
+| technos conservées : BDD, LAMP, JaCoCo, Sankey, Ollama, SQL, Docker, Python, React | ✅ |
+| profil livré mis à jour **sans suppression manuelle** | ✅ |
+| plus aucun avertissement `standardFontDataUrl` en console | ✅ |
+
+Effet cumulé, mesuré sur le même document : **36 termes masqués → 25**. Les
+langues (`Anglais`, `Allemand`, `Mandarin`) reviennent dès que les types peu
+fiables sont décochés — ils sont décochés PAR DÉFAUT pour cette raison, et une
+exécution les avait activés.
+
+**Reste sur-masqué**, connu et non bloquant : les intitulés de section en
+capitales (`COMPÉTENCES CLÉS`, `Outils`, `Systèmes`, `Spécialités`) — c'est le
+débordement de bornes de P12, du sur-masquage et jamais une fuite.
+
+**Petit manque repéré** : le type `PSEUDO` (handles GitHub/LinkedIn) n'a pas de
+vivier de pseudonymes et sort toujours en `[PSEUDO_N]`. C'est pourtant un
+IDENTIFIANT, donc éligible au même titre qu'un email — contrairement aux trois
+attributs écartés en P13. À traiter avec P13 si on y revient.
