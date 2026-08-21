@@ -621,7 +621,8 @@ profil « Développeur / Tech », types peu fiables **décochés**.
 |---|---|
 | identité masquée (nom, prénom, email, 2 URL de profil) | ✅ |
 | technos conservées : BDD, LAMP, JaCoCo, Sankey, Ollama, SQL, Docker, Python, React | ✅ |
-| profil livré mis à jour **sans suppression manuelle** | ✅ |
+| profil livré porteur de la liste à jour | ✅ |
+| mise à jour d'un profil livré **sans le supprimer** | ⚠️ NON VÉRIFIÉ |
 | plus aucun avertissement `standardFontDataUrl` en console | ✅ |
 
 Effet cumulé, mesuré sur le même document : **36 termes masqués → 25**. Les
@@ -637,3 +638,10 @@ débordement de bornes de P12, du sur-masquage et jamais une fuite.
 vivier de pseudonymes et sort toujours en `[PSEUDO_N]`. C'est pourtant un
 IDENTIFIANT, donc éligible au même titre qu'un email — contrairement aux trois
 attributs écartés en P13. À traiter avec P13 si on y revient.
+
+⚠️ **Correction du 18/08.** Le profil « Développeur / Tech » avait été
+SUPPRIMÉ avant cette exécution : il a donc été recréé à neuf par
+`seedDefaults`, ce qui explique à lui seul la liste à jour. Le chemin par
+EMPREINTES_HISTORIQUES — mettre à jour un profil existant et jamais édité —
+reste couvert par les tests unitaires mais **non confirmé en vrai Chrome**.
+Le rejouer demande une installation dont le profil date d'avant le 15/08.
