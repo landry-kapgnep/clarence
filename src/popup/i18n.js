@@ -16,7 +16,7 @@
 
 // Hors extension (tests, page d'atelier), on rend la clé : rien ne plante, et
 // une clé qui s'affiche telle quelle se repère immédiatement.
-export const t = (cle) =>
+export const msg = (cle) =>
   (typeof chrome !== 'undefined' && chrome.i18n?.getMessage
     ? chrome.i18n.getMessage(cle) : '') || cle;
 
@@ -32,17 +32,17 @@ const ATTRIBUTS = [
 // fragment fraîchement inséré. Idempotent : on peut la rappeler sans risque.
 export function appliquerTraductions(racine = document) {
   for (const el of racine.querySelectorAll('[data-i18n]')) {
-    el.textContent = t(el.dataset.i18n);
+    el.textContent = msg(el.dataset.i18n);
   }
   // `innerHTML` est réservé aux aides, dont le texte porte <strong> et <code>.
   // La source est un catalogue EMPAQUETÉ dans l'extension, jamais une entrée
   // utilisateur : il n'y a pas de contenu tiers à injecter ici.
   for (const el of racine.querySelectorAll('[data-i18n-html]')) {
-    el.innerHTML = t(el.dataset.i18nHtml);
+    el.innerHTML = msg(el.dataset.i18nHtml);
   }
   for (const [prop, attr] of ATTRIBUTS) {
     for (const el of racine.querySelectorAll(`[data-${attr === 'aria-label' ? 'i18n-aria' : 'i18n-' + attr}]`)) {
-      el.setAttribute(attr, t(el.dataset[prop]));
+      el.setAttribute(attr, msg(el.dataset[prop]));
     }
   }
   document.documentElement.lang =

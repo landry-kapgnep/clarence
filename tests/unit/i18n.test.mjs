@@ -18,17 +18,32 @@ const en = JSON.parse(lire('../../extension/_locales/en/messages.json'));
 // Clés utilisées par le manifeste, absentes de la page par construction.
 const HORS_PAGE = new Set(['extName', 'extDescription']);
 
-const clesDeLaPage = () => new Set(
-  [...html.matchAll(/data-i18n(?:-html|-title|-placeholder|-aria)?="([^"]+)"/g)].map(m => m[1])
-);
+// Les clés vivent à DEUX endroits : les attributs data-i18n de la page, et
+// les appels msg('…') du code. Ne scanner que le premier ferait passer toutes
+// les clés du second pour des orphelines.
+const SOURCES_JS = ['../../src/popup/main.js', '../../src/popup/profiles.js'];
 
-test('toute clé de la page a un message français', () => {
-  const absentes = [...clesDeLaPage()].filter(k => !fr[k]);
+const clesUtilisees = () => {
+  const vues = new Set(
+    [...html.matchAll(/data-i18n(?:-html|-title|-placeholder|-aria)?="([^"]+)"/g)].map(m => m[1])
+  );
+  for (const f of SOURCES_JS) {
+    for (const m of lire(f).matchAll(/msg\('([^']+)'\)/g)) vues.add(m[1]);
+  }
+  // Les noms de profils livrés servent de clé d'AFFICHAGE, résolue au rendu
+  // depuis le nom interne : ils n'apparaissent donc pas littéralement.
+  for (const k of Object.keys(fr)) if (k.startsWith('profil_')) vues.add(k);
+  return vues;
+};
+const clesDeLaPage = clesUtilisees;
+
+test('toute clé utilisée a un message français', () => {
+  const absentes = [...clesUtilisees()].filter(k => !fr[k]);
   assert.deepEqual(absentes, [], 'clés sans message : ' + absentes.join(', '));
 });
 
 test('aucun message français orphelin', () => {
-  const page = clesDeLaPage();
+  const page = clesUtilisees();
   const orphelines = Object.keys(fr).filter(k => !page.has(k) && !HORS_PAGE.has(k));
   assert.deepEqual(orphelines, [], 'messages inutilisés : ' + orphelines.join(', '));
 });

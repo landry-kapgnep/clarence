@@ -83,7 +83,7 @@ var GROUPES = [
     types: { person: "PER", company: "ORG", location: "LOC" },
     // Voir `pertinent` plus bas : un texte sans la moindre majuscule ne peut
     // produire aucun nom propre, donc aucune entité de ce groupe.
-    pertinent: (t2) => new RegExp("\\p{Lu}", "u").test(t2)
+    pertinent: (t) => new RegExp("\\p{Lu}", "u").test(t)
   },
   {
     // Seul : associé à d'autres labels il perd sa précision, et « address »
@@ -93,7 +93,7 @@ var GROUPES = [
     types: { "date of birth": "DATE_NAISSANCE" },
     // Une date porte toujours au moins l'année : sans chiffre, rien à trouver.
     // 65 % des unités d'un vrai mémoire sont dans ce cas — 54 % du texte.
-    pertinent: (t2) => /\d/.test(t2)
+    pertinent: (t) => /\d/.test(t)
   },
   {
     // Catégories sensibles au sens RGPD (santé, origine) + contexte pro.
@@ -229,7 +229,7 @@ function adoucirCasse(texte) {
 async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: disabledTypes2 } = {}) {
   if (!glinerPipeline) return [];
   const desactives = disabledTypes2 || /* @__PURE__ */ new Set();
-  const groupesActifs = GROUPES.filter((g) => typesDuGroupe(g).some((t2) => !desactives.has(t2)));
+  const groupesActifs = GROUPES.filter((g) => typesDuGroupe(g).some((t) => !desactives.has(t)));
   if (!groupesActifs.length) return [];
   const chunks = chunkText(text);
   let total = 0;
@@ -317,7 +317,7 @@ async function arbitrerFauxPositifs(entities, glinerPipeline) {
 }
 
 // src/popup/i18n.js
-var t = (cle) => (typeof chrome !== "undefined" && chrome.i18n?.getMessage ? chrome.i18n.getMessage(cle) : "") || cle;
+var msg = (cle) => (typeof chrome !== "undefined" && chrome.i18n?.getMessage ? chrome.i18n.getMessage(cle) : "") || cle;
 var ATTRIBUTS = [
   ["i18nTitle", "title"],
   ["i18nPlaceholder", "placeholder"],
@@ -325,14 +325,14 @@ var ATTRIBUTS = [
 ];
 function appliquerTraductions(racine = document) {
   for (const el of racine.querySelectorAll("[data-i18n]")) {
-    el.textContent = t(el.dataset.i18n);
+    el.textContent = msg(el.dataset.i18n);
   }
   for (const el of racine.querySelectorAll("[data-i18n-html]")) {
-    el.innerHTML = t(el.dataset.i18nHtml);
+    el.innerHTML = msg(el.dataset.i18nHtml);
   }
   for (const [prop, attr] of ATTRIBUTS) {
     for (const el of racine.querySelectorAll(`[data-${attr === "aria-label" ? "i18n-aria" : "i18n-" + attr}]`)) {
-      el.setAttribute(attr, t(el.dataset[prop]));
+      el.setAttribute(attr, msg(el.dataset[prop]));
     }
   }
   document.documentElement.lang = typeof chrome !== "undefined" && chrome.i18n?.getUILanguage?.().slice(0, 2) || "fr";
@@ -397,11 +397,11 @@ function parseTermes(valeur) {
   return (valeur || "").split(SEPARATEURS).map((s) => s.trim()).filter(Boolean);
 }
 function ajouterTerme(valeur, terme) {
-  const t2 = (terme || "").trim();
-  if (!t2) return valeur || "";
+  const t = (terme || "").trim();
+  if (!t) return valeur || "";
   const existants = parseTermes(valeur);
-  if (existants.includes(t2)) return valeur || "";
-  return [...existants, t2].join(", ");
+  if (existants.includes(t)) return valeur || "";
+  return [...existants, t].join(", ");
 }
 
 // src/engine/pseudonyms.js
@@ -1375,34 +1375,34 @@ var manualEntities = [];
 var removedKeys = /* @__PURE__ */ new Set();
 var disabledTypes = new Set(TYPES_PEU_FIABLES);
 var TYPE_DISPLAY = {
-  PER: "Noms",
-  ORG: "Entreprises",
-  LOC: "Lieux",
-  EMAIL: "Emails",
-  TELEPHONE: "T\xE9l\xE9phones",
+  PER: msg("type_per"),
+  ORG: msg("type_org"),
+  LOC: msg("type_loc"),
+  EMAIL: msg("type_email"),
+  TELEPHONE: msg("type_telephone"),
   IBAN: "IBAN",
-  CARTE_BANCAIRE: "Cartes",
+  CARTE_BANCAIRE: msg("type_carte"),
   NIR: "NIR",
   SIRET_SIREN: "SIRET/SIREN",
-  CODE_POSTAL_VILLE: "Code postal",
-  MONTANT: "Montants",
-  ADRESSE: "Adresses",
-  DATE_NAISSANCE: "Dates naiss.",
-  REFERENCE: "R\xE9f\xE9rences",
+  CODE_POSTAL_VILLE: msg("type_code_postal"),
+  MONTANT: msg("type_montant"),
+  ADRESSE: msg("type_adresse"),
+  DATE_NAISSANCE: msg("type_date_naissance"),
+  REFERENCE: msg("type_reference"),
   IP: "IP",
   MAC: "MAC",
   BIC: "BIC",
-  PSEUDO: "Pseudos/handles",
-  DATE: "Dates sensibles",
-  ID_NATIONAL: "ID nationaux",
+  PSEUDO: msg("type_pseudo"),
+  DATE: msg("type_date"),
+  ID_NATIONAL: msg("type_id_national"),
   // Apportés par la détection zero-shot. Décocher un de ces types SAUTE
   // l'inférence correspondante (voir GROUPES dans engine/gliner.js) : on ne
   // paie que ce qu'on demande.
-  POSTE: "Postes",
-  NATIONALITE: "Nationalit\xE9s",
-  ETABLISSEMENT: "\xC9tablissements",
-  SANTE: "Sant\xE9",
-  MISC: "Divers",
+  POSTE: msg("type_poste"),
+  NATIONALITE: msg("type_nationalite"),
+  ETABLISSEMENT: msg("type_etablissement"),
+  SANTE: msg("type_sante"),
+  MISC: msg("type_divers"),
   PERSONNALISE: "Perso"
 };
 var parseLines = parseTermes;
@@ -1474,9 +1474,9 @@ function activeEntities() {
 function renderTypeChips(boxId, disabledSet) {
   const box = $(boxId);
   if (!box) return;
-  box.innerHTML = Object.entries(TYPE_DISPLAY).filter(([t2]) => t2 !== "PERSONNALISE").map(([t2, label]) => {
-    const off = disabledSet.has(t2);
-    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t2}" ${off ? "" : "checked"}><span class="square-checkbox" aria-hidden="true"></span><span class="checkbox-label-text">${esc(label)}</span></label>`;
+  box.innerHTML = Object.entries(TYPE_DISPLAY).filter(([t]) => t !== "PERSONNALISE").map(([t, label]) => {
+    const off = disabledSet.has(t);
+    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t}" ${off ? "" : "checked"}><span class="square-checkbox" aria-hidden="true"></span><span class="checkbox-label-text">${esc(label)}</span></label>`;
   }).join("");
 }
 renderTypeChips("typeToggles", disabledTypes);
@@ -1504,14 +1504,14 @@ function clipToLimit(text, entities, limit) {
 }
 function overlayContentFor(kind) {
   if (kind === "annotated") {
-    return { title: "D\xE9tections compl\xE8tes", html: annotateHTML(currentText, activeEntities()) };
+    return { title: msg("detections_completes"), html: annotateHTML(currentText, activeEntities()) };
   }
   if (kind === "masked") {
     const { masked } = maskText(currentText, activeEntities(), maskOptions());
-    return { title: "Texte propre complet", text: masked, copy: () => navigator.clipboard.writeText(masked) };
+    return { title: msg("texte_propre_complet"), text: masked, copy: () => navigator.clipboard.writeText(masked) };
   }
   if (kind === "reinjected") {
-    return { title: "R\xE9ponse d\xE9sanonymis\xE9e compl\xE8te", text: lastReinjected, copy: () => navigator.clipboard.writeText(lastReinjected) };
+    return { title: msg("reponse_desanonymisee_complete"), text: lastReinjected, copy: () => navigator.clipboard.writeText(lastReinjected) };
   }
   return null;
 }
@@ -1551,8 +1551,8 @@ function render() {
   });
   $("mappingWrap").innerHTML = mapping.length ? `<table>${mapping.map(
     (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
-  ).join("")}</table>` : "<p>Aucun masque actif.</p>";
-  $("status").textContent = entities.length ? `${entities.length} \xE9l\xE9ment(s) masqu\xE9(s).` : "Rien d\xE9tect\xE9 \u2014 ajoute un masque manuel si besoin.";
+  ).join("")}</table>` : `<p>${msg("aucun_masque_actif")}</p>`;
+  $("status").textContent = entities.length ? `${entities.length} \xE9l\xE9ment(s) masqu\xE9(s).` : msg("rien_detecte");
   $("status").className = "status";
   refreshOverlayIfOpen();
 }
@@ -1566,20 +1566,20 @@ var nerPending = /* @__PURE__ */ new Map();
 function createNerWorker() {
   const worker = new Worker(chrome.runtime.getURL("popup/ner-worker.js"), { type: "module" });
   worker.addEventListener("message", (ev) => {
-    const msg = ev.data || {};
-    if (msg.type === "progress" && msg.total) {
-      const pct = Math.round(msg.loaded / msg.total * 100);
+    const msg2 = ev.data || {};
+    if (msg2.type === "progress" && msg2.total) {
+      const pct = Math.round(msg2.loaded / msg2.total * 100);
       setStatus(`Mod\xE8le\u2026 ${pct} %`);
-      const ratio = msg.loaded / msg.total;
+      const ratio = msg2.loaded / msg2.total;
       if (!$("fileMode")?.hidden) avancerEtape("detection", ratio);
       else setTextProgress(ratio);
       return;
     }
-    if (msg.type === "result" || msg.type === "error" && msg.id != null) {
-      const p = nerPending.get(msg.id);
+    if (msg2.type === "result" || msg2.type === "error" && msg2.id != null) {
+      const p = nerPending.get(msg2.id);
       if (!p) return;
-      nerPending.delete(msg.id);
-      msg.type === "result" ? p.resolve(msg.spansBatch ?? msg.spans ?? msg.tokens ?? msg.flux) : p.reject(new Error(msg.message));
+      nerPending.delete(msg2.id);
+      msg2.type === "result" ? p.resolve(msg2.spansBatch ?? msg2.spans ?? msg2.tokens ?? msg2.flux) : p.reject(new Error(msg2.message));
     }
   });
   return worker;
@@ -1588,14 +1588,14 @@ function startEngine(engine) {
   const worker = createNerWorker();
   return new Promise((resolve, reject) => {
     const onInit = (ev) => {
-      const msg = ev.data || {};
-      if (msg.type === "ready") {
+      const msg2 = ev.data || {};
+      if (msg2.type === "ready") {
         worker.removeEventListener("message", onInit);
         resolve(worker);
-      } else if (msg.type === "error" && msg.id == null) {
+      } else if (msg2.type === "error" && msg2.id == null) {
         worker.removeEventListener("message", onInit);
         worker.terminate();
-        reject(new Error(msg.message));
+        reject(new Error(msg2.message));
       }
     };
     worker.addEventListener("message", onInit);
@@ -1616,7 +1616,7 @@ function startEngine(engine) {
 async function ensureNER() {
   if (nerPipe || nerLoading) return;
   nerLoading = true;
-  setStatus("Chargement du mod\xE8le\u2026 (~180 Mo au premier usage)");
+  setStatus(msg("etat_chargement_modele"));
   try {
     let worker = null;
     try {
@@ -1671,29 +1671,29 @@ async function ensureCompression() {
   if (compressionWorker) return { ok: true };
   const worker = new Worker(chrome.runtime.getURL("popup/compression-worker.js"), { type: "module" });
   worker.addEventListener("message", (ev) => {
-    const msg = ev.data || {};
-    if (msg.type === "progress" && msg.total) {
-      const pct = Math.round(msg.loaded / msg.total * 100);
+    const msg2 = ev.data || {};
+    if (msg2.type === "progress" && msg2.total) {
+      const pct = Math.round(msg2.loaded / msg2.total * 100);
       fileSetStatus(`Mod\xE8le de compression\u2026 ${pct} %`);
       return;
     }
-    if (msg.id == null) return;
-    const p = compressionPending.get(msg.id);
+    if (msg2.id == null) return;
+    const p = compressionPending.get(msg2.id);
     if (!p) return;
-    compressionPending.delete(msg.id);
-    msg.type === "result" ? p.resolve(msg.flux) : p.reject(new Error(msg.message));
+    compressionPending.delete(msg2.id);
+    msg2.type === "result" ? p.resolve(msg2.flux) : p.reject(new Error(msg2.message));
   });
   const issue = await new Promise((resolve) => {
     const onReady = (ev) => {
-      const msg = ev.data || {};
-      if (msg.type === "compressionReady") {
+      const msg2 = ev.data || {};
+      if (msg2.type === "compressionReady") {
         worker.removeEventListener("message", onReady);
         resolve({ ok: true });
-      } else if (msg.type === "error" && msg.id == null) {
+      } else if (msg2.type === "error" && msg2.id == null) {
         worker.removeEventListener("message", onReady);
-        console.error("[clarence] compression indisponible :", msg.message);
+        console.error("[clarence] compression indisponible :", msg2.message);
         worker.terminate();
-        resolve({ ok: false, message: msg.message });
+        resolve({ ok: false, message: msg2.message });
       }
     };
     const minuteur = setTimeout(() => {
@@ -1804,14 +1804,14 @@ function maskSelection() {
 async function copyClean() {
   const { masked } = maskText(currentText, activeEntities(), maskOptions());
   await navigator.clipboard.writeText(masked);
-  $("copyStatus").textContent = "Copi\xE9 \u2014 relis avant de coller.";
+  $("copyStatus").textContent = msg("copie_relis");
   $("copyStatus").className = "status active";
   setTimeout(() => {
     $("copyStatus").textContent = "";
   }, 4e3);
 }
-function setStatus(msg, cls = "") {
-  $("status").textContent = msg;
+function setStatus(msg2, cls = "") {
+  $("status").textContent = msg2;
   $("status").className = "status " + cls;
 }
 var ENGINE_MESSAGES = {
@@ -1860,7 +1860,7 @@ $("copyBtn").addEventListener("click", copyClean);
 $("toggleReinjectBtn").addEventListener("click", () => {
   const zone = $("reinjectZone");
   zone.hidden = !zone.hidden;
-  $("toggleReinjectBtn").textContent = zone.hidden ? "D\xE9sanonymiser une r\xE9ponse\u2026" : "Masquer la d\xE9sanonymisation";
+  $("toggleReinjectBtn").textContent = zone.hidden ? msg("desanonymiser_une_reponse_bouton") : msg("masquer_la_desanonymisation");
 });
 $("reinjectBtn").addEventListener("click", () => {
   const txt = $("reinjectInput").value;
@@ -1885,7 +1885,7 @@ $("reinjectBtn").addEventListener("click", () => {
 $("copyReinjectBtn").addEventListener("click", async () => {
   await navigator.clipboard.writeText(lastReinjected);
   const st = $("reinjectStatus");
-  st.textContent = "Copi\xE9.";
+  st.textContent = msg("copie");
   st.className = "status active";
 });
 document.addEventListener("click", (ev) => {
@@ -1975,8 +1975,8 @@ for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle", "fil
 for (const id of ["fileAlwaysMask", "fileAlwaysKeep", "docKeep", "docMask"]) {
   $(id)?.addEventListener("input", invalidateFileResult);
 }
-function fileSetStatus(msg, cls = "") {
-  $("fileStatus").textContent = msg;
+function fileSetStatus(msg2, cls = "") {
+  $("fileStatus").textContent = msg2;
   $("fileStatus").className = "status " + cls;
 }
 function extOf(name) {
@@ -2022,7 +2022,7 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus("Format non pris en charge.", "error");
+    fileSetStatus(msg("format_non_pris_en_charge"), "error");
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -2064,7 +2064,7 @@ function setChosenFile(file) {
   $("fileOptions").hidden = !!FILE_TYPES[ext].metadataOnly;
   $("pdfModeChoice").hidden = ext !== "pdf";
   majVisibiliteCompression(ext);
-  $("fileAnalyzeBtn").textContent = FILE_TYPES[ext].metadataOnly ? "Nettoyer les m\xE9tadonn\xE9es" : "Anonymiser le fichier";
+  $("fileAnalyzeBtn").textContent = FILE_TYPES[ext].metadataOnly ? msg("nettoyer_les_metadonnees") : msg("anonymiser_le_fichier");
   $("fileResults").hidden = true;
   fileSetStatus("");
 }
@@ -2098,7 +2098,7 @@ async function retirerDuMasquage(valeur) {
   rendreApercuTermes();
   const btn = $("fileAnalyzeBtn");
   btn.disabled = true;
-  fileSetStatus("Mise \xE0 jour du fichier\u2026");
+  fileSetStatus(msg("etat_maj_fichier"));
   try {
     const r = fileRegen;
     const keepValues = termesAGarder();
@@ -2179,10 +2179,10 @@ function showFileResults(mapping, copyable, duree) {
   });
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
   $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">garder</button></td></tr>`
-  ).join("")}</table>` : "<p>Aucun masque actif.</p>";
+    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="${msg("infobulle_garder")}">garder</button></td></tr>`
+  ).join("")}</table>` : `<p>${msg("aucun_masque_actif")}</p>`;
   const suffixe = (duree ? ` ${duree}.` : "") + (compressionEchouee ? ` \u26A0 Compression indisponible : ${compressionEchouee}.` : "") + (compressionInfo ? ` \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
-  $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeurs masqu\xE9es, m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.") + suffixe;
+  $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeurs masqu\xE9es, m\xE9tadonn\xE9es nettoy\xE9es.` : msg("aucune_donnee_sensible")) + suffixe;
   $("fileSummary").className = "status active";
   $("fileResults").hidden = false;
   $("fileCopyBtn").hidden = !copyable;
@@ -2413,8 +2413,8 @@ function letterGridComputeBlocked(host, cellCss) {
   for (const img of wrap.querySelectorAll("img")) {
     if (!hidden(img)) add(img.getBoundingClientRect());
   }
-  for (const t2 of wrap.querySelectorAll("table")) {
-    if (!hidden(t2)) add(t2.getBoundingClientRect());
+  for (const t of wrap.querySelectorAll("table")) {
+    if (!hidden(t)) add(t.getBoundingClientRect());
   }
   return blocked;
 }
@@ -2427,15 +2427,15 @@ function letterGridPaintCell(col, row, letter, cellPx, tint) {
   ctx.fillText(letter, x + cellPx / 2, y + cellPx / 2 + 1);
 }
 function letterGridTintOf(key, now) {
-  const t2 = letterGridTints.get(key);
-  return t2 && t2.until > now ? t2.color : null;
+  const t = letterGridTints.get(key);
+  return t && t.until > now ? t.color : null;
 }
 function letterGridScheduleTints(now, processing) {
   if (now < letterGridNextTint) return;
   const [every0, every1] = processing ? LETTER_GRID_TINT_BUSY_EVERY_MS : LETTER_GRID_TINT_EVERY_MS;
   letterGridNextTint = now + every0 + Math.random() * (every1 - every0);
-  for (const [key, t2] of letterGridTints) {
-    if (t2.until <= now) letterGridTints.delete(key);
+  for (const [key, t] of letterGridTints) {
+    if (t.until <= now) letterGridTints.delete(key);
   }
   if (!letterGridPainted.length || !letterGridPalette.length) return;
   const [cmin, cmax] = processing ? LETTER_GRID_TINT_BUSY_CELLS : LETTER_GRID_TINT_CELLS;
@@ -2635,7 +2635,7 @@ function annulerRunFichier(motif) {
   setAnalyzeBtnLoading(false);
   $("fileAnalyzeBtn").disabled = false;
   $("fileCancelBtn").hidden = true;
-  fileSetStatus(motif === void 0 ? "Traitement annul\xE9 \u2014 aucun fichier produit." : motif);
+  fileSetStatus(motif === void 0 ? msg("traitement_annule") : motif);
   return true;
 }
 async function processFile() {
@@ -2656,15 +2656,15 @@ async function processFile() {
   setAnalyzeBtnLoading(true);
   const debut = performance.now();
   declarerEtapes([
-    { id: "detection", libelle: "D\xE9tection" },
-    ...$("fileCompress")?.checked && !FILE_TYPES[extOf(source.name)]?.metadataOnly ? [{ id: "compression", libelle: "R\xE9duction des tokens", teinte: "teinte-tan" }] : []
+    { id: "detection", libelle: msg("etape_detection") },
+    ...$("fileCompress")?.checked && !FILE_TYPES[extOf(source.name)]?.metadataOnly ? [{ id: "compression", libelle: msg("etape_compression"), teinte: "teinte-tan" }] : []
   ]);
-  fileSetStatus("Lecture du fichier\u2026");
+  fileSetStatus(msg("etat_lecture_fichier"));
   try {
     const adapter = await kind.load();
     verifierAnnulation(signal);
     if (kind.metadataOnly) {
-      fileSetStatus("M\xE9tadonn\xE9es\u2026");
+      fileSetStatus(msg("etat_metadonnees"));
       const cleaned2 = await adapter.stripMetadata(await source.arrayBuffer(), { mime: kind.mime });
       verifierAnnulation(signal);
       fileOutBlob = new Blob([cleaned2], { type: kind.mime });
@@ -2679,7 +2679,7 @@ async function processFile() {
       return;
     }
     if ($("fileCompress")?.checked) {
-      fileSetStatus("Pr\xE9paration\u2026");
+      fileSetStatus(msg("etat_preparation"));
       const dispo = await ensureCompression();
       if (!dispo.ok) {
         $("fileCompress").checked = false;
@@ -2688,7 +2688,7 @@ async function processFile() {
       verifierAnnulation(signal);
     }
     if (ext === "pdf" && $("pdfModePreserve")?.checked) {
-      fileSetStatus("Lecture du PDF\u2026");
+      fileSetStatus(msg("etat_lecture_pdf"));
       await ensureNER();
       verifierAnnulation(signal);
       const { reconstructPdf } = await import("./pdf-reconstruct-YNF3KT7U.js");
@@ -2726,10 +2726,10 @@ async function processFile() {
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
-      fileSetStatus("Aucun texte \xE0 analyser.", "error");
+      fileSetStatus(msg("aucun_texte"), "error");
       return;
     }
-    fileSetStatus("D\xE9tection en cours\u2026");
+    fileSetStatus(msg("etat_detection"));
     await ensureNER();
     verifierAnnulation(signal);
     const { results, mapping, entitesContextuelles } = await anonymizeUnits(units, {
@@ -2747,7 +2747,7 @@ async function processFile() {
       keepValues: termesAGarder()
     });
     if ($("fileCompress")?.checked && compressionWorker && ext !== "docx") {
-      fileSetStatus("Compression du texte\u2026");
+      fileSetStatus(msg("etat_compression"));
       const taux = Number($("fileCompressTaux")?.value || 0.5);
       let avant = 0, apres = 0;
       try {
@@ -2828,7 +2828,7 @@ for (const btn of document.querySelectorAll(".mode-btn")) {
     $("textMode").hidden = mode !== "text";
     $("fileMode").hidden = mode !== "file";
     $("reinjectZone").hidden = true;
-    $("toggleReinjectBtn").textContent = "D\xE9sanonymiser une r\xE9ponse\u2026";
+    $("toggleReinjectBtn").textContent = msg("desanonymiser_une_reponse_bouton");
   });
 }
 $("filePickBtn").addEventListener("click", () => $("fileInput").click());
@@ -2869,7 +2869,7 @@ $("fileDownloadBtn").addEventListener("click", downloadFile);
 $("fileCopyBtn").addEventListener("click", async () => {
   if (!fileOutBlob) return;
   await navigator.clipboard.writeText(await fileOutBlob.text());
-  $("fileCopyStatus").textContent = "Copi\xE9.";
+  $("fileCopyStatus").textContent = msg("copie");
   $("fileCopyStatus").className = "status active";
   setTimeout(() => {
     $("fileCopyStatus").textContent = "";

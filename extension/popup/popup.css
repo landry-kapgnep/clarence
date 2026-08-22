@@ -1278,9 +1278,22 @@ td.map-occ {
 /* Plafond de hauteur : la popup est bornée à 600px par Chrome, et un document
    à 76 valeurs pousserait tout le reste hors de vue. La table défile chez
    elle. */
+/* Défilement plafonné, et STYLÉ comme celui de la coquille : une barre native
+   large, imbriquée dans une popup qui a déjà la sienne, fait bricolage.
+   `overflow-x: hidden` est explicite — sans lui, un dépassement horizontal
+   ferait apparaître une SECONDE barre, et deux barres dans un encart de
+   200 px de haut ne laissent plus voir le contenu. */
 #mappingWrap, #fileMappingWrap {
-  max-height: 210px;
+  max-height: 230px;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(237, 230, 211, 0.28) transparent;
+}
+#mappingWrap::-webkit-scrollbar, #fileMappingWrap::-webkit-scrollbar { width: 6px; }
+#mappingWrap::-webkit-scrollbar-track, #fileMappingWrap::-webkit-scrollbar-track { background: transparent; }
+#mappingWrap::-webkit-scrollbar-thumb, #fileMappingWrap::-webkit-scrollbar-thumb {
+  background: rgba(237, 230, 211, 0.24);
 }
 
 /* ===================== DÉBORDEMENT HORIZONTAL — RÈGLES SYSTÈME =============
@@ -1289,19 +1302,21 @@ td.map-occ {
    défilement, il disparaît. Les règles ci-dessous bornent par CLASSE d'élément
    plutôt qu'au cas par cas — un tableau ajouté demain est couvert d'office. */
 
-/* Un tableau se dimensionne sinon sur son contenu : une valeur longue
-   (« recherche@korrigane-labs.example ») poussait la colonne des boutons
-   hors du cadre. `fixed` fige les largeurs, le texte va à la ligne. */
-.mapping-bloc table {
-  table-layout: fixed;
-  width: 100%;
-}
-.mapping-bloc td {
-  overflow-wrap: anywhere;   /* coupe même un mot sans espace */
-}
-/* Colonnes de service : au plus juste, pour laisser la place aux valeurs. */
-.mapping-bloc td.map-occ { width: 42px; }
-.mapping-bloc td:last-child { width: 62px; }
+/* ⚠️ NE PAS METTRE `table-layout: fixed` ICI. Essayé, et cassé : les colonnes
+   de cette table reposent sur l'idiome `width: 1%` (voir plus haut), qui ne
+   fonctionne QU'EN `auto` — le moteur y lit « aussi étroit que possible ». En
+   `fixed`, le 1 % est pris au pied de la lettre : la colonne des placeholders
+   tombe à 5 px et son texte se dessine PAR-DESSUS la colonne voisine,
+   caractère par caractère. Le débordement se règle par le retour à la ligne,
+   pas par le figeage des largeurs. */
+.mapping-bloc table { width: 100%; }
+/* La colonne des VALEURS est la seule à absorber la largeur restante : c'est
+   donc la seule qui doive pouvoir couper un mot sans espace (une adresse
+   e-mail longue). Les trois autres tiennent leur contenu et restent d'un
+   seul tenant. */
+.mapping-bloc td:nth-child(2) { overflow-wrap: anywhere; }
+/* Respiration : une ligne par valeur, lisible d'un coup d'œil. */
+.mapping-bloc td { padding: 5px 6px; vertical-align: baseline; }
 .mapping-bloc .map-retirer { white-space: nowrap; }
 
 /* Garde-fou général : rien de ce qui vit dans la coquille ne dépasse sa

@@ -26,11 +26,29 @@
   "anonymiser": {
     "message": "Anonymise"
   },
+  "anonymiser_le_fichier": {
+    "message": "Anonymise file"
+  },
+  "aucun_masque_actif": {
+    "message": "No active mask."
+  },
+  "aucun_texte": {
+    "message": "No text to analyse."
+  },
+  "aucune_donnee_sensible": {
+    "message": "No sensitive data found — metadata cleaned."
+  },
   "changer_de_fichier": {
     "message": "Change file"
   },
   "colle_la_reponse_contenant_personne_1_email": {
     "message": "Paste the reply containing [PERSON_1], [EMAIL_1]…"
+  },
+  "copie": {
+    "message": "Copied."
+  },
+  "copie_relis": {
+    "message": "Copied — read it over before pasting."
   },
   "copier": {
     "message": "Copy"
@@ -47,8 +65,14 @@
   "desanonymiser_une_reponse": {
     "message": "De-anonymise a reply"
   },
+  "desanonymiser_une_reponse_bouton": {
+    "message": "De-anonymise a reply…"
+  },
   "detections": {
     "message": "Detections"
+  },
+  "detections_completes": {
+    "message": "All detections"
   },
   "economiser_des_tokens": {
     "message": "Save tokens"
@@ -58,6 +82,36 @@
   },
   "enregistrer_dans_ce_profil": {
     "message": "Save into this profile"
+  },
+  "etape_compression": {
+    "message": "Token reduction"
+  },
+  "etape_detection": {
+    "message": "Detection"
+  },
+  "etat_chargement_modele": {
+    "message": "Loading model… (~180 MB on first use)"
+  },
+  "etat_compression": {
+    "message": "Compressing text…"
+  },
+  "etat_detection": {
+    "message": "Detecting…"
+  },
+  "etat_lecture_fichier": {
+    "message": "Reading file…"
+  },
+  "etat_lecture_pdf": {
+    "message": "Reading PDF…"
+  },
+  "etat_maj_fichier": {
+    "message": "Updating file…"
+  },
+  "etat_metadonnees": {
+    "message": "Metadata…"
+  },
+  "etat_preparation": {
+    "message": "Preparing…"
   },
   "extDescription": {
     "message": "Anonymises sensitive data before you paste it into ChatGPT, Claude or Gemini. Everything stays in your browser."
@@ -74,14 +128,23 @@
   "format_allege": {
     "message": "Lightweight format"
   },
+  "format_non_pris_en_charge": {
+    "message": "Unsupported format."
+  },
   "format_original": {
     "message": "Original format"
   },
   "francais": {
     "message": "French"
   },
+  "infobulle_garder": {
+    "message": "Stop masking this term throughout the document"
+  },
   "innovatech_terme_metier_public": {
     "message": "Innovatech, public industry term…"
+  },
+  "masquer_la_desanonymisation": {
+    "message": "Hide de-anonymisation"
   },
   "masquer_la_selection": {
     "message": "Mask selection"
@@ -91,6 +154,9 @@
   },
   "ne_jamais_masquer": {
     "message": "Never mask"
+  },
+  "nettoyer_les_metadonnees": {
+    "message": "Clean metadata"
   },
   "nom_de_code_projet_patronyme_rare": {
     "message": "Project codename, rare surname…"
@@ -113,6 +179,21 @@
   "plus_tard": {
     "message": "Later"
   },
+  "profil_admin": {
+    "message": "Administrative"
+  },
+  "profil_dev": {
+    "message": "Developer / Tech"
+  },
+  "profil_ecole": {
+    "message": "School / Studies"
+  },
+  "profil_redaction": {
+    "message": "Writing / Research"
+  },
+  "profil_vierge": {
+    "message": "Blank"
+  },
   "pseudonymes": {
     "message": "Pseudonyms"
   },
@@ -122,8 +203,14 @@
   "remplace_par_des_noms_plausibles_au_lieu_de": {
     "message": "Replaces names with plausible ones instead of PERSON_1. The same person keeps the same pseudonym. Job title, nationality and health keep their label: a plausible fake there would mislead the AI."
   },
+  "reponse_desanonymisee_complete": {
+    "message": "Full de-anonymised reply"
+  },
   "resultat": {
     "message": "Result"
+  },
+  "rien_detecte": {
+    "message": "Nothing detected — add a manual mask if needed."
   },
   "selectionne_un_passage_puis_clique_ici": {
     "message": "Select a passage, then click here"
@@ -149,6 +236,9 @@
   "texte_propre": {
     "message": "Clean text"
   },
+  "texte_propre_complet": {
+    "message": "Full clean text"
+  },
   "ton_identite": {
     "message": "Your identity"
   },
@@ -160,6 +250,66 @@
   },
   "tout_effacer": {
     "message": "Erase everything"
+  },
+  "traitement_annule": {
+    "message": "Cancelled — no file produced."
+  },
+  "type_adresse": {
+    "message": "Addresses"
+  },
+  "type_carte": {
+    "message": "Cards"
+  },
+  "type_code_postal": {
+    "message": "Postcode"
+  },
+  "type_date": {
+    "message": "Sensitive dates"
+  },
+  "type_date_naissance": {
+    "message": "Birth dates"
+  },
+  "type_divers": {
+    "message": "Other"
+  },
+  "type_email": {
+    "message": "Emails"
+  },
+  "type_etablissement": {
+    "message": "Schools"
+  },
+  "type_id_national": {
+    "message": "National IDs"
+  },
+  "type_loc": {
+    "message": "Places"
+  },
+  "type_montant": {
+    "message": "Amounts"
+  },
+  "type_nationalite": {
+    "message": "Nationalities"
+  },
+  "type_org": {
+    "message": "Companies"
+  },
+  "type_per": {
+    "message": "Names"
+  },
+  "type_poste": {
+    "message": "Job titles"
+  },
+  "type_pseudo": {
+    "message": "Handles"
+  },
+  "type_reference": {
+    "message": "References"
+  },
+  "type_sante": {
+    "message": "Health"
+  },
+  "type_telephone": {
+    "message": "Phone numbers"
   },
   "types_a_masquer": {
     "message": "Types to mask"

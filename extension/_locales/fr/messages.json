@@ -26,11 +26,29 @@
   "anonymiser": {
     "message": "Anonymiser"
   },
+  "anonymiser_le_fichier": {
+    "message": "Anonymiser le fichier"
+  },
+  "aucun_masque_actif": {
+    "message": "Aucun masque actif."
+  },
+  "aucun_texte": {
+    "message": "Aucun texte à analyser."
+  },
+  "aucune_donnee_sensible": {
+    "message": "Aucune donnée sensible détectée — métadonnées nettoyées."
+  },
   "changer_de_fichier": {
     "message": "Changer de fichier"
   },
   "colle_la_reponse_contenant_personne_1_email": {
     "message": "Colle la réponse contenant [PERSONNE_1], [EMAIL_1]…"
+  },
+  "copie": {
+    "message": "Copié."
+  },
+  "copie_relis": {
+    "message": "Copié — relis avant de coller."
   },
   "copier": {
     "message": "Copier"
@@ -47,8 +65,14 @@
   "desanonymiser_une_reponse": {
     "message": "Désanonymiser une réponse"
   },
+  "desanonymiser_une_reponse_bouton": {
+    "message": "Désanonymiser une réponse…"
+  },
   "detections": {
     "message": "Détections"
+  },
+  "detections_completes": {
+    "message": "Détections complètes"
   },
   "economiser_des_tokens": {
     "message": "Économiser des tokens"
@@ -58,6 +82,36 @@
   },
   "enregistrer_dans_ce_profil": {
     "message": "Enregistrer dans ce profil"
+  },
+  "etape_compression": {
+    "message": "Réduction des tokens"
+  },
+  "etape_detection": {
+    "message": "Détection"
+  },
+  "etat_chargement_modele": {
+    "message": "Chargement du modèle… (~180 Mo au premier usage)"
+  },
+  "etat_compression": {
+    "message": "Compression du texte…"
+  },
+  "etat_detection": {
+    "message": "Détection en cours…"
+  },
+  "etat_lecture_fichier": {
+    "message": "Lecture du fichier…"
+  },
+  "etat_lecture_pdf": {
+    "message": "Lecture du PDF…"
+  },
+  "etat_maj_fichier": {
+    "message": "Mise à jour du fichier…"
+  },
+  "etat_metadonnees": {
+    "message": "Métadonnées…"
+  },
+  "etat_preparation": {
+    "message": "Préparation…"
   },
   "extDescription": {
     "message": "Anonymise les données sensibles avant de les coller dans ChatGPT, Claude ou Gemini. Tout reste dans votre navigateur."
@@ -74,14 +128,23 @@
   "format_allege": {
     "message": "Format allégé"
   },
+  "format_non_pris_en_charge": {
+    "message": "Format non pris en charge."
+  },
   "format_original": {
     "message": "Format original"
   },
   "francais": {
     "message": "Français"
   },
+  "infobulle_garder": {
+    "message": "Ne plus masquer ce terme dans tout le document"
+  },
   "innovatech_terme_metier_public": {
     "message": "Innovatech, terme métier public…"
+  },
+  "masquer_la_desanonymisation": {
+    "message": "Masquer la désanonymisation"
   },
   "masquer_la_selection": {
     "message": "Masquer la sélection"
@@ -91,6 +154,9 @@
   },
   "ne_jamais_masquer": {
     "message": "Ne jamais masquer"
+  },
+  "nettoyer_les_metadonnees": {
+    "message": "Nettoyer les métadonnées"
   },
   "nom_de_code_projet_patronyme_rare": {
     "message": "Nom de code projet, patronyme rare…"
@@ -113,6 +179,21 @@
   "plus_tard": {
     "message": "Plus tard"
   },
+  "profil_admin": {
+    "message": "Administratif"
+  },
+  "profil_dev": {
+    "message": "Développeur / Tech"
+  },
+  "profil_ecole": {
+    "message": "École / Études"
+  },
+  "profil_redaction": {
+    "message": "Rédaction / Recherche"
+  },
+  "profil_vierge": {
+    "message": "Vierge"
+  },
   "pseudonymes": {
     "message": "Pseudonymes"
   },
@@ -122,8 +203,14 @@
   "remplace_par_des_noms_plausibles_au_lieu_de": {
     "message": "Remplace par des noms plausibles au lieu de PERSONNE_1. La même personne garde le même pseudonyme. Poste, nationalité et santé gardent leur étiquette : un faux plausible y tromperait l'IA."
   },
+  "reponse_desanonymisee_complete": {
+    "message": "Réponse désanonymisée complète"
+  },
   "resultat": {
     "message": "Résultat"
+  },
+  "rien_detecte": {
+    "message": "Rien détecté — ajoute un masque manuel si besoin."
   },
   "selectionne_un_passage_puis_clique_ici": {
     "message": "Sélectionne un passage, puis clique ici"
@@ -149,6 +236,9 @@
   "texte_propre": {
     "message": "Texte propre"
   },
+  "texte_propre_complet": {
+    "message": "Texte propre complet"
+  },
   "ton_identite": {
     "message": "Ton identité"
   },
@@ -160,6 +250,66 @@
   },
   "tout_effacer": {
     "message": "Tout effacer"
+  },
+  "traitement_annule": {
+    "message": "Traitement annulé — aucun fichier produit."
+  },
+  "type_adresse": {
+    "message": "Adresses"
+  },
+  "type_carte": {
+    "message": "Cartes"
+  },
+  "type_code_postal": {
+    "message": "Code postal"
+  },
+  "type_date": {
+    "message": "Dates sensibles"
+  },
+  "type_date_naissance": {
+    "message": "Dates naiss."
+  },
+  "type_divers": {
+    "message": "Divers"
+  },
+  "type_email": {
+    "message": "Emails"
+  },
+  "type_etablissement": {
+    "message": "Établissements"
+  },
+  "type_id_national": {
+    "message": "ID nationaux"
+  },
+  "type_loc": {
+    "message": "Lieux"
+  },
+  "type_montant": {
+    "message": "Montants"
+  },
+  "type_nationalite": {
+    "message": "Nationalités"
+  },
+  "type_org": {
+    "message": "Entreprises"
+  },
+  "type_per": {
+    "message": "Noms"
+  },
+  "type_poste": {
+    "message": "Postes"
+  },
+  "type_pseudo": {
+    "message": "Pseudos/handles"
+  },
+  "type_reference": {
+    "message": "Références"
+  },
+  "type_sante": {
+    "message": "Santé"
+  },
+  "type_telephone": {
+    "message": "Téléphones"
   },
   "types_a_masquer": {
     "message": "Types à masquer"

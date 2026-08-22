@@ -6,7 +6,11 @@ import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
 import { compresser, compresserSegments, COMPRESSION_MODEL } from '../engine/compression.js';
-import { appliquerTraductions, t } from './i18n.js';
+// `msg` et pas `t` : trois variables locales de ce fichier s'appellent
+// déjà `t` (paramètres déstructurés, boucles), et l'import se serait fait
+// masquer à l'intérieur de leur portée — sans erreur, juste un appel de
+// fonction sur une chaîne.
+import { appliquerTraductions, msg } from './i18n.js';
 import { createBatchedPipeline } from '../engine/batch.js';
 import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
 import { poidsDeTraitement, expliquerPoids } from './poids.js';
@@ -31,17 +35,17 @@ let disabledTypes = new Set(TYPES_PEU_FIABLES);
 
 // Libellés lisibles des types pour les puces de personnalisation.
 const TYPE_DISPLAY = {
-  PER: 'Noms', ORG: 'Entreprises', LOC: 'Lieux', EMAIL: 'Emails',
-  TELEPHONE: 'Téléphones', IBAN: 'IBAN', CARTE_BANCAIRE: 'Cartes',
-  NIR: 'NIR', SIRET_SIREN: 'SIRET/SIREN', CODE_POSTAL_VILLE: 'Code postal',
-  MONTANT: 'Montants', ADRESSE: 'Adresses', DATE_NAISSANCE: 'Dates naiss.',
-  REFERENCE: 'Références', IP: 'IP', MAC: 'MAC', BIC: 'BIC', PSEUDO: 'Pseudos/handles', DATE: 'Dates sensibles', ID_NATIONAL: 'ID nationaux',
+  PER: msg('type_per'), ORG: msg('type_org'), LOC: msg('type_loc'), EMAIL: msg('type_email'),
+  TELEPHONE: msg('type_telephone'), IBAN: 'IBAN', CARTE_BANCAIRE: msg('type_carte'),
+  NIR: 'NIR', SIRET_SIREN: 'SIRET/SIREN', CODE_POSTAL_VILLE: msg('type_code_postal'),
+  MONTANT: msg('type_montant'), ADRESSE: msg('type_adresse'), DATE_NAISSANCE: msg('type_date_naissance'),
+  REFERENCE: msg('type_reference'), IP: 'IP', MAC: 'MAC', BIC: 'BIC', PSEUDO: msg('type_pseudo'), DATE: msg('type_date'), ID_NATIONAL: msg('type_id_national'),
   // Apportés par la détection zero-shot. Décocher un de ces types SAUTE
   // l'inférence correspondante (voir GROUPES dans engine/gliner.js) : on ne
   // paie que ce qu'on demande.
-  POSTE: 'Postes', NATIONALITE: 'Nationalités',
-  ETABLISSEMENT: 'Établissements', SANTE: 'Santé',
-  MISC: 'Divers', PERSONNALISE: 'Perso'
+  POSTE: msg('type_poste'), NATIONALITE: msg('type_nationalite'),
+  ETABLISSEMENT: msg('type_etablissement'), SANTE: msg('type_sante'),
+  MISC: msg('type_divers'), PERSONNALISE: 'Perso'
 };
 // Découpage TABULATION ou saut de ligne, espaces retirés — voir
 // src/popup/termes.js pour le choix des séparateurs et ce qu'on en exclut.
@@ -205,14 +209,14 @@ function clipToLimit(text, entities, limit) {
 
 function overlayContentFor(kind) {
   if (kind === 'annotated') {
-    return { title: 'Détections complètes', html: annotateHTML(currentText, activeEntities()) };
+    return { title: msg('detections_completes'), html: annotateHTML(currentText, activeEntities()) };
   }
   if (kind === 'masked') {
     const { masked } = maskText(currentText, activeEntities(), maskOptions());
-    return { title: 'Texte propre complet', text: masked, copy: () => navigator.clipboard.writeText(masked) };
+    return { title: msg('texte_propre_complet'), text: masked, copy: () => navigator.clipboard.writeText(masked) };
   }
   if (kind === 'reinjected') {
-    return { title: 'Réponse désanonymisée complète', text: lastReinjected, copy: () => navigator.clipboard.writeText(lastReinjected) };
+    return { title: msg('reponse_desanonymisee_complete'), text: lastReinjected, copy: () => navigator.clipboard.writeText(lastReinjected) };
   }
   return null;
 }
@@ -262,11 +266,11 @@ function render() {
     ? `<table>${mapping.map(m =>
         `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
       ).join('')}</table>`
-    : '<p>Aucun masque actif.</p>';
+    : `<p>${msg('aucun_masque_actif')}</p>`;
 
   $('status').textContent = entities.length
     ? `${entities.length} élément(s) masqué(s).`
-    : 'Rien détecté — ajoute un masque manuel si besoin.';
+    : msg('rien_detecte');
   $('status').className = 'status';
 
   refreshOverlayIfOpen();
@@ -372,7 +376,7 @@ function startEngine(engine) {
 async function ensureNER() {
   if (nerPipe || nerLoading) return;
   nerLoading = true;
-  setStatus('Chargement du modèle… (~180 Mo au premier usage)');
+  setStatus(msg('etat_chargement_modele'));
   try {
     let worker = null;
     try {
@@ -658,7 +662,7 @@ function maskSelection() {
 async function copyClean() {
   const { masked } = maskText(currentText, activeEntities(), maskOptions());
   await navigator.clipboard.writeText(masked);
-  $('copyStatus').textContent = 'Copié — relis avant de coller.';
+  $('copyStatus').textContent = msg('copie_relis');
   $('copyStatus').className = 'status active';
   setTimeout(() => { $('copyStatus').textContent = ''; }, 4000);
 }
@@ -721,8 +725,8 @@ $('toggleReinjectBtn').addEventListener('click', () => {
   const zone = $('reinjectZone');
   zone.hidden = !zone.hidden;
   $('toggleReinjectBtn').textContent = zone.hidden
-    ? 'Désanonymiser une réponse…'
-    : 'Masquer la désanonymisation';
+    ? msg('desanonymiser_une_reponse_bouton')
+    : msg('masquer_la_desanonymisation');
 });
 
 $('reinjectBtn').addEventListener('click', () => {
@@ -751,7 +755,7 @@ $('reinjectBtn').addEventListener('click', () => {
 $('copyReinjectBtn').addEventListener('click', async () => {
   await navigator.clipboard.writeText(lastReinjected);
   const st = $('reinjectStatus');
-  st.textContent = 'Copié.';
+  st.textContent = msg('copie');
   st.className = 'status active';
 });
 
@@ -955,7 +959,7 @@ function setChosenFile(file) {
   if (!file) return;
   const ext = extOf(file.name);
   if (!FILE_TYPES[ext]) {
-    fileSetStatus('Format non pris en charge.', 'error');
+    fileSetStatus(msg('format_non_pris_en_charge'), 'error');
     return;
   }
   if (file.size > MAX_FILE_BYTES) {
@@ -1012,7 +1016,7 @@ function setChosenFile(file) {
   $('pdfModeChoice').hidden = ext !== 'pdf'; // choix Alléger/Préserver : PDF seul
   majVisibiliteCompression(ext);
   $('fileAnalyzeBtn').textContent = FILE_TYPES[ext].metadataOnly
-    ? 'Nettoyer les métadonnées' : 'Anonymiser le fichier';
+    ? msg('nettoyer_les_metadonnees') : msg('anonymiser_le_fichier');
   $('fileResults').hidden = true;
   fileSetStatus('');
 }
@@ -1086,7 +1090,7 @@ async function retirerDuMasquage(valeur) {
 
   const btn = $('fileAnalyzeBtn');
   btn.disabled = true;
-  fileSetStatus('Mise à jour du fichier…');
+  fileSetStatus(msg('etat_maj_fichier'));
   try {
     const r = fileRegen;
     const keepValues = termesAGarder();
@@ -1215,9 +1219,9 @@ function showFileResults(mapping, copyable, duree) {
         // `data-valeur` porte la valeur RÉELLE : c'est elle qu'on ajoutera aux
         // termes « ne jamais masquer », pas le placeholder.
         `<td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
-        ` title="Ne plus masquer ce terme dans tout le document">garder</button></td></tr>`
+        ` title="${msg('infobulle_garder')}">garder</button></td></tr>`
       ).join('')}</table>`
-    : '<p>Aucun masque actif.</p>';
+    : `<p>${msg('aucun_masque_actif')}</p>`;
   // duree : omise pour la régénération (retirerDuMasquage) — son propre
   // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
   // pas ce que « durée de traitement » désigne pour l'utilisateur.
@@ -1231,7 +1235,7 @@ function showFileResults(mapping, copyable, duree) {
     : '');
   $('fileSummary').textContent = (mapping.length
     ? `${mapping.length} valeurs masquées, métadonnées nettoyées.`
-    : 'Aucune donnée sensible détectée — métadonnées nettoyées.') + suffixe;
+    : msg('aucune_donnee_sensible')) + suffixe;
   $('fileSummary').className = 'status active';
   $('fileResults').hidden = false;
   $('fileCopyBtn').hidden = !copyable;
@@ -1856,7 +1860,7 @@ function annulerRunFichier(motif) {
   // `motif ||` aurait avalé la chaîne vide et affiché « Traitement annulé »
   // pendant une simple relance, juste avant que l'appelant n'écrive son propre
   // statut — message contradictoire et clignotant.
-  fileSetStatus(motif === undefined ? 'Traitement annulé — aucun fichier produit.' : motif);
+  fileSetStatus(motif === undefined ? msg('traitement_annule') : motif);
   return true;
 }
 
@@ -1894,12 +1898,12 @@ async function processFile() {
   // Les étapes sont déclarées ICI, en fonction des options réellement cochées :
   // une étape non demandée n'apparaît jamais, même vide.
   declarerEtapes([
-    { id: 'detection', libelle: 'Détection' },
+    { id: 'detection', libelle: msg('etape_detection') },
     ...($('fileCompress')?.checked && !FILE_TYPES[extOf(source.name)]?.metadataOnly
-      ? [{ id: 'compression', libelle: 'Réduction des tokens', teinte: 'teinte-tan' }]
+      ? [{ id: 'compression', libelle: msg('etape_compression'), teinte: 'teinte-tan' }]
       : [])
   ]);
-  fileSetStatus('Lecture du fichier…');
+  fileSetStatus(msg('etat_lecture_fichier'));
   try {
     const adapter = await kind.load();
     verifierAnnulation(signal);
@@ -1907,7 +1911,7 @@ async function processFile() {
     // Images : pas de PII textuelle, juste des métadonnées à retirer.
     // Court-circuit total du pipeline détection/masquage/NER.
     if (kind.metadataOnly) {
-      fileSetStatus('Métadonnées…');
+      fileSetStatus(msg('etat_metadonnees'));
       const cleaned = await adapter.stripMetadata(await source.arrayBuffer(), { mime: kind.mime });
       verifierAnnulation(signal);
       fileOutBlob = new Blob([cleaned], { type: kind.mime });
@@ -1929,7 +1933,7 @@ async function processFile() {
     // pendant que le .md, lui, fonctionnait. Tout ce qui doit valoir pour TOUS
     // les formats se place avant l'aiguillage, pas après.
     if ($('fileCompress')?.checked) {
-      fileSetStatus('Préparation…');
+      fileSetStatus(msg('etat_preparation'));
       const dispo = await ensureCompression();
       if (!dispo.ok) {
         $('fileCompress').checked = false;
@@ -1944,7 +1948,7 @@ async function processFile() {
     // chemin indépendant de l'extraction Markdown. Une seule passe de détection
     // à l'intérieur de reconstructPdf. Sortie binaire .pdf (pas copiable texte).
     if (ext === 'pdf' && $('pdfModePreserve')?.checked) {
-      fileSetStatus('Lecture du PDF…');
+      fileSetStatus(msg('etat_lecture_pdf'));
       await ensureNER();
       verifierAnnulation(signal);
       const { reconstructPdf } = await import('../files/pdf-reconstruct.js');
@@ -1990,11 +1994,11 @@ async function processFile() {
     // indispensable pour PDF (pdfjs-dist est intrinsèquement asynchrone).
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
-      fileSetStatus('Aucun texte à analyser.', 'error');
+      fileSetStatus(msg('aucun_texte'), 'error');
       return;
     }
 
-    fileSetStatus('Détection en cours…');
+    fileSetStatus(msg('etat_detection'));
     await ensureNER();
     verifierAnnulation(signal);
     const { results, mapping, entitesContextuelles } = await anonymizeUnits(units, {
@@ -2023,7 +2027,7 @@ async function processFile() {
     // D'où la condition : sans elle, DOCX paierait DEUX passes du modèle dont
     // une pour rien.
     if ($('fileCompress')?.checked && compressionWorker && ext !== 'docx') {
-      fileSetStatus('Compression du texte…');
+      fileSetStatus(msg('etat_compression'));
       const taux = Number($('fileCompressTaux')?.value || 0.5);
       let avant = 0, apres = 0;
       try {
@@ -2127,7 +2131,7 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
     // affiché dans un mode ne doit pas persister visuellement dans l'autre
     // (la table de correspondance reste partagée, c'est juste l'affichage).
     $('reinjectZone').hidden = true;
-    $('toggleReinjectBtn').textContent = 'Désanonymiser une réponse…';
+    $('toggleReinjectBtn').textContent = msg('desanonymiser_une_reponse_bouton');
   });
 }
 
@@ -2188,7 +2192,7 @@ $('fileCopyBtn').addEventListener('click', async () => {
   // tout `await` long avant writeText ferait expirer l'activation utilisateur :
   // l'écriture échouerait alors SANS erreur, et le bouton ne copierait rien.
   await navigator.clipboard.writeText(await fileOutBlob.text());
-  $('fileCopyStatus').textContent = 'Copié.';
+  $('fileCopyStatus').textContent = msg('copie');
   $('fileCopyStatus').className = 'status active';
   setTimeout(() => { $('fileCopyStatus').textContent = ''; }, 4000);
 });
