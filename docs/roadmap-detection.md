@@ -1594,3 +1594,54 @@ elle se vérifie à travers `maskText`.
 **Reste** : l'UI dit maintenant pourquoi ces trois types gardent leur étiquette
 (infobulle de l'option Pseudonymes). Sans ça, le choix se lit comme un bug —
 c'est d'ailleurs comme ça qu'il a été signalé.
+
+### P13 révisé le 18/08/2026 — la règle avait UNE condition, il en fallait DEUX
+
+Le 15/08, ETABLISSEMENT recevait un pseudonyme réaliste au motif qu'un nom
+d'établissement est un IDENTIFIANT, contrairement aux attributs poste,
+nationalité et santé. Le raisonnement était juste, mais incomplet.
+
+Mesuré sur un vrai CV, option Pseudonymes active et types peu fiables cochés :
+
+| original | sortie |
+|---|---|
+| `IUT Sorbonne Paris Nord` | `École Mercier` ✔ |
+| **`LLM local`** | **`École Morel`** ✘ |
+| `Cambridge` (certification) | `École Robin` ✘ |
+
+`LLM local` n'est pas un établissement. Le pseudonyme réaliste rend cette
+erreur **indétectable** : le lecteur croit à une école qui n'a jamais existé.
+Un `[ETABLISSEMENT_1]` posé au même endroit, lui, saute aux yeux et se retire
+d'un clic.
+
+Or ETABLISSEMENT figure dans `TYPES_PEU_FIABLES`. **La règle complète tient donc
+en deux conditions** : un type reçoit un pseudonyme réaliste s'il est un
+IDENTIFIANT **et** si sa détection est FIABLE. La première écarte poste,
+nationalité et santé ; la seconde écarte tout `TYPES_PEU_FIABLES`. Un test relie
+les deux modules, pour qu'un type qui rejoindrait la liste cesse
+automatiquement d'être pseudonymisé.
+
+C'est le principe déjà consigné du projet — *un pseudonyme rend un faux positif
+invisible* — appliqué là où il avait été manqué.
+
+### Ce que la même exécution montre par ailleurs
+
+Types peu fiables **activés** par l'utilisateur, sur ce CV :
+
+| original | sortie |
+|---|---|
+| `IA` | `[NATIONALITE_1]` |
+| `NSI` | `[NATIONALITE_5]` |
+| `Anglais` / `Allemand` / `Mandarin` | `[NATIONALITE_2..4]` |
+| `problèmes` (« résolution de problèmes ») | `[SANTE_1]` |
+
+Rien de nouveau — c'est exactement ce que la mesure du 05/08 avait établi, et
+la raison pour laquelle ces quatre types sont **décochés par défaut**. Mais
+l'UI les présente comme des cases ordinaires à côté des types fiables : rien
+n'indique qu'elles produisent ce genre de sortie. À traiter.
+
+**Constaté aussi, sur un type FIABLE** : `Mars 2026` → `Dijon`. Un mois pris
+pour une ville, et le pseudonyme masque l'erreur. La règle des deux conditions
+ne couvre pas ce cas — un type fiable produit quand même des fautes, plus
+rarement. C'est le prix assumé de l'option Pseudonymes, et l'argument de plus
+pour ne jamais la présenter comme sûre.

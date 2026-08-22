@@ -697,32 +697,7 @@ var REALISTIC_TYPES = /* @__PURE__ */ new Set([
   "ADRESSE",
   "EMAIL",
   "TELEPHONE",
-  "DATE_NAISSANCE",
-  "ETABLISSEMENT"
-]);
-var MOTS_ETABLISSEMENT = /* @__PURE__ */ new Set([
-  "universite",
-  "lycee",
-  "college",
-  "ecole",
-  "institut",
-  "academie",
-  "conservatoire",
-  "faculte",
-  "centre",
-  "university",
-  "school",
-  "academy",
-  "institute",
-  "polytechnic",
-  "universitat",
-  "hochschule",
-  "gymnasium",
-  "universidad",
-  "escuela",
-  "instituto",
-  "scuola",
-  "liceo"
+  "DATE_NAISSANCE"
 ]);
 var stripAccents = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
 function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = "fr" } = {}) {
@@ -786,27 +761,13 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
       return !avoid(out) ? out : null;
     },
     ORG: (h) => unique((h2, i) => pick(L.orgs, h2, i), h),
-    // Le MOT D'INSTITUTION d'origine est conservé, seule la partie distinctive
-    // change : « Lycée Camille-Claudel » → « Lycée Rousseau », jamais
-    // « Université de Valmont ». Sans ça on changerait le NIVEAU d'études, qui
-    // n'est pas une donnée identifiante et que le LLM lira comme un fait.
-    //
-    // La POSITION du mot est reprise de l'original plutôt que déduite de la
-    // locale : « Université de Bordeaux » le met devant, « Westfield College »
-    // derrière. Aucun réglage à maintenir, et les deux ordres sortent justes.
-    //
-    // Le vivier des patronymes sert de partie distinctive — c'est exactement
-    // ainsi que se nomment les établissements (Lycée Rousseau, École Perrin).
-    ETABLISSEMENT: (h, original) => unique((h2, i) => {
-      const mots = String(original).trim().split(/\s+/);
-      const distinctif = pick(L.noms, h2, i);
-      if (mots.length > 1) {
-        if (MOTS_ETABLISSEMENT.has(stripAccents(mots[0]))) return `${mots[0]} ${distinctif}`;
-        const fin = mots[mots.length - 1];
-        if (MOTS_ETABLISSEMENT.has(stripAccents(fin))) return `${distinctif} ${fin}`;
-      }
-      return locale === "en" ? `${distinctif} School` : `\xC9cole ${distinctif}`;
-    }, h),
+    // Un générateur ETABLISSEMENT vivait ici (15/08 → 18/08). Il conservait le
+    // mot d'institution d'origine — « Lycée Camille-Claudel » → « Lycée
+    // Rousseau » — pour qu'un lycée ne devienne pas une université, et
+    // reprenait la position du mot sur l'original plutôt que sur la locale
+    // (« Westfield College » → « Boyer College »). Retiré avec le type
+    // lui-même : voir REALISTIC_TYPES. Récupérable tel quel dans l'historique
+    // si la détection des établissements devient un jour fiable.
     LOC: (h) => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: (h) => unique((h2, i) => `${(h2 + i * 7) % 98 + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
     EMAIL: (h) => unique((h2, i) => {
