@@ -1261,3 +1261,24 @@ td.map-occ {
   word-break: break-word;
 }
 .termes-lus:empty { display: none; }
+
+/* TABLE DES CORRESPONDANCES — sortie du volet replié où elle était.
+   Elle vivait derrière un <details><summary>Correspondances</summary>, donc
+   fermée par défaut et invisible en pratique. Or c'est le SEUL endroit qui
+   dise à l'utilisateur ce que l'IA ne verra plus — et il ne peut pas deviner
+   de quelles valeurs sa question aura besoin (une chronologie a besoin des
+   dates, un devoir d'histoire aussi). Le titre le dit dans ces termes-là :
+   « Correspondances » décrivait la mécanique, pas l'enjeu. */
+.mapping-bloc { margin-top: 12px; }
+.mapping-titre {
+  font-size: 12px;
+  color: var(--paper-dim);
+  margin-bottom: 6px;
+}
+/* Plafond de hauteur : la popup est bornée à 600px par Chrome, et un document
+   à 76 valeurs pousserait tout le reste hors de vue. La table défile chez
+   elle. */
+#mappingWrap, #fileMappingWrap {
+  max-height: 210px;
+  overflow-y: auto;
+}
