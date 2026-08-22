@@ -34,12 +34,12 @@
       </div>
 
       <div id="textMode">
-      <label class="field-label" for="input"></label> Texte
+      <label class="field-label" for="input"></label> <span data-i18n="texte">Texte</span>
       <textarea id="input" placeholder="..."></textarea>
 
       <div class="controls">
-        <button class="btn-primary" id="analyzeBtn">Analyser</button>
-        <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage, puis clique ici">Masquer la sélection</button>
+        <button class="btn-primary" id="analyzeBtn" data-i18n="analyser">Analyser</button>
+        <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage, puis clique ici" data-i18n-title="selectionne_un_passage_puis_clique_ici" data-i18n="masquer_la_selection">Masquer la sélection</button>
       </div>
       <div id="textOptions" hidden>
       <div class="options-grille">
@@ -49,42 +49,36 @@
             <img class="opt-icone claire" src="img/ClarencePsButtonW.png" alt="">
             <img class="opt-icone sombre" src="img/ClarencePsButton.png" alt="">
           </span>
-          <span class="option-texte">Pseudonymes</span>
+          <span class="option-texte" data-i18n="pseudonymes">Pseudonymes</span>
           <span class="info-tip" tabindex="0" role="note"
-                aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. La même personne garde le même pseudonyme. Poste, nationalité et santé gardent leur étiquette : un faux plausible y tromperait l'IA.">?
-            <span class="info-tip-box">
-              Remplace par des noms <strong>plausibles</strong> plutôt que
-              <code>[PERSONNE_1]</code>. La même personne garde le même
-              pseudonyme d'un bout à l'autre.
-              <br><br>Poste, nationalité et santé gardent leur étiquette :
-              inventer un faux plausible y tromperait l'IA.
-            </span>
+                aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. La même personne garde le même pseudonyme. Poste, nationalité et santé gardent leur étiquette : un faux plausible y tromperait l'IA." data-i18n-aria="remplace_par_des_noms_plausibles_au_lieu_de">?
+            <span class="info-tip-box" data-i18n-html="aide_remplace_par_des_noms_plausibles_plutot_que">Remplace par des noms <strong>plausibles</strong> plutôt que <code>[PERSONNE_1]</code>. La même personne garde le même pseudonyme d'un bout à l'autre. <br><br>Poste, nationalité et santé gardent leur étiquette : inventer un faux plausible y tromperait l'IA.</span>
           </span>
         </label>
         <label class="option-sous" id="pseudoLocaleLabel" hidden>
           Langue
           <select id="pseudoLocale" class="mini-select">
-            <option value="fr">Français</option>
-            <option value="en">Anglais</option>
+            <option value="fr" data-i18n="francais">Français</option>
+            <option value="en" data-i18n="anglais">Anglais</option>
           </select>
         </label>
       </div>
 
       <details id="customRules">
-        <summary>Personnaliser le masquage</summary>
+        <summary data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
         <div class="custom-body">
           <div class="profile-bar">
             <select id="profileSelect" class="profile-select"></select>
-            <button class="btn-ghost profile-btn" id="profileSaveBtn" title="Enregistrer dans ce profil">Enregistrer</button>
-            <button class="btn-ghost profile-btn" id="profileNewBtn" title="Nouveau profil depuis ces réglages">Nouveau</button>
-            <button class="btn-ghost profile-btn" id="profileDeleteBtn" title="Supprimer ce profil">Suppr.</button>
+            <button class="btn-ghost profile-btn" id="profileSaveBtn" title="Enregistrer dans ce profil" data-i18n-title="enregistrer_dans_ce_profil" data-i18n="enregistrer">Enregistrer</button>
+            <button class="btn-ghost profile-btn" id="profileNewBtn" title="Nouveau profil depuis ces réglages" data-i18n-title="nouveau_profil_depuis_ces_reglages" data-i18n="nouveau">Nouveau</button>
+            <button class="btn-ghost profile-btn" id="profileDeleteBtn" title="Supprimer ce profil" data-i18n-title="supprimer_ce_profil" data-i18n="suppr">Suppr.</button>
           </div>
-          <div class="field-label">Types à masquer</div>
+          <div class="field-label" data-i18n="types_a_masquer">Types à masquer</div>
           <div id="typeToggles" class="type-toggles"></div>
-          <label class="field-label" for="alwaysMask">Toujours masquer</label>
-          <textarea id="alwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
-          <label class="field-label" for="alwaysKeep">Ne jamais masquer</label>
-          <textarea id="alwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
+          <label class="field-label" for="alwaysMask" data-i18n="toujours_masquer">Toujours masquer</label>
+          <textarea id="alwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…" data-i18n-placeholder="nom_de_code_projet_patronyme_rare"></textarea>
+          <label class="field-label" for="alwaysKeep" data-i18n="ne_jamais_masquer">Ne jamais masquer</label>
+          <textarea id="alwaysKeep" class="mini" placeholder="Innovatech, terme métier public…" data-i18n-placeholder="innovatech_terme_metier_public"></textarea>
         </div>
       </details>
       </div>
@@ -96,27 +90,27 @@
       <div class="status" id="status"></div>
 
       <section id="results" hidden>
-        <h2>Détections</h2>
+        <h2 data-i18n="detections">Détections</h2>
         <div class="panel" id="annotated"></div>
-        <button class="btn-ghost overlay-trigger" id="annotatedMoreBtn" hidden>Voir tout</button>
+        <button class="btn-ghost overlay-trigger" id="annotatedMoreBtn" hidden data-i18n="voir_tout">Voir tout</button>
 
-        <h2>Texte propre</h2>
+        <h2 data-i18n="texte_propre">Texte propre</h2>
         <div class="panel" id="masked"></div>
-        <button class="btn-ghost overlay-trigger" id="maskedMoreBtn" hidden>Voir tout</button>
+        <button class="btn-ghost overlay-trigger" id="maskedMoreBtn" hidden data-i18n="voir_tout">Voir tout</button>
         <div class="controls">
           <button class="btn-primary" id="copyBtn"><img src="img/ClarenceCpButtonW.png" class ="cpbtn"></button>
           <span class="status" id="copyStatus"></span>
         </div>
 
         <div class="mapping-bloc">
-          <div class="mapping-titre">Corrections</div>
+          <div class="mapping-titre" data-i18n="corrections">Corrections</div>
           <div id="mappingWrap"></div>
         </div>
       </section>
       </div>
 
       <div id="fileMode" hidden>
-        <label class="field-label" for="input"></label> Fichier
+        <label class="field-label" for="input"></label> <span data-i18n="fichier">Fichier</span>
         <div class="dropzone" id="dropzone">
           <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf,.jpg,.jpeg,.png" hidden>
           <p class="dropzone-main"><button class="link-btn" id="filePickBtn"><img src="img/ClarenceFlW.png" class ="cpbtn"></button></p>
@@ -135,27 +129,20 @@
           <label class="hint pdf-radio" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModeLight" value="md" checked>
             <span class="square-radio" aria-hidden="true"></span>
-            <span class="radio-label-text">Format allégé</span>
+            <span class="radio-label-text" data-i18n="format_allege">Format allégé</span>
             <span class="info-tip" tabindex="0" role="note"
-                  aria-label="Sortie en Markdown : le texte seul, sans les images. Copiable directement dans le chat.">?
-              <span class="info-tip-box">
-                Sortie <strong>.md</strong> : le texte seul, sans les images.
-                Copiable directement dans le chat.
-              </span>
-            </span>
+                  aria-label="Sortie en Markdown : le texte seul, sans les images. Copiable directement dans le chat." data-i18n-aria="sortie_en_markdown_le_texte_seul_sans_les_im">?
+              <span class="info-tip-box" data-i18n-html="aide_sortie_md_le_texte_seul_sans_les_images_copi">Sortie <strong>.md</strong> : le texte seul, sans les images. Copiable directement dans le chat.</span>
+          </span>
           </label>
           <label class="hint pdf-radio" style="display:block;cursor:pointer;">
             <input type="radio" name="pdfMode" id="pdfModePreserve" value="pdf">
             <span class="square-radio" aria-hidden="true"></span>
-            <span class="radio-label-text">Format original</span>
+            <span class="radio-label-text" data-i18n="format_original">Format original</span>
             <span class="info-tip" tabindex="0" role="note"
-                  aria-label="PDF reconstruit depuis des pages neuves, images conservées. Fidélité visuelle approximative.">?
-              <span class="info-tip-box">
-                PDF reconstruit depuis des pages <strong>neuves</strong> — aucun
-                texte d'origine ne subsiste dessous. Images conservées.<br>
-                Fidélité approximative : police unique, positions au fragment.
-              </span>
-            </span>
+                  aria-label="PDF reconstruit depuis des pages neuves, images conservées. Fidélité visuelle approximative." data-i18n-aria="pdf_reconstruit_depuis_des_pages_neuves_imag">?
+              <span class="info-tip-box" data-i18n-html="aide_pdf_reconstruit_depuis_des_pages_neuves_aucu">PDF reconstruit depuis des pages <strong>neuves</strong> — aucun texte d'origine ne subsiste dessous. Images conservées.<br> Fidélité approximative : police unique, positions au fragment.</span>
+          </span>
           </label>
         </div>
 
@@ -170,17 +157,11 @@
               <img class="opt-icone claire" src="img/ClarencePsButtonW.png" alt="">
               <img class="opt-icone sombre" src="img/ClarencePsButton.png" alt="">
             </span>
-            <span class="option-texte">Pseudonymes</span>
+            <span class="option-texte" data-i18n="pseudonymes">Pseudonymes</span>
             <span class="info-tip" tabindex="0" role="note"
-                  aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. La même personne garde le même pseudonyme. Poste, nationalité et santé gardent leur étiquette : un faux plausible y tromperait l'IA.">?
-              <span class="info-tip-box">
-                Remplace par des noms <strong>plausibles</strong> plutôt que
-                <code>[PERSONNE_1]</code>. Le texte reste lisible, et la même
-                personne garde le même pseudonyme d'un bout à l'autre.
-                <br><br>Poste, nationalité et santé gardent leur étiquette :
-                inventer un faux plausible y tromperait l'IA.
-              </span>
-            </span>
+                  aria-label="Remplace par des noms plausibles au lieu de PERSONNE_1. La même personne garde le même pseudonyme. Poste, nationalité et santé gardent leur étiquette : un faux plausible y tromperait l'IA." data-i18n-aria="remplace_par_des_noms_plausibles_au_lieu_de">?
+              <span class="info-tip-box" data-i18n-html="aide_remplace_par_des_noms_plausibles_plutot_que_2">Remplace par des noms <strong>plausibles</strong> plutôt que <code>[PERSONNE_1]</code>. Le texte reste lisible, et la même personne garde le même pseudonyme d'un bout à l'autre. <br><br>Poste, nationalité et santé gardent leur étiquette : inventer un faux plausible y tromperait l'IA.</span>
+          </span>
           </label>
 
           <label class="option-btn teinte-tokens" id="fileCompressBtn">
@@ -189,25 +170,18 @@
               <img class="opt-icone claire" src="img/ClarenceTkButtonW.png" alt="">
               <img class="opt-icone sombre" src="img/ClarenceTkButton.png" alt="">
             </span>
-            <span class="option-texte">Économiser des tokens</span>
+            <span class="option-texte" data-i18n="economiser_des_tokens">Économiser des tokens</span>
             <span class="info-tip" tabindex="0" role="note"
-                  aria-label="Supprime les mots peu porteurs. La prose est appauvrie et ne peut plus être relue. Données masquées et négations préservées. Premier usage : 170 Mo à télécharger.">?
-              <span class="info-tip-box">
-                Supprime les mots peu porteurs.
-                <strong>La prose est appauvrie</strong> et ne peut plus être
-                relue — données masquées et négations préservées.<br>
-                Pour « résume », « quelles dates ? » — pas pour « corrige »,
-                « reformule », « traduis ».<br>
-                Premier usage : ~170 Mo, une fois.
-              </span>
-            </span>
+                  aria-label="Supprime les mots peu porteurs. La prose est appauvrie et ne peut plus être relue. Données masquées et négations préservées. Premier usage : 170 Mo à télécharger." data-i18n-aria="supprime_les_mots_peu_porteurs_la_prose_est">?
+              <span class="info-tip-box" data-i18n-html="aide_supprime_les_mots_peu_porteurs_la_prose_est">Supprime les mots peu porteurs. <strong>La prose est appauvrie</strong> et ne peut plus être relue — données masquées et négations préservées.<br> Pour « résume », « quelles dates ? » — pas pour « corrige », « reformule », « traduis ».<br> Premier usage : ~170 Mo, une fois.</span>
+          </span>
           </label>
 
           <label class="option-sous" id="filePseudoLocaleLabel" hidden>
             Langue
             <select id="filePseudoLocale" class="mini-select">
-              <option value="fr">Français</option>
-              <option value="en">Anglais</option>
+              <option value="fr" data-i18n="francais">Français</option>
+              <option value="en" data-i18n="anglais">Anglais</option>
             </select>
           </label>
           <label class="option-sous" id="fileCompressTauxLabel" hidden>
@@ -232,28 +206,28 @@
               <span class="termes-lus" id="docKeepLus"></span>
             </label>
             <label class="hint" for="docMask">Toujours masquer
-              <textarea id="docMask" class="mini" placeholder="nom du client, nom de code"></textarea>
+              <textarea id="docMask" class="mini" placeholder="nom du client, nom de code" data-i18n-placeholder="nom_du_client_nom_de_code"></textarea>
               <span class="termes-lus" id="docMaskLus"></span>
             </label>
           </div>
         </div>
 
         <details id="fileCustomRules">
-          <summary>Personnaliser le masquage</summary>
+          <summary data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
           <div class="custom-body">
             <div class="profile-bar">
               <select id="fileProfileSelect" class="profile-select"></select>
-              <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer dans ce profil">Enregistrer</button>
-              <button class="btn-ghost profile-btn" id="fileProfileNewBtn" title="Nouveau profil depuis ces réglages">Nouveau</button>
-              <button class="btn-ghost profile-btn" id="fileProfileDeleteBtn" title="Supprimer ce profil">Suppr.</button>
+              <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer dans ce profil" data-i18n-title="enregistrer_dans_ce_profil" data-i18n="enregistrer">Enregistrer</button>
+              <button class="btn-ghost profile-btn" id="fileProfileNewBtn" title="Nouveau profil depuis ces réglages" data-i18n-title="nouveau_profil_depuis_ces_reglages" data-i18n="nouveau">Nouveau</button>
+              <button class="btn-ghost profile-btn" id="fileProfileDeleteBtn" title="Supprimer ce profil" data-i18n-title="supprimer_ce_profil" data-i18n="suppr">Suppr.</button>
             </div>
-            <div class="field-label">Types à masquer</div>
+            <div class="field-label" data-i18n="types_a_masquer">Types à masquer</div>
             <div id="fileTypeToggles" class="type-toggles"></div>
-            <label class="field-label" for="fileAlwaysMask">Toujours masquer</label>
-            <textarea id="fileAlwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…"></textarea>
+            <label class="field-label" for="fileAlwaysMask" data-i18n="toujours_masquer">Toujours masquer</label>
+            <textarea id="fileAlwaysMask" class="mini" placeholder="Nom de code projet, patronyme rare…" data-i18n-placeholder="nom_de_code_projet_patronyme_rare"></textarea>
             <span class="termes-lus" id="fileAlwaysMaskLus"></span>
-            <label class="field-label" for="fileAlwaysKeep">Ne jamais masquer</label>
-            <textarea id="fileAlwaysKeep" class="mini" placeholder="Innovatech, terme métier public…"></textarea>
+            <label class="field-label" for="fileAlwaysKeep" data-i18n="ne_jamais_masquer">Ne jamais masquer</label>
+            <textarea id="fileAlwaysKeep" class="mini" placeholder="Innovatech, terme métier public…" data-i18n-placeholder="innovatech_terme_metier_public"></textarea>
             <span class="termes-lus" id="fileAlwaysKeepLus"></span>
           </div>
         </details>
@@ -262,9 +236,9 @@
         <div id="fileChosen" hidden>
           <p class="file-chosen-line"><strong class="file-name-pill" id="fileName"><span class="file-name-main"></span><span class="file-name-ext" hidden></span></strong> <span class="hint" id="fileSize"></span> <span class="poids-badge" id="filePoids" hidden></span></p>
           <div class="controls">
-            <button class="btn-primary" id="fileAnalyzeBtn">Anonymiser</button>
-            <button class="btn-ghost" id="fileCancelBtn" hidden>Annuler</button>
-            <button class="btn-ghost" id="fileResetBtn">Changer de fichier</button>
+            <button class="btn-primary" id="fileAnalyzeBtn" data-i18n="anonymiser">Anonymiser</button>
+            <button class="btn-ghost" id="fileCancelBtn" hidden data-i18n="annuler">Annuler</button>
+            <button class="btn-ghost" id="fileResetBtn" data-i18n="changer_de_fichier">Changer de fichier</button>
           </div>
         </div>
 
@@ -278,46 +252,46 @@
         <div class="status" id="fileStatus"></div>
 
         <section id="fileResults" hidden>
-          <h2>Résultat</h2>
+          <h2 data-i18n="resultat">Résultat</h2>
           <div class="controls">
             <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png"></button>
-            <button class="btn-ghost" id="fileCopyBtn" hidden>Copier</button>
+            <button class="btn-ghost" id="fileCopyBtn" hidden data-i18n="copier">Copier</button>
             <button id="dragCard" class="drag-card" hidden>
               <span class="drag-card-icon">⇢</span>
-              <span>Dans la page</span>
+              <span data-i18n="dans_la_page">Dans la page</span>
             </button>
             <span class="status" id="fileCopyStatus"></span>
           </div>
           <p class="status" id="fileSummary"></p>
 
         <div class="mapping-bloc">
-            <div class="mapping-titre">Corrections</div>
+            <div class="mapping-titre" data-i18n="corrections">Corrections</div>
             <div id="fileMappingWrap"></div>
           </div>
-          <p class="hint">⚠ Relis avant d'utiliser — la détection n'est pas infaillible</p>
+          <p class="hint" data-i18n="relis_avant_d_utiliser_la_detection_n_est_pa">⚠ Relis avant d'utiliser — la détection n'est pas infaillible</p>
         </section>
       </div>
 
       <section class="reinject" id="reinjectSection" hidden>
         <div class="controls">
-          <button class="btn-ghost" id="toggleReinjectBtn">Désanonymiser une réponse</button>
+          <button class="btn-ghost" id="toggleReinjectBtn" data-i18n="desanonymiser_une_reponse">Désanonymiser une réponse</button>
         </div>
         <div id="reinjectZone" hidden>
-          <h2>Désanonymiser </h2>
-          <textarea id="reinjectInput" placeholder="Colle la réponse contenant [PERSONNE_1], [EMAIL_1]…"></textarea>
+          <h2 data-i18n="desanonymiser">Désanonymiser </h2>
+          <textarea id="reinjectInput" placeholder="Colle la réponse contenant [PERSONNE_1], [EMAIL_1]…" data-i18n-placeholder="colle_la_reponse_contenant_personne_1_email"></textarea>
           <div class="controls">
-            <button class="btn-primary" id="reinjectBtn">Désanonymiser</button>
-            <button class="btn-ghost" id="copyReinjectBtn" hidden>Copier</button>
+            <button class="btn-primary" id="reinjectBtn" data-i18n="desanonymiser">Désanonymiser</button>
+            <button class="btn-ghost" id="copyReinjectBtn" hidden data-i18n="copier">Copier</button>
             <span class="status" id="reinjectStatus"></span>
           </div>
           <div class="panel" id="reinjected" hidden></div>
-          <button class="btn-ghost overlay-trigger" id="reinjectedMoreBtn" hidden>Voir tout</button>
+          <button class="btn-ghost overlay-trigger" id="reinjectedMoreBtn" hidden data-i18n="voir_tout">Voir tout</button>
         </div>
       </section>
 
       <footer>
         ⚠ Relis avant de coller — la détection n'est pas infaillible.
-        <button class="link-btn" id="identityOpenBtn">Mon identité</button>
+        <button class="link-btn" id="identityOpenBtn" data-i18n="mon_identite">Mon identité</button>
       </footer>
     </div>
   </div>
@@ -327,8 +301,8 @@
       <div class="overlay-head">
         <strong id="overlayTitle"></strong>
         <div class="controls">
-          <button class="btn-ghost" id="overlayCopyBtn" hidden>Copier</button>
-          <button class="btn-ghost" id="overlayCloseBtn">Fermer</button>
+          <button class="btn-ghost" id="overlayCopyBtn" hidden data-i18n="copier">Copier</button>
+          <button class="btn-ghost" id="overlayCloseBtn" data-i18n="fermer">Fermer</button>
         </div>
       </div>
       <div class="overlay-body" id="overlayBody"></div>
@@ -340,18 +314,18 @@
   <div class="overlay" id="identityOverlay" hidden>
     <div class="overlay-card">
       <div class="overlay-head">
-        <strong>Ton identité</strong>
+        <strong data-i18n="ton_identite">Ton identité</strong>
       </div>
       <div class="overlay-body identity-body">
         <!-- Les deux garanties tiennent en une ligne : ce que ça fait, et où
              ça reste. Le reste était de la réassurance répétée. -->
-        <p class="hint"><strong>Toujours masquées</strong>, sans dépendre de la
-        détection. Tout reste <strong>sur cette machine</strong>.</p>
+        <p class="hint"><strong data-i18n="toujours_masquees">Toujours masquées</strong>, sans dépendre de la
+        détection. Tout reste <strong data-i18n="sur_cette_machine">sur cette machine</strong>.</p>
         <div id="identityFields" class="identity-fields"></div>
         <div class="controls identity-actions">
-          <button class="btn-primary" id="identitySaveBtn">Enregistrer</button>
-          <button class="btn-ghost" id="identityLaterBtn">Plus tard</button>
-          <button class="btn-ghost identity-clear" id="identityClearBtn">Tout effacer</button>
+          <button class="btn-primary" id="identitySaveBtn" data-i18n="enregistrer">Enregistrer</button>
+          <button class="btn-ghost" id="identityLaterBtn" data-i18n="plus_tard">Plus tard</button>
+          <button class="btn-ghost identity-clear" id="identityClearBtn" data-i18n="tout_effacer">Tout effacer</button>
         </div>
       </div>
     </div>

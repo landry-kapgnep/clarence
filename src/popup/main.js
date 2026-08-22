@@ -6,6 +6,7 @@ import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
 import { compresser, compresserSegments, COMPRESSION_MODEL } from '../engine/compression.js';
+import { appliquerTraductions, t } from './i18n.js';
 import { createBatchedPipeline } from '../engine/batch.js';
 import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
 import { poidsDeTraitement, expliquerPoids } from './poids.js';
@@ -116,6 +117,10 @@ chrome.storage?.session?.get('clarenceMapping').then(r => {
 }).catch(() => {});
 
 const $ = id => document.getElementById(id);
+
+// Traductions posées AVANT tout le reste : le code qui suit lit parfois le
+// texte des éléments, et il doit lire la langue de l'utilisateur.
+appliquerTraductions();
 
 // Mode panneau : la popup tourne dans l'iframe injectée par le content script.
 if (new URLSearchParams(location.search).has('panel')) {

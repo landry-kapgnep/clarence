@@ -83,7 +83,7 @@ var GROUPES = [
     types: { person: "PER", company: "ORG", location: "LOC" },
     // Voir `pertinent` plus bas : un texte sans la moindre majuscule ne peut
     // produire aucun nom propre, donc aucune entité de ce groupe.
-    pertinent: (t) => new RegExp("\\p{Lu}", "u").test(t)
+    pertinent: (t2) => new RegExp("\\p{Lu}", "u").test(t2)
   },
   {
     // Seul : associé à d'autres labels il perd sa précision, et « address »
@@ -93,7 +93,7 @@ var GROUPES = [
     types: { "date of birth": "DATE_NAISSANCE" },
     // Une date porte toujours au moins l'année : sans chiffre, rien à trouver.
     // 65 % des unités d'un vrai mémoire sont dans ce cas — 54 % du texte.
-    pertinent: (t) => /\d/.test(t)
+    pertinent: (t2) => /\d/.test(t2)
   },
   {
     // Catégories sensibles au sens RGPD (santé, origine) + contexte pro.
@@ -229,7 +229,7 @@ function adoucirCasse(texte) {
 async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: disabledTypes2 } = {}) {
   if (!glinerPipeline) return [];
   const desactives = disabledTypes2 || /* @__PURE__ */ new Set();
-  const groupesActifs = GROUPES.filter((g) => typesDuGroupe(g).some((t) => !desactives.has(t)));
+  const groupesActifs = GROUPES.filter((g) => typesDuGroupe(g).some((t2) => !desactives.has(t2)));
   if (!groupesActifs.length) return [];
   const chunks = chunkText(text);
   let total = 0;
@@ -316,6 +316,28 @@ async function arbitrerFauxPositifs(entities, glinerPipeline) {
   return entities.filter((e) => !rejete.has(e.value));
 }
 
+// src/popup/i18n.js
+var t = (cle) => (typeof chrome !== "undefined" && chrome.i18n?.getMessage ? chrome.i18n.getMessage(cle) : "") || cle;
+var ATTRIBUTS = [
+  ["i18nTitle", "title"],
+  ["i18nPlaceholder", "placeholder"],
+  ["i18nAria", "aria-label"]
+];
+function appliquerTraductions(racine = document) {
+  for (const el of racine.querySelectorAll("[data-i18n]")) {
+    el.textContent = t(el.dataset.i18n);
+  }
+  for (const el of racine.querySelectorAll("[data-i18n-html]")) {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  }
+  for (const [prop, attr] of ATTRIBUTS) {
+    for (const el of racine.querySelectorAll(`[data-${attr === "aria-label" ? "i18n-aria" : "i18n-" + attr}]`)) {
+      el.setAttribute(attr, t(el.dataset[prop]));
+    }
+  }
+  document.documentElement.lang = typeof chrome !== "undefined" && chrome.i18n?.getUILanguage?.().slice(0, 2) || "fr";
+}
+
 // src/popup/poids.js
 var NIVEAUX = {
   leger: { libelle: "L\xE9ger", classe: "poids-leger" },
@@ -375,11 +397,11 @@ function parseTermes(valeur) {
   return (valeur || "").split(SEPARATEURS).map((s) => s.trim()).filter(Boolean);
 }
 function ajouterTerme(valeur, terme) {
-  const t = (terme || "").trim();
-  if (!t) return valeur || "";
+  const t2 = (terme || "").trim();
+  if (!t2) return valeur || "";
   const existants = parseTermes(valeur);
-  if (existants.includes(t)) return valeur || "";
-  return [...existants, t].join(", ");
+  if (existants.includes(t2)) return valeur || "";
+  return [...existants, t2].join(", ");
 }
 
 // src/engine/pseudonyms.js
@@ -1422,6 +1444,7 @@ chrome.storage?.session?.get("clarenceMapping").then((r) => {
 }).catch(() => {
 });
 var $ = (id) => document.getElementById(id);
+appliquerTraductions();
 if (new URLSearchParams(location.search).has("panel")) {
   document.body.classList.add("panel-mode");
   document.documentElement.classList.add("panel-mode");
@@ -1451,9 +1474,9 @@ function activeEntities() {
 function renderTypeChips(boxId, disabledSet) {
   const box = $(boxId);
   if (!box) return;
-  box.innerHTML = Object.entries(TYPE_DISPLAY).filter(([t]) => t !== "PERSONNALISE").map(([t, label]) => {
-    const off = disabledSet.has(t);
-    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t}" ${off ? "" : "checked"}><span class="square-checkbox" aria-hidden="true"></span><span class="checkbox-label-text">${esc(label)}</span></label>`;
+  box.innerHTML = Object.entries(TYPE_DISPLAY).filter(([t2]) => t2 !== "PERSONNALISE").map(([t2, label]) => {
+    const off = disabledSet.has(t2);
+    return `<label class="type-chip ${off ? "off" : ""}"><input type="checkbox" data-type="${t2}" ${off ? "" : "checked"}><span class="square-checkbox" aria-hidden="true"></span><span class="checkbox-label-text">${esc(label)}</span></label>`;
   }).join("");
 }
 renderTypeChips("typeToggles", disabledTypes);
@@ -2390,8 +2413,8 @@ function letterGridComputeBlocked(host, cellCss) {
   for (const img of wrap.querySelectorAll("img")) {
     if (!hidden(img)) add(img.getBoundingClientRect());
   }
-  for (const t of wrap.querySelectorAll("table")) {
-    if (!hidden(t)) add(t.getBoundingClientRect());
+  for (const t2 of wrap.querySelectorAll("table")) {
+    if (!hidden(t2)) add(t2.getBoundingClientRect());
   }
   return blocked;
 }
@@ -2404,15 +2427,15 @@ function letterGridPaintCell(col, row, letter, cellPx, tint) {
   ctx.fillText(letter, x + cellPx / 2, y + cellPx / 2 + 1);
 }
 function letterGridTintOf(key, now) {
-  const t = letterGridTints.get(key);
-  return t && t.until > now ? t.color : null;
+  const t2 = letterGridTints.get(key);
+  return t2 && t2.until > now ? t2.color : null;
 }
 function letterGridScheduleTints(now, processing) {
   if (now < letterGridNextTint) return;
   const [every0, every1] = processing ? LETTER_GRID_TINT_BUSY_EVERY_MS : LETTER_GRID_TINT_EVERY_MS;
   letterGridNextTint = now + every0 + Math.random() * (every1 - every0);
-  for (const [key, t] of letterGridTints) {
-    if (t.until <= now) letterGridTints.delete(key);
+  for (const [key, t2] of letterGridTints) {
+    if (t2.until <= now) letterGridTints.delete(key);
   }
   if (!letterGridPainted.length || !letterGridPalette.length) return;
   const [cmin, cmax] = processing ? LETTER_GRID_TINT_BUSY_CELLS : LETTER_GRID_TINT_CELLS;

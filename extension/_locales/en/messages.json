@@ -1,0 +1,170 @@
+{
+  "aide_pdf_reconstruit_depuis_des_pages_neuves_aucu": {
+    "message": "PDF rebuilt from <strong>blank</strong> pages — no original text survives underneath. Images kept.<br> Approximate fidelity: single font, fragment-level positioning."
+  },
+  "aide_remplace_par_des_noms_plausibles_plutot_que": {
+    "message": "Replaces names with <strong>plausible</strong> ones instead of <code>[PERSON_1]</code>. The same person keeps the same pseudonym throughout. <br><br>Job title, nationality and health keep their label: inventing a plausible fake there would mislead the AI."
+  },
+  "aide_remplace_par_des_noms_plausibles_plutot_que_2": {
+    "message": "Replaces names with <strong>plausible</strong> ones instead of <code>[PERSON_1]</code>. The text stays readable, and the same person keeps the same pseudonym throughout. <br><br>Job title, nationality and health keep their label: inventing a plausible fake there would mislead the AI."
+  },
+  "aide_sortie_md_le_texte_seul_sans_les_images_copi": {
+    "message": "<strong>.md</strong> output: text only, no images. Paste it straight into the chat."
+  },
+  "aide_supprime_les_mots_peu_porteurs_la_prose_est": {
+    "message": "Drops low-value words. <strong>The prose is impoverished</strong> and can no longer be proofread — masked data and negations are preserved.<br> For \"summarise\", \"which dates?\" — not for \"proofread\", \"rewrite\", \"translate\".<br> First use: ~170 MB, once."
+  },
+  "analyser": {
+    "message": "Analyse"
+  },
+  "anglais": {
+    "message": "English"
+  },
+  "annuler": {
+    "message": "Cancel"
+  },
+  "anonymiser": {
+    "message": "Anonymise"
+  },
+  "changer_de_fichier": {
+    "message": "Change file"
+  },
+  "colle_la_reponse_contenant_personne_1_email": {
+    "message": "Paste the reply containing [PERSON_1], [EMAIL_1]…"
+  },
+  "copier": {
+    "message": "Copy"
+  },
+  "corrections": {
+    "message": "Corrections"
+  },
+  "dans_la_page": {
+    "message": "Into the page"
+  },
+  "desanonymiser": {
+    "message": "De-anonymise"
+  },
+  "desanonymiser_une_reponse": {
+    "message": "De-anonymise a reply"
+  },
+  "detections": {
+    "message": "Detections"
+  },
+  "economiser_des_tokens": {
+    "message": "Save tokens"
+  },
+  "enregistrer": {
+    "message": "Save"
+  },
+  "enregistrer_dans_ce_profil": {
+    "message": "Save into this profile"
+  },
+  "extDescription": {
+    "message": "Anonymises sensitive data before you paste it into ChatGPT, Claude or Gemini. Everything stays in your browser."
+  },
+  "extName": {
+    "message": "Clarence — local anonymiser"
+  },
+  "fermer": {
+    "message": "Close"
+  },
+  "fichier": {
+    "message": "File"
+  },
+  "format_allege": {
+    "message": "Lightweight format"
+  },
+  "format_original": {
+    "message": "Original format"
+  },
+  "francais": {
+    "message": "French"
+  },
+  "innovatech_terme_metier_public": {
+    "message": "Innovatech, public industry term…"
+  },
+  "masquer_la_selection": {
+    "message": "Mask selection"
+  },
+  "mon_identite": {
+    "message": "My identity"
+  },
+  "ne_jamais_masquer": {
+    "message": "Never mask"
+  },
+  "nom_de_code_projet_patronyme_rare": {
+    "message": "Project codename, rare surname…"
+  },
+  "nom_du_client_nom_de_code": {
+    "message": "client name, codename"
+  },
+  "nouveau": {
+    "message": "New"
+  },
+  "nouveau_profil_depuis_ces_reglages": {
+    "message": "New profile from these settings"
+  },
+  "pdf_reconstruit_depuis_des_pages_neuves_imag": {
+    "message": "PDF rebuilt from blank pages, images kept. Approximate visual fidelity."
+  },
+  "personnaliser_le_masquage": {
+    "message": "Customise masking"
+  },
+  "plus_tard": {
+    "message": "Later"
+  },
+  "pseudonymes": {
+    "message": "Pseudonyms"
+  },
+  "relis_avant_d_utiliser_la_detection_n_est_pa": {
+    "message": "⚠ Read it over before using — detection is not infallible"
+  },
+  "remplace_par_des_noms_plausibles_au_lieu_de": {
+    "message": "Replaces names with plausible ones instead of PERSON_1. The same person keeps the same pseudonym. Job title, nationality and health keep their label: a plausible fake there would mislead the AI."
+  },
+  "resultat": {
+    "message": "Result"
+  },
+  "selectionne_un_passage_puis_clique_ici": {
+    "message": "Select a passage, then click here"
+  },
+  "sortie_en_markdown_le_texte_seul_sans_les_im": {
+    "message": "Markdown output: text only, no images. Paste it straight into the chat."
+  },
+  "suppr": {
+    "message": "Delete"
+  },
+  "supprime_les_mots_peu_porteurs_la_prose_est": {
+    "message": "Drops low-value words. The prose is impoverished and can no longer be proofread. Masked data and negations are preserved. First use: 170 MB to download."
+  },
+  "supprimer_ce_profil": {
+    "message": "Delete this profile"
+  },
+  "sur_cette_machine": {
+    "message": "on this machine"
+  },
+  "texte": {
+    "message": "Text"
+  },
+  "texte_propre": {
+    "message": "Clean text"
+  },
+  "ton_identite": {
+    "message": "Your identity"
+  },
+  "toujours_masquees": {
+    "message": "Always masked"
+  },
+  "toujours_masquer": {
+    "message": "Always mask"
+  },
+  "tout_effacer": {
+    "message": "Erase everything"
+  },
+  "types_a_masquer": {
+    "message": "Types to mask"
+  },
+  "voir_tout": {
+    "message": "See all"
+  }
+}
