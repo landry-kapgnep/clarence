@@ -1885,6 +1885,25 @@ $("overlay").addEventListener("click", (ev) => {
 document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape" && overlayKind) closeOverlay();
 });
+var MARGE_INFOBULLE = 8;
+function recadrerInfobulle(tip) {
+  const boite = tip.querySelector(".info-tip-box");
+  const cadre = document.querySelector(".popup-shell");
+  if (!boite || !cadre) return;
+  boite.style.transform = "none";
+  const r = boite.getBoundingClientRect();
+  const c = cadre.getBoundingClientRect();
+  let dx = 0;
+  if (r.left < c.left + MARGE_INFOBULLE) dx = c.left + MARGE_INFOBULLE - r.left;
+  else if (r.right > c.right - MARGE_INFOBULLE) dx = c.right - MARGE_INFOBULLE - r.right;
+  if (dx) boite.style.transform = `translateX(${Math.round(dx)}px)`;
+}
+for (const evenement of ["mouseover", "focusin"]) {
+  document.addEventListener(evenement, (ev) => {
+    const tip = ev.target?.closest?.(".info-tip");
+    if (tip) recadrerInfobulle(tip);
+  }, true);
+}
 var MAX_FILE_BYTES = 5 * 1024 * 1024;
 var FILE_TYPES = {
   csv: { mime: "text/csv;charset=utf-8", text: true, load: () => import("./csv-adapter-WGD4I4OD.js") },
@@ -2137,7 +2156,7 @@ function showFileResults(mapping, copyable, duree) {
   });
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
   $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
+    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="Ne plus masquer ce terme dans tout le document">garder</button></td></tr>`
   ).join("")}</table>` : "<p>Aucun masque actif.</p>";
   const suffixe = (duree ? ` ${duree}.` : "") + (compressionEchouee ? ` \u26A0 Compression indisponible : ${compressionEchouee}.` : "") + (compressionInfo ? ` \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
   $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeurs masqu\xE9es, m\xE9tadonn\xE9es nettoy\xE9es.` : "Aucune donn\xE9e sensible d\xE9tect\xE9e \u2014 m\xE9tadonn\xE9es nettoy\xE9es.") + suffixe;

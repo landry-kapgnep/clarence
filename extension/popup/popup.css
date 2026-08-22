@@ -1282,3 +1282,34 @@ td.map-occ {
   max-height: 210px;
   overflow-y: auto;
 }
+
+/* ===================== DÉBORDEMENT HORIZONTAL — RÈGLES SYSTÈME =============
+   La popup est large de 520px et `.popup-shell` COUPE ce qui dépasse
+   (overflow-x: hidden) : un élément trop large n'ajoute pas de barre de
+   défilement, il disparaît. Les règles ci-dessous bornent par CLASSE d'élément
+   plutôt qu'au cas par cas — un tableau ajouté demain est couvert d'office. */
+
+/* Un tableau se dimensionne sinon sur son contenu : une valeur longue
+   (« recherche@korrigane-labs.example ») poussait la colonne des boutons
+   hors du cadre. `fixed` fige les largeurs, le texte va à la ligne. */
+.mapping-bloc table {
+  table-layout: fixed;
+  width: 100%;
+}
+.mapping-bloc td {
+  overflow-wrap: anywhere;   /* coupe même un mot sans espace */
+}
+/* Colonnes de service : au plus juste, pour laisser la place aux valeurs. */
+.mapping-bloc td.map-occ { width: 42px; }
+.mapping-bloc td:last-child { width: 62px; }
+.mapping-bloc .map-retirer { white-space: nowrap; }
+
+/* Garde-fou général : rien de ce qui vit dans la coquille ne dépasse sa
+   largeur, quelle que soit la nature de l'élément. */
+.wrap :where(table, pre, img, canvas, textarea, select) { max-width: 100%; }
+
+/* Infobulles : première borne, la largeur. Le recadrage horizontal, lui, est
+   fait en JS (`recadrerInfobulle`) — une boîte ancrée au « ? » sort du cadre
+   dès que le « ? » approche un bord, et aucune règle CSS statique ne couvre
+   les deux bords à la fois sans se répéter par emplacement. */
+.info-tip-box { max-width: min(240px, calc(100vw - 32px)); }

@@ -770,6 +770,46 @@ $('overlayCloseBtn').addEventListener('click', closeOverlay);
 $('overlay').addEventListener('click', ev => { if (ev.target === $('overlay')) closeOverlay(); });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && overlayKind) closeOverlay(); });
 
+// --- RECADRAGE DES INFOBULLES, AU NIVEAU DU SYSTÈME ------------------------
+//
+// LE DÉFAUT : la boîte d'un « ? » est positionnée par rapport à LUI. Ancrée à
+// droite, elle se déploie vers la gauche — ce qui protège les « ? » de la
+// colonne de droite et laisse sortir ceux de la colonne de gauche. Et
+// `.popup-shell` COUPE ce qui dépasse : la boîte n'est pas décalée, elle est
+// tronquée.
+//
+// POURQUOI PAS EN CSS. Aucune règle statique ne couvre les deux bords sans se
+// répéter par emplacement (« celle-ci à gauche, celle-là à droite ») — c'est
+// exactement ce qu'on veut éviter : chaque « ? » ajouté demain rouvrirait le
+// problème. On mesure donc à l'ouverture et on ramène la boîte dans le cadre.
+//
+// Écouteurs DÉLÉGUÉS sur le document : ils couvrent les infobulles présentes
+// comme celles créées plus tard, sans qu'aucun code d'ajout n'ait à y penser.
+const MARGE_INFOBULLE = 8;
+
+function recadrerInfobulle(tip) {
+  const boite = tip.querySelector('.info-tip-box');
+  const cadre = document.querySelector('.popup-shell');
+  if (!boite || !cadre) return;
+  // Repartir de zéro : un recadrage précédent fausserait la mesure.
+  boite.style.transform = 'none';
+  // `visibility: hidden` conserve la mise en page — la boîte a donc déjà ses
+  // dimensions réelles avant même d'être visible.
+  const r = boite.getBoundingClientRect();
+  const c = cadre.getBoundingClientRect();
+  let dx = 0;
+  if (r.left < c.left + MARGE_INFOBULLE) dx = (c.left + MARGE_INFOBULLE) - r.left;
+  else if (r.right > c.right - MARGE_INFOBULLE) dx = (c.right - MARGE_INFOBULLE) - r.right;
+  if (dx) boite.style.transform = `translateX(${Math.round(dx)}px)`;
+}
+
+for (const evenement of ['mouseover', 'focusin']) {
+  document.addEventListener(evenement, ev => {
+    const tip = ev.target?.closest?.('.info-tip');
+    if (tip) recadrerInfobulle(tip);
+  }, true);
+}
+
 // ===== Mode Fichier (CSV / XLSX / DOCX) ====================================
 // Les adaptateurs (+ xlsx ~980 Ko) sont chargés en dynamique : le mode texte
 // gratuit reste léger, ce poids n'arrive qu'ici. Tout reste 100% local.
@@ -1170,7 +1210,7 @@ function showFileResults(mapping, copyable, duree) {
         // `data-valeur` porte la valeur RÉELLE : c'est elle qu'on ajoutera aux
         // termes « ne jamais masquer », pas le placeholder.
         `<td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
-        ` title="Ne plus masquer ce terme dans tout le document">ne plus masquer</button></td></tr>`
+        ` title="Ne plus masquer ce terme dans tout le document">garder</button></td></tr>`
       ).join('')}</table>`
     : '<p>Aucun masque actif.</p>';
   // duree : omise pour la régénération (retirerDuMasquage) — son propre
