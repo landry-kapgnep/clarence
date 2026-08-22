@@ -697,7 +697,9 @@ var REALISTIC_TYPES = /* @__PURE__ */ new Set([
   "ADRESSE",
   "EMAIL",
   "TELEPHONE",
-  "DATE_NAISSANCE"
+  "DATE_NAISSANCE",
+  // Handle : identifiant, détecté par regex donc de façon déterministe.
+  "PSEUDO"
 ]);
 var stripAccents = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
 function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = "fr" } = {}) {
@@ -737,6 +739,25 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
     tokenMap.set(key, v);
     return applyCase(v, token);
   }
+  const composeIdentifiant = (brut) => {
+    const parts = String(brut).split(/([._\-]+)/);
+    const mots = parts.filter((p, i) => i % 2 === 0 && p);
+    if (!mots.length) return null;
+    let out = "";
+    let rang = 0;
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 2 === 1) {
+        out += parts[i];
+        continue;
+      }
+      if (!parts[i]) continue;
+      const p = pseudoToken(parts[i], rang, mots.length);
+      if (!p) return null;
+      out += stripAccents(p);
+      rang++;
+    }
+    return out || null;
+  };
   const generators = {
     // Composition composant par composant (voir tokenMap ci-dessus). Les
     // séparateurs d'origine (espaces, traits d'union) sont préservés pour que
@@ -770,11 +791,17 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
     // si la détection des établissements devient un jour fiable.
     LOC: (h) => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: (h) => unique((h2, i) => `${(h2 + i * 7) % 98 + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
-    EMAIL: (h) => unique((h2, i) => {
-      const prenom = stripAccents(pick(L.prenoms, h2, i));
-      const nom = stripAccents(pick(L.noms, (h2 >>> 7) + i, i));
-      return `${prenom}.${nom}@${pick(L.emailDomains, h2 >>> 11, i)}`;
+    // La partie locale reprend les composants du nom quand elle en porte —
+    // c'est le cas courant — et l'unicité se joue alors sur le domaine.
+    EMAIL: (h, original) => unique((h2, i) => {
+      const local = composeIdentifiant(String(original).split("@")[0]);
+      const repli = `${stripAccents(pick(L.prenoms, h2, i))}.${stripAccents(pick(L.noms, (h2 >>> 7) + i, i))}`;
+      return `${local || repli}@${pick(L.emailDomains, h2 >>> 11, i)}`;
     }, h),
+    // Handle (GitHub, LinkedIn…). IDENTIFIANT, et sa détection est
+    // DÉTERMINISTE (regex-detect.js) : les deux conditions de REALISTIC_TYPES
+    // sont remplies. Il sortait en « [PSEUDO_1] » faute d'avoir été branché.
+    PSEUDO: (h, original) => unique((h2, i) => composeIdentifiant(original) || `${stripAccents(pick(L.prenoms, h2, i))}${stripAccents(pick(L.noms, (h2 >>> 5) + i, i))}`, h),
     TELEPHONE: (h) => unique((h2, i) => L.phone(h2, i), h),
     // Le FORMAT d'origine est reproduit, pas seulement la nature de la donnée :
     // « january 1 2002 » devenait « 13/10/1976 », ce qui saute aux yeux au

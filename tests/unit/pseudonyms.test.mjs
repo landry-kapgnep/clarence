@@ -230,3 +230,47 @@ test('aucun type PEU FIABLE ne reçoit de pseudonyme réaliste', () => {
       `${type} est peu fiable et ne doit jamais recevoir de pseudonyme`);
   }
 });
+// --- COHÉRENCE ENTRE LE NOM, L EMAIL ET LE HANDLE -------------------------
+// Signalé sur un vrai CV : la personne devenait « ROMAIN MOREAU » et son email
+// « thomas.simon@… ». Deux identités pour quelqu un dont l adresse porte
+// justement son nom — la cohérence promise s arrêtait aux frontières du type.
+
+test("l email reprend les composants du nom de la personne", () => {
+  const p = createPseudonymizer({ seed: "s1" });
+  const nom = p("PER", "LANDRY KAPGNEP");
+  const mail = p("EMAIL", "landry.kapgnep.pro@gmail.com");
+  const [prenom, patronyme] = nom.toLowerCase().split(" ");
+  assert.ok(mail.startsWith(prenom + "." + patronyme),
+    "email incohérent avec le nom : " + nom + " / " + mail);
+  assert.ok(!/landry|kapgnep/i.test(mail), "un composant réel a fuité : " + mail);
+});
+
+test("le handle reprend les composants du nom, séparateur préservé", () => {
+  const p = createPseudonymizer({ seed: "s1" });
+  const nom = p("PER", "LANDRY KAPGNEP");
+  const handle = p("PSEUDO", "landry-kapgnep");
+  assert.equal(handle, nom.toLowerCase().replace(" ", "-"));
+  assert.ok(!/landry|kapgnep/i.test(handle), "un composant réel a fuité : " + handle);
+});
+
+test("la cohérence ne dépend pas de l ordre de rencontre", () => {
+  const p = createPseudonymizer({ seed: "s1" });
+  const handle = p("PSEUDO", "landry-kapgnep");   // vu EN PREMIER
+  const nom = p("PER", "LANDRY KAPGNEP");
+  assert.equal(handle, nom.toLowerCase().replace(" ", "-"));
+});
+
+test("un email SANS nom dedans reste plausible et ne fuit pas", () => {
+  const p = createPseudonymizer({ seed: "s1" });
+  const mail = p("EMAIL", "contact@societe.fr");
+  assert.match(mail, /^[a-z.]+@[a-z0-9.-]+$/);
+  assert.ok(!mail.includes("contact"), "le libellé réel a fuité : " + mail);
+});
+
+test("ni email ni handle ne portent d accent", () => {
+  const p = createPseudonymizer({ seed: "s2" });
+  p("PER", "ÉLÉONORE VASSEUR");
+  for (const v of [p("EMAIL", "eleonore.vasseur@x.fr"), p("PSEUDO", "eleonore-vasseur")]) {
+    assert.ok(!/[^\x00-\x7f]/.test(v), "caractère non ASCII dans " + v);
+  }
+});
