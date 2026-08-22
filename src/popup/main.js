@@ -1275,7 +1275,19 @@ function rendreEtapes() {
     bloc.className = 'etape';
     const libelle = document.createElement('div');
     libelle.className = 'etape-libelle';
-    libelle.textContent = e.libelle;
+    const nom = document.createElement('span');
+    nom.textContent = e.libelle;
+    // POURCENTAGE, et pas le compteur brut d'origine (« 16/168 ») : l'unité
+    // interne ne dit rien à personne — 168 quoi ? Le pourcentage se lit sans
+    // rien savoir du découpage, et il reste la seule indication d'avancement
+    // hors de la barre, qui est trop fine pour qu'on y lise une progression
+    // lente. `aria-hidden` : la barre porte déjà la valeur pour les lecteurs
+    // d'écran, l'annoncer deux fois serait du bruit.
+    const pct = document.createElement('span');
+    pct.className = 'etape-pct';
+    pct.setAttribute('aria-hidden', 'true');
+    pct.textContent = `${Math.round(Math.max(0, Math.min(1, e.ratio)) * 100)} %`;
+    libelle.append(nom, pct);
     const piste = document.createElement('div');
     piste.className = 'progress-track';
     const jauge = document.createElement('div');

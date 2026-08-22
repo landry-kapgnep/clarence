@@ -957,9 +957,21 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
    qui n'a pas lieu d'être n'est tout simplement pas dans le DOM. */
 .etape { margin-top: 8px; }
 .etape-libelle {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
   font-size: 12px;
   color: var(--paper-dim);
   margin-bottom: 4px;
+}
+/* `tabular-nums` : sans lui, la largeur des chiffres varie et le pourcentage
+   tressaute à chaque mise à jour — sur une détection de deux minutes, ça se
+   remarque. */
+.etape-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--paper-dim);
+  opacity: .75;
 }
 .etape-faite {
   /* `flex` + `fit-content` et non `inline-flex` : deux puces consécutives se

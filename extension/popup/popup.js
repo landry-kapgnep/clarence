@@ -2172,7 +2172,13 @@ function rendreEtapes() {
     bloc.className = "etape";
     const libelle = document.createElement("div");
     libelle.className = "etape-libelle";
-    libelle.textContent = e.libelle;
+    const nom = document.createElement("span");
+    nom.textContent = e.libelle;
+    const pct = document.createElement("span");
+    pct.className = "etape-pct";
+    pct.setAttribute("aria-hidden", "true");
+    pct.textContent = `${Math.round(Math.max(0, Math.min(1, e.ratio)) * 100)} %`;
+    libelle.append(nom, pct);
     const piste = document.createElement("div");
     piste.className = "progress-track";
     const jauge = document.createElement("div");
