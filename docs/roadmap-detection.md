@@ -1645,3 +1645,98 @@ pour une ville, et le pseudonyme masque l'erreur. La règle des deux conditions
 ne couvre pas ce cas — un type fiable produit quand même des fautes, plus
 rarement. C'est le prix assumé de l'option Pseudonymes, et l'argument de plus
 pour ne jamais la présenter comme sûre.
+
+## P14 — Le score ne sépare rien ; le dictionnaire, si (18/08/2026)
+
+Signalé à l'usage : « encore trop de masquages non nécessaires », au point de
+bloquer le reste du produit. Audit demandé.
+
+### Trois mesures, dont deux qui éliminent des solutions
+
+**1. L'extraction n'est PAS en cause sur ce document.** Hypothèse posée puis
+REJETÉE : les unités du CV sont de vrais paragraphes, `splitIntoColumns` fait
+son travail. Le modèle reçoit du texte propre et se trompe quand même.
+
+**2. Les listes de profil couvrent déjà beaucoup.** Le premier audit tournait
+sur le moteur nu et comptait 31 détections ; avec le profil réel, 20. Les
+intitulés et les technos étaient déjà traités par `STRUCTURE_KEEP` et
+`TECH_KEEP`. Un correctif « veto des intitulés » a donc été **abandonné avant
+d'être écrit** — il aurait réglé un problème déjà résolu.
+
+**3. ⚠️ LE SCORE NE SÉPARE PAS LE VRAI DU FAUX.** C'est la mesure qui a
+réorienté tout le reste :
+
+| score | type | valeur |
+|---|---|---|
+| 0,83 | ORG | `SafePrompt` |
+| 0,79 | PER | `LANDRY KAPGNEP` |
+| 0,77 | LOC | `Spécialités` |
+| 0,76 | LOC | `Bénévole terrain` |
+| 0,68 | LOC | `Sorbonne Paris Nord` |
+
+Vrais 0,738 de moyenne, faux 0,648, **et le meilleur score du document est un
+faux positif**. Aucun réglage de seuil ne peut les séparer — et l'idée
+« masquer au-dessus de X, proposer en dessous » meurt avec, faute de signal sur
+lequel couper. **Ne pas y revenir.**
+
+### Le signal retenu : un nom propre n'est pas un mot du dictionnaire
+
+Les dix faux positifs restants étaient tous composés de mots courants
+(`Bénévole terrain`, `Anglais C1`, `Mars 2026`, `Développement & Web`) ; les
+vraies valeurs, jamais (`KAPGNEP`, `Sorbonne`, `Twini`, `UNODC`).
+
+Lexique tiré du vocabulaire WordPiece de mBERT (Apache 2.0), dont on ne garde
+que les entrées **entièrement minuscules** : par convention de ce vocabulaire un
+nom propre n'y figure qu'avec sa capitale, si bien que « sorbonne » est absent
+quand « terrain » est présent. 37 k mots, 330 Ko, committés
+(`src/engine/lexique.js`) parce que la source ne l'est pas.
+
+Complété par des **suffixes dérivationnels** français, là où un vocabulaire
+réparti sur 104 langues est trop mince (`conteneurisée`, `modélisation`).
+
+### Deux limites, mesurées et assumées
+
+**JAMAIS SUR LES PERSONNES.** Beaucoup de patronymes français sont des mots
+courants — Blanc, Petit, Bernard, Roux — et notre propre vivier de pseudonymes
+en est plein. Testé : « Pierre Blanc » est jugé « vocabulaire ». Le filtre ne
+s'applique donc qu'à ORG et LOC, dont la valeur n'est pas une donnée
+personnelle au sens du RGPD.
+
+**CINQ SUFFIXES RETIRÉS APRÈS MESURE** : `-elle`, `-ance`, `-ence`, `-ique`,
+`-aire`. Ils collident avec des noms de lieux — Sarcelles, France, Provence,
+Belgique, Martinique, Saint-Nazaire — et le banc l'a signalé immédiatement en
+cessant de masquer « Sarcelles ». Coût accepté : `Canal acoustique de données`
+survit, faute de `-ique`. Un faux positif visible vaut mieux qu'une ville en
+clair.
+
+Restent perdus, connus : `Orange`, `Total`, `Le Monde` — des entités dont le nom
+EST un mot courant. Rattrapables par le profil d'identité et la table des
+corrections.
+
+### Résultat
+
+| | avant | après |
+|---|---|---|
+| banc — structuré | 100 % | **100 %** |
+| banc — contextuel | 84 % (36/43) | **84 % (36/43)** |
+| banc — préservé | 93 % | **93 %** |
+| borne basse — préservé | 88 % | **90 %** |
+| **CV réel, profil Tech** | **20 masques** | **16** |
+
+Zéro coût mesurable, quatre faux positifs de moins sur un vrai document.
+
+### Ce qui reste, et le chantier de fond
+
+Six faux positifs subsistent sur ce CV : `IA`, `NSI`, `Développeur Data`
+(passé en PER, donc hors filtre), `Bénévole terrain`, `Canal acoustique de
+données`, `Stack conteneurisée`.
+
+Le vrai correctif reste à faire, et c'est de la R&D : **GLiNER est entraîné sur
+de la prose, un CV n'en est pas.** Listes à puces, intitulés en capitales,
+fragments sans verbe — le modèle n'a aucune prise, et aucun réglage ne lui en
+donnera. La voie praticable est un **corpus synthétique** : on possède déjà les
+viviers de pseudonymes, le vocabulaire des profils et les gabarits de vrais
+documents ; on peut donc générer des milliers de CV, formulaires et rapports
+dont **les étiquettes sont connues par construction**. Zéro annotation, zéro
+donnée personnelle, corpus illimité — la méthode même de LLMLingua-2, qu'on
+embarque déjà. Non engagé.

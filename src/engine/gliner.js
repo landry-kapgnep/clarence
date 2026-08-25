@@ -11,6 +11,7 @@
 // Contrat de sortie IDENTIQUE à detectNER : tout l'aval (merge, selection,
 // masking) est donc inchangé et les deux moteurs sont interchangeables.
 import { chunkText, snapToWordBoundaries, bridgeNameParts } from './ner.js';
+import { estVocabulaireCourant } from './vocabulaire.js';
 
 export const GLINER_MODEL = 'onnx-community/gliner_small-v2';
 
@@ -243,10 +244,24 @@ export function estPronom(valeur) {
     ? PRONOMS.has(avantApostrophe) : false);
 }
 
+// Types soumis au filtre de VOCABULAIRE (P14). PER en est EXCLU volontairement :
+// beaucoup de patronymes français sont des mots courants — Blanc, Petit,
+// Bernard, Roux — et « Pierre Blanc » serait jugé « vocabulaire », donc laissé
+// en clair. Le filtre y produirait des fuites, pas du confort.
+//
+// ORG et LOC, eux, portent le gros du bruit ET la donnée la moins sensible :
+// une raison sociale ou une ville ne sont pas des données personnelles au sens
+// du RGPD, alors que le bruit qu'on retire rendait le document inexploitable.
+const TYPES_FILTRES_PAR_VOCABULAIRE = new Set(['ORG', 'LOC']);
+
 function estPlausiblePourLeType(type, valeur) {
   if (TYPES_NOMS_PROPRES.has(type)) {
     if (estPronom(valeur)) return false;
-    return /\p{Lu}/u.test(valeur);
+    if (!/\p{Lu}/u.test(valeur)) return false;
+    // Un nom propre n'est pas fait de mots du dictionnaire. Voir
+    // vocabulaire.js pour la mesure qui a mené ici, et pour ce qu'on y perd.
+    if (TYPES_FILTRES_PAR_VOCABULAIRE.has(type) && estVocabulaireCourant(valeur)) return false;
+    return true;
   }
   if (type === 'DATE_NAISSANCE') return estUneDate(valeur);
   return true;
