@@ -23,3 +23,7 @@ tests/regression/corpus/
 # il sert à NOMMER une valeur qui a cessé d'être masquée, ce que les empreintes
 # ne peuvent pas dire. Le committer reviendrait à committer le corpus lui-même.
 tests/regression/instantanes/*.clair.json
+
+# Corpus synthétique généré : volumineux et reproductible en une commande
+# (tools/corpus/generer.mjs). Le générateur est committé, sa sortie non.
+*.jsonl
