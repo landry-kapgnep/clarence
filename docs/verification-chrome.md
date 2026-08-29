@@ -645,3 +645,43 @@ SUPPRIMÉ avant cette exécution : il a donc été recréé à neuf par
 EMPREINTES_HISTORIQUES — mettre à jour un profil existant et jamais édité —
 reste couvert par les tests unitaires mais **non confirmé en vrai Chrome**.
 Le rejouer demande une installation dont le profil date d'avant le 15/08.
+
+---
+
+## 30/08/2026 — P15, le filtre de précision appris
+
+**Ce que ça change dans l'extension** : entre l'arbitrage et la fusion, un
+classifieur peut désormais RETIRER des candidats ORG/LOC. Un mécanisme qui
+démasque est exactement ce qu'il faut voir tourner en vrai, pas seulement au
+banc — d'autant que le banc, lui, a déjà servi son verdict deux fois (voir P15).
+
+Ce qui est déjà couvert automatiquement, et qu'il est inutile de rejouer à la
+main : les cinq garde-fous (491 tests unitaires, chacun vu rouge avant vert), le
+non-régression du banc, et les trois valeurs à chiffres qui avaient fui.
+
+### Ce qui reste à voir à l'œil, et pourquoi
+
+Le banc bouge peu (5 masques de moins sur 9 documents) parce que ses
+sur-masquages restants sont TOUS d'un seul mot — donc exclus par construction.
+Le gain attendu porte sur les **groupes nominaux de plusieurs mots** des
+documents à rubriques. Personne ne peut le confirmer sans un vrai CV.
+
+| # | Fichier / geste | Attendu |
+|---|---|---|
+| 1 | Un vrai CV en PDF, mode Fichier, profil « Développeur / Tech », option **Alléger** | Moins de masques qu'avant sur les rubriques : `Développement & Web`, `Bénévole terrain`, `Canal acoustique de données`, `Relevé de notes` ne doivent plus être masqués |
+| 2 | Le MÊME CV, table **Corrections** ouverte | Le nom, le prénom, les employeurs, les villes et les écoles doivent tous y être. **Toute disparition d'un de ces éléments est une FUITE et un bloquant.** |
+| 3 | Le même CV, option **Préserver** (PDF reconstruit) | Même verdict qu'en 1 et 2 : les deux chemins passent par `anonymizeUnits`, donc par le même filtre. Une divergence signalerait un câblage manquant. |
+| 4 | Un document contenant une **adresse postale** et un **matricule** (`EMP-0012`, `MAT-2024-118`) | Les DEUX masqués. C'est la fuite n° 1 de P15 ; le matricule n'est PAS vu par le déterministe, il ne tient que par la couche contextuelle. |
+| 5 | Un document où un **patronyme est aussi un mot courant** (Rose Fontaine, Pierre Blanc, Jean Lefebvre) et où ce mot apparaît ailleurs en minuscules | Le nom reste masqué. C'est la fuite n° 2 de P15, celle qui a imposé le garde-fou de forme. |
+| 6 | Mode **Texte** (pas Fichier), même contenu que 1 | Même verdict. Les deux modes appliquent le filtre ; ils ont divergé par le passé. |
+
+### Ce qui est normal et n'est PAS un bug
+
+- **`Docker`, `JWT`, `PostgreSQL`, `Kubernetes` encore masqués** hors profil
+  Tech : les technos d'un seul mot sont hors de portée du filtre PAR
+  CONSTRUCTION — aucune caractéristique ne les distingue de `Twini` ou `UNODC`.
+  C'est le rôle de la liste « ne jamais masquer » des profils.
+- **Les intitulés en capitales d'un seul mot** (`SPRACHEN`, `Outils`) : même
+  raison, garde-fou 4.
+- **`Rose Fontaine` masqué en tant qu'ENTREPRISE** : l'étiquette est fausse mais
+  le masquage est bon. On ne corrige pas l'étiquette, on protège la valeur.
