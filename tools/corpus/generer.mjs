@@ -57,6 +57,31 @@ const entite = {
   EMAIL: () => tirer(LOCALES).internet.email().toLowerCase(),
   TEL: () => fakerFR.phone.number({ style: 'national' }),
   DATE_NAISSANCE: () => fakerFR.date.birthdate().toLocaleDateString('fr-FR'),
+
+  // ⚠️ AJOUTÉS LE 29/08/2026 APRÈS UNE FUITE MESURÉE, et c'est la leçon la plus
+  // chère de ce corpus. Jusqu'ici, TOUTE valeur portant un chiffre y était un
+  // piège (« Baccalauréat Général 2016 », « Mars 2026 ») et aucune n'était une
+  // vraie entité. Le filtre de précision en a tiré la règle « chiffre ⇒ pas une
+  // entité » — poids −4,6, la troisième plus forte — et s'est mis à retirer
+  //     « 42 rue des Cordeliers »   (adresse)
+  //     « 44000 Nantes »            (code postal + ville)
+  //     « EMP-0012 »                (matricule, que le déterministe NE VOIT PAS)
+  // Le banc est passé NON PUBLIABLE. Ce n'était pas le classifieur qui avait
+  // tort : c'est le corpus qui ne lui avait jamais montré qu'un identifiant, une
+  // adresse ou un code postal SONT des données personnelles.
+  //
+  // Même leçon que P12 (« le corpus était le vrai coupable ») : quand le modèle
+  // apprend une règle absurde, chercher d'abord ce qu'on a oublié de lui montrer.
+  ADRESSE: () => `${1 + Math.floor(Math.random() * 180)} ${tirer(['rue', 'avenue', 'boulevard', 'impasse', 'chemin'])} `
+    + `${tirer(['des Cordeliers', 'Victor Hugo', 'de la Gare', 'des Lilas', 'Jean Jaurès', 'du Moulin'])}`,
+  CP_VILLE: () => `${String(1 + Math.floor(Math.random() * 95)).padStart(2, '0')}`
+    + `${String(Math.floor(Math.random() * 1000)).padStart(3, '0')} ${tirer(LOCALES).location.city()}`,
+  REFERENCE: () => tirer([
+    () => `EMP-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`,
+    () => `MAT-${2015 + Math.floor(Math.random() * 11)}-${String(Math.floor(Math.random() * 999)).padStart(3, '0')}`,
+    () => `REF/${2015 + Math.floor(Math.random() * 11)}/${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`,
+    () => `${tirer(['DOS', 'CTR', 'ID'])}${String(Math.floor(Math.random() * 99999)).padStart(5, '0')}`
+  ])(),
 };
 
 // ── NÉGATIFS DURS ──────────────────────────────────────────────────────────
@@ -118,6 +143,7 @@ export const GABARITS = {
     'Bases de données • {TECHNO} · {TECHNO} · {TECHNO}',
   ],
   'EXPÉRIENCES PROFESSIONNELLES': [
+    '{ORG}, {ADRESSE}, {CP_VILLE}.',
     '{NEG} — {ORG}, {LOC}. {MOIS} {ANNEE}.',
     'Stage chez {ORG} à {LOC} : {NEG}.',
     'Encadré par {PER}, responsable technique chez {ORG}.',
@@ -146,6 +172,12 @@ export const GABARITS = {
     'Téléphone {TEL}',
     'Sexe Masculin',
     'Nationalité Française',
+    // Ces trois-là portent des CHIFFRES et sont de VRAIES données personnelles.
+    // Sans elles, le corpus n'enseignait qu'une chose sur les chiffres : les
+    // ignorer. Voir le commentaire de `entite.ADRESSE`.
+    'Adresse {ADRESSE}, {CP_VILLE}',
+    'Domicilié au {ADRESSE} à {CP_VILLE}',
+    'Matricule {REFERENCE}',
   ],
   'MENTIONS': [
     'NÉANT',
@@ -153,6 +185,8 @@ export const GABARITS = {
     'Bulletin délivré le {DATE_NAISSANCE} par le greffe.',
   ],
   'COMPTE RENDU': [
+    'Dossier {REFERENCE} — {PER}, {ORG}.',
+    'Salarié {PER}, matricule {REFERENCE}, affecté à {CP_VILLE}.',
     'Entretien annuel de {PER}, en poste depuis {ANNEE} chez {ORG}.',
     '{PER} a piloté {NEG} avec {PER}.',
     'Objectifs de l’année : {NEG}, {NEG}.',
@@ -248,6 +282,12 @@ export function ligne(section, gabarit) {
 const LABELS = {
   PER: 'person', ORG: 'company', LOC: 'location',
   EMAIL: 'email', TELEPHONE: 'phone number', DATE_NAISSANCE: 'date of birth',
+  // Adresse et code postal + ville SONT des lieux : le label existe déjà et
+  // c'est le bon. Le matricule, lui, n'a pas de label dédié dans GROUPES —
+  // « company » est ce que le modèle en fait spontanément (mesuré : « EMP-0012 »
+  // seul sort à 0,57 en entreprise), donc c'est l'étiquette qui décrit
+  // réellement son comportement plutôt qu'une catégorie qui n'existe pas.
+  ADRESSE: 'location', CP_VILLE: 'location', REFERENCE: 'company',
 };
 
 // Tire une ligne au hasard, en respectant les sections propres à chaque type de

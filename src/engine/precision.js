@@ -25,6 +25,7 @@
 //      est plein : « Pierre Blanc » est jugé « vocabulaire ». Un filtre qui
 //      démasque des personnes ne rend pas service, il fuit.
 import { contexteDocument, caracteristiques } from './caracteristiques.js';
+import { motsSignificatifs } from './vocabulaire.js';
 import { POIDS } from './poids-precision.js';
 
 export { POIDS };
@@ -80,6 +81,70 @@ export function expliquer(candidat, ctx, modele = POIDS) {
   return pire?.nom ?? null;
 }
 
+// GARDE-FOU 4 — UN SEUL MOT NE SE JUGE PAS. Mesuré au banc, pas supposé.
+//
+// Le filtre faisait perdre deux patronymes : « Vaquier », seul dans une cellule
+// de tableau, et « Fontaine » (de « Rose Fontaine ») — tous deux étiquetés
+// ENTREPRISE par le modèle, donc hors de portée du garde-fou 3 qui, lui,
+// raisonne par TYPE. **Un patronyme mal étiqueté reste un patronyme.**
+//
+// LE MÉCANISME. Un candidat d'un seul mot n'offre presque aucune prise : le
+// lexique n'y voit rien, `nbMots` ne rapporte qu'un cinquième de son poids, et
+// il ne reste que le score du modèle — dont on a mesuré qu'il ne sépare rien.
+// Or les candidats d'un seul mot sont massivement des PATRONYMES et des VILLES,
+// c'est-à-dire ce qu'il y a de plus sensible ; « Calahorra », l'unique perte de
+// l'évaluation, en est un.
+//
+// SYMÉTRIQUEMENT, on ne perd rien : les faux positifs que le filtre attrape
+// réellement sont TOUS des groupes de plusieurs mots — « Modélisation
+// applicative », « Relevé de notes », « Analyse statistique des écarts »,
+// « Portugais bilingue ». Les seuls candidats d'un mot qu'il retirait étaient
+// « JaCoCo » et « BDD », des technologies, que les profils traitent déjà mieux.
+//
+// C'est donc une restriction qui coûte zéro et protège la classe la plus
+// exposée. Elle vaut aussi à l'entraînement (voir tools/filtre/entrainer.mjs) :
+// les chiffres annoncés doivent être ceux du filtre réellement livré.
+export const MOTS_MINIMUM = 2;
+
+// GARDE-FOU 5 — LA FORME D'UN NOM PROTÈGE, PAS SEULEMENT L'ÉTIQUETTE.
+//
+// LA FUITE QUI L'A IMPOSÉ, mesurée sur tests/manuel/tous-defauts.pdf, dans une
+// phrase écrite exprès pour ce piège :
+//     « Rose Fontaine cultive une rose ancienne dans son jardin. »
+// Le modèle étiquette « Rose Fontaine » en ENTREPRISE — donc le garde-fou 3,
+// qui raisonne par TYPE, ne la voit pas. Et le filtre la retire à 0,177 :
+// « rose » est au dictionnaire (partLexique 0,50) et le document l'écrit
+// lui-même en minuscules plus loin (minusculeAilleurs 0,50). Les deux signaux
+// dont ce filtre tire sa valeur se retournent contre un patronyme.
+//
+// Ce n'est pas un cas tordu, c'est LA doctrine du projet qu'on contournait :
+// vocabulaire.js documente déjà qu'on n'applique jamais un raisonnement de
+// vocabulaire à une personne, « beaucoup de patronymes français SONT des mots
+// courants — Blanc, Petit, Bernard, Roux ». L'erreur était de s'appuyer sur
+// l'étiquette du modèle, qu'il peut se tromper à donner, plutôt que sur la
+// FORME de la valeur, qui, elle, ne ment pas.
+//
+// LE COÛT EST MESURÉ, et il est dérisoire : sur le jeu d'évaluation, ce
+// garde-fou protège 458 vraies entités sur 706 et ne coûte que 7 faux positifs
+// sur 418 — quatre valeurs distinctes (« Développeur Linux », « Développeur
+// Pandas », « Développeur Ollama », « Baccalauréat Général »).
+//
+// Deux à trois mots seulement : au-delà, ce n'est plus un nom mais une raison
+// sociale longue (« Institut National des Sciences Appliquées »). Aucun chiffre :
+// un nom de personne n'en porte pas.
+export const formeDeNomPropre = (valeur) => {
+  if (/\d/.test(valeur)) return false;
+  const mots = motsSignificatifs(valeur);
+  return mots.length >= 2 && mots.length <= 3
+    && mots.every(m => /^\p{Lu}[\p{Ll}'’-]+$/u.test(m));
+};
+
+export const filtrable = (e) =>
+  e.source === 'ner'
+  && TYPES_FILTRES.has(e.type)
+  && motsSignificatifs(e.value).length >= MOTS_MINIMUM
+  && !formeDeNomPropre(e.value);
+
 // Filtre une liste d'entités. `texte` est le DOCUMENT ENTIER : deux des
 // caractéristiques (occurrences, minuscules ailleurs) n'existent qu'à cette
 // échelle — c'est la raison pour laquelle ce filtre se branche au niveau de
@@ -88,12 +153,32 @@ export function filtrerParPrecision(entities, texte, { modele = POIDS, sousMots,
   if (!modele || !entities?.length) return entities || [];
   const ctx = contexteDocument(texte, { sousMots });
   return entities.filter(e => {
-    // Garde-fous 2 et 3 : le déterministe et les personnes passent intacts,
-    // sans même être évalués.
-    if (e.source !== 'ner' || !TYPES_FILTRES.has(e.type)) return true;
+    // Garde-fous 2 à 5 : le déterministe, les types autres qu'ORG/LOC, les
+    // candidats d'un seul mot et tout ce qui a la FORME d'un nom propre passent
+    // intacts, sans même être évalués.
+    if (!filtrable(e)) return true;
     const p = scorePrecision(e, ctx, modele);
     if (p >= modele.seuil) return true;
     if (journal) journal.push({ valeur: e.value, type: e.type, p, motif: expliquer(e, ctx, modele) });
     return false;
   });
+}
+
+// LA COMPOSITION DES DEUX PASSES, À UN SEUL ENDROIT.
+//
+// POURQUOI ELLE EST ICI ET PAS CHEZ CHAQUE APPELANT. Elle vivait dans main.js ;
+// le banc, lui, se fabriquait son propre arbitre — sans le filtre. Résultat
+// mesuré : le filtre livré ne changeait RIEN aux chiffres du banc, non parce
+// qu'il était inefficace mais parce que le banc ne l'exécutait pas. C'est
+// exactement le défaut que CLAUDE.md documente (« le banc mesurait `quantized`
+// pendant que la popup chargeait autre chose ») : une porte de qualité qui note
+// autre chose que ce qu'on expédie ne garantit rien.
+//
+// L'ORDRE COMPTE et n'est pas interchangeable : c'est celui sur lequel le filtre
+// a été entraîné (voir tools/filtre/construire-jeu.mjs). L'arbitre réinterroge
+// le modèle avec des labels leurres, le filtre pèse ensuite ce qui reste.
+export function composerArbitre(pipe, arbitrerFauxPositifs) {
+  if (!pipe) return undefined;
+  return async (entities, texte) =>
+    filtrerParPrecision(await arbitrerFauxPositifs(entities, pipe), texte);
 }

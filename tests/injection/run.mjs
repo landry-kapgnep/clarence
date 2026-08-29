@@ -29,6 +29,7 @@ import { dirname, join, extname } from 'node:path';
 import { detectGliner, GLINER_MODEL, GLINER_VARIANTE, glinerModelUrl,
          TYPES_PEU_FIABLES, arbitrerFauxPositifs } from '../../src/engine/gliner.js';
 import { createBatchedPipeline } from '../../src/engine/batch.js';
+import { composerArbitre } from '../../src/engine/precision.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
 import { detectRegex } from '../../src/engine/regex-detect.js';
 import { detectPhonesIntl } from '../../src/engine/phone-intl.js';
@@ -127,7 +128,7 @@ const unites = INJECTIONS.map(([langue, phrase, valeur, couche], i) => ({
 const { results } = await anonymizeUnits(unites.map(({ id, text }) => ({ id, text })), {
   nerPipeline: pipe, nerDetect: detectGliner,
   disabledTypes: new Set(TYPES_PEU_FIABLES),
-  arbitre: e => arbitrerFauxPositifs(e, pipe)
+  arbitre: composerArbitre(pipe, arbitrerFauxPositifs)
 });
 const parId = new Map(results.map(r => [r.id, r.maskedText]));
 

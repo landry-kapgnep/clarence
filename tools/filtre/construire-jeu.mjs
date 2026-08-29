@@ -147,11 +147,17 @@ function document() {
 // « Rose Fontaine » reste une vraie détection (frontière imparfaite, pas faux
 // positif) — un critère d'égalité stricte compterait comme erreurs des cas où
 // le masquage protège bel et bien la donnée.
-const TYPE_DU_SLOT = { PER: 'PER', ORG: 'ORG', LOC: 'LOC' };
+//
+// ⚠️ N'IMPORTE QUEL TYPE D'ENTITÉ COMPTE, pas seulement celui du candidat. Ce
+// qui est jugé n'est pas « le modèle a-t-il trouvé la bonne étiquette ? » mais
+// « faut-il masquer ici ? ». Un nom vu comme ENTREPRISE reste masqué, donc
+// protégé ; le filtre ne doit surtout pas apprendre à le retirer. Une première
+// version ne retenait que PER/ORG/LOC et étiquetait donc « faux » un candidat
+// posé sur un e-mail ou une date de naissance — lui apprenant à démasquer.
+const TYPES_CANDIDATS = new Set(['PER', 'ORG', 'LOC']);
 
 function estVrai(candidat, spans) {
-  return spans.some(s =>
-    TYPE_DU_SLOT[s.type] && candidat.start < s.end && candidat.end > s.start);
+  return spans.some(s => candidat.start < s.end && candidat.end > s.start);
 }
 
 // --- Programme ------------------------------------------------------------
@@ -178,7 +184,7 @@ for (let d = 0; d < nbDocs; d++) {
   const apresArbitre = await arbitrerFauxPositifs(candidats, pipe);
 
   for (const c of apresArbitre) {
-    if (!TYPE_DU_SLOT[c.type]) continue;
+    if (!TYPES_CANDIDATS.has(c.type)) continue;
     const y = estVrai(c, c.spans) ? 1 : 0;
     stats.candidats++;
     stats[y ? 'vrais' : 'faux']++;

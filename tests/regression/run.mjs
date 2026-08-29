@@ -39,6 +39,7 @@ import { dirname, join, extname, basename } from 'node:path';
 import { detectGliner, GLINER_MODEL, GLINER_VARIANTE, glinerModelUrl,
          TYPES_PEU_FIABLES, arbitrerFauxPositifs } from '../../src/engine/gliner.js';
 import { createBatchedPipeline } from '../../src/engine/batch.js';
+import { composerArbitre } from '../../src/engine/precision.js';
 import { anonymizeUnits } from '../../src/files/anonymize-units.js';
 
 const ici = dirname(fileURLToPath(import.meta.url));
@@ -121,7 +122,7 @@ async function analyser(chemin, pipe) {
     nerDetect: detectGliner,
     intitules,
     disabledTypes: new Set(TYPES_PEU_FIABLES),
-    arbitre: e => arbitrerFauxPositifs(e, pipe)
+    arbitre: composerArbitre(pipe, arbitrerFauxPositifs)
   });
 
   const parType = {};

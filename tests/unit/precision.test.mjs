@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  filtrerParPrecision, scorePrecision, expliquer, TYPES_FILTRES, POIDS
+  filtrerParPrecision, scorePrecision, expliquer, TYPES_FILTRES, POIDS, formeDeNomPropre
 } from '../../src/engine/precision.js';
 import { contexteDocument } from '../../src/engine/caracteristiques.js';
 
@@ -80,7 +80,9 @@ test('les types autres qu’ORG/LOC passent intacts', () => {
 // --- Le filtre agit bel et bien quand il en a le droit --------------------
 
 test('un ORG évalué sous le seuil est retiré', () => {
-  const ents = [ent({ type: 'ORG', value: 'Développement Web' })];
+  // La valeur n'est PAS en casse de titre : « Modélisation applicative » ne
+  // peut pas être un nom de personne, donc le garde-fou 5 la laisse évaluer.
+  const ents = [ent({ type: 'ORG', value: 'Modélisation applicative' })];
   assert.equal(filtrerParPrecision(ents, 'texte', { modele: TOUT_REJETER }).length, 0);
 });
 
@@ -89,10 +91,10 @@ test('le journal dit ce qui a été retiré et POURQUOI', () => {
   // dans un produit bâti sur l'anti-fausse-confiance.
   const modele = { seuil: 0.5, biais: 1, poids: { minusculeAilleurs: -10 } };
   const journal = [];
-  const texte = 'COMPÉTENCES Développement Web\nje fais du développement web.';
-  filtrerParPrecision([ent({ value: 'Développement Web' })], texte, { modele, journal });
+  const texte = 'RUBRIQUE Modélisation applicative\nje fais de la modélisation applicative.';
+  filtrerParPrecision([ent({ value: 'Modélisation applicative' })], texte, { modele, journal });
   assert.equal(journal.length, 1);
-  assert.equal(journal[0].valeur, 'Développement Web');
+  assert.equal(journal[0].valeur, 'Modélisation applicative');
   assert.equal(journal[0].motif, 'minusculeAilleurs');
   assert.ok(journal[0].p < 0.5);
 });
@@ -122,4 +124,72 @@ test('l’explication voit aussi ce qui MANQUE, pas seulement ce qui pénalise',
   const modele = { seuil: 0.5, biais: 0, poids: { score: 10, partLexique: -1 } };
   const ctx = contexteDocument('un texte');
   assert.equal(expliquer({ value: 'gestion', score: 0.02 }, ctx, modele), 'score');
+});
+
+// --- Les valeurs qui ont RÉELLEMENT fui, verrouillées ---------------------
+//
+// Ce test-ci dépend VOLONTAIREMENT des poids livrés, contrairement à tous les
+// autres : c'est une porte de qualité sur le modèle expédié, pas sur la
+// mécanique. Il est né d'une fuite mesurée au banc (29/08/2026, verdict NON
+// PUBLIABLE) — le corpus ne contenait aucune valeur À CHIFFRES qui soit une
+// vraie donnée personnelle, donc le filtre avait appris « chiffre ⇒ pas une
+// entité » (poids −4,6) et retirait adresses, codes postaux et matricules.
+//
+// Le matricule est le plus grave des trois : le déterministe NE LE VOIT PAS
+// (vérifié, detectRegex('EMP-0012') rend []), il n'était masqué que par la
+// couche contextuelle. Le retirer était une fuite franche.
+test('le filtre ne retire JAMAIS une valeur à chiffres qui a déjà fui', { skip: POIDS === null }, () => {
+  const texte = 'Adresse 42 rue des Cordeliers, 44000 Nantes. Matricule EMP-0012.';
+  const dangereuses = [
+    { value: '42 rue des Cordeliers', type: 'LOC' },
+    { value: '44000 Nantes', type: 'LOC' },
+    { value: 'EMP-0012', type: 'ORG' }
+  ].map(e => ({ ...e, source: 'ner', score: 0.6 }));
+
+  const journal = [];
+  const gardees = filtrerParPrecision(dangereuses, texte, { journal });
+  assert.deepEqual(gardees, dangereuses,
+    'FUITE : ' + journal.map(j => `« ${j.valeur} » retiré (${j.motif}, p=${j.p.toFixed(3)})`).join(', '));
+});
+
+test('les poids livrés ne pèsent que des caractéristiques calculables EN PRODUCTION', { skip: POIDS === null }, () => {
+  // ⚠️ PIÈGE VÉCU. `fragmentation` a besoin du vocabulaire de sous-mots (~1 Mo,
+  // hors dépôt). Le banc d'entraînement le charge, la production NON : elle
+  // appelle filtrerParPrecision sans `sousMots`, donc la caractéristique y vaut
+  // 0 en toutes circonstances. Un modèle entraîné avec de vraies valeurs et un
+  // poids de −7,59 s'appliquait donc hors de son domaine — sans erreur, sans
+  // signal, juste des décisions décalées.
+  //
+  // Si un jour on embarque le vocabulaire, ce test doit être MODIFIÉ en même
+  // temps que le câblage : c'est là tout son intérêt.
+  assert.ok(!('fragmentation' in POIDS.poids),
+    'poids sur « fragmentation » alors que la production ne la calcule pas');
+});
+
+// --- Garde-fou 5 : la FORME d'un nom protège, pas l'étiquette -------------
+
+test('un candidat en forme de nom de personne n’est JAMAIS filtré', () => {
+  // LA FUITE QUI A IMPOSÉ CE GARDE-FOU, reproduite telle quelle. Sur
+  // tests/manuel/tous-defauts.pdf, le modèle étiquette « Rose Fontaine » en
+  // ENTREPRISE — le garde-fou 3 raisonne par TYPE et ne la voit donc pas — et
+  // le filtre la retirait à 0,177 : « rose » est au dictionnaire, et le
+  // document l'écrit lui-même en minuscules dans la phrase suivante. Les deux
+  // signaux dont ce filtre tire sa valeur se retournaient contre un patronyme.
+  const texte = 'Rose Fontaine cultive une rose ancienne dans son jardin.';
+  const nom = [ent({ type: 'ORG', value: 'Rose Fontaine' })];
+  assert.deepEqual(filtrerParPrecision(nom, texte, { modele: TOUT_REJETER }), nom);
+});
+
+test('la forme de nom : deux ou trois mots capitalisés, sans chiffre', () => {
+  assert.ok(formeDeNomPropre('Rose Fontaine'));
+  assert.ok(formeDeNomPropre('Pierre Blanc'));
+  assert.ok(formeDeNomPropre('Jean-Marie Le Pen'));
+  // Une raison sociale longue n'est plus un nom de personne.
+  assert.ok(!formeDeNomPropre('Institut National des Sciences Appliquées'));
+  // Un chiffre exclut : un patronyme n'en porte pas.
+  assert.ok(!formeDeNomPropre('Baccalauréat Général 2016'));
+  // Casse mixte ou minuscule : ce n'est pas la forme d'un nom.
+  assert.ok(!formeDeNomPropre('Modélisation applicative'));
+  assert.ok(!formeDeNomPropre('BULLETIN NUMÉRO'));
+  assert.ok(!formeDeNomPropre('Fontaine'), 'un seul mot n’est pas une forme de nom complète');
 });

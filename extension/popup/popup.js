@@ -355,27 +355,38 @@ function contexteDocument(texte, { sousMots } = {}) {
   }
   return { enMinuscules, comptes, sousMots };
 }
-function morceaux(mot, sousMots) {
-  if (!sousMots) return 1;
-  const bas = String(mot || "").toLowerCase();
-  if (!bas) return 1;
+function segmenter(mot, sousMots) {
   let i = 0, n = 0;
-  while (i < bas.length) {
-    let j = bas.length;
+  while (i < mot.length) {
+    let j = mot.length;
     let trouve = null;
     while (j > i) {
-      const piece = i === 0 ? bas.slice(i, j) : "##" + bas.slice(i, j);
+      const piece = i === 0 ? mot.slice(i, j) : "##" + mot.slice(i, j);
       if (sousMots.has(piece)) {
         trouve = j;
         break;
       }
       j--;
     }
-    if (trouve === null) return bas.length;
+    if (trouve === null) return mot.length;
     n++;
     i = trouve;
   }
   return n || 1;
+}
+function morceaux(mot, sousMots) {
+  if (!sousMots) return 1;
+  const brut = String(mot || "");
+  if (!brut) return 1;
+  const bas = brut.toLowerCase();
+  const titre = bas[0].toUpperCase() + bas.slice(1);
+  let mini = segmenter(brut, sousMots);
+  for (const forme of [bas, titre]) {
+    if (forme === brut) continue;
+    mini = Math.min(mini, segmenter(forme, sousMots));
+    if (mini === 1) break;
+  }
+  return mini;
 }
 function caracteristiques(candidat, ctx) {
   const valeur = String(candidat?.value ?? "");
@@ -414,7 +425,23 @@ var NOMS_CARACTERISTIQUES = Object.keys(
 );
 
 // src/engine/poids-precision.js
-var POIDS = null;
+var POIDS = {
+  seuil: 0.21,
+  biais: -2.7269,
+  poids: {
+    partLexique: -0.8536,
+    aucunCourant: 2.565,
+    toutCapitales: 0,
+    casseDeTitre: -2.6142,
+    aChiffre: 4.433,
+    liaisonInterne: -0.0844,
+    nbMots: 10.2502,
+    longueur: -8.0767,
+    occurrences: -1.8454,
+    minusculeAilleurs: -4.186,
+    score: 4.2489
+  }
+};
 
 // src/engine/precision.js
 var TYPES_FILTRES = /* @__PURE__ */ new Set(["ORG", "LOC"]);
@@ -431,21 +458,33 @@ function expliquer(candidat, ctx, modele = POIDS) {
   const c = caracteristiques(candidat, ctx);
   let pire = null;
   for (const [nom, w] of Object.entries(modele.poids)) {
-    const apport = w * (c[nom] ?? 0);
-    if (apport < 0 && (!pire || apport < pire.apport)) pire = { nom, apport };
+    const x = c[nom] ?? 0;
+    const ecart = w < 0 ? w * x : w * (x - 1);
+    if (ecart < 0 && (!pire || ecart < pire.ecart)) pire = { nom, ecart };
   }
   return pire?.nom ?? null;
 }
+var MOTS_MINIMUM = 2;
+var formeDeNomPropre = (valeur) => {
+  if (/\d/.test(valeur)) return false;
+  const mots = motsSignificatifs(valeur);
+  return mots.length >= 2 && mots.length <= 3 && mots.every((m) => new RegExp("^\\p{Lu}[\\p{Ll}'\u2019-]+$", "u").test(m));
+};
+var filtrable = (e) => e.source === "ner" && TYPES_FILTRES.has(e.type) && motsSignificatifs(e.value).length >= MOTS_MINIMUM && !formeDeNomPropre(e.value);
 function filtrerParPrecision(entities, texte, { modele = POIDS, sousMots, journal } = {}) {
   if (!modele || !entities?.length) return entities || [];
   const ctx = contexteDocument(texte, { sousMots });
   return entities.filter((e) => {
-    if (e.source !== "ner" || !TYPES_FILTRES.has(e.type)) return true;
+    if (!filtrable(e)) return true;
     const p = scorePrecision(e, ctx, modele);
     if (p >= modele.seuil) return true;
     if (journal) journal.push({ valeur: e.value, type: e.type, p, motif: expliquer(e, ctx, modele) });
     return false;
   });
+}
+function composerArbitre(pipe, arbitrerFauxPositifs2) {
+  if (!pipe) return void 0;
+  return async (entities, texte) => filtrerParPrecision(await arbitrerFauxPositifs2(entities, pipe), texte);
 }
 
 // src/popup/i18n.js
@@ -1864,8 +1903,8 @@ function contextualDetector() {
   return nerEngine === "gliner" ? detectGliner : detectNER;
 }
 function arbitreContextuel() {
-  if (nerEngine !== "gliner" || !nerPipe) return void 0;
-  return async (entities, texte) => filtrerParPrecision(await arbitrerFauxPositifs(entities, nerPipe), texte);
+  if (nerEngine !== "gliner") return void 0;
+  return composerArbitre(nerPipe, arbitrerFauxPositifs);
 }
 function detectContextual(text, opts = {}) {
   if (!nerPipe) return [];

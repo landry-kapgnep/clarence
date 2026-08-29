@@ -73,26 +73,50 @@ export function contexteDocument(texte, { sousMots } = {}) {
 // dans une règle : « Semantikmatch » 5 morceaux et « SafePrompt » 4 contre
 // « terrain » 1 — mais aussi « acoustique » 3 et « bénévole » 3 (noms communs)
 // contre « Sorbonne » 1 (nom propre). Il informe, il ne tranche pas.
-export function morceaux(mot, sousMots) {
-  if (!sousMots) return 1;
-  const bas = String(mot || '').toLowerCase();
-  if (!bas) return 1;
+// ⚠️ NE PAS MINUSCULISER, et c'est un piège qui a été commis puis mesuré. Le
+// vocabulaire est CASED : « Unternehmen » y figure, « unternehmen » non. Une
+// première version minusculisait avant de segmenter et rendait donc 2 morceaux
+// pour le mot allemand le plus banal qui soit, alors qu'il est présent en une
+// seule pièce. La caractéristique mesurait la casse au lieu de la rareté.
+//
+// On segmente TROIS formes — surface, minuscule, et capitale initiale — et on
+// garde le MINIMUM. La troisième n'est pas un luxe : « SPRACHEN » en capitales
+// ne retrouve ni « SPRACHEN » ni « sprachen » au vocabulaire, seulement
+// « Sprachen ». Or les capitales d'un intitulé sont une convention de mise en
+// page, pas un mot différent — et les intitulés en capitales sont justement
+// l'endroit où le sur-masquage se concentre.
+function segmenter(mot, sousMots) {
   let i = 0, n = 0;
-  while (i < bas.length) {
-    let j = bas.length;
+  while (i < mot.length) {
+    let j = mot.length;
     let trouve = null;
     while (j > i) {
-      const piece = i === 0 ? bas.slice(i, j) : '##' + bas.slice(i, j);
+      const piece = i === 0 ? mot.slice(i, j) : '##' + mot.slice(i, j);
       if (sousMots.has(piece)) { trouve = j; break; }
       j--;
     }
     // Inconnu jusqu'au caractère près : le tokenizer rendrait [UNK]. On compte
     // le maximum, c'est le cas le plus « étranger au vocabulaire » possible.
-    if (trouve === null) return bas.length;
+    if (trouve === null) return mot.length;
     n++;
     i = trouve;
   }
   return n || 1;
+}
+
+export function morceaux(mot, sousMots) {
+  if (!sousMots) return 1;
+  const brut = String(mot || '');
+  if (!brut) return 1;
+  const bas = brut.toLowerCase();
+  const titre = bas[0].toUpperCase() + bas.slice(1);
+  let mini = segmenter(brut, sousMots);
+  for (const forme of [bas, titre]) {
+    if (forme === brut) continue;
+    mini = Math.min(mini, segmenter(forme, sousMots));
+    if (mini === 1) break;
+  }
+  return mini;
 }
 
 // L'ORDRE DES CLÉS FAIT FOI. Les poids appris sont un tableau de nombres aligné

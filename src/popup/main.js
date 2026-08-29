@@ -5,7 +5,7 @@ import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
-import { filtrerParPrecision } from '../engine/precision.js';
+import { filtrerParPrecision, composerArbitre } from '../engine/precision.js';
 import { compresser, compresserSegments, COMPRESSION_MODEL } from '../engine/compression.js';
 // `msg` et pas `t` : trois variables locales de ce fichier s'appellent
 // déjà `t` (paramètres déstructurés, boucles), et l'import se serait fait
@@ -598,9 +598,8 @@ function contextualDetector() {
 // appliquer serait l'utiliser hors de son domaine. On renvoie alors
 // `undefined` et l'orchestrateur passe outre.
 function arbitreContextuel() {
-  if (nerEngine !== 'gliner' || !nerPipe) return undefined;
-  return async (entities, texte) =>
-    filtrerParPrecision(await arbitrerFauxPositifs(entities, nerPipe), texte);
+  if (nerEngine !== 'gliner') return undefined;
+  return composerArbitre(nerPipe, arbitrerFauxPositifs);
 }
 
 // Même chose pour le mode texte, où le pipeline est déjà connu.

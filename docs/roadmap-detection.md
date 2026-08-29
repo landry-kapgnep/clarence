@@ -1740,3 +1740,147 @@ documents ; on peut donc générer des milliers de CV, formulaires et rapports
 dont **les étiquettes sont connues par construction**. Zéro annotation, zéro
 donnée personnelle, corpus illimité — la méthode même de LLMLingua-2, qu'on
 embarque déjà. Non engagé.
+
+---
+
+## P15 — Un filtre de précision APPRIS, et les deux fuites qu'il a fallu attraper (30/08/2026)
+
+**Le point de départ**, posé par l'utilisateur : *« je ne veux pas qu'on passe
+plus de temps que nécessaire à régler les erreurs du NER »*, puis, sur le plan
+proposé : *« même si j'avoue que c'est chiant les listes statiques, surtout si
+on ajoute des langues »*.
+
+P14 avait répondu avec **une** caractéristique et un seuil binaire
+(`estVocabulaireCourant`), au prix de cinq suffixes retirés parce qu'ils
+mordaient sur des noms de lieux. P15 remplace la règle écrite à la main par un
+classifieur qui **pèse une douzaine de signaux faibles** — et surtout par une
+boucle de mesure qui a corrigé trois de mes propres conclusions.
+
+### La remarque sur les listes était plus juste que ma réponse
+
+J'avais écrit que `LEXIQUE_COURANT` est « déjà multilingue (104 langues) », donc
+qu'ajouter une langue serait gratuit. **Faux, et vérifiable en une commande :**
+
+| mot | dans le vocabulaire source | dans notre lexique |
+|---|---|---|
+| `terrain` (FR) | oui, en minuscules | **oui** |
+| `Unternehmen` (DE) | oui, **capitalisé seulement** | **non** |
+| `Abteilung`, `Sprachen` (DE) | oui, capitalisés seulement | **non** |
+
+Le lexique ne retient que les entrées **entièrement minuscules**, en s'appuyant
+sur une règle explicite : « un nom propre n'y figure qu'avec sa capitale ».
+**Cette règle est elle-même dépendante de la langue** — en allemand, tout nom
+commun porte une capitale, donc aucun n'entre au lexique. Ce n'est pas un risque
+futur : c'est déjà visible au banc, où trois des cinq sur-masquages du document
+piégé sont `SPRACHEN`, `Unternehmen`, `Abteilung`.
+
+### La fragmentation en sous-mots : mesurée, puis écartée
+
+Candidate au remplacement des suffixes français, parce qu'indépendante de la
+langue. Le verdict s'est **inversé** en cours de route, ce qui est la raison même
+d'avoir mesuré :
+
+| jeu d'évaluation | toutes | sans suffixes | sans fragmentation | sans les deux |
+|---|---|---|---|---|
+| corpus initial, sans garde-fous | 93/164 | 90/164 | 77/164 | 71/164 |
+| **corpus corrigé + garde-fous 4-5** | 11/56 | 8/56 | **38/56** | 36/56 |
+
+Elle semblait valoir 16 faux positifs ; elle en fait perdre 25 une fois le
+corpus réparé. **Le premier chiffre était un artefact.**
+
+Un piège au passage, dans notre implémentation : `morceaux()` minusculisait
+avant de segmenter, sur un vocabulaire *cased*. Il rendait 2 morceaux pour
+`Unternehmen`, présent en une seule pièce — il mesurait **la casse au lieu de la
+rareté**, et se trompait précisément sur la famille que le lexique ne peut pas
+couvrir. Corrigé (surface, minuscule et capitale initiale, minimum des trois),
+mais la conclusion n'a pas changé.
+
+**On expédie `sans-les-deux`** : ni le mégaoctet de vocabulaire, ni la liste
+française. Raison supplémentaire et décisive : `filtrerParPrecision` ne passe
+jamais `sousMots` en production, donc la fragmentation y vaut **0 en toutes
+circonstances** — livrer des poids entraînés sur de vraies valeurs aurait
+appliqué le modèle hors de son domaine, sans erreur ni signal. Un test l'interdit.
+
+### Le banc mesurait l'ancien pipeline
+
+Premier passage après câblage : **chiffres rigoureusement identiques**. J'ai
+failli y lire un résultat. En réalité le banc se fabriquait son propre arbitre,
+sans le filtre — le défaut exact que CLAUDE.md documente déjà pour la variante
+de poids. La composition des deux passes vit désormais dans `composerArbitre`,
+**un seul endroit**, utilisé par la popup, le banc, l'injection et la régression.
+
+### Fuite n° 1 — « chiffre ⇒ pas une entité » (poids −4,6)
+
+Une fois réellement branché, le banc est passé **NON PUBLIABLE** :
+
+```
+Rappel STRUCTURÉ  95% (19/20)
+  tableau-rh.csv → REFERENCE « EMP-0012 »
+```
+
+Le journal d'explication a nommé la cause sans qu'il faille deviner :
+`42 rue des Cordeliers` (p=0,001), `44000 Nantes` (0,054), `EMP-0012` (0,007) —
+motif `aChiffre` pour les trois. Et `EMP-0012` est le pire des trois :
+`detectRegex('EMP-0012')` rend `[]`, le déterministe **ne le voit pas**, il
+n'était masqué que par la couche contextuelle.
+
+**Ce n'était pas le classifieur qui avait tort.** Le corpus ne contenait aucune
+valeur à chiffres qui soit une vraie donnée personnelle — que des pièges
+(`Baccalauréat Général 2016`, `Mars 2026`). Adresses, codes postaux et
+matricules ajoutés comme VRAIES entités : le poids est passé de **−4,6 à +2,9**.
+Même leçon que P12, mot pour mot — *le corpus était le vrai coupable*.
+
+### Fuite n° 2 — un patronyme mal étiqueté reste un patronyme
+
+Sur une phrase du document piégé, écrite exprès :
+
+> « Rose Fontaine cultive une **rose** ancienne dans son jardin. »
+
+Le modèle étiquette `Rose Fontaine` en **ENTREPRISE**. Le garde-fou « jamais les
+personnes » raisonnait par TYPE : il ne la voyait pas. Et les deux signaux dont
+ce filtre tire sa valeur se retournaient contre elle — `rose` est au
+dictionnaire (`partLexique` 0,50) et le document l'écrit lui-même en minuscules
+plus loin (`minusculeAilleurs` 0,50). Retirée à 0,177.
+
+D'où deux garde-fous supplémentaires, **mesurés avant d'être posés** :
+
+| garde-fou | protège | coûte |
+|---|---|---|
+| **4** — au moins deux mots | patronymes et villes isolés (`Vaquier` en cellule, `Calahorra`) | 2 valeurs, toutes deux des technos |
+| **5** — pas la forme d'un nom propre | 458 vraies entités sur 706 | 7 faux positifs sur 418 (4 valeurs) |
+
+La leçon générale : **quand un garde-fou est contourné, regarder s'il s'appuie
+sur une étiquette — que le modèle peut se tromper à donner — plutôt que sur une
+forme, qui ne ment pas.**
+
+### Résultat
+
+| | avant | après |
+|---|---|---|
+| banc — structuré | 100 % | **100 %** |
+| banc — contextuel | 84 % (36/43) | **84 % (36/43)** |
+| banc — préservé | 93 % (53/57) | **93 % (53/57)** |
+| borne basse — préservé | 90 % | **90 %** |
+| masques sur `cv-fr.pdf` | 14 | **13** |
+| masques sur `tous-defauts.pdf` | 144 | **140** |
+| évaluation tenue à l'écart | 0/56 faux retirés | **36/56, zéro vraie entité perdue** |
+
+**Aucune régression, gain modeste au banc, gain net sur l'évaluation.** Et il
+faut dire pourquoi le banc bouge si peu : ses sur-masquages restants sont
+`PostgreSQL`, `Kubernetes`, `SPRACHEN`, `Unternehmen`, `Abteilung` — tous d'UN
+SEUL MOT, donc exclus par construction (garde-fou 4) et relevant des profils.
+
+### Ce qui reste
+
+- **Vérification en vrai Chrome sur de vrais CV** : le gain se joue sur les
+  documents à rubriques, riches en groupes nominaux de plusieurs mots. Rien
+  n'est terminé sans ça (règle du projet).
+- Le jeu d'évaluation est **mince** après garde-fous (104 candidats, 48 vraies) :
+  le « zéro perte » y est moins rassurant qu'il n'y paraît. Élargir le corpus
+  est le prochain levier, pas le réglage des seuils.
+- `SUFFIXES_COMMUNS` **reste utilisé par P14** (`estVocabulaireCourant` dans
+  `gliner.js`). Le filtre appris s'en passe ; savoir si P14 peut s'en passer
+  aussi est une question distincte, non mesurée.
+- Les technos d'un seul mot (`Docker`, `JWT`) restent hors de portée par
+  construction : aucune caractéristique ne les distingue de `Twini` ou `UNODC`.
+  C'est le rôle des profils, et c'est délibéré.

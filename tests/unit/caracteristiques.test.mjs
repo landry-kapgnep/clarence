@@ -129,3 +129,17 @@ test('un candidat vide ne produit ni NaN ni division par zéro', () => {
   }
   assert.equal(caracteristiques({}, ctx).partLexique, 0);
 });
+
+test('la fragmentation ne doit PAS mesurer la casse — piège allemand', () => {
+  // Le vocabulaire est CASED : « Unternehmen » y figure, « unternehmen » non.
+  // Une première version minusculisait avant de segmenter et rendait donc 2
+  // morceaux pour le mot allemand le plus banal qui soit. Elle mesurait la
+  // casse au lieu de la rareté — et se trompait précisément sur la famille que
+  // le lexique en minuscules ne peut PAS couvrir : en allemand tout nom commun
+  // porte une capitale, donc aucun n'entre au lexique.
+  const vocab = new Set(['Unternehmen', 'terrain', 'kap', '##gne', '##p']);
+  assert.equal(morceaux('Unternehmen', vocab), 1);
+  // Les CAPITALES d'un intitulé sont de la mise en page, pas un autre mot.
+  assert.equal(morceaux('UNTERNEHMEN', vocab), 1);
+  assert.equal(morceaux('terrain', vocab), 1);
+});

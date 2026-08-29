@@ -28,6 +28,7 @@ import {
   arbitrerFauxPositifs
 } from '../../src/engine/gliner.js';
 import { createBatchedPipeline } from '../../src/engine/batch.js';
+import { composerArbitre } from '../../src/engine/precision.js';
 import { mergeEntities } from '../../src/engine/merge.js';
 import { selectActive, filterByRules, forcedMasks } from '../../src/engine/selection.js';
 import { maskText } from '../../src/engine/masking.js';
@@ -117,7 +118,7 @@ async function modeleLocal() {
 
 // L'arbitrage des faux positifs, exactement comme la popup le branche. Sans
 // lui, le banc noterait une détection plus bruyante que celle qu'on livre.
-const arbitreDuBanc = pipe => (pipe ? (ents => arbitrerFauxPositifs(ents, pipe)) : undefined);
+const arbitreDuBanc = pipe => composerArbitre(pipe, arbitrerFauxPositifs);
 
 // --- Passage d'un document dans le pipeline RÉEL --------------------------
 // Le chemin fichier (CSV, PDF) passe par anonymizeUnits, exactement comme la

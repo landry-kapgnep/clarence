@@ -13,8 +13,9 @@
 // LE JEU EST DÉSÉQUILIBRÉ et l'asymétrie du risque l'est encore plus : jeter un
 // faux positif fait gagner en confort, jeter une vraie entité est une FUITE.
 // L'entraînement pondère donc les vraies entités plus lourd que les fausses
-// (POIDS_VRAI), et le seuil final est choisi sur la contrainte « zéro perte »,
-// jamais sur la précision maximale.
+// (POIDS_VRAI), et le seuil final est choisi sur une tolérance de perte ÉNONCÉE
+// — jamais sur la précision maximale. Voir TOLERANCE plus bas, et surtout
+// pourquoi la contrainte « zéro perte exacte » a dû être abandonnée.
 import { readFileSync } from 'node:fs';
 import { NOMS_CARACTERISTIQUES } from '../../src/engine/caracteristiques.js';
 import { estVocabulaireCourant } from '../../src/engine/vocabulaire.js';
@@ -26,10 +27,16 @@ const lignes = readFileSync(fichier, 'utf8').split('\n').filter(Boolean).map(l =
 // changé depuis vocabulaire.js : beaucoup de patronymes SONT des mots courants
 // (Blanc, Petit, Roux), et notre propre vivier de pseudonymes en est plein. Un
 // filtre qui démasque des personnes ne rend pas service, il fuit.
-const TYPES_FILTRES = new Set(['ORG', 'LOC']);
-const jeu = lignes.filter(l => TYPES_FILTRES.has(l.type));
+// MÊME PÉRIMÈTRE QUE LE FILTRE LIVRÉ, importé plutôt que réécrit — sinon on
+// mesure autre chose que ce qu'on expédie, l'erreur exacte qui a fait croire
+// que le filtre ne changeait rien au banc.
+const { TYPES_FILTRES, MOTS_MINIMUM, formeDeNomPropre } = await import('../../src/engine/precision.js');
+const { motsSignificatifs } = await import('../../src/engine/vocabulaire.js');
+const jeu = lignes.filter(l => TYPES_FILTRES.has(l.type)
+  && motsSignificatifs(l.valeur).length >= MOTS_MINIMUM
+  && !formeDeNomPropre(l.valeur));
 
-console.log(`jeu : ${lignes.length} candidats, dont ${jeu.length} filtrables (ORG/LOC)`);
+console.log(`jeu : ${lignes.length} candidats, dont ${jeu.length} filtrables (ORG/LOC, ${MOTS_MINIMUM}+ mots, hors forme de nom)`);
 console.log(`      ${jeu.filter(l => l.y === 1).length} vrais · ${jeu.filter(l => l.y === 0).length} faux\n`);
 
 // --- Séparation apprentissage / évaluation --------------------------------
@@ -77,24 +84,43 @@ function entrainer(donnees, colonnes) {
 const proba = (modele, x, colonnes) =>
   sigmoide(colonnes.reduce((s, c, i) => s + x[c] * modele.w[i], modele.b));
 
-// --- Le seuil est choisi sur la CONTRAINTE, pas sur un optimum ------------
+// --- Le seuil est choisi sur une CONTRAINTE ÉNONCÉE, pas à la main --------
 //
-// On cherche le seuil qui retire le plus de faux positifs SANS perdre une seule
-// vraie entité sur l'évaluation. C'est la traduction directe de « zéro-fuite
-// d'abord, sur-masquage juste derrière ». Un seuil choisi sur la F-mesure
-// échangerait des fuites contre du confort — arbitrage que ce produit ne fait
-// pas.
+// PREMIÈRE VERSION, ET POURQUOI ELLE NE MARCHE PAS. On cherchait le seuil qui
+// retire le plus de faux positifs SANS perdre une seule vraie entité. Sur 93
+// candidats d'évaluation, ça donnait 0,10. Sur 367, ça donne **0,00** : une
+// contrainte à zéro exact est décidée par le PIRE point du lot, donc plus
+// l'échantillon grandit, plus elle tend vers « ne rien faire ». Elle n'est pas
+// prudente, elle est instable — et sa prudence apparente est une illusion.
+//
+// CE QU'ON FAIT À LA PLACE. Une tolérance ÉNONCÉE, par défaut 0,5 % des vraies
+// entités. Ce n'est pas un renoncement à « zéro-fuite d'abord » : le produit
+// accepte DÉJÀ des pertes sur ce périmètre — vocabulaire.js documente
+// « Orange », « Total », « Le Monde » comme des pertes connues et assumées — et
+// il ne s'agit ici ni de personnes ni de données structurées, que le filtre ne
+// touche jamais.
+//
+// ⚠️ LA TOLÉRANCE NE DISPENSE PAS DE REGARDER CE QU'ON PERD. Un chiffre ne dit
+// pas si la perte est un artefact ou une vraie fuite. Mesuré ici : l'unique
+// perte à 0,40 est « Roquetas de Mar. août 2023 » — le modèle a collé la date à
+// la ville, c'est une erreur de FRONTIÈRE. À 0,50 en revanche on perdrait
+// « Kallabisland » et « Le roux et Fontaine », de vraies entités sans excuse :
+// c'est là que se situe la limite, et c'est la LECTURE des pertes qui la
+// montre, pas leur décompte. D'où l'affichage nominatif plus bas.
+const TOLERANCE = Number(process.env.TOLERANCE ?? 0.005);
+
 function evaluer(modele, donnees, colonnes) {
-  const scores = donnees.map(d => ({ p: proba(modele, d.x, colonnes), y: d.y }));
+  const scores = donnees.map(d => ({ p: proba(modele, d.x, colonnes), y: d.y, d }));
+  const vrais = scores.filter(x => x.y === 1).length;
+  const faux = scores.filter(x => x.y === 0).length;
+  const budget = Math.floor(vrais * TOLERANCE);
   let meilleur = { seuil: 0, retires: 0, perdues: 0 };
   for (let s = 0.01; s < 1; s += 0.01) {
     const perdues = scores.filter(x => x.y === 1 && x.p < s).length;
     const retires = scores.filter(x => x.y === 0 && x.p < s).length;
-    if (perdues === 0 && retires > meilleur.retires) meilleur = { seuil: s, retires, perdues };
+    if (perdues <= budget && retires > meilleur.retires) meilleur = { seuil: s, retires, perdues };
   }
-  const faux = scores.filter(x => x.y === 0).length;
-  const vrais = scores.filter(x => x.y === 1).length;
-  return { ...meilleur, faux, vrais, scores };
+  return { ...meilleur, faux, vrais, budget, scores };
 }
 
 // LA RÉFÉRENCE, sans laquelle aucun chiffre de ce script ne veut rien dire :
@@ -140,12 +166,16 @@ const sansSuffixe = toutes.filter(i => i !== idx('partSuffixe'));
 const sansFragmentation = toutes.filter(i => i !== idx('fragmentation'));
 const sansNiL_unNiL_autre = toutes.filter(i => i !== idx('partSuffixe') && i !== idx('fragmentation'));
 
+// Noms utilisables tels quels en variable d'environnement : `VARIANTE=…`.
 const variantes = {
   'toutes': toutes,
-  'sans les suffixes FR': sansSuffixe,
-  'sans la fragmentation': sansFragmentation,
-  'sans ni l’un ni l’autre': sansNiL_unNiL_autre
+  'sans-suffixes': sansSuffixe,
+  'sans-fragmentation': sansFragmentation,
+  'sans-les-deux': sansNiL_unNiL_autre
 };
+
+const choisi = process.env.VARIANTE || 'toutes';
+if (!variantes[choisi]) throw new Error(`variante inconnue : ${choisi}`);
 
 const ref = reference(test);
 console.log('RÉFÉRENCE — filtre actuel (estVocabulaireCourant) sur les mêmes candidats');
@@ -201,20 +231,36 @@ function parFamille(modele, donnees, colonnes, seuil) {
 }
 
 {
-  const b = modeles['toutes'];
+  const b = modeles[choisi];
   const fam = parFamille(b.m, test, b.colonnes, b.ev.seuil);
   const pct = (o) => (o.total ? ((o.retires / o.total) * 100).toFixed(0) + ' %' : '—');
-  console.log('\nfaux positifs retirés, PAR FAMILLE (au seuil zéro-perte) :');
+  console.log(`\nfaux positifs retirés, PAR FAMILLE (seuil ${b.ev.seuil.toFixed(2)}) :`);
   console.log(`  vocabulaire et intitulés   ${fam.reste.retires}/${fam.reste.total}   ${pct(fam.reste)}`
     + '   ← ce que ce filtre doit traiter');
   console.log(`  technologies               ${fam.technos.retires}/${fam.technos.total}   ${pct(fam.technos)}`
     + '   ← hors de portée, traité par les profils');
+
+  // ── CE QU'ON PERD, NOMMÉMENT. Un décompte ne dit pas si la perte est un
+  // artefact de frontière ou une vraie fuite : seule la LECTURE le dit. C'est
+  // la sortie la plus importante de ce script, celle qui doit être relue avant
+  // de recopier le moindre poids.
+  const perdues = [...new Set(b.ev.scores
+    .filter(x => x.y === 1 && x.p < b.ev.seuil)
+    .map(x => `${x.d.type} « ${x.d.valeur} »  ${x.p.toFixed(3)}`))];
+  console.log(`\n⚠️  VRAIES ENTITÉS PERDUES à ce seuil (${perdues.length} valeurs distinctes) —`
+    + ' à RELIRE, pas à compter :');
+  console.log(perdues.length ? perdues.map(v => '    ' + v).join('\n') : '    aucune');
+
+  const retirees = [...new Set(b.ev.scores
+    .filter(x => x.y === 0 && x.p < b.ev.seuil).map(x => x.d.valeur))];
+  console.log(`\nfaux positifs retirés (${retirees.length} valeurs distinctes) :`);
+  console.log('    ' + retirees.join(' · '));
 }
 
 // --- Les poids, en clair --------------------------------------------------
-console.log('\npoids appris (variante « toutes ») — signe positif = pousse à GARDER');
+console.log('\npoids appris (variante retenue) — signe positif = pousse à GARDER');
 console.log('─'.repeat(72));
-const base = modeles['toutes'];
+const base = modeles[choisi];
 const paires = base.colonnes.map((c, i) => [NOMS_CARACTERISTIQUES[c], base.m.w[i]]);
 for (const [nom, poids] of paires.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))) {
   const barre = '█'.repeat(Math.min(30, Math.round(Math.abs(poids) * 6)));
@@ -224,15 +270,14 @@ console.log(`  ${'(biais)'.padEnd(20)} ${base.m.b >= 0 ? '+' : '−'}${Math.abs(
 
 // --- Le compromis en entier ------------------------------------------------
 console.log('');
-console.log('compromis selon le seuil (variante « toutes ») :');
+console.log('compromis selon le seuil (variante retenue) :');
 console.log('  seuil   faux retirés   vraies perdues');
-for (const l of courbe(modeles['toutes'].ev)) {
-  console.log(`  ${l.s.toFixed(2)}${String(l.retires).padStart(11)}/${modeles['toutes'].ev.faux}`
-    + `${String(l.perdues).padStart(13)}/${modeles['toutes'].ev.vrais}`);
+for (const l of courbe(modeles[choisi].ev)) {
+  console.log(`  ${l.s.toFixed(2)}${String(l.retires).padStart(11)}/${modeles[choisi].ev.faux}`
+    + `${String(l.perdues).padStart(13)}/${modeles[choisi].ev.vrais}`);
 }
 
 // --- Sortie embarquable ---------------------------------------------------
-const choisi = process.env.VARIANTE || 'toutes';
 const c = modeles[choisi];
 console.log(`\n// à recopier dans src/engine/precision.js — variante « ${choisi} »`);
 console.log(`export const POIDS = {`);
@@ -255,3 +300,39 @@ for (const d of test) {
   const verdict = p < c.ev.seuil ? (y === 1 ? '⚠ VRAIE PERDUE' : '✓ faux retiré') : '  gardé';
   console.log(`  ${p.toFixed(3)}  ${verdict.padEnd(16)} ${v}`);
 });
+
+// --- Écriture du fichier de poids ----------------------------------------
+//
+// ÉCRIT PAR LE SCRIPT, jamais recopié à la main : un poids mal transcrit ne
+// produit aucune erreur, seulement des décisions fausses. `ECRIRE=1` pour
+// l'activer — par défaut on ne fait qu'AFFICHER, pour qu'une exécution
+// exploratoire ne modifie jamais le moteur par surprise.
+if (process.env.ECRIRE) {
+  const { writeFileSync } = await import('node:fs');
+  const lignesPoids = c.colonnes
+    .map((col, i) => `    ${NOMS_CARACTERISTIQUES[col]}: ${c.m.w[i].toFixed(4)}`)
+    .join(',\n');
+  const contenu = `// FICHIER GÉNÉRÉ — ne pas modifier à la main.
+//
+//     ECRIRE=1 node tools/filtre/entrainer.mjs tools/filtre/jeu.jsonl
+//
+// Poids du filtre de précision (voir src/engine/precision.js). \`null\` rendrait
+// le filtre inerte, comportement sûr par défaut.
+//
+// Variante « ${choisi} », entraînée sur ${app.length} candidats, évaluée sur
+// ${test.length} SÉPARÉS PAR VALEUR. Au seuil ci-dessous : ${c.ev.retires}/${c.ev.faux}
+// faux positifs retirés, ${c.ev.perdues}/${c.ev.vrais} vraie(s) entité(s) perdue(s).
+//
+// Le seuil n'est pas un optimum de F-mesure : c'est le plus agressif dont la
+// perte reste sous la tolérance énoncée (${(TOLERANCE * 100).toFixed(1)} % des vraies entités).
+export const POIDS = {
+  seuil: ${c.ev.seuil.toFixed(2)},
+  biais: ${c.m.b.toFixed(4)},
+  poids: {
+${lignesPoids}
+  }
+};
+`;
+  writeFileSync(new URL('../../src/engine/poids-precision.js', import.meta.url), contenu);
+  console.log(`\n→ src/engine/poids-precision.js écrit (variante « ${choisi} »)`);
+}
