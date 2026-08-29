@@ -5,6 +5,7 @@ import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
+import { filtrerParPrecision } from '../engine/precision.js';
 import { compresser, compresserSegments, COMPRESSION_MODEL } from '../engine/compression.js';
 // `msg` et pas `t` : trois variables locales de ce fichier s'appellent
 // déjà `t` (paramètres déstructurés, boucles), et l'import se serait fait
@@ -580,13 +581,26 @@ function contextualDetector() {
   return nerEngine === 'gliner' ? detectGliner : detectNER;
 }
 
-// Seconde opinion du modèle sur ses propres propositions, pour écarter
-// « Analyste », « Poste occupé » et consorts (voir arbitrerFauxPositifs).
-// UNIQUEMENT avec GLiNER : le moteur BERT de repli n'a pas de labels à
-// interroger, on renvoie alors `undefined` et l'orchestrateur passe outre.
+// Seconde opinion sur les propositions du modèle, en DEUX temps :
+//   1. `arbitrerFauxPositifs` — le modèle est réinterrogé avec des labels
+//      leurres pour écarter « Analyste », « Poste occupé » et consorts ;
+//   2. `filtrerParPrecision` — un classifieur pèse une douzaine de signaux
+//      (lexique, casse, occurrences, minuscules ailleurs…) pour écarter les
+//      groupes nominaux ordinaires pris pour des organisations ou des lieux.
+//
+// Cet ordre est celui sur lequel le filtre a été ENTRAÎNÉ (voir
+// tools/filtre/construire-jeu.mjs) : l'inverser lui ferait voir une population
+// de candidats différente de celle qu'il connaît.
+//
+// UNIQUEMENT avec GLiNER, et pour deux raisons distinctes : l'arbitrage a
+// besoin de labels à interroger, que le moteur BERT de repli n'a pas ; et le
+// filtre a appris sur les erreurs de GLiNER, pas sur celles de BERT — l'y
+// appliquer serait l'utiliser hors de son domaine. On renvoie alors
+// `undefined` et l'orchestrateur passe outre.
 function arbitreContextuel() {
   if (nerEngine !== 'gliner' || !nerPipe) return undefined;
-  return entities => arbitrerFauxPositifs(entities, nerPipe);
+  return async (entities, texte) =>
+    filtrerParPrecision(await arbitrerFauxPositifs(entities, nerPipe), texte);
 }
 
 // Même chose pour le mode texte, où le pipeline est déjà connu.
@@ -618,7 +632,14 @@ async function analyze() {
         return new Promise(r => setTimeout(r, 0));
       }
     });
-    autoEntities = mergeEntities(rx, ner);
+    // MÊME filtre de précision qu'en mode Fichier : les deux chemins doivent
+    // rendre le même verdict sur le même texte, sinon ils divergent — le motif
+    // exact qui a déjà coûté cher sur les deux chemins PDF (P1bis).
+    //
+    // ⚠️ DIVERGENCE PRÉEXISTANTE, non traitée ici et signalée pour ne pas la
+    // perdre : le mode texte ne passe PAS par `arbitrerFauxPositifs`, alors que
+    // le mode fichier si. « Analyste » est donc encore masqué en mode texte.
+    autoEntities = mergeEntities(rx, filtrerParPrecision(ner, text));
     render();
     // Ne JAMAIS laisser croire que les noms/lieux ont été vérifiés alors que
     // seul le structuré (regex) a tourné, NI que le moteur complet a tourné

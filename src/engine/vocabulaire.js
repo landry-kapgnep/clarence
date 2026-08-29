@@ -57,10 +57,27 @@ const SUFFIXES_COMMUNS =
 // données » ne doit pas échouer le test à cause de « de ».
 const MOTS_OUTILS = /^(?:de|du|des|d|la|le|les|l|un|une|et|à|au|aux|en|sur|pour|par|dans|avec)$/i;
 
+// Les deux moitiés du test sont exposées SÉPARÉMENT — le lexique est
+// multilingue (104 langues, il suit gratuitement l'ajout d'une langue), les
+// suffixes ne valent QUE pour le français. Le filtre de précision a besoin de
+// les distinguer pour mesurer ce que chacune apporte, et donc pour pouvoir un
+// jour se passer de la seconde. Voir src/engine/caracteristiques.js.
+export const auLexique = (mot) => LEXIQUE_COURANT.has(String(mot || '').trim().toLowerCase());
+export const aSuffixeCommun = (mot) => SUFFIXES_COMMUNS.test(String(mot || '').trim());
+
+// Découpage d'un candidat en mots SIGNIFICATIFS. Partagé avec le filtre de
+// précision : deux découpages différents produiraient deux vérités différentes
+// sur le même texte.
+export function motsSignificatifs(valeur) {
+  return String(valeur || '')
+    .split(/[\s&'’/,.-]+/)
+    .filter(m => /\p{L}{2}/u.test(m) && !MOTS_OUTILS.test(m));
+}
+
 export function estMotCourant(mot) {
   const nu = String(mot || '').trim();
   if (!nu) return false;
-  return LEXIQUE_COURANT.has(nu.toLowerCase()) || SUFFIXES_COMMUNS.test(nu);
+  return auLexique(nu) || aSuffixeCommun(nu);
 }
 
 // Un candidat relève-t-il du vocabulaire ordinaire ?
@@ -69,8 +86,6 @@ export function estMotCourant(mot) {
 // suffit à le rendre suspect, donc à le laisser masquer : le doute profite
 // toujours au masquage, conformément à « zéro-fuite d'abord ».
 export function estVocabulaireCourant(valeur) {
-  const mots = String(valeur || '')
-    .split(/[\s&'’/,.-]+/)
-    .filter(m => /\p{L}{2}/u.test(m) && !MOTS_OUTILS.test(m));
+  const mots = motsSignificatifs(valeur);
   return mots.length > 0 && mots.every(estMotCourant);
 }

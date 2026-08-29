@@ -165,3 +165,40 @@ test('la propagation ne double JAMAIS une entité déjà détectée', async () =
     [{ id: 'a', text: 'Rose Fontaine signe.' }], { nerPipeline: pipe });
   assert.equal(results[0].entities.length, 1, 'entité dupliquée par la propagation');
 });
+
+// --- L'arbitre reçoit le DOCUMENT, pas seulement les entités --------------
+//
+// Ajouté quand le filtre de précision s'est branché ici. Deux de ses
+// caractéristiques (occurrences, « le mot apparaît-il ailleurs en minuscules
+// dans ce document ? ») n'existent qu'à l'échelle du document : si
+// l'orchestrateur oubliait ce second argument, le filtre continuerait de
+// tourner mais sur un contexte VIDE — il déciderait donc sur des chiffres
+// faux, sans la moindre erreur pour le signaler. Exactement le genre de
+// dégradation silencieuse que ce projet paie cher.
+test('l’arbitre reçoit le texte COMBINÉ de toutes les unités', async () => {
+  const units = [
+    { id: 'a', text: 'Première unité avec jean@acme.fr' },
+    { id: 'b', text: 'Seconde unité, du texte ordinaire' }
+  ];
+  let vu = null;
+  await anonymizeUnits(units, {
+    nerPipeline: {},
+    nerDetect: async () => [{ type: 'ORG', value: 'X', start: 0, end: 1, source: 'ner', score: 0.9 }],
+    arbitre: (entites, texte) => { vu = texte; return entites; }
+  });
+  assert.ok(vu, 'l’arbitre n’a pas reçu de texte');
+  assert.ok(vu.includes('Première unité'), 'la 1re unité manque au contexte');
+  assert.ok(vu.includes('Seconde unité'), 'la 2de unité manque au contexte');
+});
+
+test('un arbitre à un seul paramètre continue de fonctionner', async () => {
+  // Compatibilité descendante : le banc, les tests d'injection et de
+  // régression injectent tous un arbitre qui ignore le second argument.
+  const units = [{ id: 'a', text: 'Texte avec jean@acme.fr' }];
+  const { results } = await anonymizeUnits(units, {
+    nerPipeline: {},
+    nerDetect: async () => [{ type: 'ORG', value: 'Acme', start: 0, end: 4, source: 'ner', score: 0.9 }],
+    arbitre: (entites) => entites.filter(e => e.type !== 'ORG')
+  });
+  assert.equal(results[0].maskedText, 'Texte avec [EMAIL_1]');
+});

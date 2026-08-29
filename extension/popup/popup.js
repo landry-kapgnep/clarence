@@ -34,13 +34,18 @@ var LEXIQUE_COURANT = new Set(`aan aandacht aangeduid aangelegd aangrenzende aan
 // src/engine/vocabulaire.js
 var SUFFIXES_COMMUNS = /(?:ment|tion|sion|isme|iste|ateur|eur|euse|trice|able|ible|ité|isée|isé|ifié|logie|graphie)s?$/i;
 var MOTS_OUTILS = /^(?:de|du|des|d|la|le|les|l|un|une|et|à|au|aux|en|sur|pour|par|dans|avec)$/i;
+var auLexique = (mot) => LEXIQUE_COURANT.has(String(mot || "").trim().toLowerCase());
+var aSuffixeCommun = (mot) => SUFFIXES_COMMUNS.test(String(mot || "").trim());
+function motsSignificatifs(valeur) {
+  return String(valeur || "").split(/[\s&'’/,.-]+/).filter((m) => new RegExp("\\p{L}{2}", "u").test(m) && !MOTS_OUTILS.test(m));
+}
 function estMotCourant(mot) {
   const nu = String(mot || "").trim();
   if (!nu) return false;
-  return LEXIQUE_COURANT.has(nu.toLowerCase()) || SUFFIXES_COMMUNS.test(nu);
+  return auLexique(nu) || aSuffixeCommun(nu);
 }
 function estVocabulaireCourant(valeur) {
-  const mots = String(valeur || "").split(/[\s&'’/,.-]+/).filter((m) => new RegExp("\\p{L}{2}", "u").test(m) && !MOTS_OUTILS.test(m));
+  const mots = motsSignificatifs(valeur);
   return mots.length > 0 && mots.every(estMotCourant);
 }
 
@@ -333,6 +338,114 @@ async function arbitrerFauxPositifs(entities, glinerPipeline) {
     if (leurre > pii) rejete.add(valeur);
   }));
   return entities.filter((e) => !rejete.has(e.value));
+}
+
+// src/engine/caracteristiques.js
+var borne = (x, max) => Math.min(Math.max(x, 0), max) / max;
+var part = (n, total) => total ? n / total : 0;
+var LIAISON = /[&·•/|—–+]/;
+function contexteDocument(texte, { sousMots } = {}) {
+  const brut = String(texte || "");
+  const enMinuscules = /* @__PURE__ */ new Set();
+  const comptes = /* @__PURE__ */ new Map();
+  for (const m of brut.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []) {
+    const bas = m.toLowerCase();
+    comptes.set(bas, (comptes.get(bas) || 0) + 1);
+    if (m[0] === bas[0]) enMinuscules.add(bas);
+  }
+  return { enMinuscules, comptes, sousMots };
+}
+function morceaux(mot, sousMots) {
+  if (!sousMots) return 1;
+  const bas = String(mot || "").toLowerCase();
+  if (!bas) return 1;
+  let i = 0, n = 0;
+  while (i < bas.length) {
+    let j = bas.length;
+    let trouve = null;
+    while (j > i) {
+      const piece = i === 0 ? bas.slice(i, j) : "##" + bas.slice(i, j);
+      if (sousMots.has(piece)) {
+        trouve = j;
+        break;
+      }
+      j--;
+    }
+    if (trouve === null) return bas.length;
+    n++;
+    i = trouve;
+  }
+  return n || 1;
+}
+function caracteristiques(candidat, ctx) {
+  const valeur = String(candidat?.value ?? "");
+  const mots = motsSignificatifs(valeur);
+  const n = mots.length;
+  const nbLexique = mots.filter(auLexique).length;
+  const nbSuffixe = mots.filter((m) => !auLexique(m) && aSuffixeCommun(m)).length;
+  const nbMinusculeAilleurs = mots.filter((m) => ctx.enMinuscules.has(m.toLowerCase())).length;
+  const occ = Math.max(...mots.map((m) => ctx.comptes.get(m.toLowerCase()) || 1), 1);
+  const morceauxMoyens = ctx.sousMots && n ? mots.reduce((s, m) => s + morceaux(m, ctx.sousMots), 0) / n : 1;
+  return {
+    // — ce que dit le vocabulaire —
+    partLexique: part(nbLexique, n),
+    partSuffixe: part(nbSuffixe, n),
+    aucunCourant: n && nbLexique + nbSuffixe === 0 ? 1 : 0,
+    // — ce que dit la forme —
+    toutCapitales: valeur === valeur.toUpperCase() && new RegExp("\\p{Lu}", "u").test(valeur) ? 1 : 0,
+    casseDeTitre: n && mots.every((m) => new RegExp("^\\p{Lu}", "u").test(m)) ? 1 : 0,
+    aChiffre: /\d/.test(valeur) ? 1 : 0,
+    liaisonInterne: LIAISON.test(valeur) ? 1 : 0,
+    nbMots: borne(n, 5),
+    longueur: borne(valeur.length, 40),
+    fragmentation: borne(morceauxMoyens - 1, 3),
+    // — ce que dit le document —
+    occurrences: borne(Math.log1p(occ - 1), Math.log1p(19)),
+    minusculeAilleurs: part(nbMinusculeAilleurs, n),
+    // — ce que dit le modèle —
+    // En dernier, et volontairement : mesuré sur un vrai CV, le score seul ne
+    // sépare RIEN (vraies 0,738 · fausses 0,648, et le meilleur score du
+    // document est un faux positif). Il n'a sa place qu'en compagnie des autres.
+    score: borne(Number(candidat?.score) || 0, 1)
+  };
+}
+var NOMS_CARACTERISTIQUES = Object.keys(
+  caracteristiques({ value: "x", score: 0 }, contexteDocument(""))
+);
+
+// src/engine/poids-precision.js
+var POIDS = null;
+
+// src/engine/precision.js
+var TYPES_FILTRES = /* @__PURE__ */ new Set(["ORG", "LOC"]);
+var sigmoide = (z) => 1 / (1 + Math.exp(-z));
+function scorePrecision(candidat, ctx, modele = POIDS) {
+  if (!modele) return 1;
+  const c = caracteristiques(candidat, ctx);
+  let z = modele.biais;
+  for (const [nom, w] of Object.entries(modele.poids)) z += w * (c[nom] ?? 0);
+  return sigmoide(z);
+}
+function expliquer(candidat, ctx, modele = POIDS) {
+  if (!modele) return null;
+  const c = caracteristiques(candidat, ctx);
+  let pire = null;
+  for (const [nom, w] of Object.entries(modele.poids)) {
+    const apport = w * (c[nom] ?? 0);
+    if (apport < 0 && (!pire || apport < pire.apport)) pire = { nom, apport };
+  }
+  return pire?.nom ?? null;
+}
+function filtrerParPrecision(entities, texte, { modele = POIDS, sousMots, journal } = {}) {
+  if (!modele || !entities?.length) return entities || [];
+  const ctx = contexteDocument(texte, { sousMots });
+  return entities.filter((e) => {
+    if (e.source !== "ner" || !TYPES_FILTRES.has(e.type)) return true;
+    const p = scorePrecision(e, ctx, modele);
+    if (p >= modele.seuil) return true;
+    if (journal) journal.push({ valeur: e.value, type: e.type, p, motif: expliquer(e, ctx, modele) });
+    return false;
+  });
 }
 
 // src/popup/i18n.js
@@ -1752,7 +1865,7 @@ function contextualDetector() {
 }
 function arbitreContextuel() {
   if (nerEngine !== "gliner" || !nerPipe) return void 0;
-  return (entities) => arbitrerFauxPositifs(entities, nerPipe);
+  return async (entities, texte) => filtrerParPrecision(await arbitrerFauxPositifs(entities, nerPipe), texte);
 }
 function detectContextual(text, opts = {}) {
   if (!nerPipe) return [];
@@ -1783,7 +1896,7 @@ async function analyze() {
         return new Promise((r) => setTimeout(r, 0));
       }
     });
-    autoEntities = mergeEntities(rx, ner);
+    autoEntities = mergeEntities(rx, filtrerParPrecision(ner, text));
     render();
     renderEngineBadge("engineBadge");
   } catch (err) {
@@ -2124,7 +2237,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-YNF3KT7U.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-IUMHGXA6.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -2137,7 +2250,7 @@ async function retirerDuMasquage(valeur) {
       fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
       mapping = res.mapping;
     } else {
-      const { anonymizeUnits } = await import("./anonymize-units-MTNNNYVS.js");
+      const { anonymizeUnits } = await import("./anonymize-units-VBGPJYQX.js");
       const { results, mapping: m } = await anonymizeUnits(r.units, {
         entitesConnues: r.entites,
         intitules: r.intitules,
@@ -2710,7 +2823,7 @@ async function processFile() {
       fileSetStatus(msg("etat_lecture_pdf"));
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-YNF3KT7U.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-IUMHGXA6.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -2741,7 +2854,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-MTNNNYVS.js");
+    const { anonymizeUnits } = await import("./anonymize-units-VBGPJYQX.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {

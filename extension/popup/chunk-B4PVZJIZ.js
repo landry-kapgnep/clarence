@@ -69,7 +69,7 @@ async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTe
     nerEntities = nerPipeline ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal, new Set(intitules || [])) : [];
     if (arbitre && nerEntities.length) {
       verifierAnnulation(signal);
-      nerEntities = await arbitre(nerEntities);
+      nerEntities = await arbitre(nerEntities, combined);
     }
   }
   const forced = forcedMasks(combined, forceTerms || []);

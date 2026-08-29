@@ -209,15 +209,21 @@ export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, 
       ? await detectNerPerUnit(nonEmpty, ranges, nerPipeline, onProgress, nerDetect || detectNER, disabledTypes, signal, new Set(intitules || []))
       : [];
 
-    // `arbitre` (optionnel) : seconde opinion du modèle sur les entités qu'il
-    // vient de proposer, pour écarter « Analyste », « Poste occupé » et consorts.
-    // Injecté par l'appelant plutôt que branché ici, parce qu'il est propre à
-    // GLiNER : le moteur BERT de repli n'a pas de labels à interroger. Appliqué
-    // AVANT la fusion, donc uniquement au contextuel — le déterministe n'est
-    // jamais soumis à l'avis d'un modèle.
+    // `arbitre` (optionnel) : seconde opinion sur les entités que le modèle
+    // vient de proposer, pour écarter « Analyste », « Poste occupé » et
+    // consorts. Injecté par l'appelant plutôt que branché ici, parce qu'il est
+    // propre à GLiNER : le moteur BERT de repli n'a pas de labels à
+    // interroger. Appliqué AVANT la fusion, donc uniquement au contextuel — le
+    // déterministe n'est jamais soumis à l'avis d'un modèle.
+    //
+    // Il reçoit AUSSI le texte complet du document. Le filtre de précision qui
+    // s'y branche pèse des caractéristiques qui n'existent qu'à cette échelle —
+    // combien de fois la valeur revient, si ses mots apparaissent ailleurs en
+    // minuscules — et qui seraient toutes nulles sur une unité isolée. Les
+    // arbitres qui n'en ont pas besoin ignorent simplement l'argument.
     if (arbitre && nerEntities.length) {
       verifierAnnulation(signal);
-      nerEntities = await arbitre(nerEntities);
+      nerEntities = await arbitre(nerEntities, combined);
     }
   }
   const forced = forcedMasks(combined, forceTerms || []);

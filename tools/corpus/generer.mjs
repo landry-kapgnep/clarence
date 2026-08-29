@@ -65,7 +65,7 @@ const entite = {
 // positif par le modèle actuel sur de vrais documents — ils ne sont pas
 // imaginés. Ils apparaissent dans les phrases SANS AUCUNE ÉTIQUETTE : c'est
 // ainsi que le modèle apprend à ne rien y voir.
-const NEGATIFS_DURS = [
+export const NEGATIFS_DURS = [
   'Canal acoustique de données', 'Stack conteneurisée', 'Bénévole terrain',
   'Développement & Web', 'Outils & Systèmes', 'Profil R&D',
   'Pipeline d’automatisation vidéo', 'Modélisation applicative',
@@ -73,11 +73,25 @@ const NEGATIFS_DURS = [
   'Analyse statistique des écarts', 'Gestion de projet agile',
   'Contrôle continu', 'Relevé de notes', 'Suivi de cohortes',
   'Machine Learning', 'Prompting LLM', 'Tests unitaires',
+  // Ajoutés le 29/08/2026. Tous relevés dans des mesures ANTÉRIEURES du projet
+  // et jamais couverts par le corpus : les faux positifs du CV réel listés en
+  // tête de src/engine/vocabulaire.js, et ceux qui SURVIVAIENT encore au filtre
+  // de vocabulaire (docs/roadmap-detection.md, P14 « ce qui reste »). Le corpus
+  // ne servait à rien tant qu'il ignorait les erreurs déjà constatées.
+  'Développeur Data', 'Ingénieur Systèmes', 'Chargé de mission',
+  'Spécialités', 'Compétences transverses', 'Veille technologique',
 ];
+
+// LANGUES — famille de faux positifs mesurée sur un vrai CV (« Anglais »,
+// « Allemand », « Anglais C1 ») et pourtant absente du corpus jusqu'ici. Une
+// langue n'est pas une donnée personnelle ; le modèle la voit volontiers comme
+// une nationalité ou un lieu.
+const LANGUES = ['Anglais', 'Allemand', 'Espagnol', 'Italien', 'Portugais'];
+const NIVEAUX = ['A2', 'B1', 'B2', 'C1', 'courant', 'notions', 'bilingue'];
 
 // Vocabulaire technique : jamais une donnée personnelle, et pourtant la
 // deuxième famille de faux positifs mesurée.
-const TECHNOS = [
+export const TECHNOS = [
   'Python', 'Docker', 'PostgreSQL', 'React', 'FastAPI', 'Kubernetes', 'Git',
   'Pandas', 'NumPy', 'JaCoCo', 'JUnit', 'Gradle', 'Linux', 'Bash', 'SQL',
   'LAMP', 'BDD', 'ETL', 'REST', 'JWT', 'MongoDB', 'Terraform', 'Ollama',
@@ -91,7 +105,7 @@ const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
 // Un gabarit produit une LIGNE et déclare ses entités. `{PER}` est remplacé et
 // étiqueté ; `{NEG}`, `{TECHNO}`, `{MOIS}` sont remplacés SANS étiquette — ce
 // sont les pièges.
-const GABARITS = {
+export const GABARITS = {
   'PROFIL': [
     'Étudiant en informatique à {ORG}, recherche une alternance pour {MOIS} {ANNEE}.',
     '{NEG}. Forte appétence pour {NEG}.',
@@ -111,6 +125,18 @@ const GABARITS = {
   'FORMATIONS': [
     'Diplôme obtenu à {ORG}, {LOC}, en {ANNEE}.',
     'Baccalauréat Général {ANNEE}. Spécialités : {TECHNO}, mathématiques.',
+  ],
+  // Une langue n'est pas une donnée personnelle, et « Mars 2026 » n'en est pas
+  // une non plus — deux faux positifs mesurés sur un vrai CV, restés hors du
+  // corpus jusqu'au 29/08/2026. Aucun slot n'y est étiqueté.
+  'LANGUES': [
+    '{LANGUE} {NIVEAU} · {LANGUE} {NIVEAU}',
+    'Langues {LANGUE} ({NIVEAU}), {LANGUE} ({NIVEAU})',
+    '{LANGUE} lu, écrit, parlé.',
+  ],
+  'DISPONIBILITÉ': [
+    'Disponible à partir de {MOIS_MAJ} {ANNEE}.',
+    'Recherche un contrat en alternance dès {MOIS_MAJ} {ANNEE}.',
   ],
   'IDENTITÉ': [
     'Nom {PER_MAJ}',
@@ -133,17 +159,26 @@ const GABARITS = {
   ],
 };
 
-const SECTIONS_PAR_DOC = {
-  cv: ['PROFIL', 'COMPÉTENCES CLÉS', 'EXPÉRIENCES PROFESSIONNELLES', 'FORMATIONS'],
+export const SECTIONS_PAR_DOC = {
+  cv: ['PROFIL', 'COMPÉTENCES CLÉS', 'EXPÉRIENCES PROFESSIONNELLES', 'FORMATIONS',
+       'LANGUES', 'DISPONIBILITÉ'],
   formulaire: ['IDENTITÉ', 'MENTIONS'],
   rh: ['COMPTE RENDU'],
 };
 
 // Génère une ligne : le texte final et ses entités en indices de TOKENS.
-function ligne(section, gabarit) {
+//
+// Rend AUSSI `texte` et `spans` (offsets en CARACTÈRES). Le format GLiNER
+// compte en tokens, mais notre propre moteur, lui, rend des offsets de
+// caractères : sans cette seconde vue, on ne pourrait pas confronter ce que le
+// détecteur propose à ce que le générateur a réellement placé — c'est
+// exactement ce dont le filtre de précision a besoin pour s'entraîner. Les deux
+// vues sont produites au même endroit, donc elles ne peuvent pas diverger.
+export function ligne(section, gabarit) {
   const prefixe = `[${section}] `;
   let texte = prefixe;
   const entites = [];
+  const spans = [];
   // On construit le texte morceau par morceau pour connaître, à chaque
   // insertion, la position en tokens de ce qu'on vient d'écrire.
   for (const part of gabarit.split(/(\{[A-Z_]+\})/)) {
@@ -151,10 +186,14 @@ function ligne(section, gabarit) {
     const slot = part.match(/^\{([A-Z_]+)\}$/)?.[1];
     if (!slot) { texte += part; continue; }
     const avant = decouper(texte).length;
+    const avantChar = texte.length;
     let valeur;
     if (slot === 'NEG') valeur = tirer(NEGATIFS_DURS);
     else if (slot === 'TECHNO') valeur = tirer(TECHNOS);
+    else if (slot === 'LANGUE') valeur = tirer(LANGUES);
+    else if (slot === 'NIVEAU') valeur = tirer(NIVEAUX);
     else if (slot === 'MOIS') valeur = tirer(MOIS);
+    else if (slot === 'MOIS_MAJ') { const m = tirer(MOIS); valeur = m[0].toUpperCase() + m.slice(1); }
     else if (slot === 'ANNEE') valeur = String(2015 + Math.floor(Math.random() * 12));
     else valeur = entite[slot]();
     texte += valeur;
@@ -164,6 +203,7 @@ function ligne(section, gabarit) {
     if (entite[slot]) {
       const type = slot === 'PER_MAJ' ? 'PER' : slot === 'TEL' ? 'TELEPHONE' : slot;
       entites.push([avant, apres - 1, LABELS[type], valeur]);
+      spans.push({ start: avantChar, end: texte.length, type, valeur });
     }
   }
   const tokens = decouper(texte);
@@ -180,7 +220,27 @@ function ligne(section, gabarit) {
       throw new Error(`étiquette désalignée : « ${relu} » au lieu de « ${attendu} » (${label})`);
     }
   }
-  return { tokenized_text: tokens, ner: entites.map(([a, b, l]) => [a, b, l]) };
+  // Le MÊME garde-fou pour la vue en caractères : elle sert de vérité de
+  // référence au filtre de précision, un décalage y serait tout aussi
+  // silencieux et tout aussi ruineux.
+  for (const s of spans) {
+    if (texte.slice(s.start, s.end) !== s.valeur) {
+      throw new Error(`span désaligné : « ${texte.slice(s.start, s.end)} » au lieu de « ${s.valeur} »`);
+    }
+  }
+  // `prefixeLongueur` : de quoi RETIRER exactement le « [SECTION] » de tête.
+  //
+  // Il est indispensable à l'entraînement de GLiNER (forme choisie par mesure,
+  // voir l'en-tête), mais la PRODUCTION, elle, ne préfixe rien : un intitulé y
+  // est une unité à part, marquée `structurel` et épargnée par la passe
+  // contextuelle. Un consommateur qui veut reproduire fidèlement l'inférence
+  // doit donc pouvoir s'en débarrasser — sinon il mesure des faux positifs
+  // (« EXPÉRIENCES PROFESSIONNELLES » vu comme une entreprise) que l'utilisateur
+  // ne rencontre jamais.
+  return {
+    tokenized_text: tokens, ner: entites.map(([a, b, l]) => [a, b, l]),
+    texte, spans, prefixeLongueur: prefixe.length
+  };
 }
 
 // Les labels du corpus doivent être CEUX de l'inférence — ce sont eux que le
@@ -190,6 +250,23 @@ const LABELS = {
   EMAIL: 'email', TELEPHONE: 'phone number', DATE_NAISSANCE: 'date of birth',
 };
 
+// Tire une ligne au hasard, en respectant les sections propres à chaque type de
+// document. Exporté : le constructeur de jeu du filtre de précision
+// (tools/filtre/) doit produire EXACTEMENT les mêmes documents que
+// l'entraînement du modèle, jamais une variante réécrite à côté.
+export function ligneAuHasard() {
+  const doc = tirer(Object.keys(SECTIONS_PAR_DOC));
+  const section = tirer(SECTIONS_PAR_DOC[doc]);
+  const gabarit = tirer(GABARITS[section]);
+  return { ...ligne(section, gabarit), section, gabarit };
+}
+
+// Le corps de script ne tourne QUE si le fichier est lancé directement : le
+// module doit être importable sans écrire 2 000 lignes sur la sortie standard.
+// `pathToFileURL` plutôt qu'une concaténation à la main — sur Windows, un
+// chemin `C:\…` ne devient pas une URL valide par simple préfixage.
+const { pathToFileURL } = await import('node:url');
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 const combien = Number(process.argv[2]) || 2000;
 const stats = { lignes: 0, entites: 0, negatifs: 0 };
 // Variété : la seule parade au sur-apprentissage, donc COMPTÉE et affichée
@@ -197,19 +274,19 @@ const stats = { lignes: 0, entites: 0, negatifs: 0 };
 // n'apprend que ces 40 prénoms.
 const distincts = { person: new Set(), company: new Set(), location: new Set() };
 for (let i = 0; i < combien; i++) {
-  const doc = tirer(Object.keys(SECTIONS_PAR_DOC));
-  const section = tirer(SECTIONS_PAR_DOC[doc]);
-  const gabarit = tirer(GABARITS[section]);
-  const ex = ligne(section, gabarit);
+  const ex = ligneAuHasard();
   stats.lignes++;
   stats.entites += ex.ner.length;
-  if (gabarit.includes('{NEG}')) stats.negatifs++;
+  if (ex.gabarit.includes('{NEG}')) stats.negatifs++;
   for (const [a, b, label] of ex.ner) {
     if (distincts[label]) distincts[label].add(ex.tokenized_text.slice(a, b + 1).join(' '));
   }
-  process.stdout.write(JSON.stringify(ex) + '\n');
+  // Seules les deux clés du format GLiNER sont écrites : `texte`/`spans` sont
+  // une vue interne, les ajouter au JSONL d'entraînement serait du bruit.
+  process.stdout.write(JSON.stringify({ tokenized_text: ex.tokenized_text, ner: ex.ner }) + '\n');
 }
 console.error(`${stats.lignes} lignes · ${stats.entites} entités étiquetées · `
   + `${stats.negatifs} lignes portant un négatif dur`);
 console.error('valeurs DISTINCTES  '
   + Object.entries(distincts).map(([k, s]) => `${k} ${s.size}`).join(' · '));
+}
