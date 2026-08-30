@@ -38,20 +38,40 @@ import { LEXIQUE_COURANT } from './lexique.js';
 // pratiquement jamais ces terminaisons — c'est une propriété de la
 // MORPHOLOGIE, pas une liste d'exceptions.
 //
-// ⚠️ CINQ SUFFIXES ONT ÉTÉ RETIRÉS APRÈS MESURE, et il ne faut pas les
-// remettre : `-elle`, `-ance`, `-ence`, `-ique`, `-aire`. Ils collident
-// frontalement avec des NOMS DE LIEUX — Sarcelles, France, Provence, Belgique,
-// Martinique, Saint-Nazaire. Le banc l'a montré immédiatement : avec `-elle`,
-// « Sarcelles » cessait d'être masqué.
+// ⚠️ SIX SUFFIXES ONT ÉTÉ RETIRÉS APRÈS MESURE, et il ne faut pas les
+// remettre : `-elle`, `-ance`, `-ence`, `-ique`, `-aire`, `-euse`. Ils
+// collident frontalement avec des NOMS DE LIEUX — Sarcelles, France, Provence,
+// Belgique, Martinique, Saint-Nazaire, Villetaneuse. Le banc l'a montré
+// immédiatement pour `-elle` : « Sarcelles » cessait d'être masqué.
 //
-// Le coût de ce retrait est connu et accepté : « Canal acoustique de données »
+// `-euse` a été retiré le 30/08/2026, et il avait survécu aux cinq autres
+// parce que RIEN NE LE VÉRIFIAIT : « Villetaneuse » apparaît deux fois dans
+// certificat-fr.txt, un commentaire de la vérité terrain AFFIRMAIT que la ville
+// est masquée, mais aucune assertion ne l'exigeait. Une fois l'assertion
+// ajoutée, la fuite est apparue immédiatement — et disparaît en neutralisant
+// les suffixes. Elle touche par construction tous les lieux en `-euse`
+// (Villetaneuse, Bagneuse…).
+//
+// LEÇON, la troisième fois que ce piège se referme : les suffixes dérivationnels
+// du français et les toponymes français PARTAGENT leurs terminaisons. Il n'y a
+// pas de liste sûre à énumérer, seulement des collisions qu'on découvre une par
+// une quand un test finit par les couvrir.
+//
+// Le coût de ces retraits est connu et accepté : « Canal acoustique de données »
 // survit comme faux positif, faute de `-ique`. Un faux positif visible vaut
 // mieux qu'une ville laissée en clair.
 //
-// Mesuré : le lexique seul attrapait 5 faux positifs sur 10 ; avec les
-// suffixes restants, 6 sur 9, sans perdre aucune vraie valeur.
+// ⚠️ MESURÉ LE 30/08/2026 : cette liste n'apporte PLUS RIEN au banc. Neutralisée
+// entièrement, les neuf documents rendent des constats RIGOUREUSEMENT
+// IDENTIQUES — seul « Villetaneuse » change, et en mieux. Sa justification
+// d'origine (« 6 faux positifs sur 9 au lieu de 5 sur 10 ») venait d'un vrai CV
+// qu'on n'a plus sous la main, et la famille qu'elle visait — les groupes
+// nominaux de plusieurs mots — est désormais traitée par le filtre appris
+// (precision.js), qui ne s'en sert pas. La retirer complètement est le prochain
+// pas logique ; il demande de reconstruire le jeu d'entraînement pour supprimer
+// proprement la caractéristique `partSuffixe`, donc il n'est pas fait ici.
 const SUFFIXES_COMMUNS =
-  /(?:ment|tion|sion|isme|iste|ateur|eur|euse|trice|able|ible|ité|isée|isé|ifié|logie|graphie)s?$/i;
+  /(?:ment|tion|sion|isme|iste|ateur|eur|trice|able|ible|ité|isée|isé|ifié|logie|graphie)s?$/i;
 
 // Mots-outils : ni identifiants ni discriminants. « Canal acoustique DE
 // données » ne doit pas échouer le test à cause de « de ».

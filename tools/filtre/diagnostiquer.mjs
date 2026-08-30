@@ -57,10 +57,24 @@ const pipe = await chargerGliner();
 const off = new Set(TYPES_PEU_FIABLES);
 
 for (const f of fichiers) {
-  const texte = readFileSync(f, 'utf8');
-  // Découpage en lignes non vides : approximation des unités, suffisante pour
-  // un diagnostic (le banc, lui, passe par les vrais adaptateurs).
-  const unites = texte.split('\n').filter(l => l.trim());
+  // ⚠️ UN PDF NE SE LIT PAS COMME DU TEXTE. Première version : `readFileSync`
+  // en utf8 sur un PDF rendait les entrailles du format, et le diagnostic
+  // affichait dix fois « FlateDecode » comme faux positif — on analysait le
+  // conteneur au lieu du document. Les PDF passent donc par le VRAI adaptateur,
+  // celui-là même qu'utilise la production.
+  let unites;
+  if (f.toLowerCase().endsWith('.pdf')) {
+    const { extractTextUnits } = await import('../../src/files/pdf-adapter.js');
+    const b = readFileSync(f);
+    const { units } = await extractTextUnits(
+      b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
+    unites = units.map(u => u.text).filter(t => t.trim());
+  } else {
+    // Découpage en lignes non vides : approximation des unités, suffisante pour
+    // un diagnostic sur du texte (le banc, lui, passe par les vrais adaptateurs).
+    unites = readFileSync(f, 'utf8').split('\n').filter(l => l.trim());
+  }
+  const texte = unites.join('\n');
   let candidats = [];
   for (const u of unites) candidats.push(...await detectGliner(u, pipe, { disabledTypes: off }));
   const apresArbitre = await arbitrerFauxPositifs(candidats, pipe);

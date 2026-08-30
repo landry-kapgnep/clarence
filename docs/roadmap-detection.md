@@ -1884,3 +1884,43 @@ SEUL MOT, donc exclus par construction (garde-fou 4) et relevant des profils.
 - Les technos d'un seul mot (`Docker`, `JWT`) restent hors de portée par
   construction : aucune caractéristique ne les distingue de `Twini` ou `UNODC`.
   C'est le rôle des profils, et c'est délibéré.
+
+### Suite immédiate (30/08) — le suffixe `-euse` faisait fuir une ville
+
+Dernier fil laissé ouvert par P15 : `SUFFIXES_COMMUNS` est la seule pièce liée
+au français, le filtre appris s'en passe, mais P14 l'utilise toujours. Mesuré.
+
+**La liste n'apporte plus rien au banc.** Neutralisée entièrement, les neuf
+documents rendent des constats rigoureusement identiques — vérifié avec un
+contrôle explicite que la neutralisation avait bien pris (`estMotCourant
+('conteneurisée')` → `false`), parce qu'un premier `sed` ne matchait pas et
+aurait produit deux fichiers identiques donc une conclusion inverse de la vérité.
+
+**Mais elle faisait fuir `Villetaneuse`.** Le suffixe `-euse` la fait passer
+pour un nom commun, donc `estVocabulaireCourant` la juge « vocabulaire » et P14
+l'écarte. La ville apparaît DEUX FOIS dans `certificat-fr.txt` (« IUT de
+Villetaneuse », « Fait à Villetaneuse ») et un commentaire de la vérité terrain
+**affirmait déjà qu'elle est masquée** — sans aucune assertion pour l'exiger.
+C'est ce trou qui l'a laissée vivre : le banc promettait plus que ses tests.
+
+Assertion ajoutée, fuite apparue immédiatement, `-euse` retiré, fuite fermée :
+
+| | avant | après |
+|---|---|---|
+| banc — structuré | 100 % | **100 %** |
+| banc — contextuel | 84 % (36/43) | **84 % (37/44)** — une exigence de plus, satisfaite |
+| banc — préservé | 93 % | **93 %** |
+| `certificat-fr.txt` — contextuel | 75 % (fuite) | **100 %** |
+
+**Troisième fois que ce piège se referme** (après `-elle`/Sarcelles et les
+quatre autres) : les suffixes dérivationnels du français et les toponymes
+français partagent leurs terminaisons. Il n'existe pas de liste sûre à énumérer,
+seulement des collisions qu'on découvre quand un test finit par les couvrir.
+Tout ajout à cette liste doit désormais arriver avec sa ville dans
+`tests/unit/vocabulaire.test.mjs`.
+
+**Reste ouvert** : retirer la liste ENTIÈREMENT. La mesure y invite (zéro apport
+au banc, et la famille qu'elle visait est traitée par le filtre appris, qui ne
+s'en sert pas), mais sa justification d'origine venait d'un vrai CV qu'on n'a
+plus, et le retrait propre suppose de reconstruire le jeu d'entraînement pour
+supprimer la caractéristique `partSuffixe`. À trancher sur de vrais documents.

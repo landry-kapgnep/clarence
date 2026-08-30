@@ -50,7 +50,13 @@ export const CORPUS = [
       { valeur: '080924167CD', type: 'ID_NATIONAL' },
       { valeur: '12201603', type: 'ID_NATIONAL' },
       { valeur: '16 octobre 2004', type: 'DATE_NAISSANCE' },
-      { valeur: 'Sarcelles', type: 'LOC' }
+      { valeur: 'Sarcelles', type: 'LOC' },
+      // ⚠️ AJOUTÉE LE 30/08/2026. Le commentaire ci-dessous AFFIRMAIT déjà que
+      // la ville est masquée, mais rien ne le vérifiait : elle apparaît deux
+      // fois dans le document (« IUT de Villetaneuse », « Fait à Villetaneuse »)
+      // et n'était dans aucune assertion. Un banc dont un commentaire promet
+      // plus que ses tests laisse passer exactement ce qu'il prétend couvrir.
+      { valeur: 'Villetaneuse', type: 'LOC' }
     ],
     // « IUT » et non « IUT de Villetaneuse » : la ville est masquée en LIEU,
     // exactement comme « Sarcelles » deux lignes plus haut dans le même

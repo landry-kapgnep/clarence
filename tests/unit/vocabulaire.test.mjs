@@ -88,3 +88,19 @@ test('une entreprise au nom PROPRE reste détectée', async () => {
   const [e] = await detectGliner('Stage chez Semantikmatch en 2026.', pipe);
   assert.equal(e?.type, 'ORG');
 });
+
+// LA TROISIÈME FOIS QUE CE PIÈGE SE REFERME, et la raison pour laquelle il a
+// survécu si longtemps : rien ne le vérifiait. « Villetaneuse » apparaît deux
+// fois dans certificat-fr.txt et un commentaire de la vérité terrain affirmait
+// que la ville est masquée — sans aucune assertion pour l'exiger. Le suffixe
+// `-euse` la faisait passer pour du vocabulaire, donc P14 la laissait en clair.
+//
+// Les suffixes dérivationnels du français et les toponymes français PARTAGENT
+// leurs terminaisons. Chaque ajout à cette liste doit venir ici avec sa ville.
+test('les lieux en -euse, -elle, -ique ne passent pas pour du vocabulaire', () => {
+  for (const lieu of ['Villetaneuse', 'Bagneuse', 'Sarcelles', 'Belgique',
+                      'Provence', 'Martinique']) {
+    assert.ok(!estVocabulaireCourant(lieu),
+      `« ${lieu} » serait laissé en clair — un suffixe le prend pour un nom commun`);
+  }
+});
