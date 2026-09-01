@@ -415,7 +415,24 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
           const type = groupe.types[s.label];
           // Un label inconnu ne doit jamais devenir une entité sans type : mieux
           // vaut l'ignorer que produire un placeholder [undefined_1].
-          if (!type || s.score < seuil) continue;
+          //
+          // ⚠️ ET UN TYPE DÉSACTIVÉ NE DOIT PAS NON PLUS SORTIR D'ICI, sous
+          // peine de FUITE. Ce n'est pas une optimisation, c'est une correction.
+          //
+          // Le saut de groupe ci-dessus n'écarte une passe que si TOUS ses types
+          // sont désactivés. Un groupe partiellement actif produit donc encore
+          // des entités de types désactivés — et celles-ci ENTRENT dans la
+          // résolution des chevauchements, où « le plus long gagne ». Elles y
+          // battent une détection d'un type ACTIF portant sur le même texte…
+          // avant d'être jetées tout à la fin par filterByRules. Résultat : la
+          // valeur n'est plus masquée par personne.
+          //
+          // Mesuré sur un vrai CV. L'utilisateur avait décoché ETABLISSEMENT
+          // mais laissé SANTE : le groupe tournait donc encore, sortait
+          // « ETABLISSEMENT : Sorbonne Paris Nord » trois fois, ce span évinçait
+          // le « LIEU : Sorbonne Paris Nord » du groupe identité, puis
+          // disparaissait — et le nom de l'université partait EN CLAIR.
+          if (!type || desactives.has(type) || s.score < seuil) continue;
           // La valeur se relit TOUJOURS sur le texte d'origine : c'est le texte
           // accentué qu'il faudra masquer, pas la copie de travail.
           const valeur = chunk.slice(s.start, s.end);

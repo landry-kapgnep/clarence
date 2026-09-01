@@ -276,7 +276,7 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
         const spans = await glinerPipeline(variante, groupe.labels);
         for (const s of spans || []) {
           const type = groupe.types[s.label];
-          if (!type || s.score < seuil) continue;
+          if (!type || desactives.has(type) || s.score < seuil) continue;
           const valeur = chunk.slice(s.start, s.end);
           if (!estPlausiblePourLeType(type, valeur)) continue;
           duChunk.push({

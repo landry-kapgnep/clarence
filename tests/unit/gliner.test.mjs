@@ -637,3 +637,39 @@ test('une vraie date de naissance passe toujours', async () => {
     assert.equal(e?.type, 'DATE_NAISSANCE', `« ${d} » n’est plus reconnue`);
   }
 });
+
+// --- UN TYPE DÉSACTIVÉ NE DOIT PAS ÉVINCER UN TYPE ACTIF ------------------
+//
+// FUITE MESURÉE SUR UN VRAI CV (02/09/2026). L'utilisateur avait décoché
+// ETABLISSEMENT mais laissé SANTE — or les deux vivent dans le MÊME groupe de
+// labels, et le saut de groupe n'écarte une passe que si TOUS ses types sont
+// désactivés. Le groupe tournait donc, sortait « ETABLISSEMENT : Sorbonne Paris
+// Nord », ce span évinçait le « LIEU : Sorbonne Paris Nord » du groupe identité
+// dans la résolution des chevauchements (« le plus long gagne »), puis
+// disparaissait tout à la fin dans filterByRules. Le nom de l'université
+// partait EN CLAIR, sans qu'aucune couche ne le rattrape.
+//
+// La leçon dépasse ce cas : une entité écartée en AVAL peut avoir déjà écarté,
+// en amont, celle qui l'aurait remplacée. Un filtre de type doit s'appliquer
+// AVANT l'arbitrage des chevauchements, jamais après.
+test('un type désactivé n’évince pas une détection d’un type actif', async () => {
+  const pipe = fakePipe({
+    'Sorbonne Paris Nord': [
+      { label: 'school', score: 0.9, len: 19 },
+      { label: 'location', score: 0.7, len: 19 }
+    ]
+  });
+  // ETABLISSEMENT décoché, SANTE laissé actif : le groupe tourne encore.
+  const out = await detectGliner('Diplôme obtenu à Sorbonne Paris Nord.', pipe,
+    { disabledTypes: new Set(['ETABLISSEMENT']) });
+  assert.equal(out.length, 1, 'la valeur doit rester couverte par un type actif');
+  assert.equal(out[0].type, 'LOC');
+  assert.equal(out[0].value, 'Sorbonne Paris Nord');
+});
+
+test('un groupe dont TOUS les types sont désactivés ne produit rien', async () => {
+  const pipe = fakePipe({ 'Sorbonne Paris Nord': [{ label: 'school', score: 0.9, len: 19 }] });
+  const out = await detectGliner('Diplôme obtenu à Sorbonne Paris Nord.', pipe,
+    { disabledTypes: new Set(['POSTE', 'NATIONALITE', 'ETABLISSEMENT', 'SANTE']) });
+  assert.equal(out.length, 0);
+});

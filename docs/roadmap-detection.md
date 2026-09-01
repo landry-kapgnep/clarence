@@ -1924,3 +1924,41 @@ au banc, et la famille qu'elle visait est traitée par le filtre appris, qui ne
 s'en sert pas), mais sa justification d'origine venait d'un vrai CV qu'on n'a
 plus, et le retrait propre suppose de reconstruire le jeu d'entraînement pour
 supprimer la caractéristique `partSuffixe`. À trancher sur de vrais documents.
+
+## P16 — Un type désactivé évinçait un type actif, et la valeur fuyait (02/09/2026)
+
+Constaté sur un vrai CV, en vrai Chrome : `Sorbonne Paris Nord` — le nom de
+l'université — sortait EN CLAIR alors que le modèle le détectait trois fois.
+
+**Le mécanisme, reproduit puis tracé étape par étape.** L'utilisateur avait
+décoché ETABLISSEMENT mais laissé SANTE. Or les deux vivent dans le MÊME groupe
+de labels, et le saut de groupe de `detectGliner` n'écarte une passe que si
+**tous** ses types sont désactivés. Donc :
+
+1. le groupe tourne et sort `ETABLISSEMENT : Sorbonne Paris Nord` ;
+2. ce span entre dans la résolution des chevauchements et **évince** le
+   `LIEU : Sorbonne Paris Nord` du groupe identité (« le plus long gagne ») ;
+3. tout à la fin, `filterByRules` jette l'entité parce que son type est
+   désactivé ;
+4. plus personne ne couvre la valeur.
+
+**Correctif** : un span dont le type est désactivé ne sort plus de
+`detectGliner` du tout. Le filtre de type s'applique donc AVANT l'arbitrage des
+chevauchements, jamais après.
+
+**La leçon dépasse ce cas** : une entité écartée en AVAL peut avoir déjà écarté,
+en amont, celle qui l'aurait remplacée. Partout où deux couches filtrent la même
+liste, l'ordre décide — et un filtrage tardif est un piège silencieux.
+
+Vérifié : banc inchangé (100 % / 84 % / 93 %), et sur le CV réel `Sorbonne`
+passe de EN CLAIR à masqué.
+
+### Ce qui reste sur ce document
+
+`Semantikmatch` (l'employeur) n'est **jamais** détecté, dans aucune
+configuration de types — mesuré sur la phrase exacte. Ce n'est pas un problème
+de filtrage mais de rappel du modèle : dans « Data Engineer — Semantikmatch
+Janv. - Mars 2026 », il trouve `Data Engineer` et manque le nom propre. C'est le
+gotcha déjà documenté de la concurrence entre labels. Rattrapable par
+« toujours masquer » ou le profil d'identité ; sinon, c'est un candidat pour
+l'affinage du modèle (phases 3-5 de `tools/corpus/README.md`).
