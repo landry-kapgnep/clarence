@@ -25,6 +25,29 @@ const TYPE_LABELS = {
 
 const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// NOS PROPRES PLACEHOLDERS — à ne JAMAIS remasquer.
+//
+// LE DÉFAUT QU'ON FERME (01/09/2026, constaté sur un vrai CV repassé une
+// seconde fois). Le modèle voit « [PERSONNE_2] », y trouve une entité, et on
+// écrit « [[PERSONNE_1]] ». Trois conséquences, la dernière étant grave :
+//   · le document devient illisible (crochets imbriqués) ;
+//   · la table de correspondance dit « [PERSONNE_1] → PERSONNE_2 », donc rien ;
+//   · LA RÉINJECTION EST MORTE. La table du premier passage a disparu avec la
+//     popup : plus rien ne relie « [PERSONNE_1] » au vrai nom.
+//
+// Le geste est banal — on anonymise, le résultat ne convient pas, on repasse la
+// sortie. Un outil doit reconnaître ce qu'il a lui-même écrit.
+//
+// Le motif est CONSTRUIT à partir de TYPE_LABELS, jamais recopié : ajouter un
+// type sans mettre le motif à jour rouvrirait le trou en silence.
+const MOTIF_PLACEHOLDER = new RegExp(
+  '^\\[?(?:' + [...new Set(Object.values(TYPE_LABELS))].join('|') + ')_\\d+\\]?$');
+
+// Les crochets sont OPTIONNELS : le recalage sur les frontières de mot
+// (snapToWordBoundaries) les retire souvent, si bien que le candidat arrive
+// sous la forme « PERSONNE_2 » et non « [PERSONNE_2] ».
+export const estPlaceholder = (valeur) => MOTIF_PLACEHOLDER.test(String(valeur || '').trim());
+
 // entities : sortie de mergeEntities/selectActive (triées, sans chevauchement).
 // opts.pseudonymize : fn(type, value) → pseudo réaliste ou null (→ placeholder).
 // Retourne { masked, mapping } ; mapping = [{ placeholder, value, type, realistic }].

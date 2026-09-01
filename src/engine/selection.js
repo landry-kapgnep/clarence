@@ -2,6 +2,7 @@
 // manuels + retraits utilisateur. Cette logique décide de ce qui est masqué —
 // zéro tolérance, donc pure et testée (voir tests/unit/selection.test.mjs).
 import { resolveOverlaps } from './merge.js';
+import { estPlaceholder } from './masking.js';
 
 export const entityKey = e => `${e.start}:${e.end}:${e.type}`;
 
@@ -81,6 +82,11 @@ export function filterByRules(entities, { disabledTypes = new Set(), keepValues 
     .map(v => motsDe(v))
     .filter(m => m.length);
   return entities.filter(e => {
+    // AVANT TOUT LE RESTE, sélections manuelles comprises : un placeholder que
+    // nous avons nous-mêmes écrit n'est jamais une donnée personnelle, et le
+    // remasquer détruit la réinjection (voir estPlaceholder dans masking.js).
+    // Il n'existe aucun cas où le masquer rendrait service.
+    if (estPlaceholder(e.value)) return false;
     if (e.source === 'manuel') return true;
     if (disabledTypes.has(e.type)) return false;
     const mots = motsDe(e.value);

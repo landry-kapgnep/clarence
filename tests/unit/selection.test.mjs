@@ -135,3 +135,36 @@ test('un terme gardé ne désactive pas les entités SANS RAPPORT', () => {
   ).map(e => e.value);
   assert.deepEqual(gardes, ['Sterenn Quémerais']);
 });
+
+// --- NOS PROPRES PLACEHOLDERS NE SE REMASQUENT PAS ------------------------
+//
+// Défaut constaté sur un vrai CV repassé une seconde fois dans l'outil : le
+// modèle voyait « [PERSONNE_2] », y trouvait une entité, et on écrivait
+// « [[PERSONNE_1]] ». La table disait alors « [PERSONNE_1] → PERSONNE_2 »,
+// c'est-à-dire rien — et LA RÉINJECTION ÉTAIT MORTE, la table du premier
+// passage ayant disparu avec la popup.
+test('un placeholder déjà posé n’est jamais remasqué', () => {
+  const ents = [
+    { source: 'ner', type: 'PER', value: 'PERSONNE_2' },
+    { source: 'ner', type: 'LOC', value: '[LIEU_5]' },
+    { source: 'regex', type: 'EMAIL', value: 'EMAIL_1' },
+    { source: 'ner', type: 'ORG', value: 'Semantikmatch' }
+  ];
+  const out = filterByRules(ents, {});
+  assert.deepEqual(out.map(e => e.value), ['Semantikmatch']);
+});
+
+test('la garde vaut AUSSI pour une sélection manuelle', () => {
+  // Une sélection manuelle est d'ordinaire souveraine, mais masquer un
+  // placeholder ne rend service dans aucun cas : ça ne peut que détruire.
+  const ents = [{ source: 'manuel', type: 'PER', value: '[PERSONNE_1]' }];
+  assert.equal(filterByRules(ents, {}).length, 0);
+});
+
+test('un mot qui RESSEMBLE à un placeholder sans en être un reste masqué', () => {
+  // Le motif exige le suffixe numérique ET un libellé connu : sans lui, on
+  // démasquerait des valeurs légitimes.
+  const ents = ['PERSONNE', '[PERSONNE]', 'Personne', 'INCONNU_3', 'LIEU_X']
+    .map(value => ({ source: 'ner', type: 'ORG', value }));
+  assert.equal(filterByRules(ents, {}).length, 5);
+});

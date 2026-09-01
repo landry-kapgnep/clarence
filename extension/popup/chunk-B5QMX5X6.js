@@ -4198,44 +4198,6 @@ function mergeEntities(regexEntities, nerEntities) {
   return resolveOverlaps([...regexEntities, ...nerKept]);
 }
 
-// src/engine/selection.js
-var entityKey = (e) => `${e.start}:${e.end}:${e.type}`;
-function selectActive(autoEntities, manualEntities, removedKeys) {
-  const manuals = manualEntities.filter((e) => !removedKeys.has(entityKey(e)));
-  const autos = autoEntities.filter((e) => !removedKeys.has(entityKey(e)) && !manuals.some((m) => e.start < m.end && e.end > m.start));
-  return resolveOverlaps([...autos, ...manuals]);
-}
-function forcedMasks(text, terms) {
-  const out = [];
-  for (const raw of terms || []) {
-    const term = (raw || "").trim();
-    if (!term) continue;
-    let i = text.indexOf(term);
-    while (i !== -1) {
-      out.push({ type: "PERSONNALISE", value: term, start: i, end: i + term.length, source: "manuel" });
-      i = text.indexOf(term, i + term.length);
-    }
-  }
-  return out;
-}
-var motsDe = (t) => (t || "").toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-function contientLesMots(botte, aiguille) {
-  if (!aiguille.length || aiguille.length > botte.length) return false;
-  for (let i = 0; i + aiguille.length <= botte.length; i++) {
-    if (aiguille.every((m, j) => botte[i + j] === m)) return true;
-  }
-  return false;
-}
-function filterByRules(entities, { disabledTypes = /* @__PURE__ */ new Set(), keepValues = [] } = {}) {
-  const keep = (keepValues || []).map((v) => motsDe(v)).filter((m) => m.length);
-  return entities.filter((e) => {
-    if (e.source === "manuel") return true;
-    if (disabledTypes.has(e.type)) return false;
-    const mots = motsDe(e.value);
-    return !keep.some((k) => contientLesMots(mots, k) || contientLesMots(k, mots));
-  });
-}
-
 // src/engine/masking.js
 var TYPE_LABELS = {
   PER: "PERSONNE",
@@ -4268,6 +4230,10 @@ var TYPE_LABELS = {
   SANTE: "SANTE"
 };
 var escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+var MOTIF_PLACEHOLDER = new RegExp(
+  "^\\[?(?:" + [...new Set(Object.values(TYPE_LABELS))].join("|") + ")_\\d+\\]?$"
+);
+var estPlaceholder = (valeur) => MOTIF_PLACEHOLDER.test(String(valeur || "").trim());
 function compterOccurrences(texte, aiguille) {
   if (!aiguille) return 0;
   let n = 0, i = texte.indexOf(aiguille);
@@ -4375,6 +4341,45 @@ function reinject(text, mapping) {
   return text.replace(re, (ph) => byPlaceholder.get(ph) ?? ph);
 }
 
+// src/engine/selection.js
+var entityKey = (e) => `${e.start}:${e.end}:${e.type}`;
+function selectActive(autoEntities, manualEntities, removedKeys) {
+  const manuals = manualEntities.filter((e) => !removedKeys.has(entityKey(e)));
+  const autos = autoEntities.filter((e) => !removedKeys.has(entityKey(e)) && !manuals.some((m) => e.start < m.end && e.end > m.start));
+  return resolveOverlaps([...autos, ...manuals]);
+}
+function forcedMasks(text, terms) {
+  const out = [];
+  for (const raw of terms || []) {
+    const term = (raw || "").trim();
+    if (!term) continue;
+    let i = text.indexOf(term);
+    while (i !== -1) {
+      out.push({ type: "PERSONNALISE", value: term, start: i, end: i + term.length, source: "manuel" });
+      i = text.indexOf(term, i + term.length);
+    }
+  }
+  return out;
+}
+var motsDe = (t) => (t || "").toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+function contientLesMots(botte, aiguille) {
+  if (!aiguille.length || aiguille.length > botte.length) return false;
+  for (let i = 0; i + aiguille.length <= botte.length; i++) {
+    if (aiguille.every((m, j) => botte[i + j] === m)) return true;
+  }
+  return false;
+}
+function filterByRules(entities, { disabledTypes = /* @__PURE__ */ new Set(), keepValues = [] } = {}) {
+  const keep = (keepValues || []).map((v) => motsDe(v)).filter((m) => m.length);
+  return entities.filter((e) => {
+    if (estPlaceholder(e.value)) return false;
+    if (e.source === "manuel") return true;
+    if (disabledTypes.has(e.type)) return false;
+    const mots = motsDe(e.value);
+    return !keep.some((k) => contientLesMots(mots, k) || contientLesMots(k, mots));
+  });
+}
+
 export {
   estComposantNonIdentifiant,
   detectRegex,
@@ -4388,11 +4393,11 @@ export {
   estAnnulation,
   verifierAnnulation,
   mergeEntities,
+  maskText,
+  propagatedSpans,
+  reinject,
   entityKey,
   selectActive,
   forcedMasks,
-  filterByRules,
-  maskText,
-  propagatedSpans,
-  reinject
+  filterByRules
 };
