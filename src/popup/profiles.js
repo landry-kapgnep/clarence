@@ -49,7 +49,17 @@ const TECH_KEEP = [
   // ENTREPRISE sur un CV réel. Jamais des données personnelles.
   'SQL', 'BDD', 'ETL', 'API', 'REST', 'SOAP', 'gRPC', 'JWT', 'CRUD', 'ORM',
   'HTML', 'CSS', 'SCSS', 'JSON', 'XML', 'CSV', 'LAMP', 'MERN', 'CI/CD',
-  'Sankey', 'BeautifulSoup', 'Requests', 'Matplotlib', 'Seaborn'
+  'Sankey', 'BeautifulSoup', 'Requests', 'Matplotlib', 'Seaborn',
+  // Relevés sur un vrai CV le 01/09/2026 : masqués tous les deux, et absents
+  // de cette liste alors que tout le reste de la même rubrique y était.
+  // « IA » sortait en LIEU trois fois, « NSI » en PERSONNE — deux types que le
+  // filtre de précision ne touche jamais (garde-fous 3 et 4), donc la liste
+  // éditable est bien le seul mécanisme qui les traite.
+  //
+  // Un terme de deux lettres est sans danger ici : la correspondance est
+  // MOT À MOT (voir filterByRules). Vérifié — « IA » démasque « IA » et
+  // « Data & IA », mais laisse « Julia Roberts » et « Sofia » masqués.
+  'IA', 'NSI'
 ];
 
 // PLATEFORMES ET PRODUITS PUBLICS. Même statut que les technos : jamais une

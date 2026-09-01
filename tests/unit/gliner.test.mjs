@@ -608,3 +608,32 @@ test('la liste des pronoms reste FERMÉE : aucun nom commun dedans', () => {
     assert.equal(estPronom(mot), false, mot);
   }
 });
+
+// --- DATE DE NAISSANCE : une plage n'en est pas une -----------------------
+
+test('deux années font une PLAGE, jamais une date de naissance', async () => {
+  // Mesuré sur un vrai CV : « Oct. 2025 - Janv. 2026 » sortait en DATE DE
+  // NAISSANCE. La règle « une année + un autre nombre » était satisfaite par la
+  // SECONDE ANNÉE, prise pour un quantième. Le type étant faux, l'option
+  // Pseudonymes fabriquait une fausse date de naissance à la place d'une
+  // période d'expérience.
+  const plage = 'Oct. 2025 - Janv. 2026';
+  const pipe = fakePipe({ [plage]: [{ label: 'date of birth', score: 0.9, len: plage.length }] });
+  assert.equal((await detectGliner(`Stage ${plage} chez X`, pipe)).length, 0);
+});
+
+test('une plage NUMÉRIQUE est rejetée elle aussi', async () => {
+  // C'est ce cas qui rend le test « deux années » non redondant : sans lui,
+  // « 13/10/1976 - 14/11/1980 » satisfait DATE_NUMERIQUE et passerait.
+  const plage = '13/10/1976 - 14/11/1980';
+  const pipe = fakePipe({ [plage]: [{ label: 'date of birth', score: 0.9, len: plage.length }] });
+  assert.equal((await detectGliner(`Période ${plage}`, pipe)).length, 0);
+});
+
+test('une vraie date de naissance passe toujours', async () => {
+  for (const d of ['16 octobre 2004', '13/10/1976', 'March 14, 1988', '14. März 1988']) {
+    const pipe = fakePipe({ [d]: [{ label: 'date of birth', score: 0.9, len: d.length }] });
+    const [e] = await detectGliner(`Né le ${d} à Paris.`, pipe);
+    assert.equal(e?.type, 'DATE_NAISSANCE', `« ${d} » n’est plus reconnue`);
+  }
+});

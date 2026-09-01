@@ -133,13 +133,13 @@ var TYPES_PEU_FIABLES = ["POSTE", "NATIONALITE", "ETABLISSEMENT", "SANTE"];
 var typesDuGroupe = (g) => Object.values(g.types);
 var TYPES_NOMS_PROPRES = /* @__PURE__ */ new Set(["PER", "ORG", "LOC"]);
 var DATE_NUMERIQUE = /\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}/;
-var ANNEE = /(?:1[89]|20)\d{2}/;
+var ANNEES = /(?:1[89]|20)\d{2}/g;
 function estUneDate(valeur) {
+  const annees = String(valeur || "").match(ANNEES) || [];
+  if (annees.length > 1) return false;
   if (DATE_NUMERIQUE.test(valeur)) return true;
-  const annee = ANNEE.exec(valeur);
-  if (!annee) return false;
-  const reste = valeur.slice(0, annee.index) + valeur.slice(annee.index + annee[0].length);
-  return /\d/.test(reste);
+  if (annees.length !== 1) return false;
+  return /\d/.test(String(valeur).replace(annees[0], ""));
 }
 var PRONOMS = /* @__PURE__ */ new Set([
   "i",
@@ -1156,7 +1156,18 @@ var TECH_KEEP = [
   "BeautifulSoup",
   "Requests",
   "Matplotlib",
-  "Seaborn"
+  "Seaborn",
+  // Relevés sur un vrai CV le 01/09/2026 : masqués tous les deux, et absents
+  // de cette liste alors que tout le reste de la même rubrique y était.
+  // « IA » sortait en LIEU trois fois, « NSI » en PERSONNE — deux types que le
+  // filtre de précision ne touche jamais (garde-fous 3 et 4), donc la liste
+  // éditable est bien le seul mécanisme qui les traite.
+  //
+  // Un terme de deux lettres est sans danger ici : la correspondance est
+  // MOT À MOT (voir filterByRules). Vérifié — « IA » démasque « IA » et
+  // « Data & IA », mais laisse « Julia Roberts » et « Sofia » masqués.
+  "IA",
+  "NSI"
 ];
 var PUBLIC_KEEP = [
   "ChatGPT",

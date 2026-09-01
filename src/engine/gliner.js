@@ -199,13 +199,25 @@ const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
 const DATE_NUMERIQUE = /\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}/;
 const ANNEE = /(?:1[89]|20)\d{2}/;
 
+// ⚠️ DEUX ANNÉES = UNE PLAGE, JAMAIS UNE NAISSANCE. Mesuré sur un vrai CV :
+// « Oct. 2025 - Janv. 2026 » sortait en DATE DE NAISSANCE. La règle « une année
+// + un autre nombre » était satisfaite… par la SECONDE ANNÉE, prise pour un
+// quantième. Or personne ne naît sur une période, et la conséquence n'est pas
+// qu'un masque de trop : le type étant faux, l'option Pseudonymes fabriquait
+// une fausse date de naissance à la place d'une période d'expérience, ce qui
+// altère le sens du document pour le LLM.
+//
+// Le test reste sans aucune liste de mois — c'est la STRUCTURE qui parle, donc
+// il vaut dans toutes les langues.
+const ANNEES = /(?:1[89]|20)\d{2}/g;
+
 function estUneDate(valeur) {
+  const annees = String(valeur || '').match(ANNEES) || [];
+  if (annees.length > 1) return false;
   if (DATE_NUMERIQUE.test(valeur)) return true;
-  const annee = ANNEE.exec(valeur);
-  if (!annee) return false;
+  if (annees.length !== 1) return false;
   // Un autre nombre que l'année elle-même : le jour du mois.
-  const reste = valeur.slice(0, annee.index) + valeur.slice(annee.index + annee[0].length);
-  return /\d/.test(reste);
+  return /\d/.test(String(valeur).replace(annees[0], ''));
 }
 
 // PRONOMS — jamais un nom propre, quelle que soit la confiance du modèle.
