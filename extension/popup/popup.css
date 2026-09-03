@@ -1358,3 +1358,13 @@ td.map-occ {
   overflow: hidden;
   white-space: nowrap;
 }
+
+/* La page de panneau ouverte dans un ONGLET plein écran, et non dans l'iframe
+   de ~400 px pour laquelle elle est dessinée (voir `.autonome` dans main.js).
+   On borne et on centre plutôt que de laisser `width: 100%` étirer la colonne. */
+body.panel-mode.autonome {
+  max-width: 460px;
+  margin: 0 auto;
+  border-left: 1px solid rgba(237, 230, 211, 0.12);
+  border-right: 1px solid rgba(237, 230, 211, 0.12);
+}

@@ -134,6 +134,13 @@ appliquerTraductions();
 if (new URLSearchParams(location.search).has('panel')) {
   document.body.classList.add('panel-mode');
   document.documentElement.classList.add('panel-mode');
+  // MÊME PAGE, DEUX CONTENANTS. Le panneau vit normalement dans une iframe de
+  // ~400 px, largeur pour laquelle toute la mise en page est dessinée. Depuis
+  // que l'icône de la barre d'outils n'ouvre plus de popup native, cette page
+  // peut aussi s'afficher dans un ONGLET PLEINE LARGEUR, où `width: 100%`
+  // étirerait la colonne jusqu'à la rendre illisible. On borne alors la
+  // largeur et on centre — le visuel reste le même, seul le contenant change.
+  if (window.parent === window) document.body.classList.add('autonome');
   document.documentElement.style.background = '#FFFAF2';
   // Annonce la hauteur réelle du bloc visuel pour que le panneau s'allonge
   // sans scroll (le content script plafonne à la hauteur de l'écran).

@@ -1901,6 +1901,7 @@ appliquerTraductions();
 if (new URLSearchParams(location.search).has("panel")) {
   document.body.classList.add("panel-mode");
   document.documentElement.classList.add("panel-mode");
+  if (window.parent === window) document.body.classList.add("autonome");
   document.documentElement.style.background = "#FFFAF2";
   const shell = document.querySelector(".popup-shell");
   const announce = () => window.parent.postMessage(

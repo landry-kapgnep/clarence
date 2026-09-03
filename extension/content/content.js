@@ -142,11 +142,32 @@ btn.style.cursor = 'pointer';
   frame.className = 'panel';
   frame.allow = 'clipboard-write';
 
-  btn.addEventListener('click', () => {
+  // UNE SEULE FAÇON D'OUVRIR CLARENCE, et donc un seul visuel.
+  //
+  // L'extension avait DEUX entrées qui n'affichaient pas la même chose : ce
+  // panneau, et une popup native ouverte par l'icône de la barre d'outils. La
+  // même page, mais l'une contrainte par la fenêtre de Chrome (plafonnée à
+  // 600 px de haut, non redimensionnable) et l'autre libre — donc deux mises en
+  // page pour un même outil, et un utilisateur qui se demande laquelle est la
+  // vraie. `default_popup` a été retiré du manifeste : l'icône passe désormais
+  // par ici.
+  function basculerPanneau(forcerOuverture) {
     if (!frame.src) frame.src = chrome.runtime.getURL('popup/popup.html?panel=1');
-    const open = frame.classList.toggle('open');
+    const open = forcerOuverture === true ? true : frame.classList.toggle('open');
+    if (forcerOuverture === true) frame.classList.add('open');
     btn.classList.toggle('open-state', open);
     btn.title = open ? 'Fermer Clarence' : 'Clarence — anonymisez vos données';
+    return open;
+  }
+
+  btn.addEventListener('click', () => basculerPanneau());
+
+  // Ouverture demandée par l'icône de la barre d'outils (ou le raccourci
+  // clavier), relayée par le service worker.
+  chrome.runtime.onMessage.addListener((m, _exp, repondre) => {
+    if (m && m.clarence === 'basculer-panneau') {
+      repondre({ ouvert: basculerPanneau() });
+    }
   });
 
   // Auto-dimensionnement : l'iframe annonce la hauteur de son contenu
