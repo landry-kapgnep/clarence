@@ -1,0 +1,6 @@
+npm notice run clarence@0.1.0 regression
+npm notice run node tests/regression/run.mjs
+[0;93m2026-09-04 00:01:08.5426673 [W:onnxruntime:, constant_folding.cc:268 onnxruntime::ConstantFolding::ApplyImpl] Could not find a CPU kernel and hence can't constant fold ReduceMean node '/token_rep_layer/bert_layer/model/encoder/LayerNorm/ReduceMean'[m
+[0;93m2026-09-04 00:01:08.6059697 [W:onnxruntime:, constant_folding.cc:268 onnxruntime::ConstantFolding::ApplyImpl] Could not find a CPU kernel and hence can't constant fold ReduceMean node '/token_rep_layer/bert_layer/model/encoder/LayerNorm/ReduceMean'[m
+[0;93m2026-09-04 00:01:08.6120067 [W:onnxruntime:, constant_folding.cc:268 onnxruntime::ConstantFolding::ApplyImpl] Could not find a CPU kernel and hence can't constant fold ReduceMean node '/token_rep_layer/bert_layer/model/encoder/LayerNorm/ReduceMean'[m
+Warning: TT: undefined function: 21

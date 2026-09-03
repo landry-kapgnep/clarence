@@ -2011,3 +2011,57 @@ Piste non explorée, cheap : `arbitrerFauxPositifs` réinterroge déjà le modè
 sur le CANDIDAT SEUL, donc sur une chaîne très courte — la configuration où il
 est le plus fort. Rendre ses labels-leurres dépendants du format y serait
 cohérent, et coûte une inférence déjà payée.
+
+## P18 — La taille d'unité est le levier dominant (04/09/2026)
+
+`node tests/bench/taille-unite.mjs [cv.pdf]`
+
+P17 avait montré que le score d'une entité dépend de la LONGUEUR de l'unité
+soumise (0,453 sur 340 caractères, 0,531 sur 48). Balayage complet, sur le
+corpus du banc et sur un vrai CV. Couche contextuelle seule — le déterministe
+tourne sur le document combiné et ne dépend pas du découpage.
+
+| taille | unités | banc : contextuel | banc : préservé | CV : vraies /7 | CV : faux /11 |
+|---|---|---|---|---|---|
+| 200 | 77 | **89 %** | 80 % | **6** | 10 |
+| 340 | 54 | 85 % | 85 % | 5 | 7 |
+| 600 | 29 | 80 % | 87 % | 4 | 3 |
+| 1000 | 18 | 79 % | **92 %** | **2** | 1 |
+
+**Monotone sur les deux axes, et l'effet est énorme** : à 1000 caractères, le CV
+ne rend plus que 2 vraies entités sur 7. Aucun réglage de seuil, aucun jeu de
+labels mesuré jusqu'ici n'a un effet de cette ampleur.
+
+### L'ASYMÉTRIE QUI DEVRAIT DÉCIDER
+
+Ce qu'on paie en unités COURTES et ce qu'on paie en unités LONGUES ne sont pas
+de même nature :
+
+- courtes → sur-masquage d'intitulés et de technos (`SOMMAIRE`, `Docker`,
+  `EXPÉRIENCES PROFESSIONNELLES`, `Unternehmen`). **Les profils traitent déjà
+  exactement cette famille** ;
+- longues → on perd `MARCHESSEAU`, `MONTLUÇON`, `18 RUE DES GLYCINES`,
+  `diabète de type 2`, `Camille-Claudel`. Ce sont des patronymes, des adresses
+  et des données de santé. **Rien en aval ne les rattrape.**
+
+Le coût des unités courtes est réparable par une liste éditable ; celui des
+unités longues est une FUITE. À qualité globale comparable, le produit devrait
+donc pencher vers des unités plus courtes qu'aujourd'hui.
+
+### Ce que ce balayage NE dit PAS
+
+- **Il ne découpe jamais une unité source**, il ne fait que les fusionner moins.
+  Sept unités du CV dépassent 200 caractères et sont restées intactes : la
+  ligne « 200 » n'est donc pas un vrai régime à 200.
+- **Il ne contredit pas P8 et ne le confirme pas non plus.** P8 avait allongé les
+  paragraphes parce qu'un mémoire découpé en LIGNES faisait masquer 39 % du
+  document. Hypothèse testée ici : les petites fenêtres couperaient plus souvent
+  en pleine phrase. **Faux, mesuré** — le taux reste à ~50 % à toutes les tailles
+  sur ce CV, c'est sa structure à puces qui le fixe. Le cas du mémoire en prose
+  reste donc non couvert : le corpus du banc n'a aucun document long en prose
+  découpé à la ligne.
+- Il ne dit rien du COÛT en temps : 77 unités au lieu de 18, c'est ~4× plus
+  d'inférences.
+
+Rien n'est changé dans le produit sur cette base : la décision demande d'abord
+de savoir ce que devient un mémoire en prose, et le balayage ne l'a pas mesuré.
