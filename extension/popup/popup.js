@@ -1022,6 +1022,184 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
   };
 }
 
+// src/engine/vocabulaire-formats.js
+var FORMATS = ["cv", "administratif", "scolaire", "bancaire"];
+var MOTS_DE_FORME = {
+  cv: {
+    fr: [
+      "exp\xE9riences professionnelles",
+      "exp\xE9rience professionnelle",
+      "comp\xE9tences",
+      "curriculum vitae",
+      "parcours professionnel",
+      "centres d\u2019int\xE9r\xEAt",
+      "langues parl\xE9es",
+      "dipl\xF4mes",
+      "certifications"
+    ],
+    en: [
+      "work experience",
+      "professional experience",
+      "skills",
+      "core skills",
+      "curriculum vitae",
+      "r\xE9sum\xE9",
+      "career summary",
+      "certifications"
+    ],
+    es: [
+      "experiencia laboral",
+      "experiencia profesional",
+      "competencias",
+      "curr\xEDculum v\xEDtae",
+      "curr\xEDculum",
+      "formaci\xF3n acad\xE9mica",
+      "idiomas"
+    ],
+    de: [
+      "berufserfahrung",
+      "lebenslauf",
+      "kenntnisse",
+      "qualifikationen",
+      "werdegang",
+      "weiterbildung"
+    ],
+    pt: [
+      "experi\xEAncia profissional",
+      "compet\xEAncias",
+      "curr\xEDculo",
+      "forma\xE7\xE3o acad\xE9mica",
+      "habilita\xE7\xF5es"
+    ]
+  },
+  administratif: {
+    fr: [
+      "r\xE9publique fran\xE7aise",
+      "minist\xE8re",
+      "certificat de scolarit\xE9",
+      "attestation",
+      "je soussign\xE9",
+      "je soussign\xE9e",
+      "certifie que",
+      "fait \xE0",
+      "bulletin num\xE9ro",
+      "casier judiciaire",
+      "\xE9tat civil",
+      "compte rendu",
+      "entretien professionnel",
+      "ressources humaines"
+    ],
+    en: [
+      "hereby certify",
+      "affidavit",
+      "official record",
+      "issued at",
+      "registration number",
+      "to whom it may concern"
+    ],
+    es: [
+      "certifica que",
+      "hace constar",
+      "ministerio",
+      "expediente",
+      "documento nacional de identidad"
+    ],
+    de: [
+      "bescheinigung",
+      "hiermit wird bescheinigt",
+      "ausgestellt am",
+      "aktenzeichen",
+      "beh\xF6rde"
+    ],
+    pt: ["certid\xE3o", "certifica que", "minist\xE9rio", "requerimento", "declara\xE7\xE3o"]
+  },
+  scolaire: {
+    fr: [
+      "sommaire",
+      "introduction",
+      "conclusion",
+      "bibliographie",
+      "remerciements",
+      "rapport de stage",
+      "probl\xE9matique",
+      "annexes",
+      "table des mati\xE8res",
+      "soutenance",
+      "travaux dirig\xE9s",
+      "travaux pratiques",
+      "contr\xF4le continu",
+      "relev\xE9 de notes"
+    ],
+    en: [
+      "table of contents",
+      "introduction",
+      "conclusion",
+      "bibliography",
+      "acknowledgements",
+      "appendix",
+      "abstract",
+      "dissertation",
+      "coursework"
+    ],
+    es: [
+      "\xEDndice",
+      "introducci\xF3n",
+      "conclusi\xF3n",
+      "bibliograf\xEDa",
+      "agradecimientos",
+      "anexos",
+      "resumen"
+    ],
+    de: [
+      "inhaltsverzeichnis",
+      "einleitung",
+      "fazit",
+      "literaturverzeichnis",
+      "danksagung",
+      "anhang",
+      "zusammenfassung"
+    ],
+    pt: [
+      "\xEDndice",
+      "introdu\xE7\xE3o",
+      "conclus\xE3o",
+      "bibliografia",
+      "agradecimentos",
+      "anexos",
+      "resumo"
+    ]
+  },
+  bancaire: {
+    fr: [
+      "relev\xE9 de compte",
+      "titulaire du compte",
+      "solde cr\xE9diteur",
+      "solde d\xE9biteur",
+      "virement",
+      "pr\xE9l\xE8vement",
+      "date de valeur"
+    ],
+    en: [
+      "account statement",
+      "account holder",
+      "opening balance",
+      "closing balance",
+      "wire transfer",
+      "direct debit"
+    ],
+    es: ["extracto de cuenta", "titular de la cuenta", "saldo", "transferencia"],
+    de: ["kontoauszug", "kontoinhaber", "kontostand", "\xFCberweisung", "lastschrift"],
+    pt: ["extrato de conta", "titular da conta", "saldo", "transfer\xEAncia"]
+  }
+};
+function motsDeForme(format) {
+  const parLangue = MOTS_DE_FORME[format] || {};
+  return [...new Set(Object.values(parLangue).flat())];
+}
+var TOUS_LES_MOTS_DE_FORME = [
+  ...new Set(FORMATS.flatMap(motsDeForme))
+];
+
 // src/popup/profiles.js
 var PROFILES_KEY = "clarenceProfiles";
 var PROFILES_ECARTES_KEY = "clarenceProfilsEcartes";
@@ -1348,13 +1526,26 @@ function defaultProfiles() {
     // présuppose rien, donc le témoin quand on soupçonne qu'une liste blanche
     // cache un défaut de détection.
     { name: "Vierge", alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...TECH_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "Administratif", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ADMIN_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "\xC9cole / \xC9tudes", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...TECH_KEEP, ...PUBLIC_KEEP, ...motsDeForme("cv")], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "Administratif", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ADMIN_KEEP, ...motsDeForme("administratif")], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "\xC9cole / \xC9tudes", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false },
+    // ── PROFILS PAR FORMAT ──
+    //
+    // Les précédents décrivent un MÉTIER (« je suis développeur »), ceux-ci un
+    // TYPE DE DOCUMENT (« ceci est un CV »). Les deux axes sont utiles et ne se
+    // remplacent pas : un développeur qui envoie un relevé bancaire n'a pas
+    // besoin de sa liste de frameworks, il a besoin des mots d'un relevé.
+    //
+    // Leur vocabulaire vient de `vocabulaire-formats.js`, la même source que la
+    // reconnaissance de type — c'est ce qui permet de les PROPOSER
+    // automatiquement (voir PROFIL_POUR_TYPE), et ce qui garantit qu'ajouter
+    // une langue serve les deux d'un coup.
+    { name: "CV / R\xE9sum\xE9", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("cv")], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "Relev\xE9 bancaire", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...motsDeForme("bancaire")], alwaysMask: [], disabledTypes: [], realistic: false },
     // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
     // document technique : ce profil sert le rédacteur, l'étudiant, le
     // chercheur — sans leur imposer la liste des frameworks.
-    { name: "R\xE9daction / Recherche", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
+    { name: "R\xE9daction / Recherche", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false }
   ];
 }
 function normalizeProfile(p) {
@@ -1383,8 +1574,15 @@ var EMPREINTES_HISTORIQUES = {
   // 2cb8ce1c : jusqu'au 15/08/2026, avant les sigles de métier et l'outillage
   //            de test (commit 115b097).
   // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de STRUCTURE_KEEP.
-  "D\xE9veloppeur / Tech": ["2cb8ce1c", "5a83db13"],
-  "R\xE9daction / Recherche": ["a8805ca9"],
+  // 519521a4 : jusqu'au 02/09/2026, avant les mots de forme multilingues.
+  "D\xE9veloppeur / Tech": ["2cb8ce1c", "5a83db13", "519521a4"],
+  // Relevées AVANT modification, pour que la mise à jour atteigne aussi les
+  // copies stockées à une époque où le champ `empreinte` n'existait pas encore.
+  // Sans ça, elles seraient prises pour des versions éditées par l'utilisateur
+  // et ne recevraient jamais l'espagnol ni le portugais.
+  "Administratif": ["5ec436cb"],
+  "\xC9cole / \xC9tudes": ["4a086a21"],
+  "R\xE9daction / Recherche": ["a8805ca9", "f37a741c"],
   "Vierge": ["1727123c"]
 };
 function seedDefaults(existing, ecartes = []) {

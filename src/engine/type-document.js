@@ -28,6 +28,8 @@
 // comme tels — ajouter une langue est alors un geste explicite et localisé, pas
 // une réécriture.
 
+import { FORMATS, motsDeForme } from './vocabulaire-formats.js';
+
 // --- Signaux STRUCTURELS, indépendants de la langue -----------------------
 
 // Points de suite d'un sommaire : « Introduction......3 ». Marqueur très sûr
@@ -49,70 +51,12 @@ const PUCE = /^\s*[•·▪◦‣*·]|(?:\s[•·▪◦‣]\s)/;
 // n'en a pas. Sans nom de mois — c'est la STRUCTURE année-tiret-année qui parle.
 const PLAGE_DE_DATES = /(?:1[89]|20)\d{2}\s*[-–—à]\s*(?:(?:1[89]|20)\d{2}|en cours|présent|aujourd)/i;
 
-// --- Marqueurs LEXICAUX, déclarés PAR LANGUE ------------------------------
+// --- Marqueurs LEXICAUX : DÉRIVÉS de la source unique ---------------------
 //
-// Volontairement courts. Ils ne servent qu'à départager ce que la structure
-// laisse ambigu, et chaque entrée est un mot de MISE EN FORME du document
-// (intitulé de rubrique, formule consacrée), jamais un mot de contenu — c'est
-// ce qui les rend stables et peu nombreux.
-const MARQUEURS = {
-  fr: {
-    cv: ['expériences professionnelles', 'compétences', 'formations', 'parcours',
-         'curriculum vitae', 'alternance', 'stage', 'diplôme', 'langues'],
-    administratif: ['république française', 'ministère', 'certificat', 'attestation',
-                    'je soussigné', 'soussignée', 'fait à', 'bulletin numéro',
-                    'casier judiciaire', 'certifie que', 'état civil',
-                    // Formes RH : un compte rendu d'entretien est un acte
-                    // administratif, et ces trois-là sont des mots de FORME du
-                    // document, pas de son contenu.
-                    'compte rendu', 'entretien professionnel', 'ressources humaines'],
-    scolaire: ['sommaire', 'introduction', 'conclusion', 'bibliographie',
-               'remerciements', 'rapport de stage', 'mémoire', 'annexes',
-               'problématique', 'tuteur'],
-    bancaire: ['relevé de compte', 'solde', 'virement', 'prélèvement', 'débit',
-               'crédit', 'rib', 'titulaire du compte']
-  },
-  en: {
-    cv: ['work experience', 'professional experience', 'skills', 'education',
-         'résumé', 'resume', 'internship', 'languages'],
-    administratif: ['certificate', 'hereby certify', 'affidavit', 'official record',
-                    'issued at', 'registration number'],
-    scolaire: ['table of contents', 'introduction', 'conclusion', 'bibliography',
-               'acknowledgements', 'appendix', 'abstract', 'dissertation'],
-    bancaire: ['account statement', 'balance', 'transfer', 'debit', 'credit',
-               'account holder']
-  },
-  es: {
-    cv: ['experiencia laboral', 'experiencia profesional', 'competencias',
-         'habilidades', 'formación', 'currículum', 'currículo', 'prácticas',
-         'idiomas', 'titulación'],
-    administratif: ['certificado', 'certifica que', 'declaración', 'ministerio',
-                    'expediente', 'hace constar', 'documento nacional de identidad'],
-    scolaire: ['índice', 'introducción', 'conclusión', 'bibliografía',
-               'agradecimientos', 'anexos', 'resumen', 'memoria'],
-    bancaire: ['extracto de cuenta', 'saldo', 'transferencia', 'titular de la cuenta',
-               'adeudo', 'abono']
-  },
-  de: {
-    cv: ['berufserfahrung', 'kenntnisse', 'ausbildung', 'lebenslauf', 'praktikum',
-         'sprachen', 'qualifikationen', 'werdegang'],
-    administratif: ['bescheinigung', 'bestätigung', 'behörde', 'ministerium',
-                    'hiermit wird bescheinigt', 'ausgestellt am', 'aktenzeichen'],
-    scolaire: ['inhaltsverzeichnis', 'einleitung', 'fazit', 'literaturverzeichnis',
-               'danksagung', 'anhang', 'zusammenfassung'],
-    bancaire: ['kontoauszug', 'kontostand', 'überweisung', 'lastschrift', 'kontoinhaber']
-  },
-  pt: {
-    cv: ['experiência profissional', 'competências', 'formação', 'currículo',
-         'estágio', 'idiomas', 'habilitações'],
-    administratif: ['certidão', 'certificado', 'declaração', 'ministério',
-                    'certifica que', 'requerimento'],
-    scolaire: ['índice', 'introdução', 'conclusão', 'bibliografia',
-               'agradecimentos', 'anexos', 'resumo'],
-    bancaire: ['extrato de conta', 'saldo', 'transferência', 'titular da conta',
-               'débito', 'crédito']
-  }
-};
+// Ils ne sont plus déclarés ici. Les mots qui reconnaissent un format sont
+// exactement ceux qu'il ne faut pas y masquer, donc ils vivent dans
+// `vocabulaire-formats.js`, d'où les profils les tirent aussi. Deux listes
+// auraient divergé — le motif que ce projet a déjà payé plusieurs fois.
 
 // NORMALISATION, et pourquoi elle n'est pas cosmétique.
 //
@@ -132,18 +76,9 @@ const MARQUEURS = {
 const normaliser = (t) => ' ' + String(t || '').toLowerCase()
   .replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
 
-// Marqueurs normalisés UNE FOIS au chargement, et dédoublonnés par type. Sans
-// ce dédoublonnage, « conclusion » (fr et en), « índice » ou « certificado »
-// (es et pt) compteraient plusieurs fois et gonfleraient leur type — défaut
-// mesuré sur dossier-rh.txt, qu'un simple « conclusion » tirait vers le rapport.
-const MARQUEURS_NORMALISES = {};
-for (const type of ['cv', 'administratif', 'scolaire', 'bancaire']) {
-  const vus = new Set();
-  for (const parLangue of Object.values(MARQUEURS)) {
-    for (const m of parLangue[type] || []) vus.add(normaliser(m).slice(1, -1));
-  }
-  MARQUEURS_NORMALISES[type] = [...vus];
-}
+// Normalisés UNE FOIS au chargement.
+const MARQUEURS_NORMALISES = Object.fromEntries(
+  FORMATS.map(f => [f, motsDeForme(f).map(m => normaliser(m).slice(1, -1))]));
 
 export const TYPES = ['cv', 'administratif', 'scolaire', 'bancaire', 'email'];
 

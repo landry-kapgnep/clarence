@@ -10,6 +10,8 @@
 // cachée dans le moteur : c'est un défaut ÉDITABLE, propriété de l'utilisateur.
 // Zéro risque de fuite (conservation explicite, jamais un retrait de détection).
 
+import { motsDeForme } from '../engine/vocabulaire-formats.js';
+
 export const PROFILES_KEY = 'clarenceProfiles';
 
 // Noms de profils LIVRÉS que l'utilisateur a supprimés.
@@ -179,13 +181,26 @@ export function defaultProfiles() {
     // présuppose rien, donc le témoin quand on soupçonne qu'une liste blanche
     // cache un défaut de détection.
     { name: 'Vierge', alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: 'Développeur / Tech', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...TECH_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: 'Administratif', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ADMIN_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: 'École / Études', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: 'Développeur / Tech', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...TECH_KEEP, ...PUBLIC_KEEP, ...motsDeForme('cv')], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: 'Administratif', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ADMIN_KEEP, ...motsDeForme('administratif')], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: 'École / Études', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP, ...motsDeForme('scolaire')], alwaysMask: [], disabledTypes: [], realistic: false },
+    // ── PROFILS PAR FORMAT ──
+    //
+    // Les précédents décrivent un MÉTIER (« je suis développeur »), ceux-ci un
+    // TYPE DE DOCUMENT (« ceci est un CV »). Les deux axes sont utiles et ne se
+    // remplacent pas : un développeur qui envoie un relevé bancaire n'a pas
+    // besoin de sa liste de frameworks, il a besoin des mots d'un relevé.
+    //
+    // Leur vocabulaire vient de `vocabulaire-formats.js`, la même source que la
+    // reconnaissance de type — c'est ce qui permet de les PROPOSER
+    // automatiquement (voir PROFIL_POUR_TYPE), et ce qui garantit qu'ajouter
+    // une langue serve les deux d'un coup.
+    { name: 'CV / Résumé', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme('cv')], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: 'Relevé bancaire', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...motsDeForme('bancaire')], alwaysMask: [], disabledTypes: [], realistic: false },
     // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
     // document technique : ce profil sert le rédacteur, l'étudiant, le
     // chercheur — sans leur imposer la liste des frameworks.
-    { name: 'Rédaction / Recherche', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP], alwaysMask: [], disabledTypes: [], realistic: false }
+    { name: 'Rédaction / Recherche', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme('scolaire')], alwaysMask: [], disabledTypes: [], realistic: false }
   ];
 }
 
@@ -236,8 +251,15 @@ const EMPREINTES_HISTORIQUES = {
   // 2cb8ce1c : jusqu'au 15/08/2026, avant les sigles de métier et l'outillage
   //            de test (commit 115b097).
   // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de STRUCTURE_KEEP.
-  'Développeur / Tech': ['2cb8ce1c', '5a83db13'],
-  'Rédaction / Recherche': ['a8805ca9'],
+  // 519521a4 : jusqu'au 02/09/2026, avant les mots de forme multilingues.
+  'Développeur / Tech': ['2cb8ce1c', '5a83db13', '519521a4'],
+  // Relevées AVANT modification, pour que la mise à jour atteigne aussi les
+  // copies stockées à une époque où le champ `empreinte` n'existait pas encore.
+  // Sans ça, elles seraient prises pour des versions éditées par l'utilisateur
+  // et ne recevraient jamais l'espagnol ni le portugais.
+  'Administratif': ['5ec436cb'],
+  'École / Études': ['4a086a21'],
+  'Rédaction / Recherche': ['a8805ca9', 'f37a741c'],
   'Vierge': ['1727123c']
 };
 
@@ -343,3 +365,17 @@ export async function deleteProfile(name) {
   if (estProfilLivre(name)) await ecrireEcartes([...(await lireEcartes()), name]);
   return list;
 }
+
+
+// Quel profil proposer pour un type de document reconnu.
+//
+// `null` là où aucun profil ne s'impose : un e-mail n'a pas de vocabulaire de
+// forme propre au-delà de ses en-têtes, et proposer au hasard serait pire que
+// se taire (voir type-document.js, même principe).
+export const PROFIL_POUR_TYPE = {
+  cv: 'CV / Résumé',
+  administratif: 'Administratif',
+  scolaire: 'École / Études',
+  bancaire: 'Relevé bancaire',
+  email: null
+};

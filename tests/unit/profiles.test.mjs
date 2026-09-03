@@ -203,3 +203,59 @@ test('estProfilLivre distingue livré et personnel', () => {
   assert.ok(estProfilLivre('Administratif'));
   assert.ok(!estProfilLivre('Mon profil à moi'));
 });
+
+// --- Profils PAR FORMAT, et leur vocabulaire partagé ----------------------
+
+test('les profils par format existent et sont proposables', async () => {
+  const { PROFIL_POUR_TYPE } = await import('../../src/popup/profiles.js');
+  const noms = new Set(defaultProfiles().map(p => p.name));
+  for (const [type, profil] of Object.entries(PROFIL_POUR_TYPE)) {
+    if (profil === null) continue;
+    assert.ok(noms.has(profil), `« ${profil} », proposé pour « ${type} », n’existe pas`);
+  }
+});
+
+test('les mots de forme viennent de la source PARTAGÉE avec la détection', async () => {
+  // Le point de conception : les mots qui reconnaissent un format sont ceux
+  // qu'il ne faut pas y masquer. Deux listes auraient divergé.
+  const { motsDeForme } = await import('../../src/engine/vocabulaire-formats.js');
+  const cv = defaultProfiles().find(p => p.name === 'CV / Résumé');
+  const bas = new Set(cv.alwaysKeep.map(t => t.toLowerCase()));
+  for (const m of motsDeForme('cv')) {
+    assert.ok(bas.has(m), `« ${m} » manque au profil CV`);
+  }
+});
+
+test('les cinq langues sont représentées dans le profil CV', async () => {
+  const cv = defaultProfiles().find(p => p.name === 'CV / Résumé');
+  const bas = cv.alwaysKeep.map(t => t.toLowerCase());
+  for (const [langue, mot] of [['fr', 'expériences professionnelles'], ['en', 'work experience'],
+                               ['es', 'experiencia laboral'], ['de', 'berufserfahrung'],
+                               ['pt', 'experiência profissional']]) {
+    assert.ok(bas.includes(mot), `${langue} absent du profil CV`);
+  }
+});
+
+// ⚠️ LA LISTE BLANCHE EST UN VECTEUR DE FUITE, pas une commodité : ce qu'on y
+// écrit ne sera JAMAIS masqué, pour personne. Un mot trop générique qui se
+// trouve dans une vraie entité la démasquerait.
+//
+// CE QUE CE TEST PROUVE, ET CE QU'IL NE PROUVE PAS. Il vérifie que les mots de
+// forme n'ouvrent pas les entités PLAUSIBLES — noms d'école, d'employeur, de
+// personne, de ville, y compris ceux qui ont réellement fui dans ce projet. Il
+// ne prouve pas l'absence totale de risque : « Cabinet Introduction & Associés »
+// serait bel et bien démasqué par « introduction ». Ce mot est admis quand même,
+// et le compromis est explicite — il est déjà dans STRUCTURE_KEEP depuis des
+// mois, la détection de type en a besoin, et masquer chaque intitulé
+// « INTRODUCTION » coûterait bien plus qu'une raison sociale improbable.
+test('aucun mot de forme ne démasque une entité plausible', async () => {
+  const { filterByRules } = await import('../../src/engine/selection.js');
+  const { TOUS_LES_MOTS_DE_FORME } = await import('../../src/engine/vocabulaire-formats.js');
+  const pieges = ['Sorbonne Paris Nord', 'Semantikmatch', 'Korrigane Labs',
+                  'Rose Fontaine', 'Villetaneuse', 'Médecins Sans Frontières',
+                  'Startup Twini', 'Formations Dupont SARL', 'Crédit Agricole'];
+  const ents = pieges.map(value => ({ source: 'ner', type: 'ORG', value }));
+  const gardees = filterByRules(ents, { keepValues: TOUS_LES_MOTS_DE_FORME });
+  assert.deepEqual(gardees.map(e => e.value), pieges,
+    'un mot de forme a démasqué une entité plausible');
+});
