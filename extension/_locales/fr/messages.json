@@ -377,5 +377,14 @@
   },
   "reponse_a_desanonymiser": {
     "message": "Réponse à désanonymiser"
+  },
+  "exemple_texte_a_coller": {
+    "message": "Bonjour, je suis Marie Dubois (marie.dubois@exemple.fr), pouvez-vous relire ce contrat ?"
+  },
+  "relis_avant_de_coller": {
+    "message": "Relis avant de coller — la détection n’est pas infaillible."
+  },
+  "glisse_un_fichier_ici": {
+    "message": "Glisse un fichier ici, ou clique pour le choisir"
   }
 }

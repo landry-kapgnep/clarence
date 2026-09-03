@@ -1368,3 +1368,29 @@ body.panel-mode.autonome {
   border-left: 1px solid rgba(237, 230, 211, 0.12);
   border-right: 1px solid rgba(237, 230, 211, 0.12);
 }
+
+/* L'AVERTISSEMENT EST LA PROMESSE DU PRODUIT, pas une mention légale.
+   Il partageait sa ligne avec « Mon identité » et portait la couleur la plus
+   pâle de l'interface — le texte le moins visible de l'écran disait la seule
+   chose qui protège vraiment l'utilisateur. Il prend sa propre ligne et
+   remonte en contraste. Il ne devient PAS une alerte pour autant : un
+   avertissement permanent qui crie finit ignoré, et ce n'est pas une erreur. */
+footer .avertissement {
+  margin: 0 0 6px;
+  color: var(--paper);
+  opacity: .82;
+  line-height: 1.45;
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+}
+footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto; }
+
+/* Le verbe qui manquait à la zone de dépôt : elle n'offrait qu'une icône et
+   une liste de formats, sans jamais dire quoi faire. */
+.dropzone-verbe {
+  margin: 0 0 4px;
+  color: var(--paper);
+  opacity: .78;
+  font-size: var(--control-size);
+}

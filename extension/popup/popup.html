@@ -35,7 +35,7 @@
 
       <div id="textMode">
       <label class="field-label" for="input"><span data-i18n="texte">Texte</span></label>
-      <textarea id="input" placeholder="..."></textarea>
+      <textarea id="input" placeholder="Bonjour, je suis Marie Dubois (marie.dubois@exemple.fr), pouvez-vous relire ce contrat ?" data-i18n-placeholder="exemple_texte_a_coller"></textarea>
 
       <div class="controls">
         <button class="btn-primary" id="analyzeBtn" data-i18n="analyser">Analyser</button>
@@ -122,6 +122,7 @@
         <div class="dropzone" id="dropzone">
           <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf,.jpg,.jpeg,.png" hidden>
           <p class="dropzone-main"><button class="link-btn" id="filePickBtn"><img src="img/ClarenceFlW.png" class="cpbtn" alt="Choisir un fichier" data-i18n-alt="choisir_un_fichier"></button></p>
+          <p class="dropzone-verbe" data-i18n="glisse_un_fichier_ici">Glisse un fichier ici, ou clique pour le choisir</p>
           <p class="hint">CSV, XLSX, DOCX, PDF, JPG, PNG</p>
         </div>
 
@@ -306,7 +307,8 @@
       </section>
 
       <footer>
-        ⚠ Relis avant de coller — la détection n'est pas infaillible.
+        <p class="avertissement"><span aria-hidden="true">⚠</span>
+          <span data-i18n="relis_avant_de_coller">Relis avant de coller — la détection n’est pas infaillible.</span></p>
         <button class="link-btn" id="identityOpenBtn" data-i18n="mon_identite">Mon identité</button>
       </footer>
     </div>
