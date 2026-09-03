@@ -2320,9 +2320,14 @@ let identiteEcartee = false;
 
 function proposerIdentite({ prefixe, barre, entites }) {
   if (identiteEcartee) return false;
-  const dejaNomme = (identityCache.champs.prenom || []).length
-    || (identityCache.champs.nom || []).length;
-  if (dejaNomme) return false;
+  // ⚠️ « AU MOINS UN DES DEUX » NE SUFFIT PAS, et c'est ce qui a été constaté :
+  // un utilisateur qui ne déclare QUE son nom de famille voit son prénom passer
+  // en clair — et ne reçoit aucune proposition, puisque son profil portait bien
+  // « un » nom. La condition porte donc sur les DEUX champs essentiels : tant
+  // qu'il en manque un, la protection est incomplète et la proposition a du sens.
+  const complet = [...IDENTITY_ESSENTIELS]
+    .every(k => (identityCache.champs[k] || []).length);
+  if (complet) return false;
   if (!(entites || []).some(e => e.type === 'PER')) return false;
 
   $(prefixe + 'SuggestTxt').textContent = msg('suggestion_identite');

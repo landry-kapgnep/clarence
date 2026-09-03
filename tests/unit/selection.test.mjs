@@ -168,3 +168,35 @@ test('un mot qui RESSEMBLE à un placeholder sans en être un reste masqué', ()
     .map(value => ({ source: 'ner', type: 'ORG', value }));
   assert.equal(filterByRules(ents, {}).length, 5);
 });
+
+// ⚠️ DÉCLARER SON IDENTITÉ NE DOIT PAS RENDRE SES DONNÉES MOINS MASQUÉES.
+//
+// Fuite mesurée sur un vrai CV le 04/09/2026. L'utilisateur déclare son nom de
+// famille ; ce terme est cherché littéralement, donc il matche AUSSI à
+// l'intérieur de son adresse e-mail. La règle d'origine jetait toute détection
+// chevauchant un masque manuel — l'entité EMAIL disparaissait, et le document
+// livré portait « landry.[PERSONNALISE_1].pro@gmail.com » là où il portait
+// « [EMAIL_1] » SANS le profil. La fonctionnalité censée mieux protéger
+// protégeait moins, et pour l'utilisateur le plus prudent.
+test('un masque forcé contenu dans une détection ne la découpe pas', () => {
+  const email = { source: 'regex', type: 'EMAIL', value: 'landry.kapgnep@exemple.fr', start: 10, end: 35 };
+  const forceInterne = { source: 'manuel', type: 'PERSONNALISE', value: 'kapgnep', start: 17, end: 24 };
+  const actives = selectActive([email], [forceInterne], new Set());
+  assert.deepEqual(actives.map(e => e.type), ['EMAIL'],
+    'l’e-mail doit survivre : il masque déjà tout ce que le terme forcé masquerait');
+});
+
+test('un masque forcé qui COUVRE la détection reste souverain', () => {
+  // L'inverse doit continuer de valoir : quand l'utilisateur force un terme plus
+  // large que ce que le moteur a trouvé, c'est lui qui décide.
+  const petit = { source: 'ner', type: 'ORG', value: 'Zephyr', start: 10, end: 16 };
+  const forceLarge = { source: 'manuel', type: 'PERSONNALISE', value: 'projet Zephyr', start: 3, end: 16 };
+  const actives = selectActive([petit], [forceLarge], new Set());
+  assert.deepEqual(actives.map(e => e.type), ['PERSONNALISE']);
+});
+
+test('deux spans identiques : le manuel l’emporte, comme avant', () => {
+  const a = { source: 'ner', type: 'ORG', value: 'Zephyr', start: 3, end: 9 };
+  const m = { source: 'manuel', type: 'PERSONNALISE', value: 'Zephyr', start: 3, end: 9 };
+  assert.deepEqual(selectActive([a], [m], new Set()).map(e => e.type), ['PERSONNALISE']);
+});

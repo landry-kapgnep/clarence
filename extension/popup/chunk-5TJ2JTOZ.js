@@ -4343,9 +4343,12 @@ function reinject(text, mapping) {
 
 // src/engine/selection.js
 var entityKey = (e) => `${e.start}:${e.end}:${e.type}`;
+var contient2 = (grand, petit) => grand.start <= petit.start && grand.end >= petit.end;
 function selectActive(autoEntities, manualEntities, removedKeys) {
-  const manuals = manualEntities.filter((e) => !removedKeys.has(entityKey(e)));
-  const autos = autoEntities.filter((e) => !removedKeys.has(entityKey(e)) && !manuals.some((m) => e.start < m.end && e.end > m.start));
+  const manuals0 = manualEntities.filter((e) => !removedKeys.has(entityKey(e)));
+  const autos0 = autoEntities.filter((e) => !removedKeys.has(entityKey(e)));
+  const manuals = manuals0.filter((m) => !autos0.some((a) => contient2(a, m) && !contient2(m, a)));
+  const autos = autos0.filter((a) => !manuals.some((m) => a.start < m.end && a.end > m.start));
   return resolveOverlaps([...autos, ...manuals]);
 }
 function forcedMasks(text, terms) {

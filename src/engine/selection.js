@@ -11,11 +11,38 @@ export const entityKey = e => `${e.start}:${e.end}:${e.type}`;
 // - un masque manuel a priorité absolue sur toute détection automatique
 //   qui le chevauche ;
 // - le résultat est sans chevauchement et trié.
+// ⚠️ UN MASQUE MANUEL CONTENU DANS UNE DÉTECTION NE DOIT PAS LA DÉCOUPER.
+//
+// LA FUITE QUE ÇA FERME, mesurée le 04/09/2026 sur un vrai CV. L'utilisateur
+// déclare son nom de famille dans son profil d'identité ; ce terme est cherché
+// littéralement, donc il matche AUSSI à l'intérieur de son adresse e-mail. La
+// règle d'origine jetait toute détection chevauchant un masque manuel, si bien
+// que l'entité EMAIL disparaissait et que le résultat livré était :
+//
+//     sans profil : [EMAIL_1]
+//     avec profil : landry.[PERSONNALISE_1].pro@gmail.com
+//
+// Déclarer son identité rendait donc son e-mail MOINS masqué — la
+// fonctionnalité censée mieux protéger protégeait moins, et précisément pour
+// l'utilisateur le plus prudent.
+//
+// La règle corrigée distingue les deux sens du chevauchement :
+//   · le manuel COUVRE la détection  → le manuel gagne, il masque un surensemble ;
+//   · la détection CONTIENT le manuel → la détection gagne, le manuel est
+//     redondant (tout ce qu'il masquerait est déjà masqué) et le garder ne
+//     ferait que fragmenter.
+//
+// Cette correction ne peut JAMAIS réduire le masquage : dans le cas qu'elle
+// change, le span conservé couvre entièrement celui qu'on écarte.
+const contient = (grand, petit) => grand.start <= petit.start && grand.end >= petit.end;
+
 export function selectActive(autoEntities, manualEntities, removedKeys) {
-  const manuals = manualEntities.filter(e => !removedKeys.has(entityKey(e)));
-  const autos = autoEntities.filter(e =>
-    !removedKeys.has(entityKey(e)) &&
-    !manuals.some(m => e.start < m.end && e.end > m.start));
+  const manuals0 = manualEntities.filter(e => !removedKeys.has(entityKey(e)));
+  const autos0 = autoEntities.filter(e => !removedKeys.has(entityKey(e)));
+
+  const manuals = manuals0.filter(m => !autos0.some(a => contient(a, m) && !contient(m, a)));
+  const autos = autos0.filter(a =>
+    !manuals.some(m => a.start < m.end && a.end > m.start));
   return resolveOverlaps([...autos, ...manuals]);
 }
 

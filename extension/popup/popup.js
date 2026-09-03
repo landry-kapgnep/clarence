@@ -17,7 +17,7 @@ import {
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-G7IRYCBG.js";
+} from "./chunk-5TJ2JTOZ.js";
 import {
   createBatchedPipeline
 } from "./chunk-IT5BP6N7.js";
@@ -2561,7 +2561,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-RP35563R.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-FDMDYSJT.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -2574,7 +2574,7 @@ async function retirerDuMasquage(valeur) {
       fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
       mapping = res.mapping;
     } else {
-      const { anonymizeUnits } = await import("./anonymize-units-M5MYREHZ.js");
+      const { anonymizeUnits } = await import("./anonymize-units-DABIJPJR.js");
       const { results, mapping: m } = await anonymizeUnits(r.units, {
         entitesConnues: r.entites,
         intitules: r.intitules,
@@ -3147,7 +3147,7 @@ async function processFile() {
       fileSetStatus(msg("etat_lecture_pdf"));
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-RP35563R.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-FDMDYSJT.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -3178,7 +3178,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-M5MYREHZ.js");
+    const { anonymizeUnits } = await import("./anonymize-units-DABIJPJR.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -3374,8 +3374,8 @@ var suggestionsEcartees = /* @__PURE__ */ new Set();
 var identiteEcartee = false;
 function proposerIdentite({ prefixe, barre, entites }) {
   if (identiteEcartee) return false;
-  const dejaNomme = (identityCache.champs.prenom || []).length || (identityCache.champs.nom || []).length;
-  if (dejaNomme) return false;
+  const complet = [...IDENTITY_ESSENTIELS].every((k) => (identityCache.champs[k] || []).length);
+  if (complet) return false;
   if (!(entites || []).some((e) => e.type === "PER")) return false;
   $(prefixe + "SuggestTxt").textContent = msg("suggestion_identite");
   $(prefixe + "SuggestApply").textContent = msg("ajouter");
