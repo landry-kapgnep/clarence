@@ -1962,3 +1962,52 @@ Janv. - Mars 2026 », il trouve `Data Engineer` et manque le nom propre. C'est l
 gotcha déjà documenté de la concurrence entre labels. Rattrapable par
 « toujours masquer » ou le profil d'identité ; sinon, c'est un candidat pour
 l'affinage du modèle (phases 3-5 de `tools/corpus/README.md`).
+
+## P17 — Conditionner les labels au format : mesuré, et ça ne marche pas (03/09/2026)
+
+Question posée : plutôt qu'un modèle PAR format, un signal de format qui
+**conditionne** le détecteur mot à mot. Dans un modèle zero-shot les labels sont
+le canal de contexte, donc l'idée ne demande aucun entraînement — juste de
+changer les labels selon le type reconnu par `type-document.js`.
+
+Trois stratégies, mesurées sur un vrai CV de 29 unités (seuil 0,5) :
+
+| stratégie | vraies trouvées | faux positifs connus |
+|---|---|---|
+| générique (actuel) | **5/7** | 8/11 |
+| REMPLACER par des labels CV | 2/7 | 3/11 |
+| AJOUTER une passe CV (union) | 5/7 | 8/11 |
+
+**Remplacer est un recul net** : « company where the candidate worked » exclut
+`UNODC` (organisme certificateur, pas employeur), « city » exclut
+`Île-de-France` (région), et l'école n'est pas un employeur. Les labels
+spécialisés sont plus PRÉCIS, donc ils ratent tout ce qui déborde du cas
+nominal — l'inverse de ce qu'on veut sur une couche anti-fuite.
+
+**Ajouter ne change rien** : union stricte, mêmes 28 spans.
+
+### ⚠️ LE PIÈGE DE MESURE, à ne pas refaire
+
+Une première mesure sur la phrase isolée donnait `Semantikmatch` à 0,400 en
+générique contre **0,526** en labels CV — soit exactement le franchissement de
+seuil espéré. C'était faux : la phrase avait été RACCOURCIE à la main pour le
+test. Sur l'unité réelle du document, le même jeu de labels donne **0,453**.
+
+| longueur de l'unité | score de `Semantikmatch` |
+|---|---|
+| 340 c. (réelle) | 0,453 → sous le seuil |
+| 48 c. (tronquée) | 0,531 → au-dessus |
+
+### Ce que ça déplace
+
+Le facteur limitant n'est pas le contexte, c'est **la longueur de l'unité
+soumise**. Même texte, mêmes labels, le signal se dilue avec la longueur. Le
+levier qui a de la marge est donc le DÉCOUPAGE, pas le conditionnement — et il
+va dans le sens inverse de P8, qui allongeait les unités pour réduire le bruit.
+Les deux objectifs s'opposent : unités longues = moins de faux positifs, unités
+courtes = meilleur rappel. Un compromis à mesurer, pas à supposer.
+
+Piste non explorée, cheap : `arbitrerFauxPositifs` réinterroge déjà le modèle
+sur le CANDIDAT SEUL, donc sur une chaîne très courte — la configuration où il
+est le plus fort. Rendre ses labels-leurres dépendants du format y serait
+cohérent, et coûte une inférence déjà payée.
