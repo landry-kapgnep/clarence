@@ -398,7 +398,13 @@ body.panel-mode .popup-shell {
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-shell);
+  /* ⚠️ OPAQUE, ET PAS `--bg-shell`. Cette variable vaut
+     `linear-gradient(180deg, var(--seal), rgba(19, 19, 29, 0.5))` — alpha 0,5
+     sur le second arrêt. Elle est faite pour la coquille, qui repose sur une
+     page opaque ; sur une modale FLOTTANTE, la page traversait la carte et le
+     formulaire d'identité devenait illisible, superposé au reste de
+     l'extension. Une surface qui flotte doit être opaque, sans exception. */
+  background: linear-gradient(180deg, var(--seal), var(--bg-page));
   /*background-image: url("img/PrintGridTransparentW.png");*/
   background-size: contain;
   background-repeat: no-repeat;
@@ -1242,10 +1248,34 @@ td.map-occ {
    `width: 1%` est l'idiome qui fait tenir une colonne à son contenu : la
    largeur demandée est intenable, le moteur de table retombe donc sur le
    minimum, et tout le reste va à la colonne à 100 %. */
+/* Cinq colonnes : quatre tiennent leur contenu, seule la valeur absorbe le
+   reste. L'ancienne règle visait « la dernière colonne » — vraie quand il n'y
+   avait qu'une action, fausse depuis qu'il y en a deux : la colonne des actions
+   grossissait et écrasait la valeur, dont les longues (une adresse e-mail)
+   débordaient sur les boutons. */
+#fileMappingWrap th,
 #fileMappingWrap td:first-child,
 #fileMappingWrap td.map-occ,
-#fileMappingWrap td:last-child { width: 1%; white-space: nowrap; }
-#fileMappingWrap td:nth-child(2) { width: 100%; }
+#fileMappingWrap td.map-act { width: 1%; white-space: nowrap; }
+#fileMappingWrap td:nth-child(2) {
+  width: 100%;
+  /* Une adresse e-mail est un seul « mot » : sans ça elle pousse la colonne. */
+  overflow-wrap: anywhere;
+}
+#fileMappingWrap thead th {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  opacity: .6;
+  text-align: left;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line-soft);
+}
+#fileMappingWrap thead th.map-act,
+#fileMappingWrap thead th.map-occ { text-align: center; }
+#fileMappingWrap td.map-act { text-align: center; padding: 0 3px; }
 /* La ligne reste large : le survol la relie d'un bout à l'autre au moment où
    on vise son bouton. Teinte reprise des contrôles, aucun ton nouveau. */
 #fileMappingWrap tr:hover { background: var(--control-ghost-bg); }
@@ -1455,3 +1485,59 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
 .map-profil:hover { color: var(--paper); border-color: rgba(237, 230, 211, 0.34); }
 .map-profil:focus-visible { outline: 2px solid var(--seal-lit); outline-offset: 1px; }
 .map-categorie { max-width: 160px; }
+
+/* Actions d'un seul signe : la légende de colonne porte le sens, le bouton
+   porte le geste. Carré, pour que « − » et « + » aient la même empreinte. */
+.map-retirer, .map-profil {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  border: 0;
+  border-radius: 6px;
+  background: var(--control-ghost-bg);
+  color: var(--paper-dim);
+  cursor: pointer;
+}
+.map-retirer:hover, .map-profil:hover {
+  background: var(--control-ghost-hover-bg);
+  color: var(--paper);
+}
+.map-retirer:focus-visible, .map-profil:focus-visible {
+  outline: 2px solid var(--seal-lit);
+  outline-offset: 1px;
+}
+
+/* Le <select> à la DA, ce qui en est stylable.
+   ⚠️ CE QUE CETTE RÈGLE NE PEUT PAS FAIRE : la LISTE qui s'ouvre au clic est
+   peinte par le système d'exploitation, hors de portée du CSS. On habille donc
+   l'état fermé — le seul que l'utilisateur voit la plupart du temps — et le
+   menu ouvert reste natif. Le rendre conforme exigerait de remplacer l'élément
+   par une liste maison, avec tout le clavier et l'ARIA que ça suppose. */
+select, .mini-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-field);
+  color: var(--paper);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 4px 26px 4px 9px;
+  font-size: var(--control-size);
+  cursor: pointer;
+  /* Chevron dessiné en CSS : aucune image à charger, et il suit la couleur. */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--paper-dim) 50%),
+    linear-gradient(135deg, var(--paper-dim) 50%, transparent 50%);
+  background-position: right 12px center, right 7px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+select:hover, .mini-select:hover { border-color: rgba(237, 230, 211, 0.3); }
+select:focus-visible, .mini-select:focus-visible {
+  outline: 2px solid var(--seal-lit);
+  outline-offset: 1px;
+}
+/* Les options, elles, ne reçoivent que la couleur — et seulement sur les
+   plateformes qui l'acceptent. C'est le plafond du natif. */
+select option { background: var(--bg-raised); color: var(--paper); }

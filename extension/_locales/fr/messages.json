@@ -398,9 +398,6 @@
       }
     }
   },
-  "au_profil": {
-    "message": "au profil"
-  },
   "infobulle_au_profil": {
     "message": "Toujours masquer cette valeur, dans tous les documents"
   },
@@ -414,5 +411,17 @@
   },
   "garder": {
     "message": "garder"
+  },
+  "placeholder": {
+    "message": "masqué"
+  },
+  "valeur": {
+    "message": "valeur"
+  },
+  "fois": {
+    "message": "fois"
+  },
+  "profil": {
+    "message": "profil"
   }
 }

@@ -398,9 +398,6 @@
       }
     }
   },
-  "au_profil": {
-    "message": "to profile"
-  },
   "infobulle_au_profil": {
     "message": "Always mask this value, in every document"
   },
@@ -414,5 +411,17 @@
   },
   "garder": {
     "message": "keep"
+  },
+  "placeholder": {
+    "message": "masked"
+  },
+  "valeur": {
+    "message": "value"
+  },
+  "fois": {
+    "message": "times"
+  },
+  "profil": {
+    "message": "profile"
   }
 }

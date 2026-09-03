@@ -2634,9 +2634,15 @@ function showFileResults(mapping, copyable, duree) {
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {
   });
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
-  $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-actions"><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="${msg("infobulle_garder")}">${msg("garder")}</button><button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" title="${msg("infobulle_au_profil")}">${msg("au_profil")}</button></td></tr>`
-  ).join("")}</table>` : `<p>${msg("aucun_masque_actif")}</p>`;
+  $("fileMappingWrap").innerHTML = mapping.length ? `<table><thead><tr>
+        <th scope="col">${msg("placeholder")}</th>
+        <th scope="col">${msg("valeur")}</th>
+        <th scope="col" class="map-occ">${msg("fois")}</th>
+        <th scope="col" class="map-act">${msg("garder")}</th>
+        <th scope="col" class="map-act">${msg("profil")}</th>
+      </tr></thead><tbody>${triees.map(
+    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" aria-label="${msg("infobulle_garder")}" title="${msg("infobulle_garder")}">\u2212</button></td><td class="map-act"><button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button></td></tr>`
+  ).join("")}</tbody></table>` : `<p>${msg("aucun_masque_actif")}</p>`;
   const suffixe = (duree ? ` ${duree}.` : "") + (compressionEchouee ? ` \u26A0 Compression indisponible : ${compressionEchouee}.` : "") + (compressionInfo ? ` \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
   $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeurs masqu\xE9es, m\xE9tadonn\xE9es nettoy\xE9es.` : msg("aucune_donnee_sensible")) + suffixe;
   $("fileSummary").className = "status active";

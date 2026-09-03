@@ -1244,24 +1244,39 @@ function showFileResults(mapping, copyable, duree) {
   // qu'UNE fois. Trier par fréquence met donc les corrections les plus
   // rentables en premier : trois clics récupèrent un quart des placeholders.
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  // EN-TÊTES DE COLONNES, ET DES ACTIONS D'UN SEUL SIGNE.
+  //
+  // Deux boutons en toutes lettres répétés sur chaque ligne débordaient sur la
+  // valeur et faisaient un mur de texte. La légende monte donc en tête une
+  // fois, et chaque cellule ne porte plus qu'un signe : « − » pour retirer du
+  // masquage, « + » pour ajouter au profil. Les deux gardent leur nom complet
+  // en `aria-label` et en infobulle — un bouton compact ne doit pas être un
+  // bouton muet.
   $('fileMappingWrap').innerHTML = mapping.length
-    ? `<table>${triees.map(m =>
+    ? `<table><thead><tr>
+        <th scope="col">${msg('placeholder')}</th>
+        <th scope="col">${msg('valeur')}</th>
+        <th scope="col" class="map-occ">${msg('fois')}</th>
+        <th scope="col" class="map-act">${msg('garder')}</th>
+        <th scope="col" class="map-act">${msg('profil')}</th>
+      </tr></thead><tbody>${triees.map(m =>
         `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td>` +
         `<td class="map-occ">${m.occurrences || 1}×</td>` +
         // `data-valeur` porte la valeur RÉELLE : c'est elle qu'on ajoutera aux
         // termes « ne jamais masquer », pas le placeholder.
-        `<td class="map-actions">` +
+        `<td class="map-act">` +
         `<button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
-        ` title="${msg('infobulle_garder')}">${msg('garder')}</button>` +
+        ` aria-label="${msg('infobulle_garder')}" title="${msg('infobulle_garder')}">−</button></td>` +
         // « au profil » vit ICI plutôt que dans un bandeau, et c'est tout
         // l'intérêt : la ligne NOMME la valeur. Un bandeau ne pouvait
         // qu'annoncer « une personne a été détectée » — laquelle ? une ou
         // plusieurs ? — et ne disait rien d'une date de naissance ou d'une
         // école, qui méritent le même geste.
+        `<td class="map-act">` +
         `<button type="button" class="map-profil" data-valeur="${esc(m.value)}"` +
-        ` data-type="${esc(m.type || '')}" title="${msg('infobulle_au_profil')}">` +
-        `${msg('au_profil')}</button></td></tr>`
-      ).join('')}</table>`
+        ` data-type="${esc(m.type || '')}" aria-label="${msg('infobulle_au_profil')}"` +
+        ` title="${msg('infobulle_au_profil')}">+</button></td></tr>`
+      ).join('')}</tbody></table>`
     : `<p>${msg('aucun_masque_actif')}</p>`;
   // duree : omise pour la régénération (retirerDuMasquage) — son propre
   // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
