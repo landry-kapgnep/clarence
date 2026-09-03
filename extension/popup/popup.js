@@ -2635,7 +2635,7 @@ function showFileResults(mapping, copyable, duree) {
   });
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
   $("fileMappingWrap").innerHTML = mapping.length ? `<table>${triees.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="${msg("infobulle_garder")}">garder</button></td></tr>`
+    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-actions"><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" title="${msg("infobulle_garder")}">${msg("garder")}</button><button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" title="${msg("infobulle_au_profil")}">${msg("au_profil")}</button></td></tr>`
   ).join("")}</table>` : `<p>${msg("aucun_masque_actif")}</p>`;
   const suffixe = (duree ? ` ${duree}.` : "") + (compressionEchouee ? ` \u26A0 Compression indisponible : ${compressionEchouee}.` : "") + (compressionInfo ? ` \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
   $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeurs masqu\xE9es, m\xE9tadonn\xE9es nettoy\xE9es.` : msg("aucune_donnee_sensible")) + suffixe;
@@ -3304,8 +3304,55 @@ rendreApercuTermes();
 $("fileCancelBtn").addEventListener("click", () => annulerRunFichier());
 $("fileMappingWrap").addEventListener("click", (ev) => {
   const btn = ev.target.closest(".map-retirer");
-  if (btn) retirerDuMasquage(btn.dataset.valeur);
+  if (btn) {
+    retirerDuMasquage(btn.dataset.valeur);
+    return;
+  }
+  const prof = ev.target.closest(".map-profil");
+  if (prof) demanderCategorie(prof);
 });
+var CATEGORIE_PAR_TYPE = {
+  PER: "nom",
+  EMAIL: "emails",
+  TELEPHONE: "telephones",
+  ADRESSE: "adresse",
+  CODE_POSTAL_VILLE: "ville",
+  LOC: "ville",
+  DATE_NAISSANCE: "dateNaissance",
+  ORG: "employeurs",
+  ETABLISSEMENT: "ecoles",
+  PSEUDO: "pseudos"
+};
+function demanderCategorie(bouton) {
+  const valeur = bouton.dataset.valeur;
+  const cellule = bouton.parentElement;
+  const avant = cellule.innerHTML;
+  const choisi = CATEGORIE_PAR_TYPE[bouton.dataset.type] || "autres";
+  const sel = document.createElement("select");
+  sel.className = "mini-select map-categorie";
+  sel.setAttribute("aria-label", msg("infobulle_au_profil"));
+  sel.innerHTML = IDENTITY_FIELDS.map(([k, label]) => `<option value="${k}"${k === choisi ? " selected" : ""}>${esc(label)}</option>`).join("");
+  cellule.innerHTML = "";
+  cellule.appendChild(sel);
+  sel.focus();
+  const restaurer = () => {
+    cellule.innerHTML = avant;
+  };
+  sel.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") restaurer();
+  });
+  sel.addEventListener("blur", () => setTimeout(restaurer, 120));
+  sel.addEventListener("change", async () => {
+    const champs = { ...identityCache.champs };
+    const liste = [...champs[sel.value] || []];
+    if (!liste.includes(valeur)) liste.push(valeur);
+    champs[sel.value] = liste;
+    await saveIdentity({ ...identityCache, champs, status: "configure" });
+    identityCache = await loadIdentity();
+    restaurer();
+    fileSetStatus(msg("ajoute_au_profil", [valeur]), "ok");
+  });
+}
 $("fileResetBtn").addEventListener("click", () => {
   annulerRunFichier("");
   chosenFile = null;
@@ -3371,32 +3418,12 @@ dropzone.addEventListener("drop", (ev) => {
 });
 var barresDeProfil = /* @__PURE__ */ new Map();
 var suggestionsEcartees = /* @__PURE__ */ new Set();
-var identiteEcartee = false;
-function proposerIdentite({ prefixe, barre, entites }) {
-  if (identiteEcartee) return false;
-  const complet = [...IDENTITY_ESSENTIELS].every((k) => (identityCache.champs[k] || []).length);
-  if (complet) return false;
-  if (!(entites || []).some((e) => e.type === "PER")) return false;
-  $(prefixe + "SuggestTxt").textContent = msg("suggestion_identite");
-  $(prefixe + "SuggestApply").textContent = msg("ajouter");
-  barre.hidden = false;
-  $(prefixe + "SuggestApply").onclick = () => {
-    barre.hidden = true;
-    openIdentityModal();
-  };
-  $(prefixe + "SuggestDismiss").onclick = () => {
-    identiteEcartee = true;
-    barre.hidden = true;
-  };
-  return true;
-}
 function montrerSuggestion({ prefixe, texte, entites }) {
   const barre = $(prefixe + "Suggest");
   if (!barre) return;
   barre.hidden = true;
   const bar = barresDeProfil.get(prefixe === "profile" ? "profileSelect" : "fileProfileSelect");
   if (!bar) return;
-  if (proposerIdentite({ prefixe, barre, entites })) return;
   const { type } = analyserTypeDocument(texte, { entites });
   const profil = type ? PROFIL_POUR_TYPE[type] : null;
   if (!profil || !bar.existe(profil) || bar.courant() === profil) return;
@@ -3406,8 +3433,8 @@ function montrerSuggestion({ prefixe, texte, entites }) {
     const deja = new Set(actuel.alwaysKeep.map((t) => t.toLowerCase()));
     if (motsDeForme(type).every((m) => deja.has(m))) return;
   }
-  $(prefixe + "SuggestTxt").textContent = msg("suggestion_profil", [msg("format_" + type), profil]);
-  $(prefixe + "SuggestApply").textContent = msg("appliquer");
+  $(prefixe + "SuggestTxt").textContent = msg("suggestion_profil", [msg("format_" + type)]);
+  $(prefixe + "SuggestApply").textContent = msg("appliquer_profil", [profil]);
   barre.hidden = false;
   $(prefixe + "SuggestApply").onclick = () => {
     bar.selectionner(profil);

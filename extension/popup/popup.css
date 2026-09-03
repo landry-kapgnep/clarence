@@ -1428,3 +1428,30 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
 @media (max-width: 340px) {
   .identity-essentiels { grid-template-columns: 1fr; }
 }
+
+/* CE QUI APPARAÎT APRÈS COUP DOIT SE VOIR — une règle, pas un cas.
+   Constaté : la barre de suggestion se fondait dans la page et se ratait. Un
+   bandeau qui pousse à agir doit se distinguer du contenu qu'on lit. Le repère
+   est un LISERÉ au sceau, à gauche : il attire l'œil sur un axe où rien
+   d'autre ne vit, et il ne coûte ni animation ni couleur d'alerte. Une
+   suggestion n'est pas une erreur. */
+.suggestion {
+  border-left: 3px solid var(--seal);
+  background: var(--bg-raised);
+}
+
+/* Deux actions par ligne de correction : « garder » et « au profil ». */
+.map-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.map-profil {
+  background: none;
+  border: 1px solid rgba(237, 230, 211, 0.18);
+  border-radius: 6px;
+  color: var(--paper-dim);
+  font-size: 11px;
+  padding: 2px 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.map-profil:hover { color: var(--paper); border-color: rgba(237, 230, 211, 0.34); }
+.map-profil:focus-visible { outline: 2px solid var(--seal-lit); outline-offset: 1px; }
+.map-categorie { max-width: 160px; }

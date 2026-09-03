@@ -318,13 +318,10 @@
     "message": "Voir tout"
   },
   "suggestion_profil": {
-    "message": "Ce document ressemble à un $FORMAT$. Appliquer le profil « $PROFIL$ » ?",
+    "message": "Ressemble à un $FORMAT$.",
     "placeholders": {
       "format": {
         "content": "$1"
-      },
-      "profil": {
-        "content": "$2"
       }
     }
   },
@@ -393,10 +390,29 @@
   "deja_couverts_sans_rien_declarer": {
     "message": "Emails, téléphones, IBAN : déjà repérés sans rien déclarer. Ton nom, lui, dépend d’un modèle — et un modèle rate parfois."
   },
-  "suggestion_identite": {
-    "message": "Une personne a été détectée. Si c’est toi, ajoute ton nom pour qu’il soit toujours masqué."
+  "appliquer_profil": {
+    "message": "Appliquer « $PROFIL$ »",
+    "placeholders": {
+      "profil": {
+        "content": "$1"
+      }
+    }
   },
-  "ajouter": {
-    "message": "Ajouter"
+  "au_profil": {
+    "message": "au profil"
+  },
+  "infobulle_au_profil": {
+    "message": "Toujours masquer cette valeur, dans tous les documents"
+  },
+  "ajoute_au_profil": {
+    "message": "« $VALEUR$ » sera toujours masqué.",
+    "placeholders": {
+      "valeur": {
+        "content": "$1"
+      }
+    }
+  },
+  "garder": {
+    "message": "garder"
   }
 }

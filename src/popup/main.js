@@ -1250,8 +1250,17 @@ function showFileResults(mapping, copyable, duree) {
         `<td class="map-occ">${m.occurrences || 1}×</td>` +
         // `data-valeur` porte la valeur RÉELLE : c'est elle qu'on ajoutera aux
         // termes « ne jamais masquer », pas le placeholder.
-        `<td><button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
-        ` title="${msg('infobulle_garder')}">garder</button></td></tr>`
+        `<td class="map-actions">` +
+        `<button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
+        ` title="${msg('infobulle_garder')}">${msg('garder')}</button>` +
+        // « au profil » vit ICI plutôt que dans un bandeau, et c'est tout
+        // l'intérêt : la ligne NOMME la valeur. Un bandeau ne pouvait
+        // qu'annoncer « une personne a été détectée » — laquelle ? une ou
+        // plusieurs ? — et ne disait rien d'une date de naissance ou d'une
+        // école, qui méritent le même geste.
+        `<button type="button" class="map-profil" data-valeur="${esc(m.value)}"` +
+        ` data-type="${esc(m.type || '')}" title="${msg('infobulle_au_profil')}">` +
+        `${msg('au_profil')}</button></td></tr>`
       ).join('')}</table>`
     : `<p>${msg('aucun_masque_actif')}</p>`;
   // duree : omise pour la régénération (retirerDuMasquage) — son propre
@@ -2197,8 +2206,54 @@ $('fileCancelBtn').addEventListener('click', () => annulerRunFichier());
 // posé sur chaque bouton serait perdu au premier retrait.
 $('fileMappingWrap').addEventListener('click', ev => {
   const btn = ev.target.closest('.map-retirer');
-  if (btn) retirerDuMasquage(btn.dataset.valeur);
+  if (btn) { retirerDuMasquage(btn.dataset.valeur); return; }
+  const prof = ev.target.closest('.map-profil');
+  if (prof) demanderCategorie(prof);
 });
+
+// À QUELLE CATÉGORIE ? — demandé sur place, avec une réponse déjà proposée.
+//
+// Le type détecté suggère presque toujours la bonne case : une DATE_NAISSANCE
+// va dans « Date de naissance », un ETABLISSEMENT dans « École(s) ». On
+// pré-sélectionne donc, et l'utilisateur n'a qu'à confirmer — ou corriger,
+// parce que le type peut être faux (c'est même souvent pour ça qu'il regarde
+// cette table).
+const CATEGORIE_PAR_TYPE = {
+  PER: 'nom', EMAIL: 'emails', TELEPHONE: 'telephones',
+  ADRESSE: 'adresse', CODE_POSTAL_VILLE: 'ville', LOC: 'ville',
+  DATE_NAISSANCE: 'dateNaissance', ORG: 'employeurs',
+  ETABLISSEMENT: 'ecoles', PSEUDO: 'pseudos'
+};
+
+function demanderCategorie(bouton) {
+  const valeur = bouton.dataset.valeur;
+  const cellule = bouton.parentElement;
+  const avant = cellule.innerHTML;
+  const choisi = CATEGORIE_PAR_TYPE[bouton.dataset.type] || 'autres';
+
+  const sel = document.createElement('select');
+  sel.className = 'mini-select map-categorie';
+  sel.setAttribute('aria-label', msg('infobulle_au_profil'));
+  sel.innerHTML = IDENTITY_FIELDS.map(([k, label]) =>
+    `<option value="${k}"${k === choisi ? ' selected' : ''}>${esc(label)}</option>`).join('');
+  cellule.innerHTML = '';
+  cellule.appendChild(sel);
+  sel.focus();
+
+  const restaurer = () => { cellule.innerHTML = avant; };
+  sel.addEventListener('keydown', e => { if (e.key === 'Escape') restaurer(); });
+  sel.addEventListener('blur', () => setTimeout(restaurer, 120));
+  sel.addEventListener('change', async () => {
+    const champs = { ...identityCache.champs };
+    const liste = [...(champs[sel.value] || [])];
+    if (!liste.includes(valeur)) liste.push(valeur);
+    champs[sel.value] = liste;
+    await saveIdentity({ ...identityCache, champs, status: 'configure' });
+    identityCache = await loadIdentity();
+    restaurer();
+    fileSetStatus(msg('ajoute_au_profil', [valeur]), 'ok');
+  });
+}
 $('fileResetBtn').addEventListener('click', () => {
   annulerRunFichier('');
   chosenFile = null;
@@ -2302,48 +2357,6 @@ const barresDeProfil = new Map();
 // refuser est le meilleur moyen de faire ignorer la barre pour toujours.
 const suggestionsEcartees = new Set();
 
-// « C'est toi ? » — proposée AU BON MOMENT, et une seule fois.
-//
-// Le profil d'identité rend le masquage de son propre nom déterministe, mais on
-// ne peut pas le demander utilement au premier lancement : l'utilisateur ne
-// sait pas encore à quoi ça sert. Le moment où il le comprend, c'est quand une
-// PERSONNE vient d'être détectée dans SON document.
-//
-// QUATRE CONDITIONS POUR NE PAS ÊTRE PÉNIBLE, et chacune compte :
-//   · il faut qu'une personne ait réellement été détectée — sinon la phrase
-//     n'a aucun sens et devient du bruit ;
-//   · il faut que le profil ne porte PAS déjà un nom — on ne redemande pas ce
-//     qu'on a ;
-//   · un refus vaut pour toute la session, comme pour la suggestion de profil ;
-//   · elle ne s'affiche jamais en même temps qu'une autre barre.
-let identiteEcartee = false;
-
-function proposerIdentite({ prefixe, barre, entites }) {
-  if (identiteEcartee) return false;
-  // ⚠️ « AU MOINS UN DES DEUX » NE SUFFIT PAS, et c'est ce qui a été constaté :
-  // un utilisateur qui ne déclare QUE son nom de famille voit son prénom passer
-  // en clair — et ne reçoit aucune proposition, puisque son profil portait bien
-  // « un » nom. La condition porte donc sur les DEUX champs essentiels : tant
-  // qu'il en manque un, la protection est incomplète et la proposition a du sens.
-  const complet = [...IDENTITY_ESSENTIELS]
-    .every(k => (identityCache.champs[k] || []).length);
-  if (complet) return false;
-  if (!(entites || []).some(e => e.type === 'PER')) return false;
-
-  $(prefixe + 'SuggestTxt').textContent = msg('suggestion_identite');
-  $(prefixe + 'SuggestApply').textContent = msg('ajouter');
-  barre.hidden = false;
-  $(prefixe + 'SuggestApply').onclick = () => {
-    barre.hidden = true;
-    openIdentityModal();
-  };
-  $(prefixe + 'SuggestDismiss').onclick = () => {
-    identiteEcartee = true;
-    barre.hidden = true;
-  };
-  return true;
-}
-
 function montrerSuggestion({ prefixe, texte, entites }) {
   const barre = $(prefixe + 'Suggest');
   if (!barre) return;
@@ -2351,14 +2364,6 @@ function montrerSuggestion({ prefixe, texte, entites }) {
 
   const bar = barresDeProfil.get(prefixe === 'profile' ? 'profileSelect' : 'fileProfileSelect');
   if (!bar) return;
-
-  // UNE SEULE BARRE À LA FOIS, et l'identité passe devant.
-  //
-  // Deux bandeaux empilés seraient exactement le harcèlement qu'on veut éviter.
-  // L'ordre n'est pas arbitraire : la suggestion d'identité parle d'une FUITE
-  // possible (un nom qui dépend d'un modèle), celle de profil parle de confort
-  // (du sur-masquage). Le risque passe avant l'agrément.
-  if (proposerIdentite({ prefixe, barre, entites })) return;
 
   const { type } = analyserTypeDocument(texte, { entites });
   const profil = type ? PROFIL_POUR_TYPE[type] : null;
@@ -2382,11 +2387,8 @@ function montrerSuggestion({ prefixe, texte, entites }) {
     if (motsDeForme(type).every(m => deja.has(m))) return;
   }
 
-  $(prefixe + 'SuggestTxt').textContent =
-    msg('suggestion_profil', [msg('format_' + type), profil]);
-  // Les deux suggestions partagent la barre : le libellé du bouton doit être
-  // remis, sinon il garde celui de la précédente.
-  $(prefixe + 'SuggestApply').textContent = msg('appliquer');
+  $(prefixe + 'SuggestTxt').textContent = msg('suggestion_profil', [msg('format_' + type)]);
+  $(prefixe + 'SuggestApply').textContent = msg('appliquer_profil', [profil]);
   barre.hidden = false;
 
   $(prefixe + 'SuggestApply').onclick = () => {

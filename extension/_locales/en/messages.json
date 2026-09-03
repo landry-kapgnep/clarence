@@ -318,13 +318,10 @@
     "message": "See all"
   },
   "suggestion_profil": {
-    "message": "This looks like a $FORMAT$. Apply the “$PROFIL$” profile?",
+    "message": "Looks like a $FORMAT$.",
     "placeholders": {
       "format": {
         "content": "$1"
-      },
-      "profil": {
-        "content": "$2"
       }
     }
   },
@@ -393,10 +390,29 @@
   "deja_couverts_sans_rien_declarer": {
     "message": "Emails, phone numbers and IBANs are already caught without declaring anything. Your name depends on a model — and models miss."
   },
-  "suggestion_identite": {
-    "message": "A person was detected. If that’s you, add your name so it is always masked."
+  "appliquer_profil": {
+    "message": "Apply “$PROFIL$”",
+    "placeholders": {
+      "profil": {
+        "content": "$1"
+      }
+    }
   },
-  "ajouter": {
-    "message": "Add"
+  "au_profil": {
+    "message": "to profile"
+  },
+  "infobulle_au_profil": {
+    "message": "Always mask this value, in every document"
+  },
+  "ajoute_au_profil": {
+    "message": "“$VALEUR$” will always be masked.",
+    "placeholders": {
+      "valeur": {
+        "content": "$1"
+      }
+    }
+  },
+  "garder": {
+    "message": "keep"
   }
 }
