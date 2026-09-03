@@ -33,6 +33,14 @@ const clesUtilisees = () => {
   const vues = new Set(
     [...html.matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)].map(m => m[1])
   );
+  // Le HTML n'est pas tout : la popup CONSTRUIT du balisage (le formulaire
+  // d'identité, les puces de types, la table des corrections). Un data-i18n
+  // posé dans un gabarit JS était invisible au scanner, et sa clé passait pour
+  // orpheline. Troisième angle mort de ce même scanner — d'où la règle : on
+  // cherche le contrat, pas les endroits où on se souvient qu'il s'applique.
+  for (const f of SOURCES_JS) {
+    for (const m of lire(f).matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)) vues.add(m[1]);
+  }
   for (const f of SOURCES_JS) {
     // `[,)]` et non `)` seul : un message PARAMÉTRÉ s'écrit msg('clé', [...]),
     // et le scanner le manquait — il déclarait alors orpheline une clé bel et

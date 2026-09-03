@@ -1728,6 +1728,7 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
 
 // src/popup/identity.js
 var IDENTITY_KEY = "clarenceIdentity";
+var IDENTITY_ESSENTIELS = /* @__PURE__ */ new Set(["prenom", "nom"]);
 var IDENTITY_FIELDS = [
   ["prenom", "Pr\xE9nom(s)"],
   ["nom", "Nom(s) de famille"],
@@ -3370,12 +3371,32 @@ dropzone.addEventListener("drop", (ev) => {
 });
 var barresDeProfil = /* @__PURE__ */ new Map();
 var suggestionsEcartees = /* @__PURE__ */ new Set();
+var identiteEcartee = false;
+function proposerIdentite({ prefixe, barre, entites }) {
+  if (identiteEcartee) return false;
+  const dejaNomme = (identityCache.champs.prenom || []).length || (identityCache.champs.nom || []).length;
+  if (dejaNomme) return false;
+  if (!(entites || []).some((e) => e.type === "PER")) return false;
+  $(prefixe + "SuggestTxt").textContent = msg("suggestion_identite");
+  $(prefixe + "SuggestApply").textContent = msg("ajouter");
+  barre.hidden = false;
+  $(prefixe + "SuggestApply").onclick = () => {
+    barre.hidden = true;
+    openIdentityModal();
+  };
+  $(prefixe + "SuggestDismiss").onclick = () => {
+    identiteEcartee = true;
+    barre.hidden = true;
+  };
+  return true;
+}
 function montrerSuggestion({ prefixe, texte, entites }) {
   const barre = $(prefixe + "Suggest");
   if (!barre) return;
   barre.hidden = true;
   const bar = barresDeProfil.get(prefixe === "profile" ? "profileSelect" : "fileProfileSelect");
   if (!bar) return;
+  if (proposerIdentite({ prefixe, barre, entites })) return;
   const { type } = analyserTypeDocument(texte, { entites });
   const profil = type ? PROFIL_POUR_TYPE[type] : null;
   if (!profil || !bar.existe(profil) || bar.courant() === profil) return;
@@ -3386,6 +3407,7 @@ function montrerSuggestion({ prefixe, texte, entites }) {
     if (motsDeForme(type).every((m) => deja.has(m))) return;
   }
   $(prefixe + "SuggestTxt").textContent = msg("suggestion_profil", [msg("format_" + type), profil]);
+  $(prefixe + "SuggestApply").textContent = msg("appliquer");
   barre.hidden = false;
   $(prefixe + "SuggestApply").onclick = () => {
     bar.selectionner(profil);
@@ -3493,11 +3515,21 @@ function identityForceTerms() {
 function buildIdentityForm() {
   const wrap = $("identityFields");
   if (!wrap) return;
-  wrap.innerHTML = IDENTITY_FIELDS.map(([key, label]) => `
+  const champ = ([key, label]) => `
     <div class="identity-field-${key}">
       <label class="field-label" for="identity_${key}">${esc(label)}</label>
       <textarea class="mini" id="identity_${key}" placeholder="Un terme par ligne"></textarea>
-    </div>`).join("");
+    </div>`;
+  const essentiels = IDENTITY_FIELDS.filter(([k]) => IDENTITY_ESSENTIELS.has(k));
+  const reste = IDENTITY_FIELDS.filter(([k]) => !IDENTITY_ESSENTIELS.has(k));
+  const dejaRempli = reste.some(([k]) => (identityCache.champs[k] || []).length);
+  wrap.innerHTML = `
+    <div class="identity-essentiels">${essentiels.map(champ).join("")}</div>
+    <details class="identity-reste"${dejaRempli ? " open" : ""}>
+      <summary data-i18n="ajouter_emails_ecoles_employeurs">Ajouter emails, \xE9coles, employeurs, pseudos\u2026</summary>
+      <div class="identity-fields">${reste.map(champ).join("")}</div>
+    </details>`;
+  appliquerTraductions(wrap);
 }
 function fillIdentityForm() {
   for (const [key] of IDENTITY_FIELDS) {

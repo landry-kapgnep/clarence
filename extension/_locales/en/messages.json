@@ -386,5 +386,17 @@
   },
   "glisse_un_fichier_ici": {
     "message": "Drop a file here, or click to choose one"
+  },
+  "ajouter_emails_ecoles_employeurs": {
+    "message": "Add emails, schools, employers, handles…"
+  },
+  "deja_couverts_sans_rien_declarer": {
+    "message": "Emails, phone numbers and IBANs are already caught without declaring anything. Your name depends on a model — and models miss."
+  },
+  "suggestion_identite": {
+    "message": "A person was detected. If that’s you, add your name so it is always masked."
+  },
+  "ajouter": {
+    "message": "Add"
   }
 }

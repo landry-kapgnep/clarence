@@ -25,7 +25,8 @@ import { createPseudonymizer } from '../engine/pseudonyms.js';
 import { maskText, reinject } from '../engine/masking.js';
 import { loadProfiles, upsertProfile, deleteProfile } from './profiles.js';
 import {
-  loadIdentity, saveIdentity, clearIdentity, identitySearchTerms, IDENTITY_FIELDS
+  loadIdentity, saveIdentity, clearIdentity, identitySearchTerms, IDENTITY_FIELDS,
+  IDENTITY_ESSENTIELS
 } from './identity.js';
 
 // --- État (mémoire du popup uniquement ; tout disparaît à la fermeture)
@@ -2301,6 +2302,43 @@ const barresDeProfil = new Map();
 // refuser est le meilleur moyen de faire ignorer la barre pour toujours.
 const suggestionsEcartees = new Set();
 
+// « C'est toi ? » — proposée AU BON MOMENT, et une seule fois.
+//
+// Le profil d'identité rend le masquage de son propre nom déterministe, mais on
+// ne peut pas le demander utilement au premier lancement : l'utilisateur ne
+// sait pas encore à quoi ça sert. Le moment où il le comprend, c'est quand une
+// PERSONNE vient d'être détectée dans SON document.
+//
+// QUATRE CONDITIONS POUR NE PAS ÊTRE PÉNIBLE, et chacune compte :
+//   · il faut qu'une personne ait réellement été détectée — sinon la phrase
+//     n'a aucun sens et devient du bruit ;
+//   · il faut que le profil ne porte PAS déjà un nom — on ne redemande pas ce
+//     qu'on a ;
+//   · un refus vaut pour toute la session, comme pour la suggestion de profil ;
+//   · elle ne s'affiche jamais en même temps qu'une autre barre.
+let identiteEcartee = false;
+
+function proposerIdentite({ prefixe, barre, entites }) {
+  if (identiteEcartee) return false;
+  const dejaNomme = (identityCache.champs.prenom || []).length
+    || (identityCache.champs.nom || []).length;
+  if (dejaNomme) return false;
+  if (!(entites || []).some(e => e.type === 'PER')) return false;
+
+  $(prefixe + 'SuggestTxt').textContent = msg('suggestion_identite');
+  $(prefixe + 'SuggestApply').textContent = msg('ajouter');
+  barre.hidden = false;
+  $(prefixe + 'SuggestApply').onclick = () => {
+    barre.hidden = true;
+    openIdentityModal();
+  };
+  $(prefixe + 'SuggestDismiss').onclick = () => {
+    identiteEcartee = true;
+    barre.hidden = true;
+  };
+  return true;
+}
+
 function montrerSuggestion({ prefixe, texte, entites }) {
   const barre = $(prefixe + 'Suggest');
   if (!barre) return;
@@ -2308,6 +2346,14 @@ function montrerSuggestion({ prefixe, texte, entites }) {
 
   const bar = barresDeProfil.get(prefixe === 'profile' ? 'profileSelect' : 'fileProfileSelect');
   if (!bar) return;
+
+  // UNE SEULE BARRE À LA FOIS, et l'identité passe devant.
+  //
+  // Deux bandeaux empilés seraient exactement le harcèlement qu'on veut éviter.
+  // L'ordre n'est pas arbitraire : la suggestion d'identité parle d'une FUITE
+  // possible (un nom qui dépend d'un modèle), celle de profil parle de confort
+  // (du sur-masquage). Le risque passe avant l'agrément.
+  if (proposerIdentite({ prefixe, barre, entites })) return;
 
   const { type } = analyserTypeDocument(texte, { entites });
   const profil = type ? PROFIL_POUR_TYPE[type] : null;
@@ -2333,6 +2379,9 @@ function montrerSuggestion({ prefixe, texte, entites }) {
 
   $(prefixe + 'SuggestTxt').textContent =
     msg('suggestion_profil', [msg('format_' + type), profil]);
+  // Les deux suggestions partagent la barre : le libellé du bouton doit être
+  // remis, sinon il garde celui de la précédente.
+  $(prefixe + 'SuggestApply').textContent = msg('appliquer');
   barre.hidden = false;
 
   $(prefixe + 'SuggestApply').onclick = () => {
@@ -2464,14 +2513,35 @@ function identityForceTerms() {
   return identitySearchTerms(identityCache);
 }
 
+// DEUX CHAMPS VISIBLES, NEUF REPLIÉS.
+//
+// Le formulaire présentait ses onze champs d'un bloc, et c'était la première
+// chose qu'un nouvel utilisateur voyait — un mur avant toute valeur démontrée.
+// L'inscription progressive dit l'inverse : un ou deux champs, le reste plus
+// tard. Voir IDENTITY_ESSENTIELS pour le choix des deux.
+//
+// Le repli reste OUVRABLE d'un clic et se rouvre tout seul dès qu'un des champs
+// du fond porte déjà une valeur : quelqu'un qui a rempli son profil ne doit pas
+// avoir à chercher où sont passées ses données.
 function buildIdentityForm() {
   const wrap = $('identityFields');
   if (!wrap) return;
-  wrap.innerHTML = IDENTITY_FIELDS.map(([key, label]) => `
+  const champ = ([key, label]) => `
     <div class="identity-field-${key}">
       <label class="field-label" for="identity_${key}">${esc(label)}</label>
       <textarea class="mini" id="identity_${key}" placeholder="Un terme par ligne"></textarea>
-    </div>`).join('');
+    </div>`;
+  const essentiels = IDENTITY_FIELDS.filter(([k]) => IDENTITY_ESSENTIELS.has(k));
+  const reste = IDENTITY_FIELDS.filter(([k]) => !IDENTITY_ESSENTIELS.has(k));
+  const dejaRempli = reste.some(([k]) => (identityCache.champs[k] || []).length);
+
+  wrap.innerHTML = `
+    <div class="identity-essentiels">${essentiels.map(champ).join('')}</div>
+    <details class="identity-reste"${dejaRempli ? ' open' : ''}>
+      <summary data-i18n="ajouter_emails_ecoles_employeurs">Ajouter emails, écoles, employeurs, pseudos…</summary>
+      <div class="identity-fields">${reste.map(champ).join('')}</div>
+    </details>`;
+  appliquerTraductions(wrap);
 }
 
 function fillIdentityForm() {

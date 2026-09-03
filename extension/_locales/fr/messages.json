@@ -386,5 +386,17 @@
   },
   "glisse_un_fichier_ici": {
     "message": "Glisse un fichier ici, ou clique pour le choisir"
+  },
+  "ajouter_emails_ecoles_employeurs": {
+    "message": "Ajouter emails, écoles, employeurs, pseudos…"
+  },
+  "deja_couverts_sans_rien_declarer": {
+    "message": "Emails, téléphones, IBAN : déjà repérés sans rien déclarer. Ton nom, lui, dépend d’un modèle — et un modèle rate parfois."
+  },
+  "suggestion_identite": {
+    "message": "Une personne a été détectée. Si c’est toi, ajoute ton nom pour qu’il soit toujours masqué."
+  },
+  "ajouter": {
+    "message": "Ajouter"
   }
 }

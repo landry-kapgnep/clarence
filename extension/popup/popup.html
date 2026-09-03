@@ -339,7 +339,15 @@
              ça reste. Le reste était de la réassurance répétée. -->
         <p class="hint"><strong data-i18n="toujours_masquees">Toujours masquées</strong>, sans dépendre de la
         détection. Tout reste <strong data-i18n="sur_cette_machine">sur cette machine</strong>.</p>
-        <div id="identityFields" class="identity-fields"></div>
+        <!-- CE QUI EST DÉJÀ ACQUIS, dit avant ce qui manque.
+             L'effet de progrès doté (Nunes & Drèze) : une tâche présentée comme
+             déjà entamée est bien plus souvent terminée qu'une tâche à zéro. La
+             différence ici, c'est que le progrès est VRAI — la couche
+             déterministe couvre réellement emails, téléphones et IBAN sans
+             qu'on déclare quoi que ce soit. On ne fabrique pas une jauge, on
+             dit une chose exacte qu'on ne disait pas. -->
+        <p class="hint identity-acquis" data-i18n="deja_couverts_sans_rien_declarer">Emails, téléphones, IBAN : déjà repérés sans rien déclarer. Ton nom, lui, dépend d’un modèle — et un modèle rate parfois.</p>
+        <div id="identityFields"></div>
         <div class="controls identity-actions">
           <button class="btn-primary" id="identitySaveBtn" data-i18n="enregistrer">Enregistrer</button>
           <button class="btn-ghost" id="identityLaterBtn" data-i18n="plus_tard">Plus tard</button>

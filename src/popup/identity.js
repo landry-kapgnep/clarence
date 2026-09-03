@@ -24,6 +24,19 @@ export const IDENTITY_KEY = 'clarenceIdentity';
 // on ne redemande pas, la modale reste accessible par le lien).
 // Champs multi-valeurs : un terme par ligne, comme les zones « Toujours
 // masquer » — même convention, même parsing.
+// LES DEUX CHAMPS QUI PORTENT LE RISQUE, et qui suffisent à l'accueil.
+//
+// Onze champs demandés avant d'avoir rien obtenu, c'est un mur : la recherche
+// sur l'inscription progressive dit de n'en demander qu'un ou deux, et de
+// récolter le reste plus tard, au fil de l'usage.
+//
+// Ce sont ceux-là parce qu'ils sont les seuls que RIEN d'autre ne couvre.
+// Emails, téléphones, IBAN et NIR sont déjà repérés par la couche déterministe
+// — regex validées mathématiquement — sans que l'utilisateur déclare quoi que
+// ce soit. Un nom, lui, dépend entièrement d'un modèle statistique, et le
+// modèle rate (fuite mesurée sur un CV titré « LANDRY KAPGNEP »).
+export const IDENTITY_ESSENTIELS = new Set(['prenom', 'nom']);
+
 export const IDENTITY_FIELDS = [
   ['prenom', 'Prénom(s)'],
   ['nom', 'Nom(s) de famille'],
