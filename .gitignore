@@ -27,3 +27,8 @@ tests/regression/instantanes/*.clair.json
 # Corpus synthétique généré : volumineux et reproductible en une commande
 # (tools/corpus/generer.mjs). Le générateur est committé, sa sortie non.
 *.jsonl
+
+# Sorties de mesure : reproductibles par les scripts, jamais des sources.
+# (Le harnais de régression tourne sur de VRAIS documents ; ses instantanés en
+#  clair sont déjà exclus plus haut, mais mieux vaut deux barrières qu une.)
+tools/filtre/*.txt
