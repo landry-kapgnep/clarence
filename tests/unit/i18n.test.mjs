@@ -24,8 +24,14 @@ const HORS_PAGE = new Set(['extName', 'extDescription']);
 const SOURCES_JS = ['../../src/popup/main.js', '../../src/popup/profiles.js'];
 
 const clesUtilisees = () => {
+  // Suffixe GÉNÉRIQUE, et non la liste des attributs connus. Cette liste avait
+  // déjà pris du retard une fois : `data-i18n-alt` — qui porte le nom
+  // accessible des boutons-images — n'y figurait pas, et ses clés passaient
+  // pour orphelines. Un scanner qu'il faut penser à mettre à jour finit
+  // toujours par mentir. Le contrat réel est « data-i18n, éventuellement
+  // suivi d'un tiret et d'un nom d'attribut » : c'est ça qu'on écrit.
   const vues = new Set(
-    [...html.matchAll(/data-i18n(?:-html|-title|-placeholder|-aria)?="([^"]+)"/g)].map(m => m[1])
+    [...html.matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)].map(m => m[1])
   );
   for (const f of SOURCES_JS) {
     // `[,)]` et non `)` seul : un message PARAMÉTRÉ s'écrit msg('clé', [...]),

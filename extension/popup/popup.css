@@ -1345,3 +1345,16 @@ td.map-occ {
 }
 .suggestion-txt { flex: 1 1 auto; min-width: 0; }
 .suggestion .profile-btn { flex: 0 0 auto; }
+
+/* Lu par les lecteurs d'écran, invisible à l'œil.
+   `display:none` et `visibility:hidden` retireraient l'élément de l'arbre
+   d'accessibilité aussi — ce qu'on ne veut pas : le <h1> porte le nom du
+   produit, que le logo ne donne qu'en image. */
+.visuellement-cache {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}

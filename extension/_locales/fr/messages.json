@@ -353,5 +353,29 @@
   },
   "format_bancaire": {
     "message": "relevé bancaire"
+  },
+  "mode_texte": {
+    "message": "Mode texte"
+  },
+  "mode_fichier": {
+    "message": "Mode fichier"
+  },
+  "choisir_un_fichier": {
+    "message": "Choisir un fichier"
+  },
+  "telecharger": {
+    "message": "Télécharger"
+  },
+  "langue_des_pseudonymes": {
+    "message": "Langue des pseudonymes"
+  },
+  "profil_danonymisation": {
+    "message": "Profil d’anonymisation"
+  },
+  "taux_de_compression": {
+    "message": "Taux de compression"
+  },
+  "reponse_a_desanonymiser": {
+    "message": "Réponse à désanonymiser"
   }
 }

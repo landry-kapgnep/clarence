@@ -32,3 +32,9 @@ tests/regression/instantanes/*.clair.json
 # (Le harnais de régression tourne sur de VRAIS documents ; ses instantanés en
 #  clair sont déjà exclus plus haut, mais mieux vaut deux barrières qu une.)
 tools/filtre/*.txt
+
+# Secrets. Aucun aujourd hui (le produit n a pas de backend), et cette ligne
+# est là pour que ça reste vrai le jour où quelqu un en pose un par réflexe.
+.env
+.env.*
+!.env.example

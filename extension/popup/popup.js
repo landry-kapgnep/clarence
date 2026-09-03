@@ -17,7 +17,7 @@ import {
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-B5QMX5X6.js";
+} from "./chunk-G7IRYCBG.js";
 import {
   createBatchedPipeline
 } from "./chunk-IT5BP6N7.js";
@@ -1192,7 +1192,11 @@ var msg = (cle, sub) => (typeof chrome !== "undefined" && chrome.i18n?.getMessag
 var ATTRIBUTS = [
   ["i18nTitle", "title"],
   ["i18nPlaceholder", "placeholder"],
-  ["i18nAria", "aria-label"]
+  ["i18nAria", "aria-label"],
+  // `alt` porte le NOM ACCESSIBLE des boutons-images (Copier, Télécharger) :
+  // le mot y est cuit dans le bitmap, donc invisible autrement. Sans cette
+  // ligne, ces boutons resteraient en français pour un lecteur d'écran anglais.
+  ["i18nAlt", "alt"]
 ];
 function appliquerTraductions(racine = document) {
   for (const el of racine.querySelectorAll("[data-i18n]")) {
@@ -2085,7 +2089,7 @@ async function ensureNER() {
     });
     nerPipe = nerEngine === "gliner" ? createBatchedPipeline((texts, labels) => envoyer({ texts, labels })) : (text, labels) => envoyer({ text, labels });
   } catch (err) {
-    console.error(err);
+    console.error("[clarence]", err);
   } finally {
     nerLoading = false;
   }
@@ -2218,7 +2222,7 @@ async function analyze() {
     render();
     renderEngineBadge("engineBadge");
   } catch (err) {
-    console.error(err);
+    console.error("[clarence]", err);
     $("results").hidden = true;
     setStatus("Analyse \xE9chou\xE9e \u2014 rien n\u2019a \xE9t\xE9 masqu\xE9, ne colle pas ce texte. D\xE9tail dans la console.", "error");
   } finally {
@@ -2555,7 +2559,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-XNAK42LN.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-RP35563R.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -2568,7 +2572,7 @@ async function retirerDuMasquage(valeur) {
       fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
       mapping = res.mapping;
     } else {
-      const { anonymizeUnits } = await import("./anonymize-units-PVEZVLIJ.js");
+      const { anonymizeUnits } = await import("./anonymize-units-M5MYREHZ.js");
       const { results, mapping: m } = await anonymizeUnits(r.units, {
         entitesConnues: r.entites,
         intitules: r.intitules,
@@ -2585,7 +2589,7 @@ async function retirerDuMasquage(valeur) {
     showFileResults(mapping, r.kind.mime.startsWith("text/"));
     fileSetStatus(`\xAB ${valeur} \xBB n\u2019est plus masqu\xE9.`);
   } catch (err) {
-    console.error(err);
+    console.error("[clarence]", err);
     champ.value = avant;
     rendreApercuTermes();
     fileSetStatus("Mise \xE0 jour impossible. D\xE9tail en console.", "error");
@@ -3141,7 +3145,7 @@ async function processFile() {
       fileSetStatus(msg("etat_lecture_pdf"));
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-XNAK42LN.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-RP35563R.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -3172,7 +3176,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-PVEZVLIJ.js");
+    const { anonymizeUnits } = await import("./anonymize-units-M5MYREHZ.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -3247,7 +3251,7 @@ async function processFile() {
     fileSetStatus("");
   } catch (err) {
     if (estAnnulation(err)) return;
-    console.error(err);
+    console.error("[clarence]", err);
     if (!courant()) return;
     fileOutBlob = null;
     compressionInfo = null;
@@ -3279,7 +3283,10 @@ async function downloadFile() {
 for (const btn of document.querySelectorAll(".mode-btn")) {
   btn.addEventListener("click", () => {
     const mode = btn.dataset.mode;
-    for (const b of document.querySelectorAll(".mode-btn")) b.classList.toggle("active", b === btn);
+    for (const b of document.querySelectorAll(".mode-btn")) {
+      b.classList.toggle("active", b === btn);
+      b.setAttribute("aria-pressed", String(b === btn));
+    }
     $("textMode").hidden = mode !== "text";
     $("fileMode").hidden = mode !== "file";
     $("reinjectZone").hidden = true;

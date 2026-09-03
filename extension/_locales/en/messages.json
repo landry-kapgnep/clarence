@@ -353,5 +353,29 @@
   },
   "format_bancaire": {
     "message": "bank statement"
+  },
+  "mode_texte": {
+    "message": "Text mode"
+  },
+  "mode_fichier": {
+    "message": "File mode"
+  },
+  "choisir_un_fichier": {
+    "message": "Choose a file"
+  },
+  "telecharger": {
+    "message": "Download"
+  },
+  "langue_des_pseudonymes": {
+    "message": "Pseudonym language"
+  },
+  "profil_danonymisation": {
+    "message": "Anonymisation profile"
+  },
+  "taux_de_compression": {
+    "message": "Compression level"
+  },
+  "reponse_a_desanonymiser": {
+    "message": "Response to de-anonymise"
   }
 }

@@ -28,7 +28,11 @@ export const msg = (cle, sub) =>
 const ATTRIBUTS = [
   ['i18nTitle', 'title'],
   ['i18nPlaceholder', 'placeholder'],
-  ['i18nAria', 'aria-label']
+  ['i18nAria', 'aria-label'],
+  // `alt` porte le NOM ACCESSIBLE des boutons-images (Copier, Télécharger) :
+  // le mot y est cuit dans le bitmap, donc invisible autrement. Sans cette
+  // ligne, ces boutons resteraient en français pour un lecteur d'écran anglais.
+  ['i18nAlt', 'alt']
 ];
 
 // Applique les traductions à une racine — le document au chargement, ou un

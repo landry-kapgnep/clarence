@@ -413,7 +413,7 @@ async function ensureNER() {
       ? createBatchedPipeline((texts, labels) => envoyer({ texts, labels }))
       : (text, labels) => envoyer({ text, labels });
   } catch (err) {
-    console.error(err);
+    console.error('[clarence]', err);
     // Le regex tourne quand même : mieux vaut un résultat partiel signalé
     // clairement qu'un blocage total sur une simple erreur réseau.
   } finally {
@@ -651,7 +651,7 @@ async function analyze() {
   } catch (err) {
     // Ne JAMAIS échouer en silence : l'utilisateur pourrait coller un texte
     // qu'il croit analysé.
-    console.error(err);
+    console.error('[clarence]', err);
     $('results').hidden = true;
     setStatus('Analyse échouée — rien n’a été masqué, ne colle pas ce texte. Détail dans la console.', 'error');
   } finally {
@@ -1154,7 +1154,7 @@ async function retirerDuMasquage(valeur) {
     showFileResults(mapping, r.kind.mime.startsWith('text/'));
     fileSetStatus(`« ${valeur} » n’est plus masqué.`);
   } catch (err) {
-    console.error(err);
+    console.error('[clarence]', err);
     // Le fichier précédent reste valide et téléchargeable : on ne le remplace
     // que si la régénération a abouti. Mieux vaut un retrait sans effet qu'un
     // résultat à moitié réécrit.
@@ -2115,7 +2115,7 @@ async function processFile() {
     // et masquerait les vrais échecs dans le bruit. `annulerRunFichier` a déjà
     // remis l'UI en état, il n'y a rien à ajouter.
     if (estAnnulation(err)) return;
-    console.error(err);
+    console.error('[clarence]', err);
     // Un run périmé ne doit pas afficher son erreur par-dessus le run courant.
     if (!courant()) return;
     fileOutBlob = null;
@@ -2157,7 +2157,13 @@ async function downloadFile() {
 for (const btn of document.querySelectorAll('.mode-btn')) {
   btn.addEventListener('click', () => {
     const mode = btn.dataset.mode;
-    for (const b of document.querySelectorAll('.mode-btn')) b.classList.toggle('active', b === btn);
+    for (const b of document.querySelectorAll('.mode-btn')) {
+      b.classList.toggle('active', b === btn);
+      // L'état ACTIF doit être lisible autrement qu'à la couleur : sans
+      // aria-pressed, un lecteur d'écran annonce deux boutons identiques
+      // et rien ne dit lequel est en cours.
+      b.setAttribute('aria-pressed', String(b === btn));
+    }
     $('textMode').hidden = mode !== 'text';
     $('fileMode').hidden = mode !== 'file';
     // Replie la zone de désanonymisation en changeant de mode : un résultat

@@ -24,17 +24,17 @@
           <img class="logo" src="img/ClarenceLogoRedSquareWAlt.png" alt="Clarence">
         </div>
         <div>
-          <h1></h1>
+          <h1 class="visuellement-cache">Clarence</h1>
         </div>
       </header>
 
       <div class="mode-switch">
-        <button class="mode-btn txtmode active" id="modeTextBtn" data-mode="text"><img src="img/ClarenceTxtW.png"></button>
-        <button class="mode-btn filemode" id="modeFileBtn" data-mode="file"><img src="img/ClarenceFlW.png"></button>
+        <button class="mode-btn txtmode active" id="modeTextBtn" data-mode="text" aria-pressed="true" aria-label="Mode texte" data-i18n-aria="mode_texte"><img src="img/ClarenceTxtW.png" alt="" aria-hidden="true"></button>
+        <button class="mode-btn filemode" id="modeFileBtn" data-mode="file" aria-pressed="false" aria-label="Mode fichier" data-i18n-aria="mode_fichier"><img src="img/ClarenceFlW.png" alt="" aria-hidden="true"></button>
       </div>
 
       <div id="textMode">
-      <label class="field-label" for="input"></label> <span data-i18n="texte">Texte</span>
+      <label class="field-label" for="input"><span data-i18n="texte">Texte</span></label>
       <textarea id="input" placeholder="..."></textarea>
 
       <div class="controls">
@@ -57,7 +57,7 @@
         </label>
         <label class="option-sous" id="pseudoLocaleLabel" hidden>
           Langue
-          <select id="pseudoLocale" class="mini-select">
+          <select id="pseudoLocale" aria-label="Langue des pseudonymes" data-i18n-aria="langue_des_pseudonymes" class="mini-select">
             <option value="fr" data-i18n="francais">Français</option>
             <option value="en" data-i18n="anglais">Anglais</option>
           </select>
@@ -68,7 +68,7 @@
         <summary data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
         <div class="custom-body">
           <div class="profile-bar">
-            <select id="profileSelect" class="profile-select"></select>
+            <select id="profileSelect" aria-label="Profil d’anonymisation" data-i18n-aria="profil_danonymisation" class="profile-select"></select>
             <button class="btn-ghost profile-btn" id="profileSaveBtn" title="Enregistrer dans ce profil" data-i18n-title="enregistrer_dans_ce_profil" data-i18n="enregistrer">Enregistrer</button>
             <button class="btn-ghost profile-btn" id="profileNewBtn" title="Nouveau profil depuis ces réglages" data-i18n-title="nouveau_profil_depuis_ces_reglages" data-i18n="nouveau">Nouveau</button>
             <button class="btn-ghost profile-btn" id="profileDeleteBtn" title="Supprimer ce profil" data-i18n-title="supprimer_ce_profil" data-i18n="suppr">Suppr.</button>
@@ -106,7 +106,7 @@
         <div class="panel" id="masked"></div>
         <button class="btn-ghost overlay-trigger" id="maskedMoreBtn" hidden data-i18n="voir_tout">Voir tout</button>
         <div class="controls">
-          <button class="btn-primary" id="copyBtn"><img src="img/ClarenceCpButtonW.png" class ="cpbtn"></button>
+          <button class="btn-primary" id="copyBtn"><img src="img/ClarenceCpButtonW.png" class="cpbtn" alt="Copier" data-i18n-alt="copier"></button>
           <span class="status" id="copyStatus"></span>
         </div>
 
@@ -118,10 +118,10 @@
       </div>
 
       <div id="fileMode" hidden>
-        <label class="field-label" for="input"></label> <span data-i18n="fichier">Fichier</span>
+        <label class="field-label" for="fileInput"><span data-i18n="fichier">Fichier</span></label>
         <div class="dropzone" id="dropzone">
           <input type="file" id="fileInput" accept=".csv,.xlsx,.docx,.pdf,.jpg,.jpeg,.png" hidden>
-          <p class="dropzone-main"><button class="link-btn" id="filePickBtn"><img src="img/ClarenceFlW.png" class ="cpbtn"></button></p>
+          <p class="dropzone-main"><button class="link-btn" id="filePickBtn"><img src="img/ClarenceFlW.png" class="cpbtn" alt="Choisir un fichier" data-i18n-alt="choisir_un_fichier"></button></p>
           <p class="hint">CSV, XLSX, DOCX, PDF, JPG, PNG</p>
         </div>
 
@@ -187,14 +187,14 @@
 
           <label class="option-sous" id="filePseudoLocaleLabel" hidden>
             Langue
-            <select id="filePseudoLocale" class="mini-select">
+            <select id="filePseudoLocale" aria-label="Langue des pseudonymes" data-i18n-aria="langue_des_pseudonymes" class="mini-select">
               <option value="fr" data-i18n="francais">Français</option>
               <option value="en" data-i18n="anglais">Anglais</option>
             </select>
           </label>
           <label class="option-sous" id="fileCompressTauxLabel" hidden>
             Texte conservé
-            <select id="fileCompressTaux" class="mini-select">
+            <select id="fileCompressTaux" aria-label="Taux de compression" data-i18n-aria="taux_de_compression" class="mini-select">
               <option value="0.7">70 %</option>
               <option value="0.5" selected>50 %</option>
               <option value="0.3">30 %</option>
@@ -224,7 +224,7 @@
           <summary data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
           <div class="custom-body">
             <div class="profile-bar">
-              <select id="fileProfileSelect" class="profile-select"></select>
+              <select id="fileProfileSelect" aria-label="Profil d’anonymisation" data-i18n-aria="profil_danonymisation" class="profile-select"></select>
               <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer dans ce profil" data-i18n-title="enregistrer_dans_ce_profil" data-i18n="enregistrer">Enregistrer</button>
               <button class="btn-ghost profile-btn" id="fileProfileNewBtn" title="Nouveau profil depuis ces réglages" data-i18n-title="nouveau_profil_depuis_ces_reglages" data-i18n="nouveau">Nouveau</button>
               <button class="btn-ghost profile-btn" id="fileProfileDeleteBtn" title="Supprimer ce profil" data-i18n-title="supprimer_ce_profil" data-i18n="suppr">Suppr.</button>
@@ -270,7 +270,7 @@
         <section id="fileResults" hidden>
           <h2 data-i18n="resultat">Résultat</h2>
           <div class="controls">
-            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png"></button>
+            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png" alt="Télécharger" data-i18n-alt="telecharger"></button>
             <button class="btn-ghost" id="fileCopyBtn" hidden data-i18n="copier">Copier</button>
             <button id="dragCard" class="drag-card" hidden>
               <span class="drag-card-icon">⇢</span>
@@ -294,7 +294,7 @@
         </div>
         <div id="reinjectZone" hidden>
           <h2 data-i18n="desanonymiser">Désanonymiser </h2>
-          <textarea id="reinjectInput" placeholder="Colle la réponse contenant [PERSONNE_1], [EMAIL_1]…" data-i18n-placeholder="colle_la_reponse_contenant_personne_1_email"></textarea>
+          <textarea id="reinjectInput" aria-label="Réponse à désanonymiser" data-i18n-aria="reponse_a_desanonymiser" placeholder="Colle la réponse contenant [PERSONNE_1], [EMAIL_1]…" data-i18n-placeholder="colle_la_reponse_contenant_personne_1_email"></textarea>
           <div class="controls">
             <button class="btn-primary" id="reinjectBtn" data-i18n="desanonymiser">Désanonymiser</button>
             <button class="btn-ghost" id="copyReinjectBtn" hidden data-i18n="copier">Copier</button>
