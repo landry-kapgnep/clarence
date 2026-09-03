@@ -1268,10 +1268,21 @@ td.map-occ {
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--paper-dim);
-  opacity: .6;
   text-align: left;
-  padding-bottom: 4px;
+  padding: 2px 0 4px;
   border-bottom: 1px solid var(--line-soft);
+  /* LA LÉGENDE RESTE EN TÊTE. Le conteneur défile (max-height + overflow-y),
+     et l'en-tête partait avec lui : passé trois lignes, on ne savait plus
+     laquelle des deux colonnes d'action était « garder ». Un tableau dont la
+     légende s'échappe est un tableau qu'on relit en devinant.
+     ⚠️ FOND OPAQUE OBLIGATOIRE — c'est le même piège que la carte modale : les
+     lignes défilent DERRIÈRE, et la moindre transparence les laisserait passer
+     au travers du titre. `opacity` sur l'élément entier ferait exactement ça,
+     d'où sa disparition ici au profit d'une couleur de texte. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-field);
 }
 #fileMappingWrap thead th.map-act,
 #fileMappingWrap thead th.map-occ { text-align: center; }
