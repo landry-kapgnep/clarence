@@ -88,6 +88,14 @@
       </div>
       <div class="engine-badge" id="engineBadge" hidden></div>
       <div class="status" id="status"></div>
+      <!-- Suggestion de profil : PROPOSE, n'applique jamais tout seul. Voir
+           src/engine/type-document.js — un masquage changé en silence casserait
+           l'UX de relecture, qui est la colonne vertébrale du produit. -->
+      <div class="suggestion" id="profileSuggest" hidden>
+        <span class="suggestion-txt" id="profileSuggestTxt"></span>
+        <button class="btn-ghost profile-btn" id="profileSuggestApply" data-i18n="appliquer">Appliquer</button>
+        <button class="btn-ghost profile-btn" id="profileSuggestDismiss" title="Ignorer" data-i18n-title="ignorer">×</button>
+      </div>
 
       <section id="results" hidden>
         <h2 data-i18n="detections">Détections</h2>
@@ -250,6 +258,14 @@
         <div id="fileEtapes"></div>
         <div class="engine-badge" id="fileEngineBadge" hidden></div>
         <div class="status" id="fileStatus"></div>
+        <!-- Suggestion de profil : PROPOSE, n'applique jamais tout seul. Voir
+           src/engine/type-document.js — un masquage changé en silence casserait
+           l'UX de relecture, qui est la colonne vertébrale du produit. -->
+        <div class="suggestion" id="fileProfileSuggest" hidden>
+          <span class="suggestion-txt" id="fileProfileSuggestTxt"></span>
+          <button class="btn-ghost profile-btn" id="fileProfileSuggestApply" data-i18n="appliquer">Appliquer</button>
+          <button class="btn-ghost profile-btn" id="fileProfileSuggestDismiss" title="Ignorer" data-i18n-title="ignorer">×</button>
+        </div>
 
         <section id="fileResults" hidden>
           <h2 data-i18n="resultat">Résultat</h2>

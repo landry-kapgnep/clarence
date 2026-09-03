@@ -1328,3 +1328,20 @@ td.map-occ {
    dès que le « ? » approche un bord, et aucune règle CSS statique ne couvre
    les deux bords à la fois sans se répéter par emplacement. */
 .info-tip-box { max-width: min(240px, calc(100vw - 32px)); }
+
+/* Suggestion de profil — discrète par construction : elle PROPOSE, et une
+   proposition qui crie serait vite ignorée. Ton d'accent léger, jamais rouge :
+   ce n'est ni une alerte ni une erreur. */
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-soft, rgba(127, 127, 127, .08));
+  font-size: 12px;
+}
+.suggestion-txt { flex: 1 1 auto; min-width: 0; }
+.suggestion .profile-btn { flex: 0 0 auto; }

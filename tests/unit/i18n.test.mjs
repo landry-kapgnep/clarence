@@ -28,11 +28,17 @@ const clesUtilisees = () => {
     [...html.matchAll(/data-i18n(?:-html|-title|-placeholder|-aria)?="([^"]+)"/g)].map(m => m[1])
   );
   for (const f of SOURCES_JS) {
-    for (const m of lire(f).matchAll(/msg\('([^']+)'\)/g)) vues.add(m[1]);
+    // `[,)]` et non `)` seul : un message PARAMÉTRÉ s'écrit msg('clé', [...]),
+    // et le scanner le manquait — il déclarait alors orpheline une clé bel et
+    // bien utilisée.
+    for (const m of lire(f).matchAll(/msg\('([^']+)'\s*[,)]/g)) vues.add(m[1]);
   }
   // Les noms de profils livrés servent de clé d'AFFICHAGE, résolue au rendu
   // depuis le nom interne : ils n'apparaissent donc pas littéralement.
   for (const k of Object.keys(fr)) if (k.startsWith('profil_')) vues.add(k);
+  // Même cas : le nom lisible d'un format se résout par msg('format_' + type),
+  // la clé n'apparaît donc jamais littéralement dans le source.
+  for (const k of Object.keys(fr)) if (k.startsWith('format_')) vues.add(k);
   return vues;
 };
 const clesDeLaPage = clesUtilisees;

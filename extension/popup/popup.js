@@ -487,8 +487,708 @@ function composerArbitre(pipe, arbitrerFauxPositifs2) {
   return async (entities, texte) => filtrerParPrecision(await arbitrerFauxPositifs2(entities, pipe), texte);
 }
 
+// src/engine/vocabulaire-formats.js
+var FORMATS = ["cv", "administratif", "scolaire", "bancaire"];
+var MOTS_DE_FORME = {
+  cv: {
+    fr: [
+      "exp\xE9riences professionnelles",
+      "exp\xE9rience professionnelle",
+      "comp\xE9tences",
+      "curriculum vitae",
+      "parcours professionnel",
+      "centres d\u2019int\xE9r\xEAt",
+      "langues parl\xE9es",
+      "dipl\xF4mes",
+      "certifications"
+    ],
+    en: [
+      "work experience",
+      "professional experience",
+      "skills",
+      "core skills",
+      "curriculum vitae",
+      "r\xE9sum\xE9",
+      "career summary",
+      "certifications"
+    ],
+    es: [
+      "experiencia laboral",
+      "experiencia profesional",
+      "competencias",
+      "curr\xEDculum v\xEDtae",
+      "curr\xEDculum",
+      "formaci\xF3n acad\xE9mica",
+      "idiomas"
+    ],
+    de: [
+      "berufserfahrung",
+      "lebenslauf",
+      "kenntnisse",
+      "qualifikationen",
+      "werdegang",
+      "weiterbildung"
+    ],
+    pt: [
+      "experi\xEAncia profissional",
+      "compet\xEAncias",
+      "curr\xEDculo",
+      "forma\xE7\xE3o acad\xE9mica",
+      "habilita\xE7\xF5es"
+    ]
+  },
+  administratif: {
+    fr: [
+      "r\xE9publique fran\xE7aise",
+      "minist\xE8re",
+      "certificat de scolarit\xE9",
+      "attestation",
+      "je soussign\xE9",
+      "je soussign\xE9e",
+      "certifie que",
+      "fait \xE0",
+      "bulletin num\xE9ro",
+      "casier judiciaire",
+      "\xE9tat civil",
+      "compte rendu",
+      "entretien professionnel",
+      "ressources humaines"
+    ],
+    en: [
+      "hereby certify",
+      "affidavit",
+      "official record",
+      "issued at",
+      "registration number",
+      "to whom it may concern"
+    ],
+    es: [
+      "certifica que",
+      "hace constar",
+      "ministerio",
+      "expediente",
+      "documento nacional de identidad"
+    ],
+    de: [
+      "bescheinigung",
+      "hiermit wird bescheinigt",
+      "ausgestellt am",
+      "aktenzeichen",
+      "beh\xF6rde"
+    ],
+    pt: ["certid\xE3o", "certifica que", "minist\xE9rio", "requerimento", "declara\xE7\xE3o"]
+  },
+  scolaire: {
+    fr: [
+      "sommaire",
+      "introduction",
+      "conclusion",
+      "bibliographie",
+      "remerciements",
+      "rapport de stage",
+      "probl\xE9matique",
+      "annexes",
+      "table des mati\xE8res",
+      "soutenance",
+      "travaux dirig\xE9s",
+      "travaux pratiques",
+      "contr\xF4le continu",
+      "relev\xE9 de notes"
+    ],
+    en: [
+      "table of contents",
+      "introduction",
+      "conclusion",
+      "bibliography",
+      "acknowledgements",
+      "appendix",
+      "abstract",
+      "dissertation",
+      "coursework"
+    ],
+    es: [
+      "\xEDndice",
+      "introducci\xF3n",
+      "conclusi\xF3n",
+      "bibliograf\xEDa",
+      "agradecimientos",
+      "anexos",
+      "resumen"
+    ],
+    de: [
+      "inhaltsverzeichnis",
+      "einleitung",
+      "fazit",
+      "literaturverzeichnis",
+      "danksagung",
+      "anhang",
+      "zusammenfassung"
+    ],
+    pt: [
+      "\xEDndice",
+      "introdu\xE7\xE3o",
+      "conclus\xE3o",
+      "bibliografia",
+      "agradecimentos",
+      "anexos",
+      "resumo"
+    ]
+  },
+  bancaire: {
+    fr: [
+      "relev\xE9 de compte",
+      "titulaire du compte",
+      "solde cr\xE9diteur",
+      "solde d\xE9biteur",
+      "virement",
+      "pr\xE9l\xE8vement",
+      "date de valeur"
+    ],
+    en: [
+      "account statement",
+      "account holder",
+      "opening balance",
+      "closing balance",
+      "wire transfer",
+      "direct debit"
+    ],
+    es: ["extracto de cuenta", "titular de la cuenta", "saldo", "transferencia"],
+    de: ["kontoauszug", "kontoinhaber", "kontostand", "\xFCberweisung", "lastschrift"],
+    pt: ["extrato de conta", "titular da conta", "saldo", "transfer\xEAncia"]
+  }
+};
+function motsDeForme(format) {
+  const parLangue = MOTS_DE_FORME[format] || {};
+  return [...new Set(Object.values(parLangue).flat())];
+}
+var TOUS_LES_MOTS_DE_FORME = [
+  ...new Set(FORMATS.flatMap(motsDeForme))
+];
+
+// src/engine/type-document.js
+var POINTS_DE_SUITE = /\.{4,}\s*\d+\s*$/;
+var ENTETE_EMAIL = /^(?:From|To|Cc|Subject|Sent|De|À|Objet|Envoyé)\s*:/i;
+var PAIRE_LIBELLE = /^\s*[^\s:][^:\n]{1,28}(?::\s+|\s{2,})\S/;
+var PUCE = /^\s*[•·▪◦‣*·]|(?:\s[•·▪◦‣]\s)/;
+var PLAGE_DE_DATES = /(?:1[89]|20)\d{2}\s*[-–—à]\s*(?:(?:1[89]|20)\d{2}|en cours|présent|aujourd)/i;
+var normaliser = (t) => " " + String(t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ";
+var MARQUEURS_NORMALISES = Object.fromEntries(
+  FORMATS.map((f) => [f, motsDeForme(f).map((m) => normaliser(m).slice(1, -1))])
+);
+var ECART_MINIMAL = 1.5;
+var compterLignes = (lignes, motif) => lignes.filter((l) => motif.test(l)).length;
+function analyserTypeDocument(texte, { entites = [] } = {}) {
+  const brut = String(texte || "");
+  const lignes = brut.split(/\r?\n/).filter((l) => l.trim());
+  if (lignes.length < 3) return { type: null, score: 0, indices: [] };
+  const normalise = normaliser(brut);
+  const n = lignes.length;
+  const points = { cv: 0, administratif: 0, scolaire: 0, bancaire: 0, email: 0 };
+  const indices = [];
+  const noter = (type, valeur, raison) => {
+    if (valeur <= 0) return;
+    points[type] += valeur;
+    indices.push({ type, raison, valeur: Number(valeur.toFixed(2)) });
+  };
+  const sommaire = compterLignes(lignes, POINTS_DE_SUITE);
+  noter("scolaire", Math.min(sommaire, 8) * 0.6, `${sommaire} ligne(s) de sommaire`);
+  const enTete = compterLignes(lignes.slice(0, 8), ENTETE_EMAIL);
+  noter("email", enTete >= 2 ? 3 + enTete : 0, `${enTete} en-t\xEAte(s) d'e-mail`);
+  const paires = compterLignes(lignes, PAIRE_LIBELLE) / n;
+  noter("administratif", paires > 0.3 ? paires * 4 : 0, `${(paires * 100).toFixed(0)} % de paires libell\xE9/valeur`);
+  const puces = compterLignes(lignes, PUCE) / n;
+  noter("cv", puces > 0.1 ? puces * 6 : 0, `${(puces * 100).toFixed(0)} % de lignes \xE0 puces`);
+  const plages = compterLignes(lignes, PLAGE_DE_DATES);
+  noter("cv", Math.min(plages, 5) * 0.5, `${plages} plage(s) de dates`);
+  const longueurMoyenne = brut.length / n;
+  noter("scolaire", longueurMoyenne > 120 ? 1.5 : 0, `lignes longues (${longueurMoyenne.toFixed(0)} c.)`);
+  noter("cv", longueurMoyenne < 70 ? 1 : 0, `lignes courtes (${longueurMoyenne.toFixed(0)} c.)`);
+  const bancaires = entites.filter((e) => e.type === "IBAN" || e.type === "BIC").length;
+  const montants = entites.filter((e) => e.type === "MONTANT").length;
+  noter(
+    "bancaire",
+    bancaires * 2 + (montants > 5 ? 2 : 0),
+    `${bancaires} IBAN/BIC, ${montants} montant(s)`
+  );
+  for (const [type, marqueurs] of Object.entries(MARQUEURS_NORMALISES)) {
+    const trouves = marqueurs.filter((m) => normalise.includes(" " + m + " "));
+    noter(type, trouves.length * 0.8, `mots : ${trouves.join(", ")}`);
+  }
+  const classement = Object.entries(points).sort((a, b) => b[1] - a[1]);
+  const [premier, valeurPremier] = classement[0];
+  const ecart = valeurPremier - classement[1][1];
+  const sur = indices.filter((i) => i.type === premier);
+  return {
+    type: ecart >= ECART_MINIMAL && valeurPremier > 0 ? premier : null,
+    score: Number(valeurPremier.toFixed(2)),
+    ecart: Number(ecart.toFixed(2)),
+    indices: sur,
+    classement: classement.map(([t, v]) => [t, Number(v.toFixed(2))])
+  };
+}
+
+// src/popup/profiles.js
+var PROFILES_KEY = "clarenceProfiles";
+var PROFILES_ECARTES_KEY = "clarenceProfilsEcartes";
+var TECH_KEEP = [
+  "React",
+  "Angular",
+  "Vue",
+  "Svelte",
+  "Node",
+  "Node.js",
+  "Deno",
+  "Next.js",
+  "Python",
+  "Java",
+  "Kotlin",
+  "Go",
+  "Rust",
+  "PHP",
+  "Ruby",
+  "Scala",
+  "C++",
+  "C#",
+  "FastAPI",
+  "Django",
+  "Flask",
+  "Fastify",
+  "Express",
+  "Spring",
+  "Laravel",
+  "Symfony",
+  "Prisma",
+  "Sequelize",
+  "Hibernate",
+  "TypeORM",
+  "MongoDB",
+  "PostgreSQL",
+  "MySQL",
+  "MariaDB",
+  "Redis",
+  "SQLite",
+  "Elasticsearch",
+  "Cassandra",
+  "Docker",
+  "Kubernetes",
+  "Podman",
+  "Terraform",
+  "Ansible",
+  "Ollama",
+  "PyTorch",
+  "TensorFlow",
+  "Keras",
+  "Scikit-learn",
+  "NumPy",
+  "Pandas",
+  "Hugging Face",
+  "Git",
+  "GitHub",
+  "GitLab",
+  "Bitbucket",
+  "Jenkins",
+  "CircleCI",
+  "Linux",
+  "Ubuntu",
+  "Debian",
+  "Bash",
+  "Nginx",
+  "Apache",
+  "AWS",
+  "Azure",
+  "GCP",
+  "Vercel",
+  "Netlify",
+  "Heroku",
+  "Cloudflare",
+  "Kafka",
+  "Spark",
+  "Airflow",
+  "Hadoop",
+  "Hive",
+  "Sqoop",
+  "RabbitMQ",
+  "GraphQL",
+  "Power BI",
+  "Tableau",
+  "Excel",
+  "n8n",
+  "Zapier",
+  "Figma",
+  "GPT-4o",
+  "Llama",
+  "Mistral",
+  "Claude",
+  "Gemini",
+  "Transformers.js",
+  "WebAssembly",
+  // Tests, qualité, build — absents du premier jet, et masqués sur un vrai CV.
+  "JUnit",
+  "JaCoCo",
+  "Pytest",
+  "Jest",
+  "Vitest",
+  "Selenium",
+  "Cypress",
+  "Maven",
+  "Gradle",
+  "SonarQube",
+  "Postman",
+  "Swagger",
+  // SIGLES DE MÉTIER. Trois lettres en capitales, donc happés en priorité
+  // par la passe à casse adoucie (P12) : « LAMP » et « BDD » sortaient en
+  // ENTREPRISE sur un CV réel. Jamais des données personnelles.
+  "SQL",
+  "BDD",
+  "ETL",
+  "API",
+  "REST",
+  "SOAP",
+  "gRPC",
+  "JWT",
+  "CRUD",
+  "ORM",
+  "HTML",
+  "CSS",
+  "SCSS",
+  "JSON",
+  "XML",
+  "CSV",
+  "LAMP",
+  "MERN",
+  "CI/CD",
+  "Sankey",
+  "BeautifulSoup",
+  "Requests",
+  "Matplotlib",
+  "Seaborn",
+  // Relevés sur un vrai CV le 01/09/2026 : masqués tous les deux, et absents
+  // de cette liste alors que tout le reste de la même rubrique y était.
+  // « IA » sortait en LIEU trois fois, « NSI » en PERSONNE — deux types que le
+  // filtre de précision ne touche jamais (garde-fous 3 et 4), donc la liste
+  // éditable est bien le seul mécanisme qui les traite.
+  //
+  // Un terme de deux lettres est sans danger ici : la correspondance est
+  // MOT À MOT (voir filterByRules). Vérifié — « IA » démasque « IA » et
+  // « Data & IA », mais laisse « Julia Roberts » et « Sofia » masqués.
+  "IA",
+  "NSI"
+];
+var PUBLIC_KEEP = [
+  "ChatGPT",
+  "OpenAI",
+  "GPT-4",
+  "GPT-4o",
+  "Claude",
+  "Anthropic",
+  "Gemini",
+  "Copilot",
+  "Mistral",
+  "LLaMA",
+  "DeepSeek",
+  "DeepL",
+  "Google Translate",
+  "Google",
+  "Microsoft",
+  "Meta",
+  "Facebook",
+  "Instagram",
+  "LinkedIn",
+  "Bing",
+  "YouTube",
+  "Reddit",
+  "Wikipedia",
+  "Twitter",
+  "Slack",
+  "Zoom",
+  "Teams"
+];
+var STRUCTURE_KEEP = [
+  "SOMMAIRE",
+  "INTRODUCTION",
+  "CONCLUSION",
+  "REMERCIEMENTS",
+  "ANNEXE",
+  "ANNEXES",
+  "BIBLIOGRAPHIE",
+  "R\xC9F\xC9RENCES",
+  "GLOSSAIRE",
+  "R\xC9SUM\xC9",
+  "ABSTRACT",
+  "PR\xC9AMBULE",
+  "PROFIL",
+  "COMP\xC9TENCES",
+  "EXP\xC9RIENCES",
+  "EXP\xC9RIENCE",
+  "FORMATION",
+  "FORMATIONS",
+  "PROJETS",
+  "LANGUES",
+  "INT\xC9R\xCATS",
+  "DISTINCTIONS",
+  "CERTIFICATIONS",
+  "OUTILS",
+  "SYST\xC8MES",
+  "SP\xC9CIALIT\xC9S",
+  "OBJECTIF",
+  "MENTIONS",
+  "IDENTIT\xC9",
+  "COORDONN\xC9ES",
+  "SUMMARY",
+  "CONTENTS",
+  "APPENDIX",
+  "REFERENCES",
+  "SKILLS",
+  "EXPERIENCE",
+  "EDUCATION",
+  "PROJECTS",
+  "LANGUAGES",
+  "INTERESTS",
+  "TOOLS",
+  "AWARDS",
+  "INHALT",
+  "ZUSAMMENFASSUNG",
+  "SPRACHEN",
+  "KENNTNISSE",
+  "BERUFSERFAHRUNG"
+];
+var ADMIN_KEEP = [
+  "R\xC9PUBLIQUE FRAN\xC7AISE",
+  "MINIST\xC8RE",
+  "PR\xC9FECTURE",
+  "SOUS-PR\xC9FECTURE",
+  "MAIRIE",
+  "ADMINISTRATION",
+  "SERVICE PUBLIC",
+  "GREFFE",
+  "TRIBUNAL",
+  "COUR",
+  "ATTESTATION",
+  "CERTIFICAT",
+  "R\xC9C\xC9PISS\xC9",
+  "FORMULAIRE",
+  "BULLETIN",
+  "EXTRAIT",
+  "D\xC9CLARATION",
+  "JUSTIFICATIF",
+  "CONVOCATION",
+  "NOTIFICATION",
+  "AVIS",
+  "N\xC9ANT",
+  "SANS OBJET",
+  "PI\xC8CE JOINTE",
+  "ARTICLE",
+  "ALIN\xC9A",
+  "D\xC9CRET",
+  "ARR\xCAT\xC9",
+  "CODE",
+  "LOI",
+  "SIGNATURE",
+  "CACHET",
+  "Nom",
+  "Pr\xE9nom",
+  "Sexe",
+  "Masculin",
+  "F\xE9minin",
+  "Date de naissance",
+  "Lieu de naissance",
+  "Nationalit\xE9",
+  "Adresse",
+  "D\xE9livr\xE9 le"
+];
+var PARCOURS_KEEP = [
+  "Baccalaur\xE9at",
+  "Licence",
+  "Master",
+  "Doctorat",
+  "BUT",
+  "BTS",
+  "DUT",
+  "CAP",
+  "Dipl\xF4me",
+  "Mention",
+  "Promotion",
+  "Cohorte",
+  "Cohortes",
+  "Sp\xE9cialit\xE9",
+  "Sp\xE9cialit\xE9s",
+  "Option",
+  "G\xE9n\xE9ral",
+  "Technologique",
+  "Professionnel",
+  "Alternance",
+  "Apprentissage",
+  "Stage",
+  "Bachelor"
+];
+var ECOLE_KEEP = [
+  "Pr\xE9pa",
+  "Classe pr\xE9paratoire",
+  "Semestre",
+  "Trimestre",
+  "M\xE9moire",
+  "Th\xE8se",
+  "Soutenance",
+  "Rapport de stage",
+  "Tuteur",
+  "ECTS",
+  "Cr\xE9dits",
+  "Module",
+  "Mati\xE8re",
+  "Travaux dirig\xE9s",
+  "Travaux pratiques",
+  "Cours magistral",
+  "Contr\xF4le continu",
+  "Moyenne",
+  "Coefficient",
+  "Relev\xE9 de notes",
+  "Coursework",
+  "Dissertation",
+  "Semester",
+  "Transcript"
+];
+function defaultProfiles() {
+  return [
+    // « Vierge » reste VIDE, et doit le rester : c'est le profil qui ne
+    // présuppose rien, donc le témoin quand on soupçonne qu'une liste blanche
+    // cache un défaut de détection.
+    { name: "Vierge", alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...TECH_KEEP, ...PUBLIC_KEEP, ...motsDeForme("cv")], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "Administratif", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ADMIN_KEEP, ...motsDeForme("administratif")], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "\xC9cole / \xC9tudes", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false },
+    // ── PROFILS PAR FORMAT ──
+    //
+    // Les précédents décrivent un MÉTIER (« je suis développeur »), ceux-ci un
+    // TYPE DE DOCUMENT (« ceci est un CV »). Les deux axes sont utiles et ne se
+    // remplacent pas : un développeur qui envoie un relevé bancaire n'a pas
+    // besoin de sa liste de frameworks, il a besoin des mots d'un relevé.
+    //
+    // Leur vocabulaire vient de `vocabulaire-formats.js`, la même source que la
+    // reconnaissance de type — c'est ce qui permet de les PROPOSER
+    // automatiquement (voir PROFIL_POUR_TYPE), et ce qui garantit qu'ajouter
+    // une langue serve les deux d'un coup.
+    { name: "CV / R\xE9sum\xE9", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("cv")], alwaysMask: [], disabledTypes: [], realistic: false },
+    { name: "Relev\xE9 bancaire", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...motsDeForme("bancaire")], alwaysMask: [], disabledTypes: [], realistic: false },
+    // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
+    // document technique : ce profil sert le rédacteur, l'étudiant, le
+    // chercheur — sans leur imposer la liste des frameworks.
+    { name: "R\xE9daction / Recherche", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false }
+  ];
+}
+function normalizeProfile(p) {
+  const arr = (v) => Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  const out = {
+    name: typeof p?.name === "string" && p.name.trim() ? p.name.trim() : "Sans nom",
+    alwaysKeep: arr(p?.alwaysKeep),
+    alwaysMask: arr(p?.alwaysMask),
+    disabledTypes: arr(p?.disabledTypes),
+    realistic: !!p?.realistic
+  };
+  if (typeof p?.empreinte === "string") out.empreinte = p.empreinte;
+  return out;
+}
+function empreinteDe(profil) {
+  const p = normalizeProfile(profil);
+  const s = JSON.stringify([p.alwaysKeep, p.alwaysMask, p.disabledTypes, p.realistic]);
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+var EMPREINTES_HISTORIQUES = {
+  // 2cb8ce1c : jusqu'au 15/08/2026, avant les sigles de métier et l'outillage
+  //            de test (commit 115b097).
+  // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de STRUCTURE_KEEP.
+  // 519521a4 : jusqu'au 02/09/2026, avant les mots de forme multilingues.
+  "D\xE9veloppeur / Tech": ["2cb8ce1c", "5a83db13", "519521a4"],
+  // Relevées AVANT modification, pour que la mise à jour atteigne aussi les
+  // copies stockées à une époque où le champ `empreinte` n'existait pas encore.
+  // Sans ça, elles seraient prises pour des versions éditées par l'utilisateur
+  // et ne recevraient jamais l'espagnol ni le portugais.
+  "Administratif": ["5ec436cb"],
+  "\xC9cole / \xC9tudes": ["4a086a21"],
+  "R\xE9daction / Recherche": ["a8805ca9", "f37a741c"],
+  "Vierge": ["1727123c"]
+};
+function seedDefaults(existing, ecartes = []) {
+  const list = (Array.isArray(existing) ? existing : []).map(normalizeProfile);
+  const parNom = new Map(list.map((p) => [p.name, p]));
+  const ecarte = new Set(Array.isArray(ecartes) ? ecartes : []);
+  for (const d of defaultProfiles()) {
+    if (ecarte.has(d.name) && !parNom.has(d.name)) continue;
+    const courant = { ...d, empreinte: empreinteDe(d) };
+    const stocke = parNom.get(d.name);
+    if (!stocke) {
+      list.push(courant);
+      continue;
+    }
+    const actuelle = empreinteDe(stocke);
+    const intact = stocke.empreinte ? stocke.empreinte === actuelle : (EMPREINTES_HISTORIQUES[d.name] || []).includes(actuelle);
+    if (intact) list[list.indexOf(stocke)] = courant;
+  }
+  return list;
+}
+function hasStore() {
+  return typeof chrome !== "undefined" && chrome.storage?.local;
+}
+async function loadProfiles() {
+  if (!hasStore()) return seedDefaults([]);
+  const r = await chrome.storage.local.get([PROFILES_KEY, PROFILES_ECARTES_KEY]).catch(() => ({}));
+  const seeded = seedDefaults(r?.[PROFILES_KEY], r?.[PROFILES_ECARTES_KEY]);
+  if (!r?.[PROFILES_KEY]) await chrome.storage.local.set({ [PROFILES_KEY]: seeded }).catch(() => {
+  });
+  return seeded;
+}
+async function lireEcartes() {
+  if (!hasStore()) return [];
+  const r = await chrome.storage.local.get(PROFILES_ECARTES_KEY).catch(() => ({}));
+  const v = r?.[PROFILES_ECARTES_KEY];
+  return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+}
+async function ecrireEcartes(noms) {
+  if (!hasStore()) return;
+  await chrome.storage.local.set({ [PROFILES_ECARTES_KEY]: [...new Set(noms)] }).catch(() => {
+  });
+}
+function estProfilLivre(name) {
+  return defaultProfiles().some((d) => d.name === name);
+}
+async function saveAllProfiles(list) {
+  if (!hasStore()) return;
+  await chrome.storage.local.set({ [PROFILES_KEY]: list.map(normalizeProfile) }).catch(() => {
+  });
+}
+async function upsertProfile(profile) {
+  const list = await loadProfiles();
+  const p = normalizeProfile(profile);
+  const idx = list.findIndex((x) => x.name === p.name);
+  if (idx >= 0) list[idx] = p;
+  else list.push(p);
+  await saveAllProfiles(list);
+  if (estProfilLivre(p.name)) {
+    const restants = (await lireEcartes()).filter((n) => n !== p.name);
+    await ecrireEcartes(restants);
+  }
+  return list;
+}
+async function deleteProfile(name) {
+  const list = (await loadProfiles()).filter((p) => p.name !== name);
+  await saveAllProfiles(list);
+  if (estProfilLivre(name)) await ecrireEcartes([...await lireEcartes(), name]);
+  return list;
+}
+var PROFIL_POUR_TYPE = {
+  cv: "CV / R\xE9sum\xE9",
+  administratif: "Administratif",
+  scolaire: "\xC9cole / \xC9tudes",
+  bancaire: "Relev\xE9 bancaire",
+  email: null
+};
+
 // src/popup/i18n.js
-var msg = (cle) => (typeof chrome !== "undefined" && chrome.i18n?.getMessage ? chrome.i18n.getMessage(cle) : "") || cle;
+var msg = (cle, sub) => (typeof chrome !== "undefined" && chrome.i18n?.getMessage ? chrome.i18n.getMessage(cle, sub) : "") || cle;
 var ATTRIBUTS = [
   ["i18nTitle", "title"],
   ["i18nPlaceholder", "placeholder"],
@@ -1022,637 +1722,6 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
   };
 }
 
-// src/engine/vocabulaire-formats.js
-var FORMATS = ["cv", "administratif", "scolaire", "bancaire"];
-var MOTS_DE_FORME = {
-  cv: {
-    fr: [
-      "exp\xE9riences professionnelles",
-      "exp\xE9rience professionnelle",
-      "comp\xE9tences",
-      "curriculum vitae",
-      "parcours professionnel",
-      "centres d\u2019int\xE9r\xEAt",
-      "langues parl\xE9es",
-      "dipl\xF4mes",
-      "certifications"
-    ],
-    en: [
-      "work experience",
-      "professional experience",
-      "skills",
-      "core skills",
-      "curriculum vitae",
-      "r\xE9sum\xE9",
-      "career summary",
-      "certifications"
-    ],
-    es: [
-      "experiencia laboral",
-      "experiencia profesional",
-      "competencias",
-      "curr\xEDculum v\xEDtae",
-      "curr\xEDculum",
-      "formaci\xF3n acad\xE9mica",
-      "idiomas"
-    ],
-    de: [
-      "berufserfahrung",
-      "lebenslauf",
-      "kenntnisse",
-      "qualifikationen",
-      "werdegang",
-      "weiterbildung"
-    ],
-    pt: [
-      "experi\xEAncia profissional",
-      "compet\xEAncias",
-      "curr\xEDculo",
-      "forma\xE7\xE3o acad\xE9mica",
-      "habilita\xE7\xF5es"
-    ]
-  },
-  administratif: {
-    fr: [
-      "r\xE9publique fran\xE7aise",
-      "minist\xE8re",
-      "certificat de scolarit\xE9",
-      "attestation",
-      "je soussign\xE9",
-      "je soussign\xE9e",
-      "certifie que",
-      "fait \xE0",
-      "bulletin num\xE9ro",
-      "casier judiciaire",
-      "\xE9tat civil",
-      "compte rendu",
-      "entretien professionnel",
-      "ressources humaines"
-    ],
-    en: [
-      "hereby certify",
-      "affidavit",
-      "official record",
-      "issued at",
-      "registration number",
-      "to whom it may concern"
-    ],
-    es: [
-      "certifica que",
-      "hace constar",
-      "ministerio",
-      "expediente",
-      "documento nacional de identidad"
-    ],
-    de: [
-      "bescheinigung",
-      "hiermit wird bescheinigt",
-      "ausgestellt am",
-      "aktenzeichen",
-      "beh\xF6rde"
-    ],
-    pt: ["certid\xE3o", "certifica que", "minist\xE9rio", "requerimento", "declara\xE7\xE3o"]
-  },
-  scolaire: {
-    fr: [
-      "sommaire",
-      "introduction",
-      "conclusion",
-      "bibliographie",
-      "remerciements",
-      "rapport de stage",
-      "probl\xE9matique",
-      "annexes",
-      "table des mati\xE8res",
-      "soutenance",
-      "travaux dirig\xE9s",
-      "travaux pratiques",
-      "contr\xF4le continu",
-      "relev\xE9 de notes"
-    ],
-    en: [
-      "table of contents",
-      "introduction",
-      "conclusion",
-      "bibliography",
-      "acknowledgements",
-      "appendix",
-      "abstract",
-      "dissertation",
-      "coursework"
-    ],
-    es: [
-      "\xEDndice",
-      "introducci\xF3n",
-      "conclusi\xF3n",
-      "bibliograf\xEDa",
-      "agradecimientos",
-      "anexos",
-      "resumen"
-    ],
-    de: [
-      "inhaltsverzeichnis",
-      "einleitung",
-      "fazit",
-      "literaturverzeichnis",
-      "danksagung",
-      "anhang",
-      "zusammenfassung"
-    ],
-    pt: [
-      "\xEDndice",
-      "introdu\xE7\xE3o",
-      "conclus\xE3o",
-      "bibliografia",
-      "agradecimentos",
-      "anexos",
-      "resumo"
-    ]
-  },
-  bancaire: {
-    fr: [
-      "relev\xE9 de compte",
-      "titulaire du compte",
-      "solde cr\xE9diteur",
-      "solde d\xE9biteur",
-      "virement",
-      "pr\xE9l\xE8vement",
-      "date de valeur"
-    ],
-    en: [
-      "account statement",
-      "account holder",
-      "opening balance",
-      "closing balance",
-      "wire transfer",
-      "direct debit"
-    ],
-    es: ["extracto de cuenta", "titular de la cuenta", "saldo", "transferencia"],
-    de: ["kontoauszug", "kontoinhaber", "kontostand", "\xFCberweisung", "lastschrift"],
-    pt: ["extrato de conta", "titular da conta", "saldo", "transfer\xEAncia"]
-  }
-};
-function motsDeForme(format) {
-  const parLangue = MOTS_DE_FORME[format] || {};
-  return [...new Set(Object.values(parLangue).flat())];
-}
-var TOUS_LES_MOTS_DE_FORME = [
-  ...new Set(FORMATS.flatMap(motsDeForme))
-];
-
-// src/popup/profiles.js
-var PROFILES_KEY = "clarenceProfiles";
-var PROFILES_ECARTES_KEY = "clarenceProfilsEcartes";
-var TECH_KEEP = [
-  "React",
-  "Angular",
-  "Vue",
-  "Svelte",
-  "Node",
-  "Node.js",
-  "Deno",
-  "Next.js",
-  "Python",
-  "Java",
-  "Kotlin",
-  "Go",
-  "Rust",
-  "PHP",
-  "Ruby",
-  "Scala",
-  "C++",
-  "C#",
-  "FastAPI",
-  "Django",
-  "Flask",
-  "Fastify",
-  "Express",
-  "Spring",
-  "Laravel",
-  "Symfony",
-  "Prisma",
-  "Sequelize",
-  "Hibernate",
-  "TypeORM",
-  "MongoDB",
-  "PostgreSQL",
-  "MySQL",
-  "MariaDB",
-  "Redis",
-  "SQLite",
-  "Elasticsearch",
-  "Cassandra",
-  "Docker",
-  "Kubernetes",
-  "Podman",
-  "Terraform",
-  "Ansible",
-  "Ollama",
-  "PyTorch",
-  "TensorFlow",
-  "Keras",
-  "Scikit-learn",
-  "NumPy",
-  "Pandas",
-  "Hugging Face",
-  "Git",
-  "GitHub",
-  "GitLab",
-  "Bitbucket",
-  "Jenkins",
-  "CircleCI",
-  "Linux",
-  "Ubuntu",
-  "Debian",
-  "Bash",
-  "Nginx",
-  "Apache",
-  "AWS",
-  "Azure",
-  "GCP",
-  "Vercel",
-  "Netlify",
-  "Heroku",
-  "Cloudflare",
-  "Kafka",
-  "Spark",
-  "Airflow",
-  "Hadoop",
-  "Hive",
-  "Sqoop",
-  "RabbitMQ",
-  "GraphQL",
-  "Power BI",
-  "Tableau",
-  "Excel",
-  "n8n",
-  "Zapier",
-  "Figma",
-  "GPT-4o",
-  "Llama",
-  "Mistral",
-  "Claude",
-  "Gemini",
-  "Transformers.js",
-  "WebAssembly",
-  // Tests, qualité, build — absents du premier jet, et masqués sur un vrai CV.
-  "JUnit",
-  "JaCoCo",
-  "Pytest",
-  "Jest",
-  "Vitest",
-  "Selenium",
-  "Cypress",
-  "Maven",
-  "Gradle",
-  "SonarQube",
-  "Postman",
-  "Swagger",
-  // SIGLES DE MÉTIER. Trois lettres en capitales, donc happés en priorité
-  // par la passe à casse adoucie (P12) : « LAMP » et « BDD » sortaient en
-  // ENTREPRISE sur un CV réel. Jamais des données personnelles.
-  "SQL",
-  "BDD",
-  "ETL",
-  "API",
-  "REST",
-  "SOAP",
-  "gRPC",
-  "JWT",
-  "CRUD",
-  "ORM",
-  "HTML",
-  "CSS",
-  "SCSS",
-  "JSON",
-  "XML",
-  "CSV",
-  "LAMP",
-  "MERN",
-  "CI/CD",
-  "Sankey",
-  "BeautifulSoup",
-  "Requests",
-  "Matplotlib",
-  "Seaborn",
-  // Relevés sur un vrai CV le 01/09/2026 : masqués tous les deux, et absents
-  // de cette liste alors que tout le reste de la même rubrique y était.
-  // « IA » sortait en LIEU trois fois, « NSI » en PERSONNE — deux types que le
-  // filtre de précision ne touche jamais (garde-fous 3 et 4), donc la liste
-  // éditable est bien le seul mécanisme qui les traite.
-  //
-  // Un terme de deux lettres est sans danger ici : la correspondance est
-  // MOT À MOT (voir filterByRules). Vérifié — « IA » démasque « IA » et
-  // « Data & IA », mais laisse « Julia Roberts » et « Sofia » masqués.
-  "IA",
-  "NSI"
-];
-var PUBLIC_KEEP = [
-  "ChatGPT",
-  "OpenAI",
-  "GPT-4",
-  "GPT-4o",
-  "Claude",
-  "Anthropic",
-  "Gemini",
-  "Copilot",
-  "Mistral",
-  "LLaMA",
-  "DeepSeek",
-  "DeepL",
-  "Google Translate",
-  "Google",
-  "Microsoft",
-  "Meta",
-  "Facebook",
-  "Instagram",
-  "LinkedIn",
-  "Bing",
-  "YouTube",
-  "Reddit",
-  "Wikipedia",
-  "Twitter",
-  "Slack",
-  "Zoom",
-  "Teams"
-];
-var STRUCTURE_KEEP = [
-  "SOMMAIRE",
-  "INTRODUCTION",
-  "CONCLUSION",
-  "REMERCIEMENTS",
-  "ANNEXE",
-  "ANNEXES",
-  "BIBLIOGRAPHIE",
-  "R\xC9F\xC9RENCES",
-  "GLOSSAIRE",
-  "R\xC9SUM\xC9",
-  "ABSTRACT",
-  "PR\xC9AMBULE",
-  "PROFIL",
-  "COMP\xC9TENCES",
-  "EXP\xC9RIENCES",
-  "EXP\xC9RIENCE",
-  "FORMATION",
-  "FORMATIONS",
-  "PROJETS",
-  "LANGUES",
-  "INT\xC9R\xCATS",
-  "DISTINCTIONS",
-  "CERTIFICATIONS",
-  "OUTILS",
-  "SYST\xC8MES",
-  "SP\xC9CIALIT\xC9S",
-  "OBJECTIF",
-  "MENTIONS",
-  "IDENTIT\xC9",
-  "COORDONN\xC9ES",
-  "SUMMARY",
-  "CONTENTS",
-  "APPENDIX",
-  "REFERENCES",
-  "SKILLS",
-  "EXPERIENCE",
-  "EDUCATION",
-  "PROJECTS",
-  "LANGUAGES",
-  "INTERESTS",
-  "TOOLS",
-  "AWARDS",
-  "INHALT",
-  "ZUSAMMENFASSUNG",
-  "SPRACHEN",
-  "KENNTNISSE",
-  "BERUFSERFAHRUNG"
-];
-var ADMIN_KEEP = [
-  "R\xC9PUBLIQUE FRAN\xC7AISE",
-  "MINIST\xC8RE",
-  "PR\xC9FECTURE",
-  "SOUS-PR\xC9FECTURE",
-  "MAIRIE",
-  "ADMINISTRATION",
-  "SERVICE PUBLIC",
-  "GREFFE",
-  "TRIBUNAL",
-  "COUR",
-  "ATTESTATION",
-  "CERTIFICAT",
-  "R\xC9C\xC9PISS\xC9",
-  "FORMULAIRE",
-  "BULLETIN",
-  "EXTRAIT",
-  "D\xC9CLARATION",
-  "JUSTIFICATIF",
-  "CONVOCATION",
-  "NOTIFICATION",
-  "AVIS",
-  "N\xC9ANT",
-  "SANS OBJET",
-  "PI\xC8CE JOINTE",
-  "ARTICLE",
-  "ALIN\xC9A",
-  "D\xC9CRET",
-  "ARR\xCAT\xC9",
-  "CODE",
-  "LOI",
-  "SIGNATURE",
-  "CACHET",
-  "Nom",
-  "Pr\xE9nom",
-  "Sexe",
-  "Masculin",
-  "F\xE9minin",
-  "Date de naissance",
-  "Lieu de naissance",
-  "Nationalit\xE9",
-  "Adresse",
-  "D\xE9livr\xE9 le"
-];
-var PARCOURS_KEEP = [
-  "Baccalaur\xE9at",
-  "Licence",
-  "Master",
-  "Doctorat",
-  "BUT",
-  "BTS",
-  "DUT",
-  "CAP",
-  "Dipl\xF4me",
-  "Mention",
-  "Promotion",
-  "Cohorte",
-  "Cohortes",
-  "Sp\xE9cialit\xE9",
-  "Sp\xE9cialit\xE9s",
-  "Option",
-  "G\xE9n\xE9ral",
-  "Technologique",
-  "Professionnel",
-  "Alternance",
-  "Apprentissage",
-  "Stage",
-  "Bachelor"
-];
-var ECOLE_KEEP = [
-  "Pr\xE9pa",
-  "Classe pr\xE9paratoire",
-  "Semestre",
-  "Trimestre",
-  "M\xE9moire",
-  "Th\xE8se",
-  "Soutenance",
-  "Rapport de stage",
-  "Tuteur",
-  "ECTS",
-  "Cr\xE9dits",
-  "Module",
-  "Mati\xE8re",
-  "Travaux dirig\xE9s",
-  "Travaux pratiques",
-  "Cours magistral",
-  "Contr\xF4le continu",
-  "Moyenne",
-  "Coefficient",
-  "Relev\xE9 de notes",
-  "Coursework",
-  "Dissertation",
-  "Semester",
-  "Transcript"
-];
-function defaultProfiles() {
-  return [
-    // « Vierge » reste VIDE, et doit le rester : c'est le profil qui ne
-    // présuppose rien, donc le témoin quand on soupçonne qu'une liste blanche
-    // cache un défaut de détection.
-    { name: "Vierge", alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "D\xE9veloppeur / Tech", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...TECH_KEEP, ...PUBLIC_KEEP, ...motsDeForme("cv")], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "Administratif", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ADMIN_KEEP, ...motsDeForme("administratif")], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "\xC9cole / \xC9tudes", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false },
-    // ── PROFILS PAR FORMAT ──
-    //
-    // Les précédents décrivent un MÉTIER (« je suis développeur »), ceux-ci un
-    // TYPE DE DOCUMENT (« ceci est un CV »). Les deux axes sont utiles et ne se
-    // remplacent pas : un développeur qui envoie un relevé bancaire n'a pas
-    // besoin de sa liste de frameworks, il a besoin des mots d'un relevé.
-    //
-    // Leur vocabulaire vient de `vocabulaire-formats.js`, la même source que la
-    // reconnaissance de type — c'est ce qui permet de les PROPOSER
-    // automatiquement (voir PROFIL_POUR_TYPE), et ce qui garantit qu'ajouter
-    // une langue serve les deux d'un coup.
-    { name: "CV / R\xE9sum\xE9", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("cv")], alwaysMask: [], disabledTypes: [], realistic: false },
-    { name: "Relev\xE9 bancaire", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...motsDeForme("bancaire")], alwaysMask: [], disabledTypes: [], realistic: false },
-    // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
-    // document technique : ce profil sert le rédacteur, l'étudiant, le
-    // chercheur — sans leur imposer la liste des frameworks.
-    { name: "R\xE9daction / Recherche", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false }
-  ];
-}
-function normalizeProfile(p) {
-  const arr = (v) => Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
-  const out = {
-    name: typeof p?.name === "string" && p.name.trim() ? p.name.trim() : "Sans nom",
-    alwaysKeep: arr(p?.alwaysKeep),
-    alwaysMask: arr(p?.alwaysMask),
-    disabledTypes: arr(p?.disabledTypes),
-    realistic: !!p?.realistic
-  };
-  if (typeof p?.empreinte === "string") out.empreinte = p.empreinte;
-  return out;
-}
-function empreinteDe(profil) {
-  const p = normalizeProfile(profil);
-  const s = JSON.stringify([p.alwaysKeep, p.alwaysMask, p.disabledTypes, p.realistic]);
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619) >>> 0;
-  }
-  return h.toString(16).padStart(8, "0");
-}
-var EMPREINTES_HISTORIQUES = {
-  // 2cb8ce1c : jusqu'au 15/08/2026, avant les sigles de métier et l'outillage
-  //            de test (commit 115b097).
-  // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de STRUCTURE_KEEP.
-  // 519521a4 : jusqu'au 02/09/2026, avant les mots de forme multilingues.
-  "D\xE9veloppeur / Tech": ["2cb8ce1c", "5a83db13", "519521a4"],
-  // Relevées AVANT modification, pour que la mise à jour atteigne aussi les
-  // copies stockées à une époque où le champ `empreinte` n'existait pas encore.
-  // Sans ça, elles seraient prises pour des versions éditées par l'utilisateur
-  // et ne recevraient jamais l'espagnol ni le portugais.
-  "Administratif": ["5ec436cb"],
-  "\xC9cole / \xC9tudes": ["4a086a21"],
-  "R\xE9daction / Recherche": ["a8805ca9", "f37a741c"],
-  "Vierge": ["1727123c"]
-};
-function seedDefaults(existing, ecartes = []) {
-  const list = (Array.isArray(existing) ? existing : []).map(normalizeProfile);
-  const parNom = new Map(list.map((p) => [p.name, p]));
-  const ecarte = new Set(Array.isArray(ecartes) ? ecartes : []);
-  for (const d of defaultProfiles()) {
-    if (ecarte.has(d.name) && !parNom.has(d.name)) continue;
-    const courant = { ...d, empreinte: empreinteDe(d) };
-    const stocke = parNom.get(d.name);
-    if (!stocke) {
-      list.push(courant);
-      continue;
-    }
-    const actuelle = empreinteDe(stocke);
-    const intact = stocke.empreinte ? stocke.empreinte === actuelle : (EMPREINTES_HISTORIQUES[d.name] || []).includes(actuelle);
-    if (intact) list[list.indexOf(stocke)] = courant;
-  }
-  return list;
-}
-function hasStore() {
-  return typeof chrome !== "undefined" && chrome.storage?.local;
-}
-async function loadProfiles() {
-  if (!hasStore()) return seedDefaults([]);
-  const r = await chrome.storage.local.get([PROFILES_KEY, PROFILES_ECARTES_KEY]).catch(() => ({}));
-  const seeded = seedDefaults(r?.[PROFILES_KEY], r?.[PROFILES_ECARTES_KEY]);
-  if (!r?.[PROFILES_KEY]) await chrome.storage.local.set({ [PROFILES_KEY]: seeded }).catch(() => {
-  });
-  return seeded;
-}
-async function lireEcartes() {
-  if (!hasStore()) return [];
-  const r = await chrome.storage.local.get(PROFILES_ECARTES_KEY).catch(() => ({}));
-  const v = r?.[PROFILES_ECARTES_KEY];
-  return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
-}
-async function ecrireEcartes(noms) {
-  if (!hasStore()) return;
-  await chrome.storage.local.set({ [PROFILES_ECARTES_KEY]: [...new Set(noms)] }).catch(() => {
-  });
-}
-function estProfilLivre(name) {
-  return defaultProfiles().some((d) => d.name === name);
-}
-async function saveAllProfiles(list) {
-  if (!hasStore()) return;
-  await chrome.storage.local.set({ [PROFILES_KEY]: list.map(normalizeProfile) }).catch(() => {
-  });
-}
-async function upsertProfile(profile) {
-  const list = await loadProfiles();
-  const p = normalizeProfile(profile);
-  const idx = list.findIndex((x) => x.name === p.name);
-  if (idx >= 0) list[idx] = p;
-  else list.push(p);
-  await saveAllProfiles(list);
-  if (estProfilLivre(p.name)) {
-    const restants = (await lireEcartes()).filter((n) => n !== p.name);
-    await ecrireEcartes(restants);
-  }
-  return list;
-}
-async function deleteProfile(name) {
-  const list = (await loadProfiles()).filter((p) => p.name !== name);
-  await saveAllProfiles(list);
-  if (estProfilLivre(name)) await ecrireEcartes([...await lireEcartes(), name]);
-  return list;
-}
-
 // src/popup/identity.js
 var IDENTITY_KEY = "clarenceIdentity";
 var IDENTITY_FIELDS = [
@@ -2145,6 +2214,7 @@ async function analyze() {
       }
     });
     autoEntities = mergeEntities(rx, filtrerParPrecision(ner, text));
+    montrerSuggestion({ prefixe: "profile", texte: text, entites: autoEntities });
     render();
     renderEngineBadge("engineBadge");
   } catch (err) {
@@ -3126,6 +3196,11 @@ async function processFile() {
       disabledTypes: fileDisabledTypes,
       keepValues: termesAGarder()
     });
+    montrerSuggestion({
+      prefixe: "fileProfile",
+      texte: units.map((u) => u.text).join("\n"),
+      entites: entitesContextuelles || []
+    });
     if ($("fileCompress")?.checked && compressionWorker && ext !== "docx") {
       fileSetStatus(msg("etat_compression"));
       const taux = Number($("fileCompressTaux")?.value || 0.5);
@@ -3285,6 +3360,30 @@ dropzone.addEventListener("drop", (ev) => {
   const file = ev.dataTransfer?.files?.[0];
   if (file) setChosenFile(file);
 });
+var barresDeProfil = /* @__PURE__ */ new Map();
+var suggestionsEcartees = /* @__PURE__ */ new Set();
+function montrerSuggestion({ prefixe, texte, entites }) {
+  const barre = $(prefixe + "Suggest");
+  if (!barre) return;
+  barre.hidden = true;
+  const bar = barresDeProfil.get(prefixe === "profile" ? "profileSelect" : "fileProfileSelect");
+  if (!bar) return;
+  const { type } = analyserTypeDocument(texte, { entites });
+  const profil = type ? PROFIL_POUR_TYPE[type] : null;
+  if (!profil || !bar.existe(profil) || bar.courant() === profil) return;
+  if (suggestionsEcartees.has(type)) return;
+  $(prefixe + "SuggestTxt").textContent = msg("suggestion_profil", [msg("format_" + type), profil]);
+  barre.hidden = false;
+  $(prefixe + "SuggestApply").onclick = () => {
+    bar.selectionner(profil);
+    barre.hidden = true;
+    setStatus(msg("profil_applique", [profil]), "ok");
+  };
+  $(prefixe + "SuggestDismiss").onclick = () => {
+    suggestionsEcartees.add(type);
+    barre.hidden = true;
+  };
+}
 async function bindProfileBar(cfg) {
   const sel = $(cfg.selectId);
   if (!sel) return;
@@ -3293,6 +3392,17 @@ async function bindProfileBar(cfg) {
     sel.innerHTML = '<option value="">(personnalis\xE9)</option>' + profiles.map((p) => `<option${p.name === selected ? " selected" : ""}>${esc(p.name)}</option>`).join("");
   };
   refill();
+  barresDeProfil.set(cfg.selectId, {
+    courant: () => sel.value,
+    existe: (nom) => profiles.some((p) => p.name === nom),
+    selectionner: (nom) => {
+      const p = profiles.find((x) => x.name === nom);
+      if (!p) return false;
+      refill(nom);
+      cfg.apply(p);
+      return true;
+    }
+  });
   sel.addEventListener("change", () => {
     const p = profiles.find((x) => x.name === sel.value);
     if (p) cfg.apply(p);

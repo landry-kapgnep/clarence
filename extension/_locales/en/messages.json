@@ -316,5 +316,42 @@
   },
   "voir_tout": {
     "message": "See all"
+  },
+  "suggestion_profil": {
+    "message": "This looks like a $FORMAT$. Apply the “$PROFIL$” profile?",
+    "placeholders": {
+      "format": {
+        "content": "$1"
+      },
+      "profil": {
+        "content": "$2"
+      }
+    }
+  },
+  "profil_applique": {
+    "message": "“$PROFIL$” profile applied. Run the analysis again to see the effect.",
+    "placeholders": {
+      "profil": {
+        "content": "$1"
+      }
+    }
+  },
+  "appliquer": {
+    "message": "Apply"
+  },
+  "ignorer": {
+    "message": "Dismiss this suggestion"
+  },
+  "format_cv": {
+    "message": "résumé"
+  },
+  "format_administratif": {
+    "message": "official document"
+  },
+  "format_scolaire": {
+    "message": "academic paper"
+  },
+  "format_bancaire": {
+    "message": "bank statement"
   }
 }

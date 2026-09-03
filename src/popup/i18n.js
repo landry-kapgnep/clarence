@@ -16,9 +16,12 @@
 
 // Hors extension (tests, page d'atelier), on rend la clé : rien ne plante, et
 // une clé qui s'affiche telle quelle se repère immédiatement.
-export const msg = (cle) =>
+// `sub` : substitutions ($1, $2…) telles que chrome.i18n les attend. Sans ce
+// second argument, un message paramétré ressortait avec ses « $1 » en clair —
+// ou pire, la clé brute affichée à l'écran.
+export const msg = (cle, sub) =>
   (typeof chrome !== 'undefined' && chrome.i18n?.getMessage
-    ? chrome.i18n.getMessage(cle) : '') || cle;
+    ? chrome.i18n.getMessage(cle, sub) : '') || cle;
 
 // Attribut → propriété DOM. `aria` est abrégé dans le nom de l'attribut HTML
 // (`data-i18n-aria`) parce que `data-i18n-aria-label` deviendrait illisible.

@@ -6,6 +6,8 @@ import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER, NER_MODEL } from '../engine/ner.js';
 import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrerFauxPositifs } from '../engine/gliner.js';
 import { filtrerParPrecision, composerArbitre } from '../engine/precision.js';
+import { analyserTypeDocument } from '../engine/type-document.js';
+import { PROFIL_POUR_TYPE } from './profiles.js';
 import { compresser, compresserSegments, COMPRESSION_MODEL } from '../engine/compression.js';
 // `msg` et pas `t` : trois variables locales de ce fichier s'appellent
 // déjà `t` (paramètres déstructurés, boucles), et l'import se serait fait
@@ -639,6 +641,7 @@ async function analyze() {
     // perdre : le mode texte ne passe PAS par `arbitrerFauxPositifs`, alors que
     // le mode fichier si. « Analyste » est donc encore masqué en mode texte.
     autoEntities = mergeEntities(rx, filtrerParPrecision(ner, text));
+    montrerSuggestion({ prefixe: 'profile', texte: text, entites: autoEntities });
     render();
     // Ne JAMAIS laisser croire que les noms/lieux ont été vérifiés alors que
     // seul le structuré (regex) a tourné, NI que le moteur complet a tourné
@@ -2036,6 +2039,15 @@ async function processFile() {
       keepValues: termesAGarder()
     });
 
+    // Suggestion de profil : sur le texte du document, pas sur le fichier brut.
+    // `entitesContextuelles` sert au type bancaire, dont le signal décisif est
+    // la densité d'IBAN — déterministe, donc bien plus sûr que des mots.
+    montrerSuggestion({
+      prefixe: 'fileProfile',
+      texte: units.map(u => u.text).join('\n'),
+      entites: entitesContextuelles || []
+    });
+
     // COMPRESSION — DEUX VOIES, selon ce que l'adaptateur réécrit.
     //
     //  - CSV, XLSX et PDF « Alléger » réécrivent depuis `maskedText` : on
@@ -2257,6 +2269,55 @@ dropzone.addEventListener('drop', ev => {
 });
 
 // ===== Profils d'anonymisation ============================================
+
+// ===== Suggestion de profil selon le TYPE de document =======================
+//
+// L'idée d'origine était un modèle entraîné PAR FORMAT. La mesure a montré que
+// ce qui manquait n'était pas un modèle mais de savoir QUEL profil proposer :
+// les faux positifs qui restent sont des acronymes d'un seul mot qu'aucun
+// signal contextuel ne distingue d'une vraie entité, et que seule une liste
+// éditable traite. Voir src/engine/type-document.js.
+//
+// ⚠️ ON PROPOSE, ON N'APPLIQUE JAMAIS TOUT SEUL. Changer le masquage en silence
+// casserait l'UX de relecture (cadrage §5) : l'utilisateur croirait relire un
+// résultat qu'il n'a pas demandé. Le clic est la garantie.
+const barresDeProfil = new Map();
+
+// Types dont l'utilisateur a écarté la suggestion. Reproposer ce qu'il vient de
+// refuser est le meilleur moyen de faire ignorer la barre pour toujours.
+const suggestionsEcartees = new Set();
+
+function montrerSuggestion({ prefixe, texte, entites }) {
+  const barre = $(prefixe + 'Suggest');
+  if (!barre) return;
+  barre.hidden = true;
+
+  const bar = barresDeProfil.get(prefixe === 'profile' ? 'profileSelect' : 'fileProfileSelect');
+  if (!bar) return;
+
+  const { type } = analyserTypeDocument(texte, { entites });
+  const profil = type ? PROFIL_POUR_TYPE[type] : null;
+  // Quatre raisons de se taire, toutes délibérées : rien ne se détache, aucun
+  // profil ne correspond à ce type, le profil n'existe pas (supprimé par
+  // l'utilisateur), ou il est DÉJÀ sélectionné.
+  if (!profil || !bar.existe(profil) || bar.courant() === profil) return;
+  if (suggestionsEcartees.has(type)) return;
+
+  $(prefixe + 'SuggestTxt').textContent =
+    msg('suggestion_profil', [msg('format_' + type), profil]);
+  barre.hidden = false;
+
+  $(prefixe + 'SuggestApply').onclick = () => {
+    bar.selectionner(profil);
+    barre.hidden = true;
+    setStatus(msg('profil_applique', [profil]), 'ok');
+  };
+  $(prefixe + 'SuggestDismiss').onclick = () => {
+    suggestionsEcartees.add(type);
+    barre.hidden = true;
+  };
+}
+
 // Préréglages nommés persistants (chrome.storage.local) des options de
 // personnalisation. Le profil « Développeur / Tech » livré par défaut règle le
 // sur-masquage des technos (React/Prisma/Docker) via sa liste « ne jamais
@@ -2269,11 +2330,27 @@ async function bindProfileBar(cfg) {
   if (!sel) return;
   let profiles = await loadProfiles();
 
+  // Sélection PROGRAMMATIQUE, pour la suggestion de profil. Enregistrée dans
+  // `barresDeProfil` plutôt qu'exportée : `sel` et `profiles` vivent dans cette
+  // fermeture, et la barre est montée deux fois (texte et fichier) — il faut
+  // donc pouvoir viser CELLE qu'on veut, pas « la » barre.
   const refill = selected => {
     sel.innerHTML = '<option value="">(personnalisé)</option>' +
       profiles.map(p => `<option${p.name === selected ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
   };
   refill();
+
+  barresDeProfil.set(cfg.selectId, {
+    courant: () => sel.value,
+    existe: nom => profiles.some(p => p.name === nom),
+    selectionner: nom => {
+      const p = profiles.find(x => x.name === nom);
+      if (!p) return false;
+      refill(nom);
+      cfg.apply(p);
+      return true;
+    }
+  });
 
   sel.addEventListener('change', () => {
     const p = profiles.find(x => x.name === sel.value);
