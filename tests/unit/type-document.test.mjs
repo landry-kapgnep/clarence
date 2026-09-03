@@ -84,3 +84,53 @@ test('les en-têtes d’e-mail ne comptent qu’en tête du document', () => {
   const faux = 'RAPPORT\n' + 'blabla\n'.repeat(10) + 'Objet : divers\nDe : moi\n';
   assert.notEqual(analyserTypeDocument(faux).type, 'email');
 });
+
+// --- Cinq langues ---------------------------------------------------------
+//
+// ⚠️ HONNÊTETÉ SUR CE QUE CES CAS PROUVENT. Pour le français et l'anglais, les
+// tests plus haut portent sur de VRAIS documents du banc. Pour l'espagnol,
+// l'allemand et le portugais, on n'en a pas — ce sont des échantillons
+// construits. Ils valent comme test de FUMÉE (les marqueurs sont bien câblés,
+// la structure porte le verdict) et surtout comme non-régression sur les
+// collisions entre langues ; ils ne mesurent pas une exactitude sur le terrain.
+// Le jour où de vrais documents arrivent, ils remplacent ceux-ci.
+test('reconnaît les types en espagnol, allemand et portugais', () => {
+  const cas = [
+    ['cv', 'CURRÍCULUM VÍTAE\nExperiencia profesional\n2019 - 2023 Analista de datos\n'
+         + 'Competencias: Python, SQL\nIdiomas: inglés, francés\nFormación universitaria'],
+    ['cv', 'LEBENSLAUF\nBerufserfahrung\n2019 - 2023 Datenanalyst\nKenntnisse: Python\n'
+         + 'Sprachen: Englisch\nAusbildung: Universität'],
+    ['cv', 'CURRÍCULO\nExperiência profissional\n2019 - 2023 Analista de dados\n'
+         + 'Competências: Python\nIdiomas: inglês\nFormação superior'],
+    ['scolaire', 'Inhaltsverzeichnis\nEinleitung......3\nKapitel 1......7\nFazit......42\n'
+               + 'Literaturverzeichnis......45\nDanksagung an alle Beteiligten.'],
+    ['administratif', 'CERTIFICADO\nEl ministerio certifica que\nNombre        MARIA LOPEZ\n'
+                    + 'Expediente    2024-118\nHace constar lo siguiente']
+  ];
+  for (const [attendu, texte] of cas) {
+    const r = analyserTypeDocument(texte);
+    assert.equal(r.type, attendu,
+      `« ${texte.slice(0, 22)}… » → ${r.type} (${JSON.stringify(r.classement)})`);
+  }
+});
+
+// ⚠️ LE DÉFAUT QUE CE TEST FERME, et qui empire à chaque langue ajoutée. La
+// première version comparait par SOUS-CHAÎNE : le marqueur bancaire « rib »
+// matchait « contribuer », « distribution », « attribué » — 0,8 point de
+// « bancaire » sur une note de service qui n'a rien de bancaire. Le verdict
+// n'était sauvé que par l'écart minimal, c'est-à-dire par chance.
+test('les marqueurs se comparent MOT À MOT, pas par sous-chaîne', () => {
+  const r = analyserTypeDocument(
+    'Note de service\nIl faut contribuer à la distribution des tâches.\n'
+    + 'Chacun attribue son rôle.\nRien de particulier.');
+  const bancaire = r.classement.find(([t]) => t === 'bancaire')[1];
+  assert.equal(bancaire, 0, '« rib » a matché à l’intérieur d’un autre mot');
+});
+
+test('ajouter des langues ne dérègle pas les documents français', () => {
+  // Contrôle de non-régression du câblage multilingue : les marqueurs communs à
+  // plusieurs langues (« conclusion », « índice », « certificado ») sont
+  // dédoublonnés, sinon ils compteraient double et fausseraient le classement.
+  assert.equal(analyserTypeDocument(lire('dossier-rh.txt')).type, 'administratif');
+  assert.equal(analyserTypeDocument(lire('rapport-fr.txt')).type, 'scolaire');
+});

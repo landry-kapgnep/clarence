@@ -81,8 +81,69 @@ const MARQUEURS = {
                'acknowledgements', 'appendix', 'abstract', 'dissertation'],
     bancaire: ['account statement', 'balance', 'transfer', 'debit', 'credit',
                'account holder']
+  },
+  es: {
+    cv: ['experiencia laboral', 'experiencia profesional', 'competencias',
+         'habilidades', 'formación', 'currículum', 'currículo', 'prácticas',
+         'idiomas', 'titulación'],
+    administratif: ['certificado', 'certifica que', 'declaración', 'ministerio',
+                    'expediente', 'hace constar', 'documento nacional de identidad'],
+    scolaire: ['índice', 'introducción', 'conclusión', 'bibliografía',
+               'agradecimientos', 'anexos', 'resumen', 'memoria'],
+    bancaire: ['extracto de cuenta', 'saldo', 'transferencia', 'titular de la cuenta',
+               'adeudo', 'abono']
+  },
+  de: {
+    cv: ['berufserfahrung', 'kenntnisse', 'ausbildung', 'lebenslauf', 'praktikum',
+         'sprachen', 'qualifikationen', 'werdegang'],
+    administratif: ['bescheinigung', 'bestätigung', 'behörde', 'ministerium',
+                    'hiermit wird bescheinigt', 'ausgestellt am', 'aktenzeichen'],
+    scolaire: ['inhaltsverzeichnis', 'einleitung', 'fazit', 'literaturverzeichnis',
+               'danksagung', 'anhang', 'zusammenfassung'],
+    bancaire: ['kontoauszug', 'kontostand', 'überweisung', 'lastschrift', 'kontoinhaber']
+  },
+  pt: {
+    cv: ['experiência profissional', 'competências', 'formação', 'currículo',
+         'estágio', 'idiomas', 'habilitações'],
+    administratif: ['certidão', 'certificado', 'declaração', 'ministério',
+                    'certifica que', 'requerimento'],
+    scolaire: ['índice', 'introdução', 'conclusão', 'bibliografia',
+               'agradecimentos', 'anexos', 'resumo'],
+    bancaire: ['extrato de conta', 'saldo', 'transferência', 'titular da conta',
+               'débito', 'crédito']
   }
 };
+
+// NORMALISATION, et pourquoi elle n'est pas cosmétique.
+//
+// ⚠️ LE DÉFAUT QU'ELLE FERME. La première version testait `texte.includes(mot)`,
+// une SOUS-CHAÎNE sans frontière de mot. Le marqueur bancaire « rib » matchait
+// donc « contribuer », « distribution », « attribué » — mesuré : 0,8 point de
+// « bancaire » sur une note de service qui n'a rien de bancaire. Le verdict
+// n'était sauvé que par l'écart minimal, c'est-à-dire par chance.
+//
+// Le risque MONTE avec chaque langue ajoutée : plus il y a de marqueurs courts,
+// plus il y a de mots d'une autre langue qui les contiennent par accident.
+//
+// On remplace donc tout ce qui n'est ni lettre ni chiffre par une espace, et on
+// entoure d'espaces : chercher « rib » revient alors à chercher « ␣rib␣ », que
+// « contribuer » ne contient pas. Les marqueurs de plusieurs mots survivent,
+// leurs espaces internes étant préservés.
+const normaliser = (t) => ' ' + String(t || '').toLowerCase()
+  .replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
+
+// Marqueurs normalisés UNE FOIS au chargement, et dédoublonnés par type. Sans
+// ce dédoublonnage, « conclusion » (fr et en), « índice » ou « certificado »
+// (es et pt) compteraient plusieurs fois et gonfleraient leur type — défaut
+// mesuré sur dossier-rh.txt, qu'un simple « conclusion » tirait vers le rapport.
+const MARQUEURS_NORMALISES = {};
+for (const type of ['cv', 'administratif', 'scolaire', 'bancaire']) {
+  const vus = new Set();
+  for (const parLangue of Object.values(MARQUEURS)) {
+    for (const m of parLangue[type] || []) vus.add(normaliser(m).slice(1, -1));
+  }
+  MARQUEURS_NORMALISES[type] = [...vus];
+}
 
 export const TYPES = ['cv', 'administratif', 'scolaire', 'bancaire', 'email'];
 
@@ -105,7 +166,7 @@ export function analyserTypeDocument(texte, { entites = [] } = {}) {
   const lignes = brut.split(/\r?\n/).filter(l => l.trim());
   if (lignes.length < 3) return { type: null, score: 0, indices: [] };
 
-  const bas = brut.toLowerCase();
+  const normalise = normaliser(brut);
   const n = lignes.length;
   const points = { cv: 0, administratif: 0, scolaire: 0, bancaire: 0, email: 0 };
   const indices = [];
@@ -144,19 +205,10 @@ export function analyserTypeDocument(texte, { entites = [] } = {}) {
   noter('bancaire', bancaires * 2 + (montants > 5 ? 2 : 0),
     `${bancaires} IBAN/BIC, ${montants} montant(s)`);
 
-  // ── Mots-clés, toutes langues déclarées ──
-  //
-  // ⚠️ DÉDOUBLONNÉS ENTRE LANGUES. « conclusion » et « introduction » s'écrivent
-  // pareil en français et en anglais : sans ce Set, ils comptaient DEUX fois et
-  // gonflaient artificiellement le type « scolaire » sur tout document qui les
-  // contient. Le défaut se voyait sur dossier-rh.txt, un compte rendu RH que
-  // deux occurrences du mot « conclusion » suffisaient à tirer vers le rapport.
-  for (const type of TYPES) {
-    const trouves = new Set();
-    for (const parType of Object.values(MARQUEURS)) {
-      for (const m of parType[type] || []) if (bas.includes(m)) trouves.add(m);
-    }
-    noter(type, trouves.size * 0.8, `mots : ${[...trouves].join(', ')}`);
+  // ── Mots-clés, cinq langues, comparés MOT À MOT ──
+  for (const [type, marqueurs] of Object.entries(MARQUEURS_NORMALISES)) {
+    const trouves = marqueurs.filter(m => normalise.includes(' ' + m + ' '));
+    noter(type, trouves.length * 0.8, `mots : ${trouves.join(', ')}`);
   }
 
   const classement = Object.entries(points).sort((a, b) => b[1] - a[1]);
