@@ -466,10 +466,23 @@ body.panel-mode .popup-shell {
 }
 .mode-switch .txtmode img,
 .mode-switch .filemode img {
-  width: 100%;
-  height: 100%;
+  /* L'icône occupait TOUTE la surface du bouton : deux glyphes sans un mot,
+     qu'un nouvel utilisateur devait deviner. Elle laisse maintenant la place
+     au libellé, qui porte le sens ; elle reste comme repère visuel. */
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
   object-fit: contain;
   display: block;
+}
+.mode-switch .txtmode,
+.mode-switch .filemode { gap: 8px; }
+.mode-libelle {
+  font-size: var(--control-size);
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ===== Mode Fichier : dropzone ===== */
