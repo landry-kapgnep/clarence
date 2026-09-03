@@ -423,5 +423,34 @@
   },
   "profil": {
     "message": "profile"
+  },
+  "valider": {
+    "message": "Confirm"
+  },
+  "supprimer": {
+    "message": "Delete"
+  },
+  "effacer": {
+    "message": "Erase"
+  },
+  "nom_du_profil": {
+    "message": "Profile name"
+  },
+  "nom_du_nouveau_profil": {
+    "message": "New profile name"
+  },
+  "supprimer_le_profil": {
+    "message": "Delete the “$NOM$” profile?",
+    "placeholders": {
+      "nom": {
+        "content": "$1"
+      }
+    }
+  },
+  "effacer_identite": {
+    "message": "Erase all stored identity information?"
+  },
+  "action_irreversible": {
+    "message": "This cannot be undone."
   }
 }

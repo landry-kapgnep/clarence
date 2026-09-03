@@ -314,6 +314,28 @@
     </div>
   </div>
 
+  <!-- DIALOGUE MAISON, en remplacement de window.prompt et window.confirm.
+       Ces deux-là sont peints par le navigateur : impossibles à habiller, et
+       les plus dissonants de l'interface. Celui-ci porte role="dialog" +
+       aria-modal, piège le focus, le rend à son déclencheur en sortant, et
+       accepte Échap — un dialogue maison mal fait serait MOINS accessible que
+       le natif, pas plus. -->
+  <div class="overlay" id="dialogue" hidden role="dialog" aria-modal="true" aria-labelledby="dialogueTitre">
+    <div class="overlay-card dialogue-card">
+      <div class="overlay-head">
+        <strong id="dialogueTitre"></strong>
+      </div>
+      <div class="overlay-body dialogue-body">
+        <p id="dialogueTexte" hidden></p>
+        <input type="text" id="dialogueChamp" class="mini" hidden>
+        <div class="controls dialogue-actions">
+          <button class="btn-primary" id="dialogueOk"></button>
+          <button class="btn-ghost" id="dialogueAnnuler" data-i18n="annuler">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay" id="overlay" hidden>
     <div class="overlay-card">
       <div class="overlay-head">

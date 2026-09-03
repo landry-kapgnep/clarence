@@ -3452,6 +3452,71 @@ function montrerSuggestion({ prefixe, texte, entites }) {
     barre.hidden = true;
   };
 }
+function demander({ titre, texte, valeur, libelleOk, danger }) {
+  const boite = $("dialogue");
+  const champ = $("dialogueChamp");
+  const ok = $("dialogueOk");
+  const annuler = $("dialogueAnnuler");
+  const declencheur = document.activeElement;
+  const saisie = valeur !== void 0;
+  $("dialogueTitre").textContent = titre;
+  $("dialogueTexte").textContent = texte || "";
+  $("dialogueTexte").hidden = !texte;
+  champ.hidden = !saisie;
+  champ.value = saisie ? valeur : "";
+  ok.textContent = libelleOk || msg("valider");
+  ok.classList.toggle("danger", !!danger);
+  boite.hidden = false;
+  document.querySelector(".wrap")?.setAttribute("inert", "");
+  const focusables = () => [...boite.querySelectorAll("input:not([hidden]), button")].filter((e) => !e.disabled && e.offsetParent !== null);
+  (saisie ? champ : ok).focus();
+  if (saisie) champ.select();
+  return new Promise((resolve) => {
+    const fermer = (resultat) => {
+      boite.hidden = true;
+      document.querySelector(".wrap")?.removeAttribute("inert");
+      document.removeEventListener("keydown", auClavier, true);
+      ok.onclick = annuler.onclick = boite.onmousedown = null;
+      if (declencheur && declencheur.focus) declencheur.focus();
+      resolve(resultat);
+    };
+    const valider = () => {
+      if (!saisie) return fermer(true);
+      const v = champ.value.trim();
+      fermer(v || null);
+    };
+    function auClavier(e) {
+      if (boite.hidden) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        return fermer(null);
+      }
+      if (e.key === "Enter" && saisie && e.target === champ) {
+        e.preventDefault();
+        return valider();
+      }
+      if (e.key !== "Tab") return;
+      const f = focusables();
+      if (!f.length) return;
+      const premier = f[0], dernier = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === premier) {
+        e.preventDefault();
+        dernier.focus();
+      } else if (!e.shiftKey && document.activeElement === dernier) {
+        e.preventDefault();
+        premier.focus();
+      }
+    }
+    document.addEventListener("keydown", auClavier, true);
+    ok.onclick = valider;
+    annuler.onclick = () => fermer(null);
+    boite.onmousedown = (e) => {
+      if (e.target === boite) fermer(null);
+    };
+  });
+}
+var demanderTexte = (titre, valeur = "") => demander({ titre, valeur });
+var demanderConfirmation = (titre, libelleOk) => demander({ titre, texte: msg("action_irreversible"), libelleOk, danger: true });
 async function bindProfileBar(cfg) {
   const sel = $(cfg.selectId);
   if (!sel) return;
@@ -3479,21 +3544,21 @@ async function bindProfileBar(cfg) {
   $(cfg.saveId)?.addEventListener("click", async () => {
     let name = sel.value;
     if (!name) {
-      name = (window.prompt("Nom du profil ?") || "").trim();
+      name = await demanderTexte(msg("nom_du_profil"));
       if (!name) return;
     }
     profiles = await upsertProfile({ name, ...cfg.read() });
     refill(name);
   });
   $(cfg.newId)?.addEventListener("click", async () => {
-    const name = (window.prompt("Nom du nouveau profil ?") || "").trim();
+    const name = await demanderTexte(msg("nom_du_nouveau_profil"));
     if (!name) return;
     profiles = await upsertProfile({ name, ...cfg.read() });
     refill(name);
   });
   $(cfg.deleteId)?.addEventListener("click", async () => {
     if (!sel.value) return;
-    if (!window.confirm(`Supprimer le profil \xAB ${sel.value} \xBB ?`)) return;
+    if (!await demanderConfirmation(msg("supprimer_le_profil", [sel.value]), msg("supprimer"))) return;
     profiles = await deleteProfile(sel.value);
     refill();
   });
@@ -3597,7 +3662,7 @@ $("identityLaterBtn")?.addEventListener("click", async () => {
   $("identityOverlay").hidden = true;
 });
 $("identityClearBtn")?.addEventListener("click", async () => {
-  if (!window.confirm("Effacer toutes les informations d'identit\xE9 stock\xE9es ?")) return;
+  if (!await demanderConfirmation(msg("effacer_identite"), msg("effacer"))) return;
   await clearIdentity();
   identityCache = { status: "refus\xE9", champs: {} };
   await saveIdentity(identityCache);

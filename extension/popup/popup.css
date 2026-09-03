@@ -1541,3 +1541,17 @@ select:focus-visible, .mini-select:focus-visible {
 /* Les options, elles, ne reçoivent que la couleur — et seulement sur les
    plateformes qui l'acceptent. C'est le plafond du natif. */
 select option { background: var(--bg-raised); color: var(--paper); }
+
+/* Le dialogue maison : plus étroit que les autres cartes, parce qu'il ne porte
+   qu'une question. Une modale qui prend toute la place pour demander un nom
+   fait plus peur que le prompt qu'elle remplace. */
+.dialogue-card { max-width: min(360px, 100%); }
+.dialogue-body { gap: 12px; display: flex; flex-direction: column; white-space: normal; }
+.dialogue-body p { margin: 0; color: var(--paper-dim); font-size: 12.5px; }
+#dialogueChamp { width: 100%; }
+.dialogue-actions { justify-content: flex-end; }
+
+/* Une action destructrice se signale par la couleur, jamais par la couleur
+   SEULE : son libellé dit déjà « Supprimer » ou « Effacer ». */
+.btn-primary.danger { background: var(--seal); color: var(--paper); }
+.btn-primary.danger:hover:not(:disabled) { filter: brightness(1.12); }

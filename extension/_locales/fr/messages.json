@@ -423,5 +423,34 @@
   },
   "profil": {
     "message": "profil"
+  },
+  "valider": {
+    "message": "Valider"
+  },
+  "supprimer": {
+    "message": "Supprimer"
+  },
+  "effacer": {
+    "message": "Effacer"
+  },
+  "nom_du_profil": {
+    "message": "Nom du profil"
+  },
+  "nom_du_nouveau_profil": {
+    "message": "Nom du nouveau profil"
+  },
+  "supprimer_le_profil": {
+    "message": "Supprimer le profil « $NOM$ » ?",
+    "placeholders": {
+      "nom": {
+        "content": "$1"
+      }
+    }
+  },
+  "effacer_identite": {
+    "message": "Effacer toutes les informations d’identité stockées ?"
+  },
+  "action_irreversible": {
+    "message": "Cette action ne peut pas être annulée."
   }
 }

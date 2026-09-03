@@ -2417,6 +2417,91 @@ function montrerSuggestion({ prefixe, texte, entites }) {
   };
 }
 
+
+// ===== Dialogue maison, en place de window.prompt / window.confirm ==========
+//
+// Ces deux-là sont peints par le NAVIGATEUR : aucun CSS ne les atteint, et ils
+// étaient les éléments les plus dissonants de l'interface — une boîte système
+// au milieu d'une direction artistique tenue partout ailleurs.
+//
+// ⚠️ UN DIALOGUE MAISON MAL FAIT EST MOINS ACCESSIBLE QUE LE NATIF, pas plus.
+// C'est le seul risque de ce remplacement, et il se paie en quatre obligations,
+// toutes tenues ici :
+//   · role="dialog" + aria-modal, pour que le lecteur d'écran sorte du fond ;
+//   · le focus ENTRE au premier contrôle utile et REVIENT à son déclencheur en
+//     sortant — sans quoi on se retrouve perdu en haut de page ;
+//   · le focus est PIÉGÉ : Tab tourne dans le dialogue au lieu d'aller
+//     parcourir une interface qu'on ne voit plus ;
+//   · Échap annule, comme partout ailleurs.
+//
+// Rend une promesse : la chaîne saisie, `true`, ou `null` si annulé.
+function demander({ titre, texte, valeur, libelleOk, danger }) {
+  const boite = $('dialogue');
+  const champ = $('dialogueChamp');
+  const ok = $('dialogueOk');
+  const annuler = $('dialogueAnnuler');
+  const declencheur = document.activeElement;
+  const saisie = valeur !== undefined;
+
+  $('dialogueTitre').textContent = titre;
+  $('dialogueTexte').textContent = texte || '';
+  $('dialogueTexte').hidden = !texte;
+  champ.hidden = !saisie;
+  champ.value = saisie ? valeur : '';
+  ok.textContent = libelleOk || msg('valider');
+  ok.classList.toggle('danger', !!danger);
+  boite.hidden = false;
+  // `inert` met tout le reste de l'interface hors d'atteinte — du clavier, de
+  // la souris ET de l'arbre d'accessibilité — nativement. Le piège à focus
+  // plus bas devient alors une SÉCONDE barrière plutôt que la seule : si mon
+  // code se trompe, le navigateur tient quand même la porte fermée.
+  document.querySelector('.wrap')?.setAttribute('inert', '');
+
+  const focusables = () => [...boite.querySelectorAll('input:not([hidden]), button')]
+    .filter(e => !e.disabled && e.offsetParent !== null);
+  (saisie ? champ : ok).focus();
+  if (saisie) champ.select();
+
+  return new Promise(resolve => {
+    const fermer = (resultat) => {
+      boite.hidden = true;
+      document.querySelector('.wrap')?.removeAttribute('inert');
+      document.removeEventListener('keydown', auClavier, true);
+      ok.onclick = annuler.onclick = boite.onmousedown = null;
+      // Rendre le focus est aussi important que le prendre.
+      if (declencheur && declencheur.focus) declencheur.focus();
+      resolve(resultat);
+    };
+    const valider = () => {
+      if (!saisie) return fermer(true);
+      const v = champ.value.trim();
+      fermer(v || null);
+    };
+    function auClavier(e) {
+      if (boite.hidden) return;
+      if (e.key === 'Escape') { e.preventDefault(); return fermer(null); }
+      if (e.key === 'Enter' && saisie && e.target === champ) { e.preventDefault(); return valider(); }
+      if (e.key !== 'Tab') return;
+      // Piège à focus : sans lui, Tab s'échappe vers une page qu'on ne voit plus.
+      const f = focusables();
+      if (!f.length) return;
+      const premier = f[0], dernier = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === premier) { e.preventDefault(); dernier.focus(); }
+      else if (!e.shiftKey && document.activeElement === dernier) { e.preventDefault(); premier.focus(); }
+    }
+    document.addEventListener('keydown', auClavier, true);
+    ok.onclick = valider;
+    annuler.onclick = () => fermer(null);
+    // Clic hors de la carte : annule. Sur `mousedown` de l'ARRIÈRE-PLAN
+    // seulement, sinon une sélection de texte relâchée dehors fermerait tout.
+    boite.onmousedown = (e) => { if (e.target === boite) fermer(null); };
+  });
+}
+
+const demanderTexte = (titre, valeur = '') => demander({ titre, valeur });
+const demanderConfirmation = (titre, libelleOk) =>
+  demander({ titre, texte: msg('action_irreversible'), libelleOk, danger: true });
+
 // Préréglages nommés persistants (chrome.storage.local) des options de
 // personnalisation. Le profil « Développeur / Tech » livré par défaut règle le
 // sur-masquage des technos (React/Prisma/Docker) via sa liste « ne jamais
@@ -2460,13 +2545,13 @@ async function bindProfileBar(cfg) {
   $(cfg.saveId)?.addEventListener('click', async () => {
     // Enregistre l'état courant dans le profil sélectionné, ou demande un nom.
     let name = sel.value;
-    if (!name) { name = (window.prompt('Nom du profil ?') || '').trim(); if (!name) return; }
+    if (!name) { name = await demanderTexte(msg('nom_du_profil')); if (!name) return; }
     profiles = await upsertProfile({ name, ...cfg.read() });
     refill(name);
   });
 
   $(cfg.newId)?.addEventListener('click', async () => {
-    const name = (window.prompt('Nom du nouveau profil ?') || '').trim();
+    const name = await demanderTexte(msg('nom_du_nouveau_profil'));
     if (!name) return;
     profiles = await upsertProfile({ name, ...cfg.read() });
     refill(name);
@@ -2474,7 +2559,7 @@ async function bindProfileBar(cfg) {
 
   $(cfg.deleteId)?.addEventListener('click', async () => {
     if (!sel.value) return;
-    if (!window.confirm(`Supprimer le profil « ${sel.value} » ?`)) return;
+    if (!await demanderConfirmation(msg('supprimer_le_profil', [sel.value]), msg('supprimer'))) return;
     profiles = await deleteProfile(sel.value);
     refill();
   });
@@ -2610,7 +2695,7 @@ $('identityLaterBtn')?.addEventListener('click', async () => {
 });
 
 $('identityClearBtn')?.addEventListener('click', async () => {
-  if (!window.confirm('Effacer toutes les informations d\'identité stockées ?')) return;
+  if (!await demanderConfirmation(msg('effacer_identite'), msg('effacer'))) return;
   await clearIdentity();
   // status 'refusé' : tout est effacé ET on ne re-propose pas la modale au
   // prochain lancement (l'utilisateur vient de dire non explicitement).
