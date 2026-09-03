@@ -8,6 +8,7 @@ import { detectGliner, GLINER_MODEL, TYPES_PEU_FIABLES, glinerModelUrl, arbitrer
 import { filtrerParPrecision, composerArbitre } from '../engine/precision.js';
 import { analyserTypeDocument } from '../engine/type-document.js';
 import { PROFIL_POUR_TYPE } from './profiles.js';
+import { motsDeForme } from '../engine/vocabulaire-formats.js';
 import { compresser, compresserSegments, COMPRESSION_MODEL } from '../engine/compression.js';
 // `msg` et pas `t` : trois variables locales de ce fichier s'appellent
 // déjà `t` (paramètres déstructurés, boucles), et l'import se serait fait
@@ -2303,6 +2304,20 @@ function montrerSuggestion({ prefixe, texte, entites }) {
   if (!profil || !bar.existe(profil) || bar.courant() === profil) return;
   if (suggestionsEcartees.has(type)) return;
 
+  // ⚠️ NE PAS PROPOSER UN RECUL. Comparer les NOMS ne suffit pas : les profils
+  // de métier portent eux aussi le vocabulaire de leur format — « Développeur /
+  // Tech » contient tout le vocabulaire CV. Proposer « CV / Résumé » à
+  // quelqu'un qui est déjà dessus lui ferait PERDRE sa liste de technos, et
+  // remasquerait `Ollama`, `JaCoCo`, `BDD` — constaté sur un vrai CV.
+  //
+  // La bonne question n'est donc pas « le profil est-il différent ? » mais
+  // « couvre-t-il déjà ce format ? ». S'il le couvre, on se tait.
+  const actuel = bar.profil();
+  if (actuel) {
+    const deja = new Set(actuel.alwaysKeep.map(t => t.toLowerCase()));
+    if (motsDeForme(type).every(m => deja.has(m))) return;
+  }
+
   $(prefixe + 'SuggestTxt').textContent =
     msg('suggestion_profil', [msg('format_' + type), profil]);
   barre.hidden = false;
@@ -2342,6 +2357,7 @@ async function bindProfileBar(cfg) {
 
   barresDeProfil.set(cfg.selectId, {
     courant: () => sel.value,
+    profil: () => profiles.find(p => p.name === sel.value) || null,
     existe: nom => profiles.some(p => p.name === nom),
     selectionner: nom => {
       const p = profiles.find(x => x.name === nom);

@@ -3372,6 +3372,11 @@ function montrerSuggestion({ prefixe, texte, entites }) {
   const profil = type ? PROFIL_POUR_TYPE[type] : null;
   if (!profil || !bar.existe(profil) || bar.courant() === profil) return;
   if (suggestionsEcartees.has(type)) return;
+  const actuel = bar.profil();
+  if (actuel) {
+    const deja = new Set(actuel.alwaysKeep.map((t) => t.toLowerCase()));
+    if (motsDeForme(type).every((m) => deja.has(m))) return;
+  }
   $(prefixe + "SuggestTxt").textContent = msg("suggestion_profil", [msg("format_" + type), profil]);
   barre.hidden = false;
   $(prefixe + "SuggestApply").onclick = () => {
@@ -3394,6 +3399,7 @@ async function bindProfileBar(cfg) {
   refill();
   barresDeProfil.set(cfg.selectId, {
     courant: () => sel.value,
+    profil: () => profiles.find((p) => p.name === sel.value) || null,
     existe: (nom) => profiles.some((p) => p.name === nom),
     selectionner: (nom) => {
       const p = profiles.find((x) => x.name === nom);

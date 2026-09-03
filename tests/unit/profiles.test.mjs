@@ -259,3 +259,30 @@ test('aucun mot de forme ne démasque une entité plausible', async () => {
   assert.deepEqual(gardees.map(e => e.value), pieges,
     'un mot de forme a démasqué une entité plausible');
 });
+
+// ⚠️ NE PAS PROPOSER UN RECUL — la règle qui empêche la suggestion de nuire.
+//
+// Comparer les NOMS ne suffit pas : les profils de MÉTIER portent eux aussi le
+// vocabulaire de leur format. « Développeur / Tech » contient tout le
+// vocabulaire CV, donc proposer « CV / Résumé » à quelqu'un déjà dessus lui
+// ferait PERDRE sa liste de technos — et remasquerait « Ollama », « JaCoCo »,
+// « BDD », constaté sur un vrai CV. La bonne question n'est pas « le profil
+// est-il différent ? » mais « couvre-t-il déjà ce format ? ».
+test('un profil qui couvre déjà le format ne doit pas recevoir de suggestion', async () => {
+  const { motsDeForme } = await import('../../src/engine/vocabulaire-formats.js');
+  const couvre = (nom, format) => {
+    const p = defaultProfiles().find(x => x.name === nom);
+    const deja = new Set(p.alwaysKeep.map(t => t.toLowerCase()));
+    return motsDeForme(format).every(m => deja.has(m));
+  };
+  // Ceux-là se taisent : ils portent déjà le vocabulaire du format.
+  assert.ok(couvre('Développeur / Tech', 'cv'), 'Dev/Tech devrait couvrir le CV');
+  assert.ok(couvre('CV / Résumé', 'cv'));
+  assert.ok(couvre('École / Études', 'scolaire'));
+  assert.ok(couvre('Administratif', 'administratif'));
+  assert.ok(couvre('Relevé bancaire', 'bancaire'));
+  // Ceux-là non : la suggestion a une vraie valeur à apporter.
+  assert.ok(!couvre('Vierge', 'cv'));
+  assert.ok(!couvre('Relevé bancaire', 'cv'));
+  assert.ok(!couvre('Développeur / Tech', 'bancaire'));
+});
