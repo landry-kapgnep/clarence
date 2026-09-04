@@ -2401,13 +2401,6 @@ function montrerSuggestion({ prefixe, texte, entites }) {
 
 // ===== Dialogue maison, en place de window.prompt / window.confirm ==========
 //
-// Ces deux-là sont peints par le navigateur : aucun CSS ne les atteint, et ils
-// étaient les éléments les plus dissonants de l'interface - une boîte système
-// au milieu d'une direction artistique tenue partout ailleurs.
-//
-// Un dialogue maison mal fait est moins accessible que le natif, pas plus.
-// ===== Dialogue maison, en place de window.prompt / window.confirm ==========
-//
 // Ces deux-là sont peints par le navigateur, aucun CSS ne les atteint.
 //
 // Un dialogue maison mal fait est moins accessible que le natif, pas plus.
@@ -2416,6 +2409,13 @@ function montrerSuggestion({ prefixe, texte, entites }) {
 // piégé, Tab tourne dans le dialogue ; Échap annule.
 //
 // Rend une promesse : la chaîne saisie, `true`, ou `null` si annulé.
+function demander({ titre, texte, valeur, libelleOk, danger }) {
+  const boite = $('dialogue');
+  const champ = $('dialogueChamp');
+  const ok = $('dialogueOk');
+  const annuler = $('dialogueAnnuler');
+  const declencheur = document.activeElement;
+  const saisie = valeur !== undefined;
 
   $('dialogueTitre').textContent = titre;
   $('dialogueTexte').textContent = texte || '';

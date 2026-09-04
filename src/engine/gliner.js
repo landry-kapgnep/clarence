@@ -103,14 +103,6 @@ export const GROUPES = [
 ];
 
 // Types que le modèle ne détecte PAS de façon fiable : proposés dans l'UI mais
-// décochés par défaut. Mesuré sur un compte rendu RH :
-//
-//   « diabète de type 2 »   → job title          0,04
-//   « aide-soignante »      → medical condition  0,08
-//   « portugaise »          → nationalité        0,02
-//   « suivi psychologique » → donnée de santé    0,28
-//
-// Types que le modèle ne détecte PAS de façon fiable : proposés dans l'UI mais
 // décochés par défaut.
 //
 // Il inverse poste et donnée de santé en français, et place les vraies valeurs
@@ -119,8 +111,15 @@ export const GROUPES = [
 //
 // Les laisser actifs serait de la fausse confiance : l'utilisateur croirait ses
 // données de santé protégées. Chiffres : roadmap-detection.md, annexe.
-// produits par le modèle sont des noms communs par nature (« développeur »,
-// « diabète », « française ») et ne peuvent pas être filtrés ainsi.
+export const TYPES_PEU_FIABLES = ['POSTE', 'NATIONALITE', 'ETABLISSEMENT', 'SANTE'];
+
+// Types qu'un groupe peut produire - sert à sauter entièrement une passe dont
+// l'utilisateur a désactivé tous les types.
+const typesDuGroupe = g => Object.values(g.types);
+
+// PERSONNE / ENTREPRISE / LIEU portent une majuscule par définition. Les autres
+// types produits par le modèle sont des noms communs par nature
+// (« développeur », « diabète », « française »).
 const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
 
 // Écarte les spans sans majuscule quand le type exige un nom propre.
