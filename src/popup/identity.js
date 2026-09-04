@@ -87,25 +87,18 @@ export function identityTerms(identity) {
   return out;
 }
 
-// COMPOSANTS D'UN NOM MULTI-MOTS - le nom protège chacune de ses parties.
+// Composants d'un nom multi-mots : le nom déclaré protège chacune de ses parties.
 //
-// Le défaut que ça corrige (P12, trouvé sur un vrai casier judiciaire). Un
-// formulaire officiel éclate le nom sur deux lignes : « Nom MESNARD » puis
-// « Prénom(s) ADRIEN ». Qui a saisi son nom complet dans une seule case ne
-// voyait donc masquer NI l'un NI l'autre, puisque `forcedMasks` cherche la
-// chaîne littérale « Adrien Mesnard », qui n'apparaît nulle part sous cette
-// forme. Le garde-fou déterministe - celui qui ne dépend d'aucun score - ne
-// jouait pas dans le cas précis où il aurait été le plus utile.
+// P12, trouvé sur un vrai casier judiciaire. Un formulaire officiel éclate le
+// nom sur deux lignes, « Nom MESNARD » puis « Prénom(s) ADRIEN ». Qui a saisi
+// son nom complet dans une seule case ne voyait masquer ni l'un ni l'autre,
+// `forcedMasks` cherchant la chaîne littérale « Adrien Mesnard », absente sous
+// cette forme. Le garde-fou déterministe ne jouait pas là où il aurait été le
+// plus utile.
 //
-// C'est la même leçon que les pseudonymes par composant (03/08) : un nom
-// existe entier ET en morceaux. Elle avait été appliquée à `pseudonyms.js`,
-// jamais reportée ici.
-//
-// Seulement les champs de noms, et c'est le point délicat. Décomposer une
-// adresse (« 18 rue des Glycines ») masquerait « rue » et « des » dans tout le
-// document ; décomposer un employeur (« Korrigane Labs ») masquerait « Labs ».
-// Ces champs restent donc cherchés en entier. Un prénom ou un patronyme, lui,
-// est un terme légitime à masquer seul, quel que soit son voisinage.
+// Seulement les champs de NOMS, et c'est le point délicat : décomposer une
+// adresse masquerait « rue » et « des » dans tout le document, décomposer un
+// employeur masquerait « Labs ». Ces champs restent cherchés en entier.
 const CHAMPS_DECOMPOSABLES = ['prenom', 'nom'];
 
 // Particules et civilités : liste et règle de position partagées avec

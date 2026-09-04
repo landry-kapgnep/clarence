@@ -1,22 +1,16 @@
-// Adaptateur DOCX - Phase 3, la vraie difficulté : Word coupe une phrase sur
-// plusieurs <w:r> (runs) de façon arbitraire (correcteur, mise en forme,
-// suivi des modifications), donc "Jean Dupont" est souvent scindé entre deux
-// runs. Voir distributeEntitiesOverRuns (text-units.js) pour la redistribution.
+// Adaptateur DOCX. La vraie difficulté : Word coupe une phrase sur plusieurs
+// <w:r> de façon arbitraire (correcteur, mise en forme, suivi des
+// modifications), donc « Jean Dupont » est souvent scindé entre deux runs. Voir
+// distributeEntitiesOverRuns dans text-units.js.
 //
-// DOMParser/XMLSerializer n'existent pas sous Node : injectables en option
-// (défaut globalThis), même convention que detectNER(text, nerPipeline) qui
-// injecte déjà son pipeline. Les tests passent @xmldom/xmldom (devDependency
-// uniquement, jamais bundlée dans l'extension).
+// DOMParser et XMLSerializer n'existent pas sous Node : injectables en option,
+// même convention que le pipeline de detectNER. Les tests passent
+// @xmldom/xmldom, devDependency jamais bundlée.
 //
-// Répartition des responsabilités (voir plan) :
-// - le suivi des modifications (<w:del>/<w:ins>) est toujours retiré, y
-//   compris par extractTextUnits/applyMask seuls : un <w:del> est du contenu
-//   récupérable en un clic ("rejeter les modifications"), donc une vraie
-//   fuite potentielle, pas juste de la métadonnée cosmétique.
-// - les commentaires (ancres dans document.xml + partie word/comments*.xml)
-//   ne sont PAS anonymisés en place : ils sont supprimés entièrement, et
-//   uniquement par stripMetadata (usage attendu : toujours appelé avec
-//   applyMask pour une anonymisation complète, comme pour XLSX/CSV).
+// Le suivi des modifications est toujours retiré, même par extractTextUnits
+// seul : un <w:del> est du contenu récupérable en un clic, donc une vraie fuite.
+// Les commentaires ne sont pas anonymisés en place mais supprimés entièrement,
+// et uniquement par stripMetadata.
 import { unzipSync, zipSync, strToU8, strFromU8 } from 'fflate';
 import { joinRuns, distributeEntitiesOverRuns } from './text-units.js';
 import { stripCoreProps, stripAppProps, stripCommentParts } from './ooxml-metadata.js';

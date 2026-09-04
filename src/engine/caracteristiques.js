@@ -54,26 +54,23 @@ export function contexteDocument(texte, { sousMots } = {}) {
   return { enMinuscules, comptes, sousMots };
 }
 
-// Nombre de morceaux WordPiece d'un mot, par segmentation gloutonne - le même
-// algorithme que le tokenizer du modèle. Un mot connu du vocabulaire fait 1
-// morceau ; un mot inventé se casse en plusieurs.
+// Nombre de morceaux WordPiece d'un mot, par segmentation gloutonne. Un mot
+// connu du vocabulaire fait 1 morceau, un mot inventé se casse en plusieurs.
 //
-// Signal faible, mesuré comme tel, et c'est pour ça qu'il est ici plutôt que
-// dans une règle : « Semantikmatch » 5 morceaux et « SafePrompt » 4 contre
-// « terrain » 1 - mais aussi « acoustique » 3 et « bénévole » 3 (noms communs)
-// contre « Sorbonne » 1 (nom propre). Il informe, il ne tranche pas.
-// NE PAS MINUSCULISER, et c'est un piège qui a été commis puis mesuré. Le
-// vocabulaire est cased : « Unternehmen » y figure, « unternehmen » non. Une
-// première version minusculisait avant de segmenter et rendait donc 2 morceaux
-// pour le mot allemand le plus banal qui soit, alors qu'il est présent en une
-// seule pièce. La caractéristique mesurait la casse au lieu de la rareté.
+// Signal faible, et c'est pour ça qu'il est ici plutôt que dans une règle :
+// « Semantikmatch » 5 morceaux contre « terrain » 1, mais aussi « acoustique »
+// 3 (nom commun) contre « Sorbonne » 1 (nom propre). Il informe, il ne tranche
+// pas.
 //
-// On segmente trois formes - surface, minuscule, et capitale initiale - et on
-// garde le minimum. La troisième n'est pas un luxe : « SPRACHEN » en capitales
-// ne retrouve ni « SPRACHEN » ni « sprachen » au vocabulaire, seulement
-// « Sprachen ». Or les capitales d'un intitulé sont une convention de mise en
-// page, pas un mot différent - et les intitulés en capitales sont justement
-// l'endroit où le sur-masquage se concentre.
+// NE PAS MINUSCULISER, piège commis puis mesuré. Le vocabulaire est cased :
+// « Unternehmen » y figure, « unternehmen » non. Minusculiser avant de
+// segmenter rendait 2 morceaux pour le mot allemand le plus banal, donc
+// mesurait la casse au lieu de la rareté.
+//
+// On segmente trois formes (surface, minuscule, capitale initiale) et on garde
+// le minimum. La troisième n'est pas un luxe : « SPRACHEN » ne retrouve que
+// « Sprachen », et les intitulés en capitales sont justement là où le
+// sur-masquage se concentre.
 function segmenter(mot, sousMots) {
   let i = 0, n = 0;
   while (i < mot.length) {

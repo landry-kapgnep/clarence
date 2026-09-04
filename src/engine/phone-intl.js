@@ -1,21 +1,16 @@
-// Détection des téléphones au format international (+XX), tous pays, via
-// libphonenumber-js (portage JS de la référence Google, métadonnées maintenues
-// par la bibliothèque - nous n'avons aucun motif par pays à écrire ni à suivre).
+// Téléphones au format international (+XX), tous pays, via libphonenumber-js.
+// Les métadonnées sont maintenues par la bibliothèque : aucun motif par pays à
+// écrire ni à suivre.
 //
-// Pourquoi en complément et non en remplacement de la regex FR de
-// regex-detect.js : mesuré sur des cas réels,
-//  - sans pays par défaut, la bibliothèque ne capte QUE le format international,
-//    donc zéro faux positif sur nos pièges (« 483 921 657 » SIREN invalide,
-//    « 4970123456789012 » carte, « 1 240,50 € ») - vérifié par test ;
-//  - avec un pays par défaut (FR), elle prend « 483 921 657 » pour un numéro
-//    français et casserait la fixture « zéro faux positif ». Écarté.
-// La regex FR continue donc de couvrir les numéros nationaux (06…, 0033…), et
-// cette passe ajoute le reste du monde.
+// En COMPLÉMENT de la regex FR, pas en remplacement. Sans pays par défaut, la
+// bibliothèque ne capte que le format international, donc zéro faux positif sur
+// nos pièges (« 483 921 657 » SIREN, « 1 240,50 € »). Avec `defaultCountry:
+// 'FR'` elle prend le SIREN pour un numéro français et casse la fixture. La
+// regex FR couvre donc les numéros nationaux, cette passe le reste du monde.
 //
-// extended: true → accepte les numéros plausibles mais non strictement valides
-// (ex. « +1 (551) 019-2834 », central US impossible). Priorité zéro-fuite,
-// même logique que maskIfStructureMatches pour l'IBAN/NIR : mieux vaut masquer
-// un numéro fictif que laisser fuir un vrai numéro mal formé.
+// `extended: true` accepte les numéros plausibles mais non strictement valides.
+// Priorité zéro-fuite, même logique que maskIfStructureMatches : mieux vaut
+// masquer un numéro fictif que laisser fuir un vrai mal formé.
 import { findNumbers } from 'libphonenumber-js';
 
 export function detectPhonesIntl(text) {
