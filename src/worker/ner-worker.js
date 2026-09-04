@@ -1,25 +1,19 @@
-// Worker de détection contextuelle : fait tourner le modèle hors du thread
-// principal. Deux moteurs interchangeables derrière le même protocole.
-//
-// Pourquoi hors du thread principal : sur le thread principal l'UI gèle - au
-// point que les menus dépliés voyaient leur contenu coupé (la hauteur du
-// panneau est annoncée par ResizeObserver → postMessage, qui ne partait
-// qu'une fois le thread libéré) et que l'utilisateur croyait à un plantage.
-//
-// MV3 autorise bien un worker packagé dans l'extension (CSP `script-src
-// 'self'`) : c'est déjà ce qu'on fait pour pdf.worker.min.mjs.
+// Worker de détection contextuelle : le modèle tourne hors du thread principal,
+// où il gelait l'UI au point que les menus dépliés voyaient leur contenu coupé
+// (la hauteur du panneau part par postMessage, qui n'était posté qu'une fois le
+// thread libéré). MV3 autorise un worker packagé, c'est déjà le cas de
+// pdf.worker.min.mjs.
 //
 // Protocole :
 //   { type:'init', engine:'gliner'|'bert', wasmPath, model, modelUrl }
 //        → { type:'ready', engine } | { type:'error', message }
-//        → { type:'progress', loaded, total }   (téléchargement du modèle)
+//        → { type:'progress', loaded, total }
 //   { type:'run', id, text, labels }
-//        → { type:'result', id, spans }   (gliner : spans décodés)
-//        → { type:'result', id, tokens }  (bert : tokens bruts)
-//        → { type:'error', id, message }
+//        → { type:'result', id, spans }   (gliner)
+//        → { type:'result', id, tokens }  (bert)
 //
-// Le worker ne fait QUE l'inférence : le fenêtrage, la reconstruction et le
-// masquage restent dans src/engine (purs et testés).
+// Le worker ne fait QUE l'inférence. Fenêtrage, reconstruction et masquage
+// restent dans src/engine, purs et testés.
 import { pipeline, env } from '@xenova/transformers';
 import { Gliner } from 'gliner';
 import { serialiser } from '../engine/batch.js';

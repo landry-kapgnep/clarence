@@ -1,26 +1,22 @@
 // Les mots de forme d'un document, par format et par langue.
 //
-// L'idée qui justifie ce module. Les mots qui permettent de reconnaître un
-// format sont exactement ceux qui ne doivent jamais y être masqués : « SOMMAIRE »
-// dit « ceci est un rapport » ET doit survivre à l'anonymisation, sans quoi le
-// LLM ne sait plus lire la structure du document. Deux besoins, un seul
-// vocabulaire - donc un seul endroit, et une langue ajoutée profite aux deux.
+// Les mots qui permettent de reconnaître un format sont exactement ceux qui ne
+// doivent jamais y être masqués : « SOMMAIRE » dit « ceci est un rapport » ET
+// doit survivre, sinon le LLM ne sait plus lire la structure. Deux besoins, un
+// seul vocabulaire, donc un seul endroit.
 //
-// Deux consommateurs :
-//   · src/engine/type-document.js - pour proposer un profil ;
-//   · src/popup/profiles.js       - pour remplir « ne jamais masquer ».
+// Consommé par type-document.js (proposer un profil) et profiles.js (remplir
+// « ne jamais masquer »).
 //
-// Ce qui a le droit d'entrer ici : des mots de mise en forme - intitulés de
-// rubrique, formules consacrées, en-têtes normalisés. Jamais un mot de contenu,
-// jamais un nom d'entreprise, de techno ou de personne. C'est ce qui rend la
-// liste courte, stable, et traduisible sans expertise métier.
+// Y entrent des mots de mise en forme : intitulés de rubrique, formules
+// consacrées, en-têtes normalisés. Jamais un mot de contenu, un nom
+// d'entreprise ou de personne.
 //
-// Ce qui n'a pas le droit d'entrer : un mot trop générique qui pourrait se
-// trouver dans une vraie entité. La correspondance de « ne jamais masquer » est
-// bidirectionnelle et mot à mot (voir filterByRules) : inscrire « formations »
-// démasquerait « Formations Dupont SARL ». On préfère donc les intitulés
-// distinctifs ou composés - et dans le doute, on n'inscrit rien : un mot de
-// forme oublié coûte un masque de trop, un mot de trop coûte une fuite.
+// N'y entre pas un mot trop générique : la correspondance de « ne jamais
+// masquer » est bidirectionnelle et mot à mot, donc inscrire « formations »
+// démasquerait « Formations Dupont SARL ». Dans le doute on n'inscrit rien, un
+// mot de forme oublié coûtant un masque de trop quand un mot de trop coûte une
+// fuite.
 
 export const FORMATS = ['cv', 'administratif', 'scolaire', 'bancaire'];
 export const LANGUES = ['fr', 'en', 'es', 'de', 'pt'];

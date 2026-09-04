@@ -1,25 +1,17 @@
-// Civilités (M., Mrs, Herr, Sr.…) - source de vérité unique, partagée par la
-// détection déterministe (regex-detect.js) et la pseudonymisation
-// (pseudonyms.js). Sans ça les deux divergeaient : le motif regex ne
-// connaissait que le français, si bien que « Mr Smith » n'était pas détecté
-// en déterministe, pendant que pseudonyms.js avait sa propre liste bricolée.
+// Civilités (M., Mrs, Herr, Sr.…), source unique partagée par regex-detect.js
+// et pseudonyms.js. Les deux divergeaient : le motif regex ne connaissait que
+// le français, donc « Mr Smith » n'était pas détecté, pendant que pseudonyms.js
+// avait sa propre liste bricolée.
 //
-// Pourquoi une liste statique est acceptable ici - et seulement ici.
-// Les civilités forment une classe fermée : une langue en compte une poignée
-// et n'en invente pas. C'est l'inverse d'une liste de noms, d'entreprises ou
-// de technos, qui sont des classes ouvertes et périment aussitôt écrites
-// (raison pour laquelle le projet refuse ce genre de liste dans le moteur).
-// La liste est donc incomplète en langues, jamais en concepts : ajouter une
-// langue est un ajout ponctuel, pas une maintenance continue.
+// Une liste statique n'est acceptable QUE dans ce cas : les civilités forment
+// une classe fermée, une langue en compte une poignée et n'en invente pas.
+// C'est l'inverse des noms, entreprises ou technos, que le projet refuse de
+// lister dans le moteur.
 //
-// Ce que la liste ne peut pas savoir, et comment on s'en protège.
-// « Miss », « Frau », « Don » sont aussi de vrais patronymes. Traiter un
-// composant comme une civilité au seul motif qu'il est dans la liste
-// laisserait fuir le nom de quelqu'un qui s'appelle réellement Miss.
-// D'où `isHonorificAt` : la position tranche, pas la seule appartenance -
-// une civilité précède un nom, elle n'est jamais le dernier composant ni le
-// seul. « miss Deva » → civilité ; « John Miss » et « Miss » seul →
-// patronyme, donc pseudonymisé. En cas de doute, on masque (zéro-fuite).
+// Mais « Miss », « Frau », « Don » sont aussi de vrais patronymes. C'est donc
+// la POSITION qui tranche, pas l'appartenance : une civilité précède un nom,
+// elle n'est jamais seule ni en dernier. « miss Deva » → civilité ; « John
+// Miss » → patronyme, donc pseudonymisé. Dans le doute, on masque.
 
 // Sans point : la comparaison se fait en minuscules, points retirés.
 //

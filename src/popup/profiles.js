@@ -79,29 +79,22 @@ const PUBLIC_KEEP = [
   'YouTube', 'Reddit', 'Wikipedia', 'Twitter', 'Slack', 'Zoom', 'Teams'
 ];
 
-// Mots d'architecture de document - dans tous les profils, jamais dans un seul.
+// Mots d'architecture de document : dans tous les profils, jamais dans un seul.
 //
-// Pourquoi partout. Un intitulé de section n'appartient pas à un type de
-// document : « COMPÉTENCES » vaut pour un CV, « SOMMAIRE » pour un mémoire,
-// « MENTIONS » pour un formulaire. En faire un profil « CV » obligerait à
-// choisir entre lui et son profil de métier, alors qu'on veut les deux - les
-// profils sont exclusifs.
+// Un intitulé de section n'appartient pas à un type de document.
+// « COMPÉTENCES » vaut pour un CV, « SOMMAIRE » pour un mémoire. En faire un
+// profil « CV » obligerait à choisir entre lui et le profil métier, alors que
+// les profils sont exclusifs.
 //
-// Ce que ça corrige, mesuré : la passe à casse adoucie (P12) fait ressembler un
-// intitulé en capitales à un nom propre. « COMPÉTENCES CLÉS », « Outils »,
-// « Systèmes », « Spécialités » et « SPRACHEN » sont sortis masqués sur de
-// vrais documents.
+// Ce que ça corrige : la passe à casse adoucie (P12) fait ressembler un
+// intitulé en capitales à un nom propre. « COMPÉTENCES CLÉS », « Outils » et
+// « SPRACHEN » sont sortis masqués sur de vrais documents.
 //
-// ===================== RÈGLE D'ADMISSION, LA PLUS IMPORTANTE ================
-// Elle vaut pour les trois listes ci-dessous. Ce qu'on écrit dans un « ne
-// jamais masquer » ne sera jamais masqué, pour personne : une liste blanche
-// est un vecteur de fuite, pas une simple commodité.
-//
-// Donc du vocabulaire générique uniquement. Jamais un nom d'école, d'employeur
-// ou de ville : ce sont des quasi-identifiants, et les blanchir rouvrirait
-// exactement le trou qu'on ferme ailleurs. Un nom propre n'est admis que s'il
-// ne peut désigner personne (voir public_keep : ChatGPT, Google).
-// ===========================================================================
+// RÈGLE D'ADMISSION, valable pour les trois listes. Ce qu'on écrit dans un
+// « ne jamais masquer » ne sera jamais masqué, pour personne : c'est un vecteur
+// de fuite, pas une commodité. Donc du vocabulaire générique uniquement, jamais
+// un nom d'école, d'employeur ou de ville. Un nom propre n'est admis que s'il
+// ne peut désigner personne (ChatGPT, Google).
 const STRUCTURE_KEEP = [
   'SOMMAIRE', 'INTRODUCTION', 'CONCLUSION', 'REMERCIEMENTS', 'ANNEXE', 'ANNEXES',
   'BIBLIOGRAPHIE', 'RÉFÉRENCES', 'GLOSSAIRE', 'RÉSUMÉ', 'ABSTRACT', 'PRÉAMBULE',

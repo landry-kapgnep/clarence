@@ -73,29 +73,21 @@ export function expliquer(candidat, ctx, modele = POIDS) {
   return pire?.nom ?? null;
 }
 
-// Garde-fou 4 - un seul mot ne se juge pas. Mesuré au banc, pas supposé.
+// Garde-fou 4 : un candidat d'un seul mot ne se juge pas.
 //
-// Le filtre faisait perdre deux patronymes : « Vaquier », seul dans une cellule
-// de tableau, et « Fontaine » (de « Rose Fontaine ») - tous deux étiquetés
-// ENTREPRISE par le modèle, donc hors de portée du garde-fou 3 qui, lui,
-// raisonne par type. **Un patronyme mal étiqueté reste un patronyme.**
+// Le filtre perdait « Vaquier », seul dans une cellule, et « Fontaine » (de
+// « Rose Fontaine »), tous deux étiquetés ENTREPRISE donc hors de portée du
+// garde-fou 3 qui raisonne par type. Un patronyme mal étiqueté reste un
+// patronyme.
 //
-// Le mécanisme. Un candidat d'un seul mot n'offre presque aucune prise : le
-// lexique n'y voit rien, `nbMots` ne rapporte qu'un cinquième de son poids, et
-// il ne reste que le score du modèle - dont on a mesuré qu'il ne sépare rien.
-// Or les candidats d'un seul mot sont massivement des patronymes et des VILLES,
-// c'est-à-dire ce qu'il y a de plus sensible ; « Calahorra », l'unique perte de
-// l'évaluation, en est un.
+// Un mot seul n'offre presque aucune prise : le lexique n'y voit rien, `nbMots`
+// ne pèse qu'un cinquième, et il ne reste que le score du modèle, dont on a
+// mesuré qu'il ne sépare rien. Or les candidats d'un mot sont massivement des
+// patronymes et des villes.
 //
-// SYMÉTRIQUEMENT, on ne perd rien : les faux positifs que le filtre attrape
-// réellement sont tous des groupes de plusieurs mots - « Modélisation
-// applicative », « Relevé de notes », « Analyse statistique des écarts »,
-// « Portugais bilingue ». Les seuls candidats d'un mot qu'il retirait étaient
-// « JaCoCo » et « BDD », des technologies, que les profils traitent déjà mieux.
-//
-// C'est donc une restriction qui coûte zéro et protège la classe la plus
-// exposée. Elle vaut aussi à l'entraînement (voir tools/filtre/entrainer.mjs) :
-// les chiffres annoncés doivent être ceux du filtre réellement livré.
+// Et on ne perd rien : les faux positifs réellement attrapés sont tous des
+// groupes de plusieurs mots. Les seuls candidats d'un mot que le filtre
+// retirait étaient « JaCoCo » et « BDD », que les profils traitent mieux.
 export const MOTS_MINIMUM = 2;
 
 // Garde-fou 5 : la FORME d'un nom protège, pas seulement son étiquette.
