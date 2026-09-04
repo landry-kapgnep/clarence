@@ -281,14 +281,14 @@
         <section id="fileResults" class="bloc" hidden>
           <h2 class="visuellement-cache" data-i18n="resultat">Résultat</h2>
           <div class="controls">
-            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png" alt="Télécharger" data-i18n-alt="telecharger"></button>
-            <button class="btn-ghost" id="fileCopyBtn" hidden><img class="cpbtn" src="img/ClarenceCpButtonW.png" alt="Copier" data-i18n-alt="copier"></button>
+            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png" alt="" aria-hidden="true"><span data-i18n="telecharger">Télécharger</span></button>
+            <button class="btn-ghost" id="fileCopyBtn" hidden><img class="cpbtn" src="img/ClarenceCpButtonW.png" alt="" aria-hidden="true"><span data-i18n="copier">Copier</span></button>
             <button id="dragCard" class="btn-ghost drag-card" hidden>
               <span class="drag-card-icon" aria-hidden="true">⇠</span>
               <span data-i18n="vers_la_page">Vers la page</span>
             </button>
-            <span class="status" id="fileCopyStatus"></span>
           </div>
+          <span class="status" id="fileCopyStatus"></span>
           <p class="status" id="fileSummary"></p>
 
         <div class="mapping-bloc">

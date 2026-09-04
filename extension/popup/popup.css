@@ -1717,19 +1717,36 @@ select option { background: var(--bg-raised); color: var(--paper); }
   background: var(--rouge-marque);
   margin-left: calc(-1 * var(--debord-panneau));
   margin-right: calc(-1 * var(--debord-panneau));
-  padding: 0 var(--debord-panneau);
+  /* Aucun rembourrage : ce sont les BOUTONS qui vont d'un bord à l'autre, pas
+     seulement leur fond. Leur zone cliquable atteint donc le bord du panneau —
+     une cible bornée par le bord de l'écran est la plus facile à viser. */
+  padding: 0;
   margin-top: var(--e-m);
   /* Sans écart : deux aplats de même couleur qui se touchent ne montrent
      aucune couture, et le survol révèle alors la vraie zone cliquable. */
   gap: 0;
 }
+/* Chaque geste prend sa part de la largeur : le bandeau est une barre
+   d'actions, pas trois boutons posés à gauche. `flex: 1` les répartit à parts
+   égales quel qu'en soit le nombre — Copier et « Vers la page » n'apparaissent
+   pas dans tous les cas. */
 #fileResults > .controls > button,
 #fileResults > .controls > .drag-card {
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 0;
   background: transparent;
   color: #fff;
   border: 0;
   box-shadow: none;
-  padding: 0 14px;
+  padding: 0 10px;
+}
+/* Un libellé trop long pour sa part se coupe plutôt que de pousser ses
+   voisins : les trois parts restent égales. */
+#fileResults > .controls > :is(button, .drag-card) > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* L'inversion des pictos ne vaut que sur un bouton CLAIR (.btn-primary) ; ici
    le fond est sombre, ils redeviennent blancs — leur couleur d'origine. */
@@ -1750,7 +1767,6 @@ select option { background: var(--bg-raised); color: var(--paper); }
   outline-offset: -3px;
 }
 /* « Copié ! » s'affiche SUR le bandeau : --paper-dim y serait illisible. */
-#fileResults > .controls > .status { color: #fff; margin-top: 0; padding-left: 8px; }
 
 /* Les deux légendes d'action se touchaient. Le « × » se lisant seul, le mot
    « fois » est retiré de l'écran (gardé pour les lecteurs d'écran), et il reste
