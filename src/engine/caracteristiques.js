@@ -1,16 +1,16 @@
-// Ce qu'on peut dire d'un candidat SANS le modèle - la matière première du
+// Ce qu'on peut dire d'un candidat sans le modèle - la matière première du
 // filtre de précision.
 //
-// POURQUOI CE MODULE EXISTE. `vocabulaire.js` est un filtre à UNE
+// Pourquoi ce module existe. `vocabulaire.js` est un filtre à UNE
 // caractéristique et à seuil binaire : « tous les mots sont-ils au
 // dictionnaire ? ». Il attrape 6 faux positifs sur 9 et il a fallu lui retirer
 // cinq suffixes parce qu'ils mordaient sur des noms de lieux - signe qu'une
 // règle écrite à la main atteint sa limite. Les signaux qui restent sont
-// individuellement FAIBLES (mesuré : « acoustique » se fragmente en 3 morceaux
+// individuellement faibles (mesuré : « acoustique » se fragmente en 3 morceaux
 // comme « Kapgnep », et « Sorbonne » n'en fait qu'un) ; les combiner est
 // précisément ce qu'un classifieur fait mieux qu'une suite de `if`.
 //
-// RÈGLE DE CONCEPTION : ce module ne décide RIEN et ne charge RIEN. Il rend des
+// Règle de conception : ce module ne décide rien et ne charge rien. Il rend des
 // nombres. La décision vit dans precision.js, les poids sont appris hors ligne.
 // C'est la leçon d'`encodeImage` (fond des PNG rendu noir) : la décision sortie
 // en fonction pure est celle qu'on peut tester.
@@ -21,10 +21,10 @@
 //   · le lexique est déjà multilingue (104 langues, vocabulaire mBERT) ;
 //   · la casse, la longueur, le nombre de mots, les chiffres, la ponctuation
 //     interne, les occurrences ne dépendent d'aucune langue ;
-//   · « le même mot apparaît-il ailleurs en minuscules DANS CE DOCUMENT ? » est
+//   · « le même mot apparaît-il ailleurs en minuscules dans ce document ? » est
 //     auto-calibré : le document sert de dictionnaire à lui-même ;
 //   · la fragmentation en sous-mots se mesure sur un vocabulaire multilingue ;
-//   · seuls les SUFFIXES sont propres au français, et ils sont isolés dans leur
+//   · seuls les suffixes sont propres au français, et ils sont isolés dans leur
 //     propre caractéristique pour qu'on puisse mesurer ce qu'ils apportent - et
 //     s'en passer le jour où la mesure dit qu'ils ne servent plus.
 import { auLexique, aSuffixeCommun, motsSignificatifs } from './vocabulaire.js';
@@ -40,7 +40,7 @@ const part = (n, total) => (total ? n / total : 0);
 // CV, très souvent. Signal purement typographique, donc sans langue.
 const LIAISON = /[&·•/|—–+]/;
 
-// Contexte du DOCUMENT ENTIER, calculé une fois pour toutes.
+// Contexte du document entier, calculé une fois pour toutes.
 //
 // Deux des caractéristiques les plus utiles ne peuvent PAS se lire sur le
 // candidat seul : combien de fois il revient, et si ses mots apparaissent
@@ -69,18 +69,18 @@ export function contexteDocument(texte, { sousMots } = {}) {
 // algorithme que le tokenizer du modèle. Un mot connu du vocabulaire fait 1
 // morceau ; un mot inventé se casse en plusieurs.
 //
-// ⚠️ SIGNAL FAIBLE, MESURÉ COMME TEL, et c'est pour ça qu'il est ici plutôt que
+// Signal faible, mesuré comme tel, et c'est pour ça qu'il est ici plutôt que
 // dans une règle : « Semantikmatch » 5 morceaux et « SafePrompt » 4 contre
 // « terrain » 1 - mais aussi « acoustique » 3 et « bénévole » 3 (noms communs)
 // contre « Sorbonne » 1 (nom propre). Il informe, il ne tranche pas.
-// ⚠️ NE PAS MINUSCULISER, et c'est un piège qui a été commis puis mesuré. Le
-// vocabulaire est CASED : « Unternehmen » y figure, « unternehmen » non. Une
+// NE PAS MINUSCULISER, et c'est un piège qui a été commis puis mesuré. Le
+// vocabulaire est cased : « Unternehmen » y figure, « unternehmen » non. Une
 // première version minusculisait avant de segmenter et rendait donc 2 morceaux
 // pour le mot allemand le plus banal qui soit, alors qu'il est présent en une
 // seule pièce. La caractéristique mesurait la casse au lieu de la rareté.
 //
-// On segmente TROIS formes - surface, minuscule, et capitale initiale - et on
-// garde le MINIMUM. La troisième n'est pas un luxe : « SPRACHEN » en capitales
+// On segmente trois formes - surface, minuscule, et capitale initiale - et on
+// garde le minimum. La troisième n'est pas un luxe : « SPRACHEN » en capitales
 // ne retrouve ni « SPRACHEN » ni « sprachen » au vocabulaire, seulement
 // « Sprachen ». Or les capitales d'un intitulé sont une convention de mise en
 // page, pas un mot différent - et les intitulés en capitales sont justement
@@ -119,7 +119,7 @@ export function morceaux(mot, sousMots) {
   return mini;
 }
 
-// L'ORDRE DES CLÉS FAIT FOI. Les poids appris sont un tableau de nombres aligné
+// L'ordre des clés fait foi. Les poids appris sont un tableau de nombres aligné
 // sur `NOMS_CARACTERISTIQUES` ; réordonner cet objet sans réentraîner
 // appliquerait le poids du lexique à la casse, silencieusement. Le test unitaire
 // verrouille cet ordre.
@@ -159,7 +159,7 @@ export function caracteristiques(candidat, ctx) {
     minusculeAilleurs: part(nbMinusculeAilleurs, n),
     // - ce que dit le modèle -
     // En dernier, et volontairement : mesuré sur un vrai CV, le score seul ne
-    // sépare RIEN (vraies 0,738 · fausses 0,648, et le meilleur score du
+    // sépare rien (vraies 0,738 · fausses 0,648, et le meilleur score du
     // document est un faux positif). Il n'a sa place qu'en compagnie des autres.
     score: borne(Number(candidat?.score) || 0, 1)
   };

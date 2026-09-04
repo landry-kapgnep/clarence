@@ -1,16 +1,16 @@
-// LEXIQUE DE MOTS COURANTS - GÉNÉRÉ, ne pas éditer à la main.
+// Lexique de mots courants - généré, ne pas éditer à la main.
 //
-// SOURCE : le vocabulaire WordPiece de `bert-base-multilingual-cased` (Google,
+// Source : le vocabulaire WordPiece de `bert-base-multilingual-cased` (Google,
 // Apache 2.0), construit sur Wikipédia en 104 langues. On n'en garde que les
-// entrées ENTIÈREMENT MINUSCULES d'au moins trois lettres.
+// entrées entièrement minuscules d'au moins trois lettres.
 //
-// POURQUOI CE FILTRE EST LE BON. Par convention de ce vocabulaire, un nom
+// Pourquoi ce filtre est le bon. Par convention de ce vocabulaire, un nom
 // propre n'y figure qu'avec sa capitale initiale : « Sorbonne » est présent,
 // « sorbonne » absent ; « terrain » présent, « Twini » absent sous les deux
 // formes. Le lexique sépare donc le vocabulaire courant des noms propres -
 // exactement la distinction qui manque au modèle contextuel.
 //
-// CE FICHIER EST COMMITTÉ parce que sa source ne l'est pas : les poids
+// Ce fichier est committé parce que sa source ne l'est pas : les poids
 // convertis vivent dans tools/llmlingua2-onnx/, écarté du dépôt par sa taille.
 // Régénération : voir tools/README.md.
 //

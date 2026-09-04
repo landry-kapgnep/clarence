@@ -1,7 +1,7 @@
 // Content script : badge + bouton flottant ouvrant Clarence dans un panneau
-// iframe. Ne lit RIEN de la page. Deux messages acceptés depuis l'iframe :
+// iframe. Ne lit rien de la page. Deux messages acceptés depuis l'iframe :
 // sa hauteur de contenu (dimensionnement sans scroll) et une demande de
-// livraison du fichier anonymisé DANS la page (voir deliverFileToPage - le
+// livraison du fichier anonymisé dans la page (voir deliverFileToPage - le
 // glisser-déposer natif cross-frame vers un site tiers s'est avéré peu fiable
 // après deux tentatives, cette méthode contourne le glisser entièrement).
 chrome.runtime.sendMessage({ clarence: 'ai-site' });
@@ -144,7 +144,7 @@ btn.style.cursor = 'pointer';
 
   // UNE SEULE FAÇON D'OUVRIR CLARENCE, et donc un seul visuel.
   //
-  // L'extension avait DEUX entrées qui n'affichaient pas la même chose : ce
+  // L'extension avait deux entrées qui n'affichaient pas la même chose : ce
   // panneau, et une popup native ouverte par l'icône de la barre d'outils. La
   // même page, mais l'une contrainte par la fenêtre de Chrome (plafonnée à
   // 600 px de haut, non redimensionnable) et l'autre libre - donc deux mises en

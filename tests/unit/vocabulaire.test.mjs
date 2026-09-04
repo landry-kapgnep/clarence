@@ -23,8 +23,8 @@ test('les suffixes dérivationnels complètent un lexique multilingue mince', ()
   }
 });
 
-// LE PIÈGE QUI A ÉTÉ MESURÉ, et qui doit rester fermé. Cinq suffixes ont été
-// retirés parce qu'ils collident avec des NOMS DE LIEUX. Le banc l'a signalé
+// Le piège qui a été mesuré, et qui doit rester fermé. Cinq suffixes ont été
+// retirés parce qu'ils collident avec des noms de lieux. Le banc l'a signalé
 // tout de suite : avec « -elle », « Sarcelles » cessait d'être masqué.
 test('les noms de lieux ne passent JAMAIS pour du vocabulaire', () => {
   for (const lieu of ['Sarcelles', 'France', 'Provence', 'Belgique',
@@ -76,7 +76,7 @@ test('une ENTREPRISE faite de mots courants est écartée', async () => {
 test('une PERSONNE faite de mots courants est CONSERVÉE', async () => {
   // La limite la plus importante du filtre : beaucoup de patronymes français
   // sont des mots courants (Blanc, Petit, Roux), et notre propre vivier de
-  // pseudonymes en est plein. L'appliquer aux PER produirait des FUITES.
+  // pseudonymes en est plein. L'appliquer aux PER produirait des fuites.
   const pipe = fakePipe({ 'Pierre Blanc': [{ label: 'person', score: 0.9 }] });
   const [e] = await detectGliner('Signé Pierre Blanc, le gérant.', pipe);
   assert.ok(e, 'un nom de personne a été écarté par le filtre de vocabulaire');
@@ -89,13 +89,13 @@ test('une entreprise au nom PROPRE reste détectée', async () => {
   assert.equal(e?.type, 'ORG');
 });
 
-// LA TROISIÈME FOIS QUE CE PIÈGE SE REFERME, et la raison pour laquelle il a
+// La troisième fois que ce piège se referme, et la raison pour laquelle il a
 // survécu si longtemps : rien ne le vérifiait. « Villetaneuse » apparaît deux
 // fois dans certificat-fr.txt et un commentaire de la vérité terrain affirmait
 // que la ville est masquée - sans aucune assertion pour l'exiger. Le suffixe
 // `-euse` la faisait passer pour du vocabulaire, donc P14 la laissait en clair.
 //
-// Les suffixes dérivationnels du français et les toponymes français PARTAGENT
+// Les suffixes dérivationnels du français et les toponymes français partagent
 // leurs terminaisons. Chaque ajout à cette liste doit venir ici avec sa ville.
 test('les lieux en -euse, -elle, -ique ne passent pas pour du vocabulaire', () => {
   for (const lieu of ['Villetaneuse', 'Bagneuse', 'Sarcelles', 'Belgique',

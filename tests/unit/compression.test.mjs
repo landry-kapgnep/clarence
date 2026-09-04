@@ -1,4 +1,4 @@
-// Moteur de compression : pipeline SIMULÉ, aucun modèle chargé.
+// Moteur de compression : pipeline simulé, aucun modèle chargé.
 // Les trois règles dures sont ici - placeholders intacts, opérateurs logiques
 // conservés, et échec d'alignement qui garde au lieu de supprimer.
 import { test } from 'node:test';
@@ -169,7 +169,7 @@ test('alignement perdu → le mot est GARDÉ, jamais supprimé', async () => {
 });
 
 // --- ADAPTATION DU MODÈLE -------------------------------------------------
-// Les deux pannes évitées ici ne lèvent AUCUNE erreur : elles rendent un texte
+// Les deux pannes évitées ici ne lèvent aucune erreur : elles rendent un texte
 // non compressé, en silence. C'est exactement pour ça qu'elles sont testées.
 
 test('decouperEnLots : lots de 120 mots par défaut, dernier partiel', () => {
@@ -216,9 +216,9 @@ test('recollerScores : le flux rendu couvre TOUS les tokens du texte', () => {
 
 // --- SEGMENTS (mise en page préservée) ------------------------------------
 // DOCX et PDF « Préserver » ne réécrivent pas un texte : ils redessinent des
-// FRAGMENTS à leurs positions. Sans restitution par segment, l'option ne
+// Fragments à leurs positions. Sans restitution par segment, l'option ne
 // pouvait exister que sur les sorties texte - ce qui la vide de son intérêt,
-// puisque l'utilisateur veut moins de tokens dans le fichier qu'il ENVOIE.
+// puisque l'utilisateur veut moins de tokens dans le fichier qu'il envoie.
 
 test('compresserSegments : chaque mot retourne dans SON segment', async () => {
   const r = await compresserSegments(['alpha beta', 'gamma delta'],

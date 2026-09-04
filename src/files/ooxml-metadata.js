@@ -1,4 +1,4 @@
-// Nettoyage des métadonnées OOXML (XLSX et DOCX partagent la même convention
+// Nettoyage des métadonnées ooxml (XLSX et DOCX partagent la même convention
 // docProps/core.xml + docProps/app.xml, et la même mécanique de commentaires
 // zip [partie + relations + content-types]).
 import { strToU8, strFromU8 } from 'fflate';
@@ -59,7 +59,7 @@ export function stripCommentParts(zipMap) {
   const out = new Map(zipMap);
 
   // Excel associe à chaque commentaire un dessin VML legacy (rendu de la
-  // bulle de note) référencé dans le MÊME .rels que la relation "comments" -
+  // bulle de note) référencé dans le même .rels que la relation "comments" -
   // orphelin, il ne contient aucune PII mais peut faire échouer l'ouverture.
   const vmlPaths = new Set();
   for (const relsPath of [...out.keys()].filter(p => p.endsWith('.rels'))) {

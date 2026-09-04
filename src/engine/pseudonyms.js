@@ -1,9 +1,9 @@
 // Pseudonymes réalistes (option) - port JS du PseudonymGenerator Python :
 // listes curées + choix déterministe par hachage de la valeur d'origine.
 // 100% local, zéro dépendance. Les types structurés critiques (IBAN, carte,
-// NIR, SIRET…) ne sont JAMAIS pseudonymisés en réaliste : générer de faux
+// NIR, SIRET…) ne sont jamais pseudonymisés en réaliste : générer de faux
 // numéros plausibles risque de collisionner avec de vrais - ils restent en
-// placeholders [TYPE_N], honnêtes et sans ambiguïté.
+// placeholders [type_N], honnêtes et sans ambiguïté.
 //
 // Deux locales (FR par défaut, EN) : un document rédigé en anglais recevait
 // jusqu'ici des pseudonymes français (« Julien Marchand » dans un texte 100%
@@ -104,15 +104,15 @@ const LOCALES = {
   }
 };
 
-// Types éligibles au réalisme ; tout le reste garde son placeholder [TYPE_N].
+// Types éligibles au réalisme ; tout le reste garde son placeholder [type_N].
 //
-// LA LIGNE DE PARTAGE EST « IDENTIFIANT OU ATTRIBUT ? », pas « type connu ou
-// pas ». Tous ceux d'ici sont des IDENTIFIANTS : échanger un nom contre un
-// autre nom, une ville contre une autre ville, préserve le RÔLE de la valeur
+// La ligne de partage est « identifiant ou attribut ? », pas « type connu ou
+// pas ». Tous ceux d'ici sont des identifiants : échanger un nom contre un
+// autre nom, une ville contre une autre ville, préserve le rôle de la valeur
 // dans le texte sans toucher à ce sur quoi le LLM raisonne - une personne
 // reste une personne.
 //
-// POSTE, NATIONALITE et SANTE sont volontairement ABSENTS, et ce n'est pas un
+// POSTE, NATIONALITE et SANTE sont volontairement absents, et ce n'est pas un
 // oubli (question posée le 15/08 : « il manque des pseudonymes »). Ce sont des
 // ATTRIBUTS : leur valeur EST le sujet du raisonnement.
 //
@@ -125,22 +125,22 @@ const LOCALES = {
 // anti-fausse-confiance du cadrage §5 refuse. Le silence vaut mieux que le
 // vraisemblable quand l'utilisateur ne peut pas vérifier.
 //
-// ETABLISSEMENT a été ajouté ici le 15/08 puis RETIRÉ le 18/08 : la mesure sur
-// un vrai CV a montré qu'il manquait une SECONDE condition au raisonnement
+// ETABLISSEMENT a été ajouté ici le 15/08 puis retiré le 18/08 : la mesure sur
+// un vrai CV a montré qu'il manquait une seconde condition au raisonnement
 // ci-dessus.
 //
 // Un nom d'établissement EST un identifiant, ce qui reste vrai. Mais sa
-// DÉTECTION figure dans TYPES_PEU_FIABLES (gliner.js), et c'est ça qui décide :
+// Détection figure dans TYPES_PEU_fiables (gliner.js), et c'est ça qui décide :
 // sur ce CV, « LLM local » a été pris pour un établissement et remplacé par
 // « École Morel ». Le lecteur croit à une école qui n'a jamais existé, et rien
 // ne le lui signale - alors qu'un « [ETABLISSEMENT_1] » posé sur « LLM local »
 // saute aux yeux et se retire d'un clic.
 //
-// D'OÙ LA RÈGLE COMPLÈTE, en DEUX conditions. Un type reçoit un pseudonyme
-// réaliste s'il est un IDENTIFIANT **et** si sa détection est FIABLE :
+// D'où la règle complète, en deux conditions. Un type reçoit un pseudonyme
+// réaliste s'il est un identifiant **et** si sa détection est fiable :
 //   - la première écarte poste, nationalité et santé (leur valeur est le sujet
 //     du raisonnement) ;
-//   - la seconde écarte tout type de TYPES_PEU_FIABLES, parce qu'un faux
+//   - la seconde écarte tout type de TYPES_PEU_fiables, parce qu'un faux
 //     plausible y devient indétectable.
 //
 // C'est le principe déjà consigné du projet - « un pseudonyme rend un faux
@@ -190,14 +190,14 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   // identités - ce qui détruit la cohérence que l'option promet, et rend le
   // texte incompréhensible pour le LLM à qui on le donne.
   //
-  // On mémorise donc chaque COMPOSANT : « Priya » → « Chloé », « Deva » →
+  // On mémorise donc chaque composant : « Priya » → « Chloé », « Deva » →
   // « Lemaire », une fois pour toutes. « Priya Deva », « Priya » et « Deva »
   // deviennent alors respectivement « Chloé Lemaire », « Chloé » et
   // « Lemaire ». C'est l'identifiant stable demandé.
   const tokenMap = new Map(); // composant réel (minuscule) → composant pseudo
 
   // Composants gardés tels quels : ils n'identifient personne, et les
-  // substituer produit soit du charabia, soit - bien pire - une SECONDE
+  // substituer produit soit du charabia, soit - bien pire - une seconde
   // identité pour la même personne.
   //
   // Particules nobiliaires : « de La Villardière » doit rester lisible.
@@ -208,14 +208,14 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   // « Priya Deva » → « Clément Faure » et « miss Deva » → « Amélie Faure »
   // désignaient deux personnes de genres différents dans le même texte.
   //
-  // Dans les DEUX cas la décision dépend de la POSITION, jamais de la seule
+  // Dans les deux cas la décision dépend de la position, jamais de la seule
   // appartenance à une liste : un composant n'est une particule ou une
   // civilité que s'il précède un autre composant. Sinon « Miss » ou « Le »
   // employés comme vrais patronymes fuiraient tels quels.
   // Liste et règle de position partagées avec identity.js - voir honorifics.js.
   const estConserve = estComposantNonIdentifiant;
 
-  // Reproduit la casse de l'original : un patronyme en TOUT-MAJUSCULE (usage
+  // Reproduit la casse de l'original : un patronyme en tout-majuscule (usage
   // courant sur un CV français) reste en majuscules dans le pseudo.
   const applyCase = (pseudo, original) =>
     original === original.toUpperCase() && /\p{L}{2}/u.test(original)
@@ -229,7 +229,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
     if (tokenMap.has(key)) return applyCase(tokenMap.get(key), token);
 
     // Choix du vivier : dans un nom composé, le premier mot est un prénom et
-    // le dernier un patronyme. Pour un composant VU SEUL on ne peut pas
+    // le dernier un patronyme. Pour un composant vu seul on ne peut pas
     // savoir : le tout-majuscule signale un patronyme (convention CV FR),
     // sinon on suppose un prénom. Le choix est arbitraire mais définitif -
     // c'est la stabilité qui compte, pas la justesse du vivier.
@@ -244,10 +244,10 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
     return applyCase(v, token);
   }
 
-  // Compose un IDENTIFIANT TECHNIQUE (partie locale d'un email, handle) à
-  // partir des MÊMES composants que le nom de la personne.
+  // Compose un identifiant technique (partie locale d'un email, handle) à
+  // partir des mêmes composants que le nom de la personne.
   //
-  // LE DÉFAUT QUE ÇA CORRIGE, signalé sur un vrai CV : la personne devenait
+  // Le défaut que ça corrige, signalé sur un vrai CV : la personne devenait
   // « ROMAIN MOREAU » et son email « thomas.simon@… ». Deux identités pour
   // quelqu'un dont l'adresse porte justement son nom - la cohérence que
   // l'option promet s'arrêtait aux frontières du type.
@@ -257,7 +257,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   // « landry.kapgnep.pro » rend deux fois le même composant. L'ordre de
   // première rencontre n'importe pas.
   //
-  // TOUS les composants sont substitués, y compris ceux qui ne sont pas des
+  // Tous les composants sont substitués, y compris ceux qui ne sont pas des
   // noms (« pro », « dev ») : les épargner supposerait une liste de mots
   // « non identifiants », classe ouverte qu'on refuse partout ailleurs - et
   // un fragment du vrai handle survivrait.
@@ -305,7 +305,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
     // Rousseau » - pour qu'un lycée ne devienne pas une université, et
     // reprenait la position du mot sur l'original plutôt que sur la locale
     // (« Westfield College » → « Boyer College »). Retiré avec le type
-    // lui-même : voir REALISTIC_TYPES. Récupérable tel quel dans l'historique
+    // lui-même : voir realistic_TYPES. Récupérable tel quel dans l'historique
     // si la détection des établissements devient un jour fiable.
     LOC: h => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: h => unique((h2, i) => `${((h2 + i * 7) % 98) + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
@@ -316,13 +316,13 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
       const repli = `${stripAccents(pick(L.prenoms, h2, i))}.${stripAccents(pick(L.noms, (h2 >>> 7) + i, i))}`;
       return `${local || repli}@${pick(L.emailDomains, h2 >>> 11, i)}`;
     }, h),
-    // Handle (GitHub, LinkedIn…). IDENTIFIANT, et sa détection est
-    // DÉTERMINISTE (regex-detect.js) : les deux conditions de REALISTIC_TYPES
+    // Handle (GitHub, LinkedIn…). Identifiant, et sa détection est
+    // Déterministe (regex-detect.js) : les deux conditions de realistic_TYPES
     // sont remplies. Il sortait en « [PSEUDO_1] » faute d'avoir été branché.
     PSEUDO: (h, original) => unique((h2, i) => composeIdentifiant(original)
       || `${stripAccents(pick(L.prenoms, h2, i))}${stripAccents(pick(L.noms, (h2 >>> 5) + i, i))}`, h),
     TELEPHONE: h => unique((h2, i) => L.phone(h2, i), h),
-    // Le FORMAT d'origine est reproduit, pas seulement la nature de la donnée :
+    // Le format d'origine est reproduit, pas seulement la nature de la donnée :
     // « january 1 2002 » devenait « 13/10/1976 », ce qui saute aux yeux au
     // milieu d'un texte anglais et trahit le passage de l'outil.
     DATE_NAISSANCE: (h, original) => unique((h2, i) => {
@@ -332,7 +332,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
       const litteral = /\p{L}{3}/u.test(original); // contient un nom de mois
       if (litteral) {
         const nom = L.mois[m - 1];
-        // Casse du mois d'origine (« JANUARY », « January », « january »).
+        // Casse du mois d'origine (« january », « January », « january »).
         const source = original.match(/\p{L}{3,}/u)?.[0] || '';
         const moisCase = source === source.toUpperCase() ? nom.toUpperCase()
           : source[0] === source[0].toLowerCase() ? nom.toLowerCase()

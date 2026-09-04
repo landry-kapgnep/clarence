@@ -5,14 +5,14 @@
 // Il reproduit délibérément ce qui casse la détection sur un vrai CV, et qui
 // est mesuré dans docs/roadmap-detection.md (P1/P1bis) :
 //
-// 1. DEUX COLONNES. C'est le point central : `groupIntoLines` regroupe par
+// 1. Deux colonnes. C'est le point central : `groupIntoLines` regroupe par
 //    coordonnée Y, donc deux textes à la même hauteur dans des colonnes
 //    différentes sont recollés en une seule ligne (« COMPÉTENCES » +
 //    « EXPÉRIENCES » → « COMPÉTENCESEXPÉRIENCES »). Le modèle reçoit alors du
 //    charabia et l'étiquette confiamment.
-// 2. NOM EN TÊTE, TOUT-MAJUSCULE, seul sur sa ligne en très grande police -
+// 2. Nom en tête, tout-majuscule, seul sur sa ligne en très grande police -
 //    sort à peine au-dessus du seuil (0,47 mesuré sur un vrai CV).
-// 3. TECHNOS à préserver : masquer React/Docker rend le CV inexploitable.
+// 3. Technos à préserver : masquer React/Docker rend le CV inexploitable.
 // 4. Titres de sections en majuscules, candidats naturels au faux positif.
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -60,7 +60,7 @@ put('Encadree par Sebastien Vaquier.', D, 650, 8);
 
 put('Linux - Bash', G, 638, 8);
 put('Stage chez Wobix Labs, developpement d’une interface inno-', D, 638, 8);
-// Lignes RAPPROCHÉES (12pt d'écart, sous le seuil PARAGRAPH_GAP_RATIO*taille
+// Lignes rapprochées (12pt d'écart, sous le seuil paragraph_GAP_ratio*taille
 // comme les autres lignes de cette colonne) : même paragraphe, mot coupé en
 // fin de ligne - reproduit le mécanisme réel de P1bis (« auto- »/« matisée »
 // sur un vrai CV). Sans le correctif, « vante » isolée est soumise telle
@@ -90,7 +90,7 @@ put('Course a pied', D, 516, 8);
 // --- Pied de page : une valeur RÉPÉTÉE, seule sur sa ligne, sans contexte.
 // C'est ce qui rend le banc capable de voir la fuite P0 : « Korrigane Labs »
 // est détectable plus haut (« Alternance chez Korrigane Labs ») mais pas ici,
-// où seule la PROPAGATION peut la masquer. Si la propagation n'atteint pas la
+// où seule la propagation peut la masquer. Si la propagation n'atteint pas la
 // liste d'entités, le PDF reconstruit la laisse en clair - exactement le bug
 // constaté sur un vrai rapport de stage. Sans cette ligne, le corpus ne
 // couvre pas la classe de bug qui a motivé ce banc.

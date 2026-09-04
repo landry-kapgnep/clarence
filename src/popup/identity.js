@@ -1,5 +1,5 @@
 // Profil d'identité : les données personnelles de l'utilisateur, déclarées UNE
-// FOIS, pour que le masquage de sa propre identité soit DÉTERMINISTE - jamais
+// Fois, pour que le masquage de sa propre identité soit déterministe - jamais
 // suspendu au score de confiance d'un modèle (un nom en titre de CV sort à
 // 0,47 : aucun seuil ne rend ça fiable ; une recherche littérale, si).
 //
@@ -8,12 +8,12 @@
 // détection ne sait rien de ce module.
 //
 // ============================ CONFIDENTIALITÉ =============================
-// chrome.storage.LOCAL exclusivement. JAMAIS chrome.storage.sync : sync
+// chrome.storage.Local exclusivement. Jamais chrome.storage.sync : sync
 // téléverse vers les serveurs Google - pour le fichier le plus sensible de
 // toute l'extension (l'identité complète de l'utilisateur), ce serait une
 // violation frontale du principe « aucune donnée ne quitte le navigateur ».
 // Si un jour quelqu'un veut « synchroniser les réglages entre machines »,
-// ce module est EXCLU d'office de cette synchronisation.
+// ce module est exclu d'office de cette synchronisation.
 // ==========================================================================
 
 import { estComposantNonIdentifiant } from '../engine/honorifics.js';
@@ -24,13 +24,13 @@ export const IDENTITY_KEY = 'clarenceIdentity';
 // on ne redemande pas, la modale reste accessible par le lien).
 // Champs multi-valeurs : un terme par ligne, comme les zones « Toujours
 // masquer » - même convention, même parsing.
-// LES DEUX CHAMPS QUI PORTENT LE RISQUE, et qui suffisent à l'accueil.
+// Les deux champs qui portent le risque, et qui suffisent à l'accueil.
 //
 // Onze champs demandés avant d'avoir rien obtenu, c'est un mur : la recherche
 // sur l'inscription progressive dit de n'en demander qu'un ou deux, et de
 // récolter le reste plus tard, au fil de l'usage.
 //
-// Ce sont ceux-là parce qu'ils sont les seuls que RIEN d'autre ne couvre.
+// Ce sont ceux-là parce qu'ils sont les seuls que rien d'autre ne couvre.
 // Emails, téléphones, IBAN et NIR sont déjà repérés par la couche déterministe
 // - regex validées mathématiquement - sans que l'utilisateur déclare quoi que
 // ce soit. Un nom, lui, dépend entièrement d'un modèle statistique, et le
@@ -66,8 +66,8 @@ export function normalizeIdentity(raw) {
 }
 
 // Termes de masquage issus de l'identité : liste plate, dédoublonnée
-// (insensible à la casse), SANS les termes de moins de 2 caractères.
-// Garde-fou indispensable : forcedMasks fait une recherche LITTÉRALE de
+// (insensible à la casse), sans les termes de moins de 2 caractères.
+// Garde-fou indispensable : forcedMasks fait une recherche littérale de
 // chaque occurrence - une initiale isolée (« L ») masquerait une lettre sur
 // deux du document. Deux caractères, c'est le minimum d'un vrai terme.
 export const MIN_TERM_LENGTH = 2;
@@ -89,26 +89,26 @@ export function identityTerms(identity) {
 
 // COMPOSANTS D'UN NOM MULTI-MOTS - le nom protège chacune de ses parties.
 //
-// LE DÉFAUT QUE ÇA CORRIGE (P12, trouvé sur un vrai casier judiciaire). Un
+// Le défaut que ça corrige (P12, trouvé sur un vrai casier judiciaire). Un
 // formulaire officiel éclate le nom sur deux lignes : « Nom KAPGNEP » puis
 // « Prénom(s) LANDRY ». Qui a saisi son nom complet dans une seule case ne
 // voyait donc masquer NI l'un NI l'autre, puisque `forcedMasks` cherche la
-// chaîne LITTÉRALE « Landry Kapgnep », qui n'apparaît nulle part sous cette
+// chaîne littérale « Landry Kapgnep », qui n'apparaît nulle part sous cette
 // forme. Le garde-fou déterministe - celui qui ne dépend d'aucun score - ne
 // jouait pas dans le cas précis où il aurait été le plus utile.
 //
-// C'est la MÊME leçon que les pseudonymes par composant (03/08) : un nom
+// C'est la même leçon que les pseudonymes par composant (03/08) : un nom
 // existe entier ET en morceaux. Elle avait été appliquée à `pseudonyms.js`,
 // jamais reportée ici.
 //
-// SEULEMENT LES CHAMPS DE NOMS, et c'est le point délicat. Décomposer une
+// Seulement les champs de noms, et c'est le point délicat. Décomposer une
 // adresse (« 18 rue des Glycines ») masquerait « rue » et « des » dans tout le
 // document ; décomposer un employeur (« Korrigane Labs ») masquerait « Labs ».
 // Ces champs restent donc cherchés en entier. Un prénom ou un patronyme, lui,
 // est un terme légitime à masquer seul, quel que soit son voisinage.
 const CHAMPS_DECOMPOSABLES = ['prenom', 'nom'];
 
-// Particules et civilités : liste et RÈGLE DE POSITION partagées avec
+// Particules et civilités : liste et règle de position partagées avec
 // pseudonyms.js (voir honorifics.js). « de » devant un nom ne désigne
 // personne ; « Le » employé comme patronyme, si - d'où la position.
 function composantsDeNom(identity) {
@@ -128,10 +128,10 @@ function composantsDeNom(identity) {
   return out;
 }
 
-// Variantes de casse d'un terme : forcedMasks est LITTÉRAL, or l'utilisateur
+// Variantes de casse d'un terme : forcedMasks est littéral, or l'utilisateur
 // déclare « Landry Kapgnep » quand son CV affiche « LANDRY KAPGNEP » - le cas
 // exact qui a motivé ce module. On génère donc, pour chaque terme déclaré :
-// tel quel, MAJUSCULES, minuscules, et Casse Titre par mot. Déterministe,
+// tel quel, majuscules, minuscules, et Casse Titre par mot. Déterministe,
 // zéro coût moteur (quelques recherches littérales de plus).
 function caseVariants(terme) {
   const title = terme.replace(/\p{L}[\p{L}'’-]*/gu,
@@ -139,7 +139,7 @@ function caseVariants(terme) {
   return [terme, terme.toUpperCase(), terme.toLowerCase(), title];
 }
 
-// Termes de RECHERCHE réellement passés à forcedMasks : chaque terme déclaré
+// Termes de recherche réellement passés à forcedMasks : chaque terme déclaré
 // développé en ses variantes de casse, dédoublonné (sensible à la casse ici,
 // puisque la recherche l'est).
 export function identitySearchTerms(identity) {

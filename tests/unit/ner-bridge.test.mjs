@@ -1,5 +1,5 @@
 // bridgeNameParts : recollage déterministe des noms détectés en morceaux.
-// PARTAGÉ par les deux moteurs contextuels (BERT et GLiNER), donc toute
+// Partagé par les deux moteurs contextuels (BERT et GLiNER), donc toute
 // régression ici touche les deux.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

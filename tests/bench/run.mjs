@@ -4,18 +4,18 @@
 // Lancer :  npm run bench            (moteur complet, GLiNER réellement chargé)
 //           npm run bench -- --regex (couche déterministe seule, rapide)
 //
-// POURQUOI CE BANC EXISTE. Les tests unitaires couvrent des fonctions pures ;
+// Pourquoi ce banc existe. Les tests unitaires couvrent des fonctions pures ;
 // ils étaient tous au vert pendant que le mode PDF « Garder la mise en page »
 // plantait à l'ouverture, et pendant que la propagation ne franchissait pas la
 // frontière du fichier réécrit (fuite P0). On mesurait ce qui est facile à
 // mesurer, pas ce qui compte : est-ce qu'un fichier ressort propre ET encore
 // exploitable.
 //
-// TROIS CRITÈRES, PAS UNE NOTE - c'est le point de conception central :
-//  1. rappel STRUCTURÉ : exigence 100 %. Couche déterministe validée
+// TROIS CRITÈRES, pas une note - c'est le point de conception central :
+//  1. rappel structuré : exigence 100 %. Couche déterministe validée
 //     mathématiquement, un raté est un bug, pas une limite ;
-//  2. rappel CONTEXTUEL : mesuré et affiché, jamais promis (dépend d'un modèle) ;
-//  3. UTILISABILITÉ : un document dont tout est masqué est « sûr » et inutile -
+//  2. rappel contextuel : mesuré et affiché, jamais promis (dépend d'un modèle) ;
+//  3. Utilisabilité : un document dont tout est masqué est « sûr » et inutile -
 //     personne ne paie pour ça. Mesuré par les termes qui devaient survivre.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -38,7 +38,7 @@ import { CORPUS } from './verite-terrain.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const REGEX_SEUL = process.argv.includes('--regex');
 
-// Types produits par la couche DÉTERMINISTE (regex + validateurs). Un raté ici
+// Types produits par la couche déterministe (regex + validateurs). Un raté ici
 // n'est jamais excusable : c'est ce sur quoi le produit peut promettre quelque
 // chose. Le reste dépend d'un modèle statistique.
 const TYPES_STRUCTURES = new Set([
@@ -48,13 +48,13 @@ const TYPES_STRUCTURES = new Set([
 
 // --- Chargement du vrai moteur contextuel ---------------------------------
 // Un banc qui tournerait sur un pipeline simulé ne mesurerait rien. On charge
-// le modèle réellement embarqué, avec le MÊME correctif de découpeur que le
+// le modèle réellement embarqué, avec le même correctif de découpeur que le
 // worker de production (sans lui, la détection FR est silencieusement dégradée
 // - voir le gotcha « GLiNER.js est cassé sur le français » dans docs/notes-techniques.md).
 const DECOUPEUR_UNICODE = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
 
 async function chargerGliner() {
-  // Pré-chargement du binding natif AVANT tout autre module natif : chargé
+  // Pré-chargement du binding natif avant tout autre module natif : chargé
   // après, il échoue avec « The operating system cannot run %1 » sur Windows.
   // Piège déjà rencontré pendant les mesures GLiNER.
   await import('onnxruntime-node');
@@ -83,7 +83,7 @@ async function chargerGliner() {
   decoupeur.whitespacePattern = DECOUPEUR_UNICODE;
   console.error('[modèle prêt]');
 
-  // MÊME regroupement en lots que la popup, et c'est délibéré : le banc doit
+  // Même regroupement en lots que la popup, et c'est délibéré : le banc doit
   // pouvoir prouver que grouper les inférences ne change PAS la détection.
   // Le rembourrage à la longueur du plus long texte du lot pourrait, en
   // théorie, déteindre sur les scores si le masque d'attention était imparfait.
@@ -96,7 +96,7 @@ async function chargerGliner() {
 
 // Le modèle est mis en cache hors du dépôt et téléchargé une fois.
 //
-// La VARIANTE vient de src/engine/gliner.js, jamais codée en dur ici : le banc
+// La variante vient de src/engine/gliner.js, jamais codée en dur ici : le banc
 // doit noter le modèle réellement livré. Quand la variante vivait dans main.js,
 // le banc mesurait `quantized` pendant que la popup chargeait autre chose - une
 // porte de qualité qui note un modèle qu'on n'expédie pas ne garantit rien.
@@ -129,17 +129,17 @@ async function anonymiser(fichier, glinerPipe) {
   // propre générateur. Le dupliquer dans corpus/ ferait deux sources de vérité.
   const chemin = fichier.startsWith('.') ? join(here, fichier) : join(here, 'corpus', fichier);
   const ext = extname(fichier).toLowerCase();
-  // Le banc mesure ce qui est RÉELLEMENT LIVRÉ : les types que la popup
-  // décoche par défaut (TYPES_PEU_FIABLES) ne doivent pas être mesurés comme
+  // Le banc mesure ce qui est réellement livré : les types que la popup
+  // décoche par défaut (TYPES_PEU_fiables) ne doivent pas être mesurés comme
   // actifs, sinon le chiffre décrit un produit que personne n'utilise.
   const parDefaut = new Set(TYPES_PEU_FIABLES);
   const detecter = glinerPipe
     ? (t, _pipe, opts) => detectGliner(t, glinerPipe, { ...opts, disabledTypes: parDefaut })
     : async () => [];
 
-  // PDF : on passe par la RECONSTRUCTION (« Garder la mise en page »), pas par
+  // PDF : on passe par la reconstruction (« Garder la mise en page »), pas par
   // l'extraction Markdown. C'est délibéré et c'est le point le plus important
-  // du banc : ce chemin réécrit le fichier à partir de la LISTE D'ENTITÉS, pas
+  // du banc : ce chemin réécrit le fichier à partir de la liste d'entités, pas
   // de `maskedText`. C'est là que vivait la fuite P0 (une valeur rattrapée par
   // propagation restait en clair dans le fichier livré tout en apparaissant
   // masquée dans l'aperçu). Un banc qui lirait `maskedText` ne verrait jamais
@@ -200,27 +200,27 @@ async function texteDuPdf(buffer) {
 // insensible à la casse ET aux espaces.
 //
 // Pourquoi insensible aux espaces : la reconstruction PDF dessine chaque
-// fragment à sa position D'ORIGINE (limite de fidélité déjà documentée et
+// fragment à sa position D'origine (limite de fidélité déjà documentée et
 // acceptée) - un mot recollé par isLineWrapHyphen (« inno-» + « vante » →
 // « innovante ») reste donc deux OBJETS TEXTE séparés dans le PDF final,
 // à leurs positions de lignes respectives. Relu naïvement via
 // `items.map(i=>i.str).join(' ')`, ça redonne « inno vante » - un faux
-// négatif du BANC, pas une régression du produit (vérifié : le texte soumis
+// négatif du banc, pas une régression du produit (vérifié : le texte soumis
 // à la détection contient bien « innovante » d'un seul tenant). Sans cette
 // normalisation, le banc aurait crié au bug sur un correctif qui marche.
 const normalise = s => s.toLowerCase().replace(/\s+/g, '');
 const presente = (sortie, valeur) => normalise(sortie).includes(normalise(valeur));
 
-// FUITE PARTIELLE - le trou que ce banc avait dans sa propre vérité terrain.
+// Fuite partielle - le trou que ce banc avait dans sa propre vérité terrain.
 //
-// Chercher la valeur ENTIÈRE ne suffit pas : « Amandine ROUSSEAU » comptait
+// Chercher la valeur entière ne suffit pas : « Amandine ROUSSEAU » comptait
 // comme masquée alors que la sortie disait « Amandine [BIC_1] » - le prénom
 // en clair trois fois dans le document, à côté du placeholder qui désigne son
 // propre patronyme. Du point de vue de l'utilisateur c'est une fuite entière :
 // dans un rapport de stage, un prénom accolé à un identifiant suffit
 // largement à désigner la personne. Le banc affichait pourtant 100 %.
 //
-// Un nom est le seul type dont CHAQUE composant identifie séparément (un
+// Un nom est le seul type dont chaque composant identifie séparément (un
 // numéro tronqué, une adresse tronquée, non). On ne vérifie donc les
 // composants que pour les PER - ailleurs, « rue » ou « des » déclencheraient
 // des fausses alertes en cascade.
@@ -252,7 +252,7 @@ async function main() {
   console.log(`\nMoteur : ${REGEX_SEUL ? 'REGEX SEUL (--regex)' : 'regex + GLiNER'}\n`);
 
   const global = { struct: [0, 0], ctx: [0, 0], garde: [0, 0] };
-  // Compté à part : le document piégé est la BORNE BASSE, pas un document
+  // Compté à part : le document piégé est la borne basse, pas un document
   // représentatif. Ses chiffres sont un backlog rendu visible, pas une note.
   const borne = { struct: [0, 0], ctx: [0, 0], garde: [0, 0] };
   const fuitesStructurees = [];
@@ -260,11 +260,11 @@ async function main() {
   for (const doc of CORPUS) {
     const sortie = await anonymiser(doc.fichier, glinerPipe);
 
-    // Une valeur est fuitée si elle subsiste ENTIÈRE, ou - pour un nom - si un
+    // Une valeur est fuitée si elle subsiste entière, ou - pour un nom - si un
     // seul de ses composants reste en clair (voir fuitePartielle).
     const partielles = new Map();
     for (const v of doc.aMasquer) {
-      // Si la valeur ENTIÈRE subsiste, ce n'est pas une fuite « partielle »
+      // Si la valeur entière subsiste, ce n'est pas une fuite « partielle »
       // mais un raté complet - ne pas brouiller les deux dans l'affichage.
       if (presente(sortie, v.valeur)) continue;
       const restes = fuitePartielle(sortie, v);
@@ -277,13 +277,13 @@ async function main() {
     const fuitesCtx = fuites.filter(v => !TYPES_STRUCTURES.has(v.type));
     const perdus = doc.aGarder.filter(t => !presente(sortie, t));
 
-    // BORNE BASSE : le document piégé n'entre PAS dans les moyennes
+    // Borne basse : le document piégé n'entre PAS dans les moyennes
     // contextuelles ni de préservation. Il est délibérément adversarial (page
     // de lignes courtes sans phrases, sommaire à points de suite) et n'a aucune
     // vocation à être réaliste : l'y fondre tirerait les chiffres vers le bas
     // sans rien dire de vrai sur le fichier d'un utilisateur.
     //
-    // Le STRUCTURÉ, lui, compte partout. Un raté déterministe est un bug, pas
+    // Le structuré, lui, compte partout. Un raté déterministe est un bug, pas
     // une limite de modèle - la borne basse ne l'excuse pas.
     const cible = doc.borneBasse ? borne : global;
     cible.struct[0] += struct.length - fuitesStruct.length;
@@ -292,7 +292,7 @@ async function main() {
     cible.ctx[1] += ctx.length;
     cible.garde[0] += doc.aGarder.length - perdus.length;
     cible.garde[1] += doc.aGarder.length;
-    // La liste des fuites structurées, elle, couvre TOUS les documents : c'est
+    // La liste des fuites structurées, elle, couvre tous les documents : c'est
     // elle qui commande la porte de publication, borne basse comprise.
     fuitesStruct.forEach(v => fuitesStructurees.push(`${doc.fichier} → ${v.type} « ${v.valeur} »`));
 

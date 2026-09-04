@@ -1,29 +1,29 @@
-// Civilités (M., Mrs, Herr, Sr.…) - source de vérité UNIQUE, partagée par la
+// Civilités (M., Mrs, Herr, Sr.…) - source de vérité unique, partagée par la
 // détection déterministe (regex-detect.js) et la pseudonymisation
 // (pseudonyms.js). Sans ça les deux divergeaient : le motif regex ne
 // connaissait que le français, si bien que « Mr Smith » n'était pas détecté
 // en déterministe, pendant que pseudonyms.js avait sa propre liste bricolée.
 //
-// POURQUOI UNE LISTE STATIQUE EST ACCEPTABLE ICI - et seulement ici.
-// Les civilités forment une classe FERMÉE : une langue en compte une poignée
+// Pourquoi une liste statique est acceptable ici - et seulement ici.
+// Les civilités forment une classe fermée : une langue en compte une poignée
 // et n'en invente pas. C'est l'inverse d'une liste de noms, d'entreprises ou
 // de technos, qui sont des classes ouvertes et périment aussitôt écrites
 // (raison pour laquelle le projet refuse ce genre de liste dans le moteur).
 // La liste est donc incomplète en langues, jamais en concepts : ajouter une
 // langue est un ajout ponctuel, pas une maintenance continue.
 //
-// CE QUE LA LISTE NE PEUT PAS SAVOIR, ET COMMENT ON S'EN PROTÈGE.
+// Ce que la liste ne peut pas savoir, et comment on s'en protège.
 // « Miss », « Frau », « Don » sont aussi de vrais patronymes. Traiter un
 // composant comme une civilité au seul motif qu'il est dans la liste
 // laisserait fuir le nom de quelqu'un qui s'appelle réellement Miss.
-// D'où `isHonorificAt` : la POSITION tranche, pas la seule appartenance -
+// D'où `isHonorificAt` : la position tranche, pas la seule appartenance -
 // une civilité précède un nom, elle n'est jamais le dernier composant ni le
 // seul. « miss Deva » → civilité ; « John Miss » et « Miss » seul →
 // patronyme, donc pseudonymisé. En cas de doute, on masque (zéro-fuite).
 
 // Sans point : la comparaison se fait en minuscules, points retirés.
 //
-// Volontairement ÉCARTÉS, parce qu'un faux positif ici crée une PII fantôme
+// Volontairement écartés, parce qu'un faux positif ici crée une PII fantôme
 // ou laisse fuir un vrai nom :
 //  - `don`, `dame`, `lord`, `lady`, `pan`, `pani`, `bey`, `sri` : trop souvent
 //    de vrais prénoms ;
@@ -63,7 +63,7 @@ export const HONORIFICS = new Set(TERMES);
 export const normalizeHonorific = token =>
   String(token).toLowerCase().replace(/\./g, '').trim();
 
-// Un composant est-il une civilité À CETTE POSITION ?
+// Un composant est-il une civilité À cette position ?
 //
 // rang / total : position du composant dans le nom complet (0-indexé).
 // Une civilité précède toujours un nom : elle n'est ni le dernier composant,
@@ -76,7 +76,7 @@ export function isHonorificAt(token, rang, total) {
 
 // --- Particules nobiliaires et patronymiques -------------------------------
 //
-// Deuxième classe FERMÉE de composants non identifiants, régie par EXACTEMENT
+// Deuxième classe fermée de composants non identifiants, régie par exactement
 // la même règle de position que les civilités : « de », « van », « bin » ne
 // désignent personne quand ils précèdent un nom, mais « Le » et « Da » sont
 // aussi de vrais patronymes. L'appartenance à la liste ne suffit donc jamais.
@@ -88,7 +88,7 @@ export const PARTICULES = new Set([
   'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben'
 ]);
 
-// Un composant de nom est-il NON IDENTIFIANT à cette position ? - civilité ou
+// Un composant de nom est-il non identifiant à cette position ? - civilité ou
 // particule. C'est la question que se posent `pseudonyms.js` (quel composant
 // remplacer) et `identity.js` (quel composant masquer isolément) ; poser la
 // même question deux fois, c'est risquer deux réponses.

@@ -194,7 +194,7 @@ test('une date numérique reste numérique (non-régression)', () => {
 // --- ÉTABLISSEMENT, et le REFUS des trois autres types (P13) ---------------
 // La ligne de partage est « identifiant ou attribut ? ». Un nom d'établissement
 // s'échange comme un nom d'entreprise ; un poste, une nationalité ou une donnée
-// de santé sont ce sur quoi le LLM RAISONNE - les remplacer par du plausible
+// de santé sont ce sur quoi le llm raisonne - les remplacer par du plausible
 // produit une réponse confiante et fausse.
 
 test('un poste, une nationalité et une donnée de santé restent en placeholder', () => {
@@ -220,8 +220,8 @@ test('établissement : PAS de pseudonyme, parce que sa détection est peu fiable
 });
 
 test('aucun type PEU FIABLE ne reçoit de pseudonyme réaliste', () => {
-  // La règle en DEUX conditions : identifiant ET détection fiable. Ce test
-  // relie les deux modules - si un type rejoint TYPES_PEU_FIABLES un jour, il
+  // La règle en deux conditions : identifiant ET détection fiable. Ce test
+  // relie les deux modules - si un type rejoint TYPES_PEU_fiables un jour, il
   // doit cesser d être pseudonymisé, sans quoi ses erreurs deviennent
   // invisibles.
   const p = createPseudonymizer({ seed: 's1' });

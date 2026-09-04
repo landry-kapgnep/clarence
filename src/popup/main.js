@@ -1,4 +1,4 @@
-// Popup Clarence - source bundlée par build.mjs. Transformers.js n'est PLUS
+// Popup Clarence - source bundlée par build.mjs. Transformers.js n'est plus
 // importé ici : il vit dans le worker NER (src/worker/ner-worker.js), ce qui
 // libère le thread principal ET allège fortement ce bundle.
 import { detectRegex } from '../engine/regex-detect.js';
@@ -34,7 +34,7 @@ let currentText = '';
 let autoEntities = [];    // sortie moteur (regex + NER fusionnés)
 let manualEntities = [];  // ajouts manuels de l'utilisateur
 let removedKeys = new Set(); // faux positifs retirés d'un clic
-// Démarre avec les types PEU FIABLES décochés (voir TYPES_PEU_FIABLES) : le
+// Démarre avec les types peu fiables décochés (voir TYPES_PEU_fiables) : le
 // modèle ne les détecte pas, les laisser cochés serait de la fausse confiance.
 let disabledTypes = new Set(TYPES_PEU_FIABLES);
 
@@ -45,27 +45,27 @@ const TYPE_DISPLAY = {
   NIR: 'NIR', SIRET_SIREN: 'SIRET/SIREN', CODE_POSTAL_VILLE: msg('type_code_postal'),
   MONTANT: msg('type_montant'), ADRESSE: msg('type_adresse'), DATE_NAISSANCE: msg('type_date_naissance'),
   REFERENCE: msg('type_reference'), IP: 'IP', MAC: 'MAC', BIC: 'BIC', PSEUDO: msg('type_pseudo'), DATE: msg('type_date'), ID_NATIONAL: msg('type_id_national'),
-  // Apportés par la détection zero-shot. Décocher un de ces types SAUTE
+  // Apportés par la détection zero-shot. Décocher un de ces types saute
   // l'inférence correspondante (voir GROUPES dans engine/gliner.js) : on ne
   // paie que ce qu'on demande.
   POSTE: msg('type_poste'), NATIONALITE: msg('type_nationalite'),
   ETABLISSEMENT: msg('type_etablissement'), SANTE: msg('type_sante'),
   MISC: msg('type_divers'), PERSONNALISE: 'Perso'
 };
-// Découpage TABULATION ou saut de ligne, espaces retirés - voir
+// Découpage tabulation ou saut de ligne, espaces retirés - voir
 // src/popup/termes.js pour le choix des séparateurs et ce qu'on en exclut.
 const parseLines = parseTermes;
 
 // Affiche les termes TELS QUE LE MOTEUR LES LIRA, sous le champ de saisie.
 //
-// POURQUOI. Vécu deux fois de suite sur un vrai document : une virgule oubliée
+// Pourquoi. Vécu deux fois de suite sur un vrai document : une virgule oubliée
 // avait soudé « UE » et « Ginel » en un terme fantôme « UEGinel », et un
 // rechargement de l'extension avait vidé le champ sans que rien ne le signale -
 // 7 termes sur 15 perdus, découverts seulement en comparant deux sorties.
 //
 // Une consigne qu'on croit appliquée alors qu'elle ne l'est pas est le pire cas
 // pour cet outil : la même famille de défaut que le sur-masquage silencieux.
-// L'aperçu utilise `parseTermes`, la MÊME fonction que le moteur, donc il ne
+// L'aperçu utilise `parseTermes`, la même fonction que le moteur, donc il ne
 // peut pas mentir - s'il affiche 8 termes, le moteur en appliquera 8.
 // Fonction AUTONOME plutôt qu'un écouteur qui se suffirait à lui-même : les
 // deux champs sont aussi écrits par programme - par le bouton « ne plus
@@ -92,7 +92,7 @@ function rendreApercuTermes() {
 // NB : la touche Tab n'est PAS capturée dans ces champs, et c'est délibéré.
 // Elle l'a été un temps, quand la tabulation servait de séparateur - mais
 // capturer Tab enferme les personnes qui naviguent au clavier, et la virgule a
-// rendu ce compromis inutile. La tabulation reste acceptée à l'ANALYSE (un
+// rendu ce compromis inutile. La tabulation reste acceptée à l'analyse (un
 // collage depuis un tableur en contient), simplement on n'en fabrique plus.
 let nerPipe = null;
 let nerLoading = false;
@@ -127,7 +127,7 @@ chrome.storage?.session?.get('clarenceMapping').then(r => {
 
 const $ = id => document.getElementById(id);
 
-// Traductions posées AVANT tout le reste : le code qui suit lit parfois le
+// Traductions posées avant tout le reste : le code qui suit lit parfois le
 // texte des éléments, et il doit lire la langue de l'utilisateur.
 appliquerTraductions();
 
@@ -135,10 +135,10 @@ appliquerTraductions();
 if (new URLSearchParams(location.search).has('panel')) {
   document.body.classList.add('panel-mode');
   document.documentElement.classList.add('panel-mode');
-  // MÊME PAGE, DEUX CONTENANTS. Le panneau vit normalement dans une iframe de
+  // Même page, DEUX CONTENANTS. Le panneau vit normalement dans une iframe de
   // ~400 px, largeur pour laquelle toute la mise en page est dessinée. Depuis
   // que l'icône de la barre d'outils n'ouvre plus de popup native, cette page
-  // peut aussi s'afficher dans un ONGLET PLEINE LARGEUR, où `width: 100%`
+  // peut aussi s'afficher dans un onglet pleine largeur, où `width: 100%`
   // étirerait la colonne jusqu'à la rendre illisible. On borne alors la
   // largeur et on centre - le visuel reste le même, seul le contenant change.
   if (window.parent === window) document.body.classList.add('autonome');
@@ -168,7 +168,7 @@ const esc = s => s.replace(/[&<>"']/g, c =>
 // Règles perso : « toujours masquer » (termes forcés), « ne jamais masquer »
 // (valeurs épargnées) et types désactivés.
 function activeEntities() {
-  // Règles saisies + identité déclarée : l'identité s'AJOUTE, toujours.
+  // Règles saisies + identité déclarée : l'identité s'ajoute, toujours.
   const forced = forcedMasks(currentText,
     [...parseLines($('alwaysMask')?.value), ...identityForceTerms()]);
   const sel = selectActive(autoEntities, [...manualEntities, ...forced], removedKeys);
@@ -176,7 +176,7 @@ function activeEntities() {
 }
 
 // Puces de types : décocher un type le laisse visible (non masqué). Rendues de
-// façon identique dans les deux modes - TOUS les types connus, tout de suite,
+// façon identique dans les deux modes - tous les types connus, tout de suite,
 // sans attendre une analyse (décocher un type absent du texte est sans effet).
 // `disabledSet` : le Set propre au mode (disabledTypes / fileDisabledTypes).
 function renderTypeChips(boxId, disabledSet) {
@@ -295,8 +295,8 @@ const MAX_INPUT = 8000;
 // Fournisseur d'exécution ONNX : 'wasm' | 'webgpu' | 'auto' ('auto' = WebGPU
 // si l'adaptateur répond, repli WASM sinon).
 //
-// 'webgpu' parce que la mesure le justifie MAINTENANT - et seulement avec le
-// fp16 (voir GLINER_VARIANTE dans src/engine/gliner.js pour le tableau des
+// 'webgpu' parce que la mesure le justifie maintenant - et seulement avec le
+// fp16 (voir gliner_variante dans src/engine/gliner.js pour le tableau des
 // trois mesures). Avec l'int8 il ne rapportait rien : ces deux réglages ne se
 // jugent QUE par paire, et une variable à la fois.
 //
@@ -313,10 +313,10 @@ const GLINER_MODEL_URL = glinerModelUrl();
 // principal, sinon l'UI gèle pendant toute la détection (menus au contenu
 // coupé, impression de plantage).
 //
-// DEUX moteurs derrière le même proxy. GLiNER (zero-shot) par défaut : il sait
+// Deux moteurs derrière le même proxy. GLiNER (zero-shot) par défaut : il sait
 // qualifier une valeur isolée sans phrase autour - cellule de tableau, nom en
 // tête de CV - ce dont le NER BERT est incapable par construction. S'il ne
-// démarre pas, on replie SILENCIEUSEMENT sur BERT : l'utilisateur garde une
+// démarre pas, on replie silencieusement sur BERT : l'utilisateur garde une
 // détection des noms, ce qui vaut mieux qu'un message d'erreur et rien.
 // `detectNER`/`detectGliner` prennent leur pipeline en paramètre : le moteur
 // pur reste inchangé, seul le proxy diffère.
@@ -435,27 +435,27 @@ async function ensureNER() {
 // s'ajoute aux 183 Mo de la détection, et personne ne doit les payer sans
 // l'avoir choisi. Première des trois contraintes produit (docs/notes-techniques.md).
 //
-// Il vit dans le MÊME worker que la détection : ORT n'exécute qu'une inférence
+// Il vit dans le même worker que la détection : ORT n'exécute qu'une inférence
 // à la fois de toute façon, et un second worker ne ferait que dupliquer le
 // runtime WASM sans rien gagner.
-// Texte compressé, calculé UNE FOIS à la fin du traitement.
+// Texte compressé, calculé une fois à la fin du traitement.
 //
-// POURQUOI PAS AU CLIC. `navigator.clipboard.writeText` exige une activation
-// utilisateur RÉCENTE, qui expire en quelques secondes. Compresser pendant le
+// Pourquoi pas au clic. `navigator.clipboard.writeText` exige une activation
+// utilisateur récente, qui expire en quelques secondes. Compresser pendant le
 // clic - plusieurs secondes sur un document - faisait expirer l'autorisation et
-// l'écriture échouait SANS erreur : le bouton « Copier » ne copiait rien.
+// l'écriture échouait sans erreur : le bouton « Copier » ne copiait rien.
 // En le calculant à l'avance, le clic n'a plus qu'à écrire une chaîne déjà prête.
 // Bilan de la dernière compression, affiché avec le résumé du résultat.
 let compressionInfo = null;
 // Vrai si le modèle n'a pas pu être chargé : reporté jusqu'au résumé final,
 // seul endroit qui ne sera pas écrasé par l'étape suivante.
-// Porte le message d'erreur RÉEL, pas un libellé générique : sans lui, un
+// Porte le message d'erreur réel, pas un libellé générique : sans lui, un
 // échec de chargement et un échec d'inférence sont indiscernables à l'écran, et
 // on en est réduit à deviner. C'est exactement ce qui s'est passé.
 let compressionEchouee = null;
 
 // Crochet passé aux adaptateurs qui préservent la mise en page (DOCX, PDF
-// « Préserver ») : ils redessinent des FRAGMENTS, pas un texte, et ont donc
+// « Préserver ») : ils redessinent des fragments, pas un texte, et ont donc
 // besoin d'une compression rendue fragment par fragment. `null` si l'option
 // n'est pas active - les adaptateurs sautent alors l'étape entièrement.
 function crochetCompression() {
@@ -469,7 +469,7 @@ function crochetCompression() {
     fait++;
     if (info?.total) await compressionProgress({ fait, total: info.total });
     // ÉCHEC NON DESTRUCTIF. Sans ce garde, une erreur de compression remonte
-    // jusqu'au try/catch du traitement et fait perdre TOUT le résultat - alors
+    // jusqu'au try/catch du traitement et fait perdre tout le résultat - alors
     // que l'anonymisation, elle, a réussi. On rend les segments intacts, on
     // note la raison, et le fichier sort simplement non compressé.
     try {
@@ -491,10 +491,10 @@ let compressionWorker = null;
 let compressionReqId = 0;
 const compressionPending = new Map();
 
-// FICHIER DE WORKER DÉDIÉ (compression-worker.js), et pas seulement un second
+// Fichier de worker dédié (compression-worker.js), et pas seulement un second
 // Worker sur ner-worker.js - la nuance a coûté un aller-retour.
 //
-// ner-worker.js importe `gliner` en TÊTE DE MODULE, ce qui installe ORT 1.19.
+// ner-worker.js importe `gliner` en tête de module, ce qui installe ORT 1.19.
 // Transformers.js embarque ORT 1.14. Les deux dans le même graphe de modules
 // font échouer l'initialisation du second : c'est l'erreur « Compression
 // indisponible ». Lancer un second Worker sur le même fichier ne changeait
@@ -559,9 +559,9 @@ const compressionPipeline = () => (texte) => new Promise((resolve, reject) => {
   compressionWorker.postMessage({ type: 'compress', id, text: texte });
 });
 
-// Coupe court à TOUTES les inférences en attente et repart d'un worker neuf.
+// Coupe court à toutes les inférences en attente et repart d'un worker neuf.
 //
-// POURQUOI TERMINER LE WORKER plutôt que juste ignorer les résultats. Le worker
+// Pourquoi terminer le worker plutôt que juste ignorer les résultats. Le worker
 // traite ses messages UN PAR UN : les centaines de lots déjà postés pour un run
 // abandonné seraient calculés jusqu'au dernier, et le run suivant attendrait
 // derrière eux. C'est exactement ce qui donnait l'impression d'un blocage sur
@@ -577,33 +577,33 @@ function purgerWorkerNer(raison) {
   nerWorker = null;
   nerPipe = null;
   nerEngine = null;
-  // Le worker de compression est SÉPARÉ (voir ensureCompression) : une
+  // Le worker de compression est séparé (voir ensureCompression) : une
   // annulation de détection ne doit pas jeter un modèle de 170 Mo déjà chargé.
   // Sinon ensureNER() croirait un chargement encore en cours et rendrait la
   // main sans jamais reconstruire le pipeline : plus aucune détection.
   nerLoading = false;
 }
 
-// Fonction de détection du moteur ACTIF, avec la signature commune
+// Fonction de détection du moteur actif, avec la signature commune
 // (text, pipeline, opts) attendue par anonymizeUnits/reconstructPdf.
-// `disabledTypes` y sert à SAUTER des passes GLiNER entières (une passe = une
+// `disabledTypes` y sert à sauter des passes GLiNER entières (une passe = une
 // inférence), pas seulement à filtrer après coup.
 function contextualDetector() {
   return nerEngine === 'gliner' ? detectGliner : detectNER;
 }
 
-// Seconde opinion sur les propositions du modèle, en DEUX temps :
+// Seconde opinion sur les propositions du modèle, en deux temps :
 //   1. `arbitrerFauxPositifs` - le modèle est réinterrogé avec des labels
 //      leurres pour écarter « Analyste », « Poste occupé » et consorts ;
 //   2. `filtrerParPrecision` - un classifieur pèse une douzaine de signaux
 //      (lexique, casse, occurrences, minuscules ailleurs…) pour écarter les
 //      groupes nominaux ordinaires pris pour des organisations ou des lieux.
 //
-// Cet ordre est celui sur lequel le filtre a été ENTRAÎNÉ (voir
+// Cet ordre est celui sur lequel le filtre a été entraîné (voir
 // tools/filtre/construire-jeu.mjs) : l'inverser lui ferait voir une population
 // de candidats différente de celle qu'il connaît.
 //
-// UNIQUEMENT avec GLiNER, et pour deux raisons distinctes : l'arbitrage a
+// Uniquement avec GLiNER, et pour deux raisons distinctes : l'arbitrage a
 // besoin de labels à interroger, que le moteur BERT de repli n'a pas ; et le
 // filtre a appris sur les erreurs de GLiNER, pas sur celles de BERT - l'y
 // appliquer serait l'utiliser hors de son domaine. On renvoie alors
@@ -642,22 +642,22 @@ async function analyze() {
         return new Promise(r => setTimeout(r, 0));
       }
     });
-    // MÊME filtre de précision qu'en mode Fichier : les deux chemins doivent
+    // Même filtre de précision qu'en mode Fichier : les deux chemins doivent
     // rendre le même verdict sur le même texte, sinon ils divergent - le motif
     // exact qui a déjà coûté cher sur les deux chemins PDF (P1bis).
     //
-    // ⚠️ DIVERGENCE PRÉEXISTANTE, non traitée ici et signalée pour ne pas la
+    // DIVERGENCE PRÉEXISTANTE, non traitée ici et signalée pour ne pas la
     // perdre : le mode texte ne passe PAS par `arbitrerFauxPositifs`, alors que
     // le mode fichier si. « Analyste » est donc encore masqué en mode texte.
     autoEntities = mergeEntities(rx, filtrerParPrecision(ner, text));
     montrerSuggestion({ prefixe: 'profile', texte: text, entites: autoEntities });
     render();
-    // Ne JAMAIS laisser croire que les noms/lieux ont été vérifiés alors que
+    // Ne jamais laisser croire que les noms/lieux ont été vérifiés alors que
     // seul le structuré (regex) a tourné, NI que le moteur complet a tourné
     // alors qu'on est retombé sur le moteur de secours.
     renderEngineBadge('engineBadge');
   } catch (err) {
-    // Ne JAMAIS échouer en silence : l'utilisateur pourrait coller un texte
+    // Ne jamais échouer en silence : l'utilisateur pourrait coller un texte
     // qu'il croit analysé.
     console.error('[clarence]', err);
     $('results').hidden = true;
@@ -704,7 +704,7 @@ function setStatus(msg, cls = '') {
   $('status').className = 'status ' + cls;
 }
 
-// Quel moteur a RÉELLEMENT tourné. Affiché seulement quand ce n'est pas le
+// Quel moteur a réellement tourné. Affiché seulement quand ce n'est pas le
 // moteur nominal : en fonctionnement normal un badge permanent deviendrait du
 // bruit qu'on cesse de lire, alors que c'est précisément le repli qui doit
 // alerter - il change ce que l'outil sait détecter (les valeurs isolées sans
@@ -813,13 +813,13 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && overlayK
 
 // --- RECADRAGE DES INFOBULLES, AU NIVEAU DU SYSTÈME ------------------------
 //
-// LE DÉFAUT : la boîte d'un « ? » est positionnée par rapport à LUI. Ancrée à
+// Le défaut : la boîte d'un « ? » est positionnée par rapport à LUI. Ancrée à
 // droite, elle se déploie vers la gauche - ce qui protège les « ? » de la
 // colonne de droite et laisse sortir ceux de la colonne de gauche. Et
-// `.popup-shell` COUPE ce qui dépasse : la boîte n'est pas décalée, elle est
+// `.popup-shell` coupe ce qui dépasse : la boîte n'est pas décalée, elle est
 // tronquée.
 //
-// POURQUOI PAS EN CSS. Aucune règle statique ne couvre les deux bords sans se
+// Pourquoi pas en css. Aucune règle statique ne couvre les deux bords sans se
 // répéter par emplacement (« celle-ci à gauche, celle-là à droite ») - c'est
 // exactement ce qu'on veut éviter : chaque « ? » ajouté demain rouvrirait le
 // problème. On mesure donc à l'ouverture et on ramène la boîte dans le cadre.
@@ -872,8 +872,8 @@ const FILE_TYPES = {
 };
 
 let chosenFile = null;
-// Run fichier EN COURS. Sans cette identité, deux exécutions pouvaient se
-// chevaucher (changer de fichier, relancer) en écrivant dans le MÊME état
+// Run fichier en cours. Sans cette identité, deux exécutions pouvaient se
+// chevaucher (changer de fichier, relancer) en écrivant dans le même état
 // global : la plus lente écrasait la plus récente, et le `finally` de la
 // périmée réinitialisait l'UI pendant que l'autre tournait encore.
 // Déclaré ICI, avec l'état fichier, et non près de processFile : `let` ne
@@ -885,7 +885,7 @@ let fileOutName = '';
 let fileDisabledTypes = new Set(TYPES_PEU_FIABLES); // idem, mode Fichier
 
 // Puces du mode Fichier : mêmes puces statiques (fonction partagée), cochées
-// par défaut, réglables AVANT de traiter (le flux fichier est en un clic).
+// par défaut, réglables avant de traiter (le flux fichier est en un clic).
 renderTypeChips('fileTypeToggles', fileDisabledTypes);
 
 $('fileTypeToggles')?.addEventListener('change', ev => {
@@ -899,12 +899,12 @@ $('fileTypeToggles')?.addEventListener('change', ev => {
 
 // Un résultat de fichier ne vaut QUE pour les options avec lesquelles il a été
 // produit. Sans cette invalidation, changer « Alléger » ↔ « Préserver » après
-// coup puis retélécharger redonnait silencieusement l'ANCIEN fichier : on
+// coup puis retélécharger redonnait silencieusement l'ancien fichier : on
 // croit tenir un Markdown sans images et on tient un PDF qui les contient
 // toutes. C'est une fuite, pas une gêne - d'où l'effacement du résultat plutôt
 // qu'un simple avertissement.
 function invalidateFileResult() {
-  // Un traitement EN COURS est tout aussi périmé qu'un résultat déjà produit :
+  // Un traitement en cours est tout aussi périmé qu'un résultat déjà produit :
   // il a démarré avec les anciennes options. Le laisser finir livrerait un
   // fichier qui ne correspond pas aux cases affichées - exactement la
   // fausse confiance que cette fonction existe pour empêcher.
@@ -919,7 +919,7 @@ function invalidateFileResult() {
   fileSetStatus('Options modifiées. Relance.');
 }
 
-// Toutes les options qui changent la SORTIE invalident le résultat.
+// Toutes les options qui changent la sortie invalident le résultat.
 for (const id of ['pdfModeLight', 'pdfModePreserve', 'fileRealisticToggle', 'filePseudoLocale']) {
   $(id)?.addEventListener('change', invalidateFileResult);
 }
@@ -937,10 +937,10 @@ function extOf(name) {
   return m ? m[1].toLowerCase() : '';
 }
 
-// Affiche le poids de TRAITEMENT du fichier choisi - jamais un temps estimé
+// Affiche le poids de traitement du fichier choisi - jamais un temps estimé
 // (voir src/popup/poids.js pour le raisonnement).
 //
-// En deux temps volontairement : un premier classement INSTANTANÉ d'après la
+// En deux temps volontairement : un premier classement instantané d'après la
 // taille, puis un affinage quand un signal plus fiable est disponible. Pour un
 // PDF c'est le nombre de pages, et il faut ouvrir le document pour l'obtenir :
 // attendre pour afficher donnerait un badge qui apparaît en retard, alors qu'un
@@ -956,7 +956,7 @@ function afficherPoids(file, ext) {
   rendre(poidsDeTraitement({ ext, taille: file.size }));
 
   // Affinage PDF. Défensif de bout en bout : un comptage de pages qui échoue ne
-  // doit RIEN casser - le badge approximatif reste affiché, et l'utilisateur
+  // doit rien casser - le badge approximatif reste affiché, et l'utilisateur
   // n'apprend jamais qu'on a essayé.
   if (ext !== 'pdf') return;
   const pourCeFichier = chosenFile;
@@ -1003,7 +1003,7 @@ function setChosenFile(file) {
   // le modèle au détriment du run suivant.
   annulerRunFichier('');
   // Nouveau fichier : le résultat précédent n'est plus régénérable, et les
-  // termes DE CE DOCUMENT n'ont plus de raison d'être. Les laisser filtrerait
+  // termes de ce document n'ont plus de raison d'être. Les laisser filtrerait
   // silencieusement le fichier suivant avec le vocabulaire du précédent.
   // Les règles de PROFIL, elles, ne sont pas touchées : elles sont durables.
   fileRegen = null;
@@ -1013,7 +1013,7 @@ function setChosenFile(file) {
   compressionEchouee = null;
   if ($('docKeep')) $('docKeep').value = '';
   if ($('docMask')) $('docMask').value = '';
-  // Écriture PROGRAMMATIQUE : elle ne déclenche pas `input`, donc l'aperçu doit
+  // Écriture programmatique : elle ne déclenche pas `input`, donc l'aperçu doit
   // être rafraîchi à la main. L'oublier laisserait afficher les termes du
   // document précédent.
   rendreApercuTermes();
@@ -1041,7 +1041,7 @@ function setChosenFile(file) {
   afficherPoids(file, ext);
   $('fileChosen').hidden = false;
   // Options (pseudonymes/personnaliser) : révélées dès qu'un fichier est
-  // choisi - elles doivent être réglées AVANT le traitement (flux en un clic),
+  // choisi - elles doivent être réglées avant le traitement (flux en un clic),
   // contrairement au mode texte où elles se règlent après l'analyse. Sans objet
   // pour une image (metadataOnly : pas de détection de texte) → masquées.
   $('fileOptions').hidden = !!FILE_TYPES[ext].metadataOnly;
@@ -1068,21 +1068,21 @@ function fileMaskOptions(units = []) {
   };
 }
 
-// Tout ce qu'il faut pour REJOUER le masquage sans repayer la détection, quand
+// Tout ce qu'il faut pour rejouer le masquage sans repayer la détection, quand
 // l'utilisateur retire un masque depuis la table de correspondance.
 //
-// POURQUOI CE N'EST PAS UN LUXE. La détection ne sera jamais parfaite - cinq
+// Pourquoi ce n'est pas un luxe. La détection ne sera jamais parfaite - cinq
 // pistes mesurées et écartées le 07/08 - et une partie du sur-masquage dépend
-// du DOCUMENT, pas de réglages qu'on pourrait pré-configurer : « ChatGPT » doit
+// du document, pas de réglages qu'on pourrait pré-configurer : « ChatGPT » doit
 // survivre dans un mémoire sur ChatGPT, et un profil enregistré ne servirait
 // qu'à ce document-là. Le levier n'est donc pas de mieux deviner, c'est de
 // rendre la correction triviale. Sans ce cache, retirer un masque relancerait
 // 45 secondes d'inférence et le geste cesserait d'être utilisable.
 let fileRegen = null;
 
-// Vocabulaire du PROFIL (réutilisable, écrasé au changement de profil) FUSIONNÉ
-// avec celui du DOCUMENT courant (#docKeep / #docMask, effacés au changement de
-// fichier). Les deux endroits restent SÉPARÉS pour une raison fonctionnelle :
+// Vocabulaire du PROFIL (réutilisable, écrasé au changement de profil) fusionné
+// avec celui du document courant (#docKeep / #docMask, effacés au changement de
+// fichier). Les deux endroits restent séparés pour une raison fonctionnelle :
 // les champs de profil sont écrasés à son chargement, y ranger le vocabulaire
 // d'un document le perdrait au premier changement.
 //
@@ -1105,8 +1105,8 @@ const termesAMasquer = () => [
 // aux règles « ne jamais masquer » : aucune mécanique nouvelle, donc aucun
 // chemin de masquage parallèle qui pourrait diverger.
 //
-// LE TERME ATTERRIT DANS LE CHAMP VISIBLE, pas dans un état caché - c'est le
-// point de conception. Trois conséquences : l'utilisateur VOIT ce qu'il a
+// Le terme atterrit dans le champ visible, pas dans un état caché - c'est le
+// point de conception. Trois conséquences : l'utilisateur voit ce qu'il a
 // retiré, il peut le corriger à la main, et s'il veut le rendre permanent il
 // enregistre le profil. L'éphémère devient durable par un geste explicite,
 // jamais par surprise. Et il n'y a qu'une seule liste, donc rien à
@@ -1132,7 +1132,7 @@ async function retirerDuMasquage(valeur) {
     if (r.mode === 'pdf') {
       const { reconstructPdf } = await import('../files/pdf-reconstruct.js');
       const pdflib = await import('pdf-lib');
-      // `tampon` est re-copié : pdfjs DÉTACHE l'ArrayBuffer qu'on lui passe
+      // `tampon` est re-copié : pdfjs détache l'ArrayBuffer qu'on lui passe
       // (gotcha connu), donc le garder tel quel le rendrait inutilisable au
       // deuxième retrait.
       const res = await reconstructPdf(r.tampon.slice(0), {
@@ -1177,12 +1177,12 @@ async function retirerDuMasquage(valeur) {
 // La compression ne concerne QUE les sorties texte : un .docx ou un PDF
 // reconstruit ne se colle pas dans un chat, et y coller du télégraphique n'a
 // aucun sens. CSV et PDF « Alléger » (.md) sont les seuls cas.
-// Tout format PORTANT DU TEXTE peut être compressé, y compris ceux qui
+// Tout format portant du texte peut être compressé, y compris ceux qui
 // préservent la mise en page : c'est le sens du crochet `compresserUnite`.
 // N'en sont exclues que les images, qui n'ont pas de texte du tout.
 // Réduire les tokens du .md mais pas du format réellement envoyé n'aurait aucun
 // intérêt pour l'utilisateur - c'est le reproche qui a motivé ce chantier.
-// La compression s'applique à TOUS les formats porteurs de texte, y compris
+// La compression s'applique à tous les formats porteurs de texte, y compris
 // ceux qui préservent la mise en page - ils reçoivent le crochet fragment par
 // fragment. Seules les images en sont exclues : elles n'ont pas de texte.
 function compressionApplicable(ext) {
@@ -1195,13 +1195,13 @@ function majVisibiliteCompression(ext) {
   const bloc = $('fileCompressBtn');
   if (!bloc) return;
   bloc.hidden = !compressionApplicable(ext);
-  // Une option cachée ne doit jamais rester ACTIVE en coulisse : sans ça, une
+  // Une option cachée ne doit jamais rester active en coulisse : sans ça, une
   // compression tournerait sans que rien ne l'annonce.
   if (bloc.hidden && $('fileCompress')) $('fileCompress').checked = false;
   majVisibiliteTaux();
 }
 
-// SOUS-OPTIONS : une option réglant une autre n'a rien à montrer tant que la
+// Sous-options : une option réglant une autre n'a rien à montrer tant que la
 // première est éteinte. On/off strict - elle disparaît dès qu'on décoche,
 // plutôt que de rester grisée à occuper une ligne.
 function majSousOptions() {
@@ -1235,16 +1235,16 @@ function formatDuree(ms) {
 function showFileResults(mapping, copyable, duree) {
   lastMapping = mapping;
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {});
-  // TRI PAR FRÉQUENCE, et ce n'est pas cosmétique.
+  // Tri par fréquence, et ce n'est pas cosmétique.
   //
   // Mesuré sur un vrai mémoire de 21 pages : le sur-masquage est massivement
-  // concentré en TÊTE de cette distribution - « ChatGPT » masqué 41 fois et
-  // « MT » 25 fois dans un mémoire QUI PORTE SUR eux, alors que la vraie
+  // concentré en tête de cette distribution - « ChatGPT » masqué 41 fois et
+  // « MT » 25 fois dans un mémoire qui porte sur eux, alors que la vraie
   // donnée personnelle du document (le nom de l'autrice) n'apparaissait
   // qu'UNE fois. Trier par fréquence met donc les corrections les plus
   // rentables en premier : trois clics récupèrent un quart des placeholders.
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
-  // EN-TÊTES DE COLONNES, ET DES ACTIONS D'UN SEUL SIGNE.
+  // En-têtes de colonnes, et des actions d'un seul signe.
   //
   // Deux boutons en toutes lettres répétés sur chaque ligne débordaient sur la
   // valeur et faisaient un mur de texte. La légende monte donc en tête une
@@ -1262,7 +1262,7 @@ function showFileResults(mapping, copyable, duree) {
       </tr></thead><tbody>${triees.map(m =>
         `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td>` +
         `<td class="map-occ">${m.occurrences || 1}×</td>` +
-        // `data-valeur` porte la valeur RÉELLE : c'est elle qu'on ajoutera aux
+        // `data-valeur` porte la valeur réelle : c'est elle qu'on ajoutera aux
         // termes « ne jamais masquer », pas le placeholder.
         `<td class="map-act">` +
         `<button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
@@ -1324,14 +1324,14 @@ const setTextProgress = r => setProgress('textProgress', 'textProgressFill', r);
 //
 // POURQUOI UNE LISTE PILOTÉE PAR LES DONNÉES plutôt que des barres écrites en
 // dur. Quatre défauts constatés à l'usage venaient tous du markup figé :
-//   - les deux jauges s'affichaient AVANT qu'on ait lancé quoi que ce soit ;
+//   - les deux jauges s'affichaient avant qu'on ait lancé quoi que ce soit ;
 //   - la seconde apparaissait même sans l'option qui la justifie ;
 //   - une jauge pleine et une jauge vide côte à côte ne disaient plus laquelle
 //     travaillait ;
 //   - la première semblait « se vider » quand la seconde se remplissait.
 //
-// Une étape n'existe donc dans le DOM que si elle a lieu d'être : ABSENTE tant
-// qu'elle n'a pas commencé, JAUGE pendant, PUCE « terminé ✓ » après. Ajouter
+// Une étape n'existe donc dans le DOM que si elle a lieu d'être : Absente tant
+// qu'elle n'a pas commencé, jauge pendant, PUCE « terminé ✓ » après. Ajouter
 // une étape optionnelle plus tard ne demande qu'une ligne de déclaration.
 let etapes = [];
 
@@ -1359,7 +1359,7 @@ function rendreEtapes() {
   if (!hote) return;
   hote.textContent = '';
   for (const e of etapes) {
-    // ATTENTE : rien du tout. Une jauge vide pour une étape qui n'a pas
+    // Attente : rien du tout. Une jauge vide pour une étape qui n'a pas
     // commencé se lit comme un blocage.
     if (e.etat === 'attente') continue;
 
@@ -1382,7 +1382,7 @@ function rendreEtapes() {
     libelle.className = 'etape-libelle';
     const nom = document.createElement('span');
     nom.textContent = e.libelle;
-    // POURCENTAGE, et pas le compteur brut d'origine (« 16/168 ») : l'unité
+    // Pourcentage, et pas le compteur brut d'origine (« 16/168 ») : l'unité
     // interne ne dit rien à personne - 168 quoi ? Le pourcentage se lit sans
     // rien savoir du découpage, et il reste la seule indication d'avancement
     // hors de la barre, qui est trop fine pour qu'on y lise une progression
@@ -1411,7 +1411,7 @@ const compressionProgress = ({ fait, total }) => {
 };
 
 // La clôture se fait ICI, sur la progression, et pas à un jalon écrit dans le
-// flux : le PDF « Préserver » enchaîne détection et compression À L'INTÉRIEUR de
+// flux : le PDF « Préserver » enchaîne détection et compression À L'intérieur de
 // reconstructPdf, hors de portée de la popup. Un seul mécanisme couvre les deux
 // chemins.
 const nerProgress = ({ done, total }) => {
@@ -1425,7 +1425,7 @@ const nerProgress = ({ done, total }) => {
 // dérivent, fusionnent et se séparent. Deux garde-fous rendent le fond
 // compatible avec une UI dense, parce qu'un motif à fort contraste placé
 // derrière du texte le rend illisible :
-//   1. AUCUNE case n'est peinte derrière un élément d'interface. Les boîtes
+//   1. Aucune case n'est peinte derrière un élément d'interface. Les boîtes
 //      des éléments porteurs de contenu sont relevées et converties en une
 //      grille d'occupation ; le blob coule autour, comme si l'UI était
 //      découpée dedans. C'est ce qui règle « les carrés recouvrent des
@@ -1573,7 +1573,7 @@ function letterGridIsOpaque(el) {
 // bouton plein) est au-dessus du canvas et masque déjà le motif - le bloquer
 // en plus ne gagnerait rien et coûterait de la surface.
 //
-// Et on relève les rectangles du TEXTE, pas les boîtes des éléments. La popup
+// Et on relève les rectangles du texte, pas les boîtes des éléments. La popup
 // est une pile de blocs pleine largeur : bloquer les boîtes revenait à évincer
 // le motif de 99 % de la surface (mesuré), alors qu'une ligne de texte courte
 // n'occupe qu'une fraction de sa boîte. C'est ce qui laisse au blob de quoi
@@ -1599,7 +1599,7 @@ function letterGridComputeBlocked(host, cellCss) {
     }
   };
 
-  // On s'arrête AVANT .wrap : son fond à elle est peint sous le canvas, il ne
+  // On s'arrête avant .wrap : son fond à elle est peint sous le canvas, il ne
   // masque donc rien, contrairement à celui d'un élément de contenu.
   const opaque = new Map();
   const hidden = node => {
@@ -1624,12 +1624,12 @@ function letterGridComputeBlocked(host, cellCss) {
   for (const img of wrap.querySelectorAll('img')) {
     if (!hidden(img)) add(img.getBoundingClientRect());
   }
-  // Les TABLEAUX sont la seule exception à la règle « on ne bloque que le
+  // Les tableaux sont la seule exception à la règle « on ne bloque que le
   // texte ». Cette règle suppose une pile de blocs pleine largeur, où le motif
   // vit dans les MARGES d'une ligne courte. Un tableau viole l'hypothèse : ses
-  // gouttières sont INTERNES, entre les colonnes, au milieu de la donnée.
+  // gouttières sont internes, entre les colonnes, au milieu de la donnée.
   //
-  // NUANCE, tranchée par l'auteur de la DA après l'avoir vu à l'écran : le
+  // Nuance, tranchée par l'auteur de la DA après l'avoir vu à l'écran : le
   // motif ne se lit PAS comme parasite. Son opacité dit clairement qu'il est en
   // fond, et il habille la page - c'est voulu, partout ailleurs. Ceci n'est
   // donc PAS une correction de bug mais un arbitrage local : dans une table on
@@ -1713,7 +1713,7 @@ function letterGridRedraw() {
 // Déplace une boule d'un tick. Pendant le traitement : la vitesse dérive par
 // petits pas (accélération aléatoire bornée), jamais la position directement
 // - c'est ce qui donne un mouvement continu plutôt que des sauts. Chaque boule
-// reste tenue en laisse autour de sa maison (DRIFT_RANGE, avec rebond sur la
+// reste tenue en laisse autour de sa maison (DRIFT_range, avec rebond sur la
 // limite), sinon elles finiraient toutes par se rassembler ou sortir du cadre.
 // Au repos : retour exponentiel vers la maison, jusqu'à s'y superposer pile.
 function letterGridStepBall(b, processing) {
@@ -1793,7 +1793,7 @@ function letterGridMount() {
   letterGridCanvas = document.createElement('canvas');
   host.appendChild(letterGridCanvas);
   letterGridCtx = letterGridCanvas.getContext('2d');
-  // Deux couches distinctes AU-DESSUS du canvas, dans cet ordre : les halos
+  // Deux couches distinctes au-dessus du canvas, dans cet ordre : les halos
   // colorés (visibles partout), puis le flou (masqué autour du curseur).
   // Elles étaient confondues en un seul élément, ce qui rendait impossible de
   // masquer l'un sans faire disparaître l'autre.
@@ -1928,7 +1928,7 @@ async function processFile() {
 
   // Le fichier est CAPTURÉ ici, une fois pour toutes. Il était relu à la fin
   // pour composer le nom de sortie : changer de fichier en cours de route
-  // produisait le CONTENU de l'ancien sous le NOM du nouveau - on croyait tenir
+  // produisait le contenu de l'ancien sous le NOM du nouveau - on croyait tenir
   // B anonymisé en tenant A. Même gravité qu'une fuite, d'où la capture.
   // Une nouvelle détection rebâtit le mapping : l'ancien état de régénération
   // ne correspond plus à rien.
@@ -1982,11 +1982,11 @@ async function processFile() {
       return;
     }
 
-    // Compression demandée : le modèle se charge ICI, AVANT tout aiguillage par
+    // Compression demandée : le modèle se charge ICI, avant tout aiguillage par
     // format. Il était chargé plus bas, dans le chemin standard - or la branche
-    // PDF « Préserver » RETOURNE avant d'y arriver : le crochet y valait donc
+    // PDF « Préserver » retourne avant d'y arriver : le crochet y valait donc
     // toujours `null` et le PDF ressortait anonymisé mais jamais compressé,
-    // pendant que le .md, lui, fonctionnait. Tout ce qui doit valoir pour TOUS
+    // pendant que le .md, lui, fonctionnait. Tout ce qui doit valoir pour tous
     // les formats se place avant l'aiguillage, pas après.
     if ($('fileCompress')?.checked) {
       fileSetStatus(msg('etat_preparation'));
@@ -2017,8 +2017,8 @@ async function processFile() {
       arbitre: arbitreContextuel(),
         onProgress: nerProgress,
         // Manquait entièrement : le PDF reconstruit ignorait la case
-        // Pseudonymes, contrairement aux autres formats. Toujours [TYPE_N].
-        // SANS argument : `units` n'existe pas encore sur ce chemin (il est
+        // Pseudonymes, contrairement aux autres formats. Toujours [type_N].
+        // Sans argument : `units` n'existe pas encore sur ce chemin (il est
         // déclaré plus bas, pour l'autre branche) - le lui passer plantait en
         // « Cannot access 'units' before initialization ». reconstructPdf
         // extrait ses propres unités en interne.
@@ -2081,15 +2081,15 @@ async function processFile() {
       entites: entitesContextuelles || []
     });
 
-    // COMPRESSION - DEUX VOIES, selon ce que l'adaptateur réécrit.
+    // Compression - DEUX VOIES, selon ce que l'adaptateur réécrit.
     //
     //  - CSV, XLSX et PDF « Alléger » réécrivent depuis `maskedText` : on
     //    compresse ce texte ici.
-    //  - DOCX et PDF « Préserver » réécrivent depuis les FRAGMENTS positionnés
+    //  - DOCX et PDF « Préserver » réécrivent depuis les fragments positionnés
     //    et ignorent `maskedText` : ils reçoivent le crochet `compresserUnite`
     //    et se compressent eux-mêmes, fragment par fragment.
     //
-    // D'où la condition : sans elle, DOCX paierait DEUX passes du modèle dont
+    // D'où la condition : sans elle, DOCX paierait deux passes du modèle dont
     // une pour rien.
     if ($('fileCompress')?.checked && compressionWorker && ext !== 'docx') {
       fileSetStatus(msg('etat_compression'));
@@ -2120,7 +2120,7 @@ async function processFile() {
     // jauges pleines empilées ne disaient plus laquelle attendait encore.
     terminerEtape('detection');
 
-    // resultsById porte les DEUX formes : maskedText (CSV/XLSX) et entities (DOCX).
+    // resultsById porte les deux formes : maskedText (CSV/XLSX) et entities (DOCX).
     const byId = new Map(results.map(r => [r.id, { maskedText: r.maskedText, entities: r.entities }]));
     fileSetStatus('Réécriture du fichier…');
     const masked = await adapter.applyMask(input, byId, { compresserUnite: crochetCompression() });
@@ -2136,13 +2136,13 @@ async function processFile() {
     fileRegen = { mode: 'standard', input, units, intitules,
       entites: entitesContextuelles, adapter, source, kind, ext };
 
-    // Copier n'a de sens que pour une sortie TEXTE (md/csv), pas binaire.
+    // Copier n'a de sens que pour une sortie texte (md/csv), pas binaire.
     showFileResults(mapping, kind.mime.startsWith('text/'), formatDuree(performance.now() - debut));
 
     renderEngineBadge('fileEngineBadge');
     fileSetStatus('');
   } catch (err) {
-    // Une ANNULATION n'est pas un échec. Afficher « Traitement échoué » quand
+    // Une annulation n'est pas un échec. Afficher « Traitement échoué » quand
     // l'utilisateur vient de cliquer sur Annuler laisserait croire à un bug -
     // et masquerait les vrais échecs dans le bruit. `annulerRunFichier` a déjà
     // remis l'UI en état, il n'y a rien à ajouter.
@@ -2157,7 +2157,7 @@ async function processFile() {
     $('dragCard').hidden = true;
     fileSetStatus('Échec : fichier non anonymisé. Détail en console.', 'error');
   } finally {
-    // Seul le run COURANT rend l'UI à l'utilisateur. Sans cette garde, un run
+    // Seul le run courant rend l'UI à l'utilisateur. Sans cette garde, un run
     // abandonné réactivait le bouton et effaçait la barre pendant que le run
     // suivant tournait encore - d'où « l'anonymisation n'est pas allée au bout ».
     if (courant()) {
@@ -2172,7 +2172,7 @@ async function processFile() {
 
 async function downloadFile() {
   if (!fileOutBlob) return;
-  // Le téléchargement reçoit EXACTEMENT ce que reçoit le presse-papiers,
+  // Le téléchargement reçoit exactement ce que reçoit le presse-papiers,
   // compression comprise : n'avoir la version compressée qu'à la copie était
   // incohérent. Sur une sortie binaire, texteDExport rend le blob inchangé.
   const url = URL.createObjectURL(fileOutBlob);
@@ -2191,7 +2191,7 @@ for (const btn of document.querySelectorAll('.mode-btn')) {
     const mode = btn.dataset.mode;
     for (const b of document.querySelectorAll('.mode-btn')) {
       b.classList.toggle('active', b === btn);
-      // L'état ACTIF doit être lisible autrement qu'à la couleur : sans
+      // L'état actif doit être lisible autrement qu'à la couleur : sans
       // aria-pressed, un lecteur d'écran annonce deux boutons identiques
       // et rien ne dit lequel est en cours.
       b.setAttribute('aria-pressed', String(b === btn));
@@ -2226,9 +2226,9 @@ $('fileMappingWrap').addEventListener('click', ev => {
   if (prof) demanderCategorie(prof);
 });
 
-// À QUELLE CATÉGORIE ? - demandé sur place, avec une réponse déjà proposée.
+// À quelle catégorie ? - demandé sur place, avec une réponse déjà proposée.
 //
-// Le type détecté suggère presque toujours la bonne case : une DATE_NAISSANCE
+// Le type détecté suggère presque toujours la bonne case : une DATE_naissance
 // va dans « Date de naissance », un ETABLISSEMENT dans « École(s) ». On
 // pré-sélectionne donc, et l'utilisateur n'a qu'à confirmer - ou corriger,
 // parce que le type peut être faux (c'est même souvent pour ça qu'il regarde
@@ -2296,18 +2296,18 @@ $('fileDownloadBtn').addEventListener('click', downloadFile);
 
 // Copier le texte de sortie (sorties texte uniquement - bouton caché sinon).
 // Voie fiable pour amener le contenu dans le LLM : coller, sans fichier.
-// TEXTE D'EXPORT - partagé par « Copier » ET « Télécharger ».
+// Texte d'export - partagé par « Copier » ET « Télécharger ».
 //
-// La compression s'applique aux DEUX : n'avoir la version compressée qu'au
+// La compression s'applique aux deux : n'avoir la version compressée qu'au
 // presse-papiers était incohérent, l'utilisateur qui télécharge veut le même
-// résultat. Ce qui reste lisible, c'est ce qu'on RELIT : la table de
+// résultat. Ce qui reste lisible, c'est ce qu'on relit : la table de
 // correspondance liste chaque valeur masquée, et c'est elle la surface de
 // relecture pour un fichier - pas la prose.
 $('fileCopyBtn').addEventListener('click', async () => {
   if (!fileOutBlob) return;
-  // AUCUN calcul ici. Le blob porte déjà le texte compressé s'il y a lieu, et
+  // Aucun calcul ici. Le blob porte déjà le texte compressé s'il y a lieu, et
   // tout `await` long avant writeText ferait expirer l'activation utilisateur :
-  // l'écriture échouerait alors SANS erreur, et le bouton ne copierait rien.
+  // l'écriture échouerait alors sans erreur, et le bouton ne copierait rien.
   await navigator.clipboard.writeText(await fileOutBlob.text());
   $('fileCopyStatus').textContent = msg('copie');
   $('fileCopyStatus').className = 'status active';
@@ -2317,7 +2317,7 @@ $('fileCopyBtn').addEventListener('click', async () => {
 // Livraison directe du fichier anonymisé dans la page hôte. Le glisser-déposer
 // natif cross-frame (iframe extension → JS propriétaire du site) s'est avéré
 // peu fiable après deux tentatives (items.add seul, puis +DownloadURL) -
-// abandon de cette voie. À la place : le CONTENT SCRIPT (qui tourne dans le
+// abandon de cette voie. À la place : le content script (qui tourne dans le
 // contexte réel de la page, contrairement à cette iframe) assigne directement
 // le fichier à un <input type="file"> trouvé sur la page - ne dépend d'aucun
 // geste de glisser. Déclenché par clic, pas par glisser (plus fiable, plus
@@ -2357,13 +2357,13 @@ dropzone.addEventListener('drop', ev => {
 
 // ===== Suggestion de profil selon le TYPE de document =======================
 //
-// L'idée d'origine était un modèle entraîné PAR FORMAT. La mesure a montré que
-// ce qui manquait n'était pas un modèle mais de savoir QUEL profil proposer :
+// L'idée d'origine était un modèle entraîné par format. La mesure a montré que
+// ce qui manquait n'était pas un modèle mais de savoir quel profil proposer :
 // les faux positifs qui restent sont des acronymes d'un seul mot qu'aucun
 // signal contextuel ne distingue d'une vraie entité, et que seule une liste
 // éditable traite. Voir src/engine/type-document.js.
 //
-// ⚠️ ON PROPOSE, ON N'APPLIQUE JAMAIS TOUT SEUL. Changer le masquage en silence
+// On propose, on n'applique jamais tout seul. Changer le masquage en silence
 // casserait l'UX de relecture (cadrage §5) : l'utilisateur croirait relire un
 // résultat qu'il n'a pas demandé. Le clic est la garantie.
 const barresDeProfil = new Map();
@@ -2384,14 +2384,14 @@ function montrerSuggestion({ prefixe, texte, entites }) {
   const profil = type ? PROFIL_POUR_TYPE[type] : null;
   // Quatre raisons de se taire, toutes délibérées : rien ne se détache, aucun
   // profil ne correspond à ce type, le profil n'existe pas (supprimé par
-  // l'utilisateur), ou il est DÉJÀ sélectionné.
+  // l'utilisateur), ou il est déjà sélectionné.
   if (!profil || !bar.existe(profil) || bar.courant() === profil) return;
   if (suggestionsEcartees.has(type)) return;
 
-  // ⚠️ NE PAS PROPOSER UN RECUL. Comparer les NOMS ne suffit pas : les profils
+  // Ne pas proposer un recul. Comparer les noms ne suffit pas : les profils
   // de métier portent eux aussi le vocabulaire de leur format - « Développeur /
   // Tech » contient tout le vocabulaire CV. Proposer « CV / Résumé » à
-  // quelqu'un qui est déjà dessus lui ferait PERDRE sa liste de technos, et
+  // quelqu'un qui est déjà dessus lui ferait perdre sa liste de technos, et
   // remasquerait `Ollama`, `JaCoCo`, `BDD` - constaté sur un vrai CV.
   //
   // La bonne question n'est donc pas « le profil est-il différent ? » mais
@@ -2420,17 +2420,17 @@ function montrerSuggestion({ prefixe, texte, entites }) {
 
 // ===== Dialogue maison, en place de window.prompt / window.confirm ==========
 //
-// Ces deux-là sont peints par le NAVIGATEUR : aucun CSS ne les atteint, et ils
+// Ces deux-là sont peints par le navigateur : aucun CSS ne les atteint, et ils
 // étaient les éléments les plus dissonants de l'interface - une boîte système
 // au milieu d'une direction artistique tenue partout ailleurs.
 //
-// ⚠️ UN DIALOGUE MAISON MAL FAIT EST MOINS ACCESSIBLE QUE LE NATIF, pas plus.
+// Un dialogue maison mal fait est moins accessible que le natif, pas plus.
 // C'est le seul risque de ce remplacement, et il se paie en quatre obligations,
 // toutes tenues ici :
 //   · role="dialog" + aria-modal, pour que le lecteur d'écran sorte du fond ;
-//   · le focus ENTRE au premier contrôle utile et REVIENT à son déclencheur en
+//   · le focus entre au premier contrôle utile et revient à son déclencheur en
 //     sortant - sans quoi on se retrouve perdu en haut de page ;
-//   · le focus est PIÉGÉ : Tab tourne dans le dialogue au lieu d'aller
+//   · le focus est piégé : Tab tourne dans le dialogue au lieu d'aller
 //     parcourir une interface qu'on ne voit plus ;
 //   · Échap annule, comme partout ailleurs.
 //
@@ -2492,7 +2492,7 @@ function demander({ titre, texte, valeur, libelleOk, danger }) {
     document.addEventListener('keydown', auClavier, true);
     ok.onclick = valider;
     annuler.onclick = () => fermer(null);
-    // Clic hors de la carte : annule. Sur `mousedown` de l'ARRIÈRE-PLAN
+    // Clic hors de la carte : annule. Sur `mousedown` de l'arrière-plan
     // seulement, sinon une sélection de texte relâchée dehors fermerait tout.
     boite.onmousedown = (e) => { if (e.target === boite) fermer(null); };
   });
@@ -2514,10 +2514,10 @@ async function bindProfileBar(cfg) {
   if (!sel) return;
   let profiles = await loadProfiles();
 
-  // Sélection PROGRAMMATIQUE, pour la suggestion de profil. Enregistrée dans
+  // Sélection programmatique, pour la suggestion de profil. Enregistrée dans
   // `barresDeProfil` plutôt qu'exportée : `sel` et `profiles` vivent dans cette
   // fermeture, et la barre est montée deux fois (texte et fichier) - il faut
-  // donc pouvoir viser CELLE qu'on veut, pas « la » barre.
+  // donc pouvoir viser celle qu'on veut, pas « la » barre.
   const refill = selected => {
     sel.innerHTML = '<option value="">(personnalisé)</option>' +
       profiles.map(p => `<option${p.name === selected ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
@@ -2578,7 +2578,7 @@ bindProfileBar({
     if ($('alwaysMask')) $('alwaysMask').value = p.alwaysMask.join('\n');
     disabledTypes = new Set(p.disabledTypes);
     if ($('realisticToggle')) $('realisticToggle').checked = p.realistic;
-    // Écriture PROGRAMMATIQUE : elle ne déclenche pas `change`, donc les
+    // Écriture programmatique : elle ne déclenche pas `change`, donc les
     // sous-options ne suivraient pas. Charger un profil sans pseudonymes
     // laisserait « Langue des pseudonymes » à l'écran.
     majSousOptions();
@@ -2608,26 +2608,26 @@ bindProfileBar({
 });
 
 // ===== Profil d'identité ====================================================
-// Les termes déclarés ici sont TOUJOURS masqués (recherche littérale +
+// Les termes déclarés ici sont toujours masqués (recherche littérale +
 // variantes de casse), indépendamment de tout modèle : la propre identité de
 // l'utilisateur ne doit jamais dépendre d'un score de confiance. Stockage
-// chrome.storage.local UNIQUEMENT - voir identity.js pour le pourquoi.
+// chrome.storage.local uniquement - voir identity.js pour le pourquoi.
 let identityCache = { status: 'neuf', champs: {} };
 
 // Termes injectés dans forceTerms aux trois points d'entrée (texte, fichier,
-// reconstruction PDF). Toujours AJOUTÉS aux règles saisies, jamais substitués.
+// reconstruction PDF). Toujours ajoutés aux règles saisies, jamais substitués.
 function identityForceTerms() {
   return identitySearchTerms(identityCache);
 }
 
-// DEUX CHAMPS VISIBLES, NEUF REPLIÉS.
+// Deux champs visibles, neuf repliés.
 //
 // Le formulaire présentait ses onze champs d'un bloc, et c'était la première
 // chose qu'un nouvel utilisateur voyait - un mur avant toute valeur démontrée.
 // L'inscription progressive dit l'inverse : un ou deux champs, le reste plus
 // tard. Voir IDENTITY_ESSENTIELS pour le choix des deux.
 //
-// Le repli reste OUVRABLE d'un clic et se rouvre tout seul dès qu'un des champs
+// Le repli reste ouvrable d'un clic et se rouvre tout seul dès qu'un des champs
 // du fond porte déjà une valeur : quelqu'un qui a rempli son profil ne doit pas
 // avoir à chercher où sont passées ses données.
 function buildIdentityForm() {
@@ -2688,7 +2688,7 @@ $('identitySaveBtn')?.addEventListener('click', async () => {
 });
 
 $('identityLaterBtn')?.addEventListener('click', async () => {
-  // Mémorise le refus SANS toucher aux champs éventuels déjà stockés.
+  // Mémorise le refus sans toucher aux champs éventuels déjà stockés.
   identityCache = { ...identityCache, status: 'refusé' };
   await saveIdentity(identityCache);
   $('identityOverlay').hidden = true;

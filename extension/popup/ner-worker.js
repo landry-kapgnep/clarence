@@ -9,7 +9,7 @@ import {
 import {
   decouperEnLots,
   recollerScores
-} from "./chunk-ZCCQBMVJ.js";
+} from "./chunk-756TQWXQ.js";
 import {
   __require
 } from "./chunk-PIRHQTI4.js";
@@ -37132,7 +37132,7 @@ async function construireGliner({ wasmPath, model, modelBytes, provider }) {
     onnxSettings: {
       modelPath: modelBytes,
       executionProvider: provider,
-      // JAMAIS le CDN par défaut de la lib : MV3 interdit le code distant.
+      // Jamais le CDN par défaut de la lib : MV3 interdit le code distant.
       wasmPaths: wasmPath,
       // Mesuré : le multi-thread n'apporte rien (923 ms contre 927 ms sur une
       // fenêtre de 1000 c.), et une popup n'est de toute façon jamais
@@ -37198,7 +37198,7 @@ async function compresserTokens(texte) {
     );
     const sorties = (await enFile(() => compresseur(morceau))).map((o) => ({
       index: o.index,
-      // LABEL_1 = « garder ». La config du modèle n'a pas d'id2label : la
+      // Label_1 = « garder ». La config du modèle n'a pas d'id2label : la
       // correspondance a été établie par sonde (docs/spike-llmlingua2.md).
       garder: o.entity === "LABEL_1" ? o.score : 1 - o.score
     }));

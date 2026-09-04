@@ -1,24 +1,24 @@
-// FILTRE DE PRÉCISION, étape 1 - fabriquer le jeu d'entraînement.
+// Filtre de précision, étape 1 - fabriquer le jeu d'entraînement.
 //
 //     node tools/filtre/construire-jeu.mjs [nbDocuments] > jeu.jsonl
 //
 // LA SUBTILITÉ QUI DÉCIDE DE TOUT. On n'entraîne PAS sur les entités de
 // référence du corpus : ça apprendrait à reconnaître une entité, ce que le
-// modèle sait déjà faire. On entraîne sur LES CANDIDATS QUE NOTRE DÉTECTEUR
-// PRODUIT RÉELLEMENT, chacun étiqueté vrai/faux par comparaison aux spans
+// modèle sait déjà faire. On entraîne sur les candidats que notre détecteur
+// Produit réellement, chacun étiqueté vrai/faux par comparaison aux spans
 // connus par construction. L'objectif n'est pas la détection : c'est de
-// reconnaître LES ERREURS DE NOTRE PROPRE DÉTECTEUR.
+// reconnaître les erreurs de notre propre détecteur.
 //
 // D'où trois exigences de fidélité, qui font la valeur de ce script :
 //   1. le vrai modèle, la vraie variante de poids, le vrai découpeur corrigé -
 //      exactement comme le banc (un pipeline simulé ne mesurerait rien) ;
-//   2. la détection UNITÉ PAR UNITÉ, comme `anonymizeUnits` en production, et
+//   2. la détection unité par unité, comme `anonymizeUnits` en production, et
 //      pas sur le document entier (mesuré : le texte combiné perd les noms) ;
-//   3. l'ARBITRE passe AVANT nous, comme en production. Sans ça, le filtre
+//   3. l'arbitre passe avant nous, comme en production. Sans ça, le filtre
 //      apprendrait à écarter des faux positifs que l'arbitre a déjà retirés,
 //      et surestimerait son propre apport.
 //
-// DES DOCUMENTS, PAS DES LIGNES. Deux des caractéristiques les plus utiles -
+// Des documents, pas des lignes. Deux des caractéristiques les plus utiles -
 // combien de fois la valeur revient, et si ses mots apparaissent ailleurs en
 // minuscules - n'existent qu'à l'échelle du document. Une ligne isolée les
 // rendrait toutes les deux nulles, et le filtre s'entraînerait sur un signal
@@ -39,7 +39,7 @@ const ici = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ici, '..', '..');
 const DECOUPEUR_UNICODE = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
 
-// Le vocabulaire de sous-mots sert à mesurer la fragmentation. Il est OPTIONNEL
+// Le vocabulaire de sous-mots sert à mesurer la fragmentation. Il est optionnel
 // et hors dépôt : s'il manque, la caractéristique vaut 0 partout et
 // l'entraînement le dira (poids nul). C'est justement la question qu'on veut
 // trancher - vaut-elle le mégaoctet qu'elle coûterait à embarquer ?
@@ -81,7 +81,7 @@ async function chargerGliner() {
   });
   await instance.initialize();
 
-  // MÊME garde-fou qu'au banc : sans le découpeur corrigé, la détection
+  // Même garde-fou qu'au banc : sans le découpeur corrigé, la détection
   // française est silencieusement dégradée et le jeu apprendrait sur un moteur
   // qui n'est pas celui qu'on livre.
   const decoupeur = instance?.model?.processor?.wordsSplitter;
@@ -99,13 +99,13 @@ async function chargerGliner() {
 
 // --- Fabrication d'un document synthétique --------------------------------
 //
-// Un document = plusieurs lignes d'UN MÊME type (un CV a des sections de CV).
+// Un document = plusieurs lignes d'un même type (un CV a des sections de CV).
 // Les gabarits viennent du générateur committé, jamais réécrits ici : deux
 // jeux de gabarits divergeraient, et on entraînerait sur autre chose que ce
 // qu'on croit.
 const tirer = (a) => a[Math.floor(Math.random() * a.length)];
 
-// ⚠️ LE PRÉFIXE « [SECTION] » EST RETIRÉ, et c'est un point de fidélité, pas un
+// Le préfixe « [section] » est retiré, et c'est un point de fidélité, pas un
 // détail. Le générateur le pose parce que l'affinage de GLiNER (phase 3) en a
 // besoin - forme choisie par mesure. Mais l'inférence D'AUJOURD'HUI ne préfixe
 // rien : un intitulé y est une unité à part, marquée `structurel` et épargnée
@@ -126,7 +126,7 @@ function document() {
       spans: l.spans.map(sp => ({ ...sp, start: sp.start - d, end: sp.end - d }))
     });
   }
-  // Garde-fou : après décalage, chaque span doit encore se relire EXACTEMENT.
+  // Garde-fou : après décalage, chaque span doit encore se relire exactement.
   // Un décalage silencieux étiquetterait le jeu à côté, et rien ne le dirait -
   // même raisonnement que le garde-fou d'alignement du générateur.
   for (const u of unites) {
@@ -142,13 +142,13 @@ function document() {
 
 // --- Étiquetage -----------------------------------------------------------
 //
-// Un candidat est VRAI s'il recouvre une entité réellement placée par le
+// Un candidat est vrai s'il recouvre une entité réellement placée par le
 // générateur. On accepte le recouvrement partiel : « Fontaine » proposé sur
 // « Rose Fontaine » reste une vraie détection (frontière imparfaite, pas faux
 // positif) - un critère d'égalité stricte compterait comme erreurs des cas où
 // le masquage protège bel et bien la donnée.
 //
-// ⚠️ N'IMPORTE QUEL TYPE D'ENTITÉ COMPTE, pas seulement celui du candidat. Ce
+// N'importe quel type d'entité compte, pas seulement celui du candidat. Ce
 // qui est jugé n'est pas « le modèle a-t-il trouvé la bonne étiquette ? » mais
 // « faut-il masquer ici ? ». Un nom vu comme ENTREPRISE reste masqué, donc
 // protégé ; le filtre ne doit surtout pas apprendre à le retirer. Une première
@@ -180,7 +180,7 @@ for (let d = 0; d < nbDocs; d++) {
     for (const e of trouves) candidats.push({ ...e, spans: u.spans });
   }
 
-  // L'arbitre passe AVANT nous, exactement comme dans anonymizeUnits.
+  // L'arbitre passe avant nous, exactement comme dans anonymizeUnits.
   const apresArbitre = await arbitrerFauxPositifs(candidats, pipe);
 
   for (const c of apresArbitre) {

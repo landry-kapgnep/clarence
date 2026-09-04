@@ -22,8 +22,8 @@ export function joinRuns(runs) {
 // référentiel du texte reconstitué par joinRuns(runs).
 //
 // Règle : une entité à cheval sur plusieurs runs pose son placeholder complet
-// UNE SEULE FOIS, sur le run où elle COMMENCE ; les runs suivants qu'elle
-// traverse ne gardent que leur texte situé APRÈS la fin de l'entité (jamais de
+// Une seule fois, sur le run où elle commence ; les runs suivants qu'elle
+// traverse ne gardent que leur texte situé après la fin de l'entité (jamais de
 // répétition du placeholder, jamais de résidu de la valeur d'origine).
 export function distributeEntitiesOverRuns(runs, entities) {
   const { ranges } = joinRuns(runs);

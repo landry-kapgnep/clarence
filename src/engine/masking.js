@@ -25,20 +25,20 @@ const TYPE_LABELS = {
 
 const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// NOS PROPRES PLACEHOLDERS - à ne JAMAIS remasquer.
+// Nos propres placeholders - à ne jamais remasquer.
 //
-// LE DÉFAUT QU'ON FERME (01/09/2026, constaté sur un vrai CV repassé une
+// Le défaut qu'on ferme (01/09/2026, constaté sur un vrai CV repassé une
 // seconde fois). Le modèle voit « [PERSONNE_2] », y trouve une entité, et on
 // écrit « [[PERSONNE_1]] ». Trois conséquences, la dernière étant grave :
 //   · le document devient illisible (crochets imbriqués) ;
 //   · la table de correspondance dit « [PERSONNE_1] → PERSONNE_2 », donc rien ;
-//   · LA RÉINJECTION EST MORTE. La table du premier passage a disparu avec la
+//   · la réinjection est morte. La table du premier passage a disparu avec la
 //     popup : plus rien ne relie « [PERSONNE_1] » au vrai nom.
 //
 // Le geste est banal - on anonymise, le résultat ne convient pas, on repasse la
 // sortie. Un outil doit reconnaître ce qu'il a lui-même écrit.
 //
-// Le motif est CONSTRUIT à partir de TYPE_LABELS, jamais recopié : ajouter un
+// Le motif est construit à partir de type_labels, jamais recopié : ajouter un
 // type sans mettre le motif à jour rouvrirait le trou en silence.
 const MOTIF_PLACEHOLDER = new RegExp(
   '^\\[?(?:' + [...new Set(Object.values(TYPE_LABELS))].join('|') + ')_\\d+\\]?$');
@@ -106,7 +106,7 @@ export function maskText(text, entities, opts = {}) {
     out = out.slice(0, s.start) + s.placeholder + out.slice(s.end);
   }
 
-  // Comptage APRÈS propagation : on compte ce que l'utilisateur voit vraiment
+  // Comptage après propagation : on compte ce que l'utilisateur voit vraiment
   // dans le document final, pas ce que la détection avait proposé. Les deux
   // diffèrent - la propagation rattrape des occurrences que le modèle a ratées.
   for (const m of mapping) {
@@ -116,10 +116,10 @@ export function maskText(text, entities, opts = {}) {
   return { masked: out, mapping };
 }
 
-// Propagation : toute occurrence d'une valeur DÉJÀ mappée est masquée aussi,
+// Propagation : toute occurrence d'une valeur déjà mappée est masquée aussi,
 // même là où la détection l'a ratée (répétition sans contexte, titre de page…).
 //
-// Partagé entre maskText et anonymizeUnits, et c'est le POINT CRITIQUE : les
+// Partagé entre maskText et anonymizeUnits, et c'est le point critique : les
 // adaptateurs qui réécrivent un fichier (PDF reconstruit, DOCX) ne repartent
 // pas de la chaîne masquée mais de la liste d'entités. Tant que la propagation
 // ne vivait que dans maskText, ces occurrences fuyaient dans le fichier final
@@ -130,12 +130,12 @@ export function maskText(text, entities, opts = {}) {
 // - valeurs les plus longues d'abord (« Rose Fontaine » avant « Rose ») ;
 // - frontières Unicode incluant « _ » : jamais de match à l'intérieur d'un
 //   placeholder déjà posé ([NIR_1]) ni en milieu de mot (Lyonnais) ;
-// - INSENSIBLE À LA CASSE : « Meteojob » et « meteojob » dans une URL sont la
+// - insensible à la casse : « Meteojob » et « meteojob » dans une URL sont la
 //   même entité. Sans ça, la seconde était masquée et la première laissée en
 //   clair dans le même document (constaté).
 //
 // Particules et titres : jamais identifiants seuls, et propager « de » ou
-// « Monsieur » masquerait la moitié d'un document. Classe FERMÉE, donc une
+// « Monsieur » masquerait la moitié d'un document. Classe fermée, donc une
 // liste est ici légitime (même raisonnement que honorifics.js).
 const PARTICULES = new Set([
   'de', 'du', 'des', 'la', 'le', 'les', 'van', 'von', 'da', 'di', 'bin', 'al', 'ben'
@@ -143,14 +143,14 @@ const PARTICULES = new Set([
 
 // Composants d'un NOM propagés séparément - la fuite que le banc a révélée.
 //
-// La propagation ne travaillait que sur la valeur ENTIÈRE : « Marcus Whitfield »
+// La propagation ne travaillait que sur la valeur entière : « Marcus Whitfield »
 // masqué à sa première occurrence, mais « Marcus » réutilisé seul dix lignes
-// plus bas restait EN CLAIR. C'est une forme d'usage très courante dans un mail
+// plus bas restait en clair. C'est une forme d'usage très courante dans un mail
 // ou un rapport, et un prénom accolé au reste du document désigne la personne
 // aussi sûrement que le nom complet.
 //
 // Trois garde-fous, chacun contre un sur-masquage identifié :
-//  - SENSIBLE À LA CASSE, contrairement à la propagation normale : sans ça,
+//  - sensible à la casse, contrairement à la propagation normale : sans ça,
 //    « Rose Fontaine » ferait disparaître toutes les « rose » du document, et
 //    « Pierre Martin » toutes les « pierre ». Un prénom réel porte sa majuscule.
 //  - composants d'au moins 4 caractères : en dessous, trop de collisions avec
@@ -158,9 +158,9 @@ const PARTICULES = new Set([
 //  - particules et civilités écartées (voir PARTICULES / HONORIFICS).
 //
 // Pseudonymes : le substitut est un nom complet (« Noémie Rousseau »), pas un
-// [PERSONNE_n]. On associe alors les composants DEUX À DEUX dans l'ordre
+// [PERSONNE_n]. On associe alors les composants deux à deux dans l'ordre
 // (« Marcus »→« Noémie »), ce qui est exact puisque pseudonyms.js construit le
-// nom complet À PARTIR de ses composants, dans l'ordre. Si les deux comptes
+// nom complet À partir de ses composants, dans l'ordre. Si les deux comptes
 // diffèrent, on s'abstient plutôt que de risquer un substitut incohérent.
 function composantsDeNoms(mapping) {
   const out = [];
@@ -207,8 +207,8 @@ export function propagatedSpans(text, mapping, occupied = []) {
   return spans.sort((a, b) => a.start - b.start);
 }
 
-// Désanonymisation : substitution en UN SEUL passage - une valeur restituée
-// qui contiendrait elle-même un motif [TYPE_N] ne doit pas être re-substituée.
+// Désanonymisation : substitution en un seul passage - une valeur restituée
+// qui contiendrait elle-même un motif [type_N] ne doit pas être re-substituée.
 export function reinject(text, mapping) {
   if (!mapping.length) return text;
   const byPlaceholder = new Map(mapping.map(m => [m.placeholder, m.value]));

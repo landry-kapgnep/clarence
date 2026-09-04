@@ -1,4 +1,4 @@
-// Détection des téléphones au format INTERNATIONAL (+XX), tous pays, via
+// Détection des téléphones au format international (+XX), tous pays, via
 // libphonenumber-js (portage JS de la référence Google, métadonnées maintenues
 // par la bibliothèque - nous n'avons aucun motif par pays à écrire ni à suivre).
 //
@@ -12,7 +12,7 @@
 // La regex FR continue donc de couvrir les numéros nationaux (06…, 0033…), et
 // cette passe ajoute le reste du monde.
 //
-// extended: true → accepte les numéros PLAUSIBLES mais non strictement valides
+// extended: true → accepte les numéros plausibles mais non strictement valides
 // (ex. « +1 (551) 019-2834 », central US impossible). Priorité zéro-fuite,
 // même logique que maskIfStructureMatches pour l'IBAN/NIR : mieux vaut masquer
 // un numéro fictif que laisser fuir un vrai numéro mal formé.

@@ -1,16 +1,16 @@
 // Traduction de l'interface - mécanisme natif de Chrome, aucune dépendance.
 //
-// POURQUOI `chrome.i18n` ET PAS UNE LIBRAIRIE. Les catalogues sont empaquetés
+// Pourquoi `chrome.i18n` ET PAS UNE LIBRAIRIE. Les catalogues sont empaquetés
 // dans l'extension (`_locales/<langue>/messages.json`), Chrome choisit d'après
 // la langue du navigateur et retombe seul sur `default_locale`. Zéro requête
 // réseau, donc rien à arbitrer avec le principe du projet.
 //
-// CE QUE ÇA NE TRADUIT PAS, et il faut le savoir : seulement l'INTERFACE. Le
-// MOTEUR reste largement francophone - les regex NIR/SIRET/téléphone FR, les
+// Ce que ça ne traduit pas, et il faut le savoir : seulement l'interface. Le
+// Moteur reste largement francophone - les regex NIR/SIRET/téléphone FR, les
 // civilités, les particules, les viviers de pseudonymes (fr/en seulement) et
 // le vocabulaire des profils livrés. Traduire l'UI vers une langue que le
 // moteur ne couvre pas promettrait une protection qu'on n'assure pas ; d'où
-// l'anglais SEUL pour l'instant, la seule langue où le moteur suit déjà
+// l'anglais seul pour l'instant, la seule langue où le moteur suit déjà
 // (GLiNER est multilingue, `libphonenumber-js` couvre l'international, les
 // pseudonymes ont leur locale `en`).
 
@@ -29,7 +29,7 @@ const ATTRIBUTS = [
   ['i18nTitle', 'title'],
   ['i18nPlaceholder', 'placeholder'],
   ['i18nAria', 'aria-label'],
-  // `alt` porte le NOM ACCESSIBLE des boutons-images (Copier, Télécharger) :
+  // `alt` porte le nom accessible des boutons-images (Copier, Télécharger) :
   // le mot y est cuit dans le bitmap, donc invisible autrement. Sans cette
   // ligne, ces boutons resteraient en français pour un lecteur d'écran anglais.
   ['i18nAlt', 'alt']

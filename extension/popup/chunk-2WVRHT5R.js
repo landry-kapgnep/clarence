@@ -206,7 +206,7 @@ var REGEX_PATTERNS = [
     }
   },
   // (?<!\d)…(?!\d) : ne jamais matcher un « faux téléphone » constitué d'un
-  // fragment de 10 chiffres pris AU MILIEU d'un nombre plus long (ex. une carte
+  // fragment de 10 chiffres pris au milieu d'un nombre plus long (ex. une carte
   // ou un IBAN sans espaces) - sinon on déchiquette le numéro et on en laisse
   // fuir une partie.
   { type: "TELEPHONE", re: /(?<!\d)(?:(?:\+33|0033)[\s.-]?|0)[1-9](?:[\s.-]?\d{2}){4}(?!\d)/g, validate: null },
@@ -220,7 +220,7 @@ var REGEX_PATTERNS = [
   // défaut vaut aussi en français (« 75001 dans Paris »), il n'était donc pas
   // propre à l'i18n : la page multilingue a révélé un bug franco-français.
   //
-  // Un SEUL mot, de 5 lettres au plus : au-delà on relierait un nombre à une
+  // Un seul mot, de 5 lettres au plus : au-delà on relierait un nombre à une
   // ville trop lointaine (« 10000 personnes vivent à Nantes »). La majuscule
   // exigée sur le mot suivant reste le garde-fou principal.
   {
@@ -244,7 +244,7 @@ var REGEX_PATTERNS = [
   },
   {
     // BIC/SWIFT : 4 lettres banque + pays (même liste blanche que l'IBAN -
-    // sans elle, tout mot de 8 lettres MAJUSCULES matcherait, ex. PASSWORD)
+    // sans elle, tout mot de 8 lettres majuscules matcherait, ex. PASSWORD)
     // + 2 alphanum + branche optionnelle.
     type: "BIC",
     re: /\b[A-Z]{4}(?:FR|MC|BE|CH|DE|ES|IT|PT|LU|NL|GB|IE|AT|DK|SE|NO|FI|PL|CZ|RO|GR|HR|HU|SK|SI|BG|LT|LV|EE|MT|CY|AD|SM)[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b/g,
@@ -282,7 +282,7 @@ var REGEX_PATTERNS = [
   },
   {
     type: "ADRESSE",
-    // Le type de voie accepte l'INITIALE MAJUSCULE : le motif était sensible à
+    // Le type de voie accepte l'initiale majuscule : le motif était sensible à
     // la casse et ne connaissait que « av. », donc « 99 Av. Jean Jaurès »
     // n'était pas une adresse - et le modèle récupérait « Jean Jaurès » comme
     // une PERSONNE (mesuré sur tous-defauts.pdf). On ne met pas le drapeau `i`
@@ -292,14 +292,14 @@ var REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Adresses ESPAGNOLES et ALLEMANDES.
+    // Adresses espagnoles et allemandes.
     //
     // Deux constructions que le motif français ne pouvait pas couvrir :
-    //  - espagnol : le type de voie PRÉCÈDE et le numéro SUIT (« Calle Mayor 12 »,
+    //  - espagnol : le type de voie précède et le numéro suit (« Calle Mayor 12 »,
     //    « Avenida de la Constitución 45 »), l'inverse du français ;
-    //  - allemand : le type de voie est SOUDÉ au nom (« Hauptstraße 15 »,
+    //  - allemand : le type de voie est soudé au nom (« Hauptstraße 15 »,
     //    « Bahnhofstr. 7a ») - aucune segmentation par espace ne le trouve, il
-    //    faut le chercher comme SUFFIXE.
+    //    faut le chercher comme suffixe.
     //
     // Le numéro reste exigé dans les deux cas : c'est lui qui distingue une
     // adresse d'une simple mention de rue, et il borne le sur-masquage.
@@ -325,7 +325,7 @@ var REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Autres dates SENSIBLES identifiées par leur libellé (expiration de carte
+    // Autres dates sensibles identifiées par leur libellé (expiration de carte
     // ou de titre, délivrance). Volontairement PAS « toutes les dates » : dans
     // un CV, masquer les dates d'emploi rendrait le document inutilisable.
     type: "DATE",
@@ -344,7 +344,7 @@ var REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Téléphone nord-américain au format NATIONAL. Deux graphies très
+    // Téléphone nord-américain au format national. Deux graphies très
     // distinctives - indicatif régional entre parenthèses, ou groupes 3-3-4 -
     // qui se passent de libellé, comme le SSN juste au-dessus.
     //
@@ -355,16 +355,16 @@ var REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Téléphone au format national ANNONCÉ PAR UN LIBELLÉ, tous pays.
+    // Téléphone au format national annoncé par un libellé, tous pays.
     //
-    // POURQUOI PAS DE MOTIF NU PAR PAYS. libphonenumber tourne volontairement
-    // SANS pays par défaut : avec `FR`, il prend « 483 921 657 » (le piège
+    // Pourquoi pas de motif nu par pays. libphonenumber tourne volontairement
+    // Sans pays par défaut : avec `FR`, il prend « 483 921 657 » (le piège
     // SIREN de la fixture) pour un numéro français. Ajouter des motifs
     // nationaux nus réintroduirait ce risque pays par pays - une suite de 9 ou
     // 10 chiffres est trop banale pour être masquée sans contexte.
     //
     // Le libellé lève l'ambiguïté, exactement comme pour les identifiants
-    // nationaux. Les formats INTERNATIONAUX (+34, +49) sont déjà couverts par
+    // nationaux. Les formats internationaux (+34, +49) sont déjà couverts par
     // libphonenumber et n'ont pas besoin de ça - mesuré : ils passaient déjà.
     type: "TELEPHONE",
     re: /\b(?:t[ée]l[ée]phone|t[ée]l\.?|phone|telefon(?:nummer)?|tel[ée]fono|fijo|festnetz|mobile?|m[oó]vil|handy|portable|cell(?:ular)?)\s*[:=]?\s*(\+?\d[\d\s.()-]{6,16}\d)(?!\d)/gi,
@@ -375,24 +375,24 @@ var REGEX_PATTERNS = [
     // Identifiants nationaux annoncés par un libellé (formats sans tirets, ou
     // non-US). Le libellé lève l'ambiguïté d'une suite de chiffres banale.
     //
-    // Libellés ESPAGNOLS et ALLEMANDS ajoutés le 08/08/2026 : le motif était
+    // Libellés espagnols et allemands ajoutés le 08/08/2026 : le motif était
     // anglophone, donc « Seguridad Social : 28 1234567840 » et « Steuer-ID :
     // 12345678901 » fuyaient. Ces deux-là n'ont pas de clé de contrôle qu'on
     // sache vérifier à peu de frais, et « 11 chiffres » nu est une forme bien
     // trop banale pour être masquée sans contexte : le libellé est donc
-    // INDISPENSABLE ici, contrairement au DNI qui se valide seul (voir plus bas).
+    // Indispensable ici, contrairement au DNI qui se valide seul (voir plus bas).
     // UN VERBE DE LIAISON peut séparer le libellé de la valeur - « Die
     // Steuer-ID LAUTET 12345678901 », « the tax id IS 123-45-6789 ». Sans lui,
     // le motif n'attrapait que les libellés suivis de deux-points, donc il
     // marchait sur une fiche et échouait sur une phrase rédigée.
     //
-    // Le défaut était DÉJÀ connu et corrigé sur le motif REFERENCE plus bas
+    // Le défaut était déjà connu et corrigé sur le motif REFERENCE plus bas
     // (« his employee identifier is EMP-4471-KD ») ; je ne l'avais pas
     // répliqué ici. Trouvé par le harnais d'injection à son premier passage,
     // sur de la vraie prose allemande - un cas qu'aucun de nos documents de
     // test ne contenait.
     //
-    // Volontairement UN SEUL mot, comme pour REFERENCE : au-delà on relierait
+    // Volontairement un seul mot, comme pour REFERENCE : au-delà on relierait
     // un libellé à une valeur trop lointaine et sans rapport.
     type: "ID_NATIONAL",
     // Le préfixe `[A-Z]{0,2}` sert aux identifiants qui commencent par des
@@ -409,7 +409,7 @@ var REGEX_PATTERNS = [
     // une clé de contrôle calculable (n mod 23 dans TRWAGMYFPDXBNJZSQVHLCKE),
     // donc ils se passent de libellé.
     //
-    // Validation STRICTE, sans maskIfStructureMatches : « 8 chiffres + une
+    // Validation stricte, sans maskIfStructureMatches : « 8 chiffres + une
     // lettre » est une forme faible qu'un code produit ou une référence interne
     // peut prendre par accident. Même arbitrage que la carte bancaire (Luhn
     // strict) plutôt que l'IBAN ou le NIR, dont la structure se suffit.
@@ -418,7 +418,7 @@ var REGEX_PATTERNS = [
     validate: dniCheck
   },
   {
-    // Identifiants ÉTUDIANTS français, constatés sur un vrai certificat de
+    // Identifiants étudiants français, constatés sur un vrai certificat de
     // scolarité. Deux formats voisins sur le même document :
     //   « Id. National : 080924167CD »  (INE : 9 chiffres + 2 lettres, ou 11
     //                                    chiffres pour l'ancien format BEA)
@@ -444,13 +444,13 @@ var REGEX_PATTERNS = [
     // fuite trouvée par le banc d'essai sur un email professionnel anglais.
     // Volontairement limité à un seul mot de liaison : au-delà, on relierait
     // un libellé à une valeur trop lointaine et sans rapport.
-    // Libellés FRANÇAIS ajoutés après coup : le motif était intégralement
+    // Libellés français ajoutés après coup : le motif était intégralement
     // anglophone, donc « Réf. interne : EMP-4471-KD » fuyait alors que
     // « employee identifier is EMP-4471-KD » était bien attrapé. Pendant exact
     // du défaut i18n déjà connu, dans l'autre sens. Trouvé au premier passage
     // du document de test manuel (tests/manuel/).
     //
-    // Le qualificatif optionnel (« Réf. INTERNE : ») est une liste fermée et
+    // Le qualificatif optionnel (« Réf. Interne : ») est une liste fermée et
     // volontairement courte : élargir reviendrait à relier un libellé à une
     // valeur trop lointaine, ce que le commentaire ci-dessus proscrit déjà
     // pour les mots de liaison.
@@ -4162,7 +4162,7 @@ var TYPE_PRIORITY = [
   "CODE_POSTAL_VILLE",
   "REFERENCE",
   "MONTANT",
-  // Types contextuels (NER/GLiNER) : toujours APRÈS les types regex, pour que
+  // Types contextuels (NER/GLiNER) : toujours après les types regex, pour que
   // le déterministe l'emporte à span identique (cadrage §8).
   "PER",
   "ORG",

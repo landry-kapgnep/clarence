@@ -5,7 +5,7 @@
 // 2. Entre entités regex qui se chevauchent, le span le plus long gagne
 //    (ex. TELEPHONE détecté à l'intérieur d'un IBAN → l'IBAN gagne).
 // 3. Sur un span strictement identique, priorité par type (ex. un 14 chiffres
-//    Luhn-valide matche SIRET et CARTE_BANCAIRE - même checksum - on garde
+//    Luhn-valide matche SIRET et CARTE_bancaire - même checksum - on garde
 //    SIRET_SIREN, plus probable en contexte FR ; la valeur est masquée dans
 //    tous les cas, seul le libellé du placeholder change).
 
@@ -13,7 +13,7 @@ const TYPE_PRIORITY = [
   'NIR', 'ID_NATIONAL', 'IBAN', 'SIRET_SIREN', 'CARTE_BANCAIRE', 'EMAIL', 'TELEPHONE',
   'BIC', 'IP', 'MAC', 'PSEUDO',
   'DATE_NAISSANCE', 'DATE', 'ADRESSE', 'CODE_POSTAL_VILLE', 'REFERENCE', 'MONTANT',
-  // Types contextuels (NER/GLiNER) : toujours APRÈS les types regex, pour que
+  // Types contextuels (NER/GLiNER) : toujours après les types regex, pour que
   // le déterministe l'emporte à span identique (cadrage §8).
   'PER', 'ORG', 'LOC',
   'SANTE', 'NATIONALITE', 'ETABLISSEMENT', 'POSTE',
@@ -40,10 +40,10 @@ export function resolveOverlaps(entities) {
   return kept.sort((a, b) => a.start - b.start);
 }
 
-// Le filtre ci-dessous applique la règle 1 (le déterministe prime), MAIS avec
-// une exception non négociable : une entité contextuelle qui DÉBORDE de
+// Le filtre ci-dessous applique la règle 1 (le déterministe prime), mais avec
+// une exception non négociable : une entité contextuelle qui déborde de
 // l'entité regex ne doit jamais être supprimée - sinon la partie non couverte
-// reste en clair. C'est une FUITE, pas une question de libellé.
+// reste en clair. C'est une fuite, pas une question de libellé.
 //
 // Cas réel mesuré par le banc : le patronyme « ROUSSEAU » (8 lettres
 // majuscules dont « SE » en position 5-6) matche le motif BIC, et annulait
@@ -52,7 +52,7 @@ export function resolveOverlaps(entities) {
 // qui annonce son propre patronyme. Le banc comptait pourtant la valeur comme
 // masquée (il ne cherchait que la chaîne entière).
 //
-// Quand l'entité contextuelle CONTIENT l'entité regex, on garde donc la plus
+// Quand l'entité contextuelle contient l'entité regex, on garde donc la plus
 // large : tout est masqué, seul le libellé du placeholder est moins précis.
 // Arbitrage explicite et conforme à la priorité du projet - zéro-fuite avant
 // finesse de typage. À span identique ou en simple chevauchement partiel, le

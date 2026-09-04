@@ -1,6 +1,6 @@
 // Robustesse des adaptateurs de fichiers : cas limites (fichiers vides,
 // parties absentes, notes de bas de page, round-trip fidèle). Un adaptateur
-// ne doit JAMAIS planter sur un fichier valide inhabituel, et surtout jamais
+// ne doit jamais planter sur un fichier valide inhabituel, et surtout jamais
 // laisser fuir du texte d'une partie non traitée en silence.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

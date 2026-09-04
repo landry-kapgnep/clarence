@@ -84,8 +84,8 @@ test('reinject en un seul passage : une valeur restituée contenant un motif [TY
 });
 
 // --- Fuite trouvée par le banc : la propagation ne travaillait que sur la
-// valeur ENTIÈRE. « Marcus Whitfield » masqué à sa première occurrence, mais
-// « Marcus » réutilisé seul plus loin restait EN CLAIR - forme d'usage très
+// valeur entière. « Marcus Whitfield » masqué à sa première occurrence, mais
+// « Marcus » réutilisé seul plus loin restait en clair - forme d'usage très
 // courante dans un mail ou un rapport.
 test('un prénom réutilisé SEUL plus loin est masqué aussi', () => {
   const texte = 'Please welcome Marcus Whitfield to the team.\n'
@@ -125,13 +125,13 @@ test('avec pseudonymes, le composant reçoit SON pseudonyme, pas le nom complet'
 
 // --- COMPTEUR D'OCCURRENCES. Il sert à trier la table de correspondance par
 // fréquence, et ce tri porte une découverte mesurée sur un vrai mémoire :
-// le sur-masquage se concentre en TÊTE de distribution (« ChatGPT » masqué
+// le sur-masquage se concentre en tête de distribution (« ChatGPT » masqué
 // 41 fois, « MT » 25 fois), alors que la vraie donnée personnelle de ce
 // document n'apparaissait qu'UNE fois. Trier par fréquence met donc les
 // corrections les plus rentables en premier.
 test('les occurrences sont comptées, propagation COMPRISE', () => {
   // « Rose Fontaine » n'est détecté qu'une fois ; la seconde occurrence est
-  // rattrapée par la propagation. Le compteur doit voir les DEUX, sinon il
+  // rattrapée par la propagation. Le compteur doit voir les deux, sinon il
   // décrit la détection au lieu de décrire le document livré.
   const texte = 'Rose Fontaine a signé. Merci à Rose Fontaine.';
   const { mapping } = maskText(texte, [e('PER', 'Rose Fontaine', 0)]);

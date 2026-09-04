@@ -1,5 +1,5 @@
-// Reconstruction PDF (Stage A, texte). Test de SÉCURITÉ central : le PDF
-// reconstruit ne doit contenir AUCUN texte d'origine porteur de PII (pages
+// Reconstruction PDF (Stage A, texte). Test de sécurité central : le PDF
+// reconstruit ne doit contenir aucun texte d'origine porteur de PII (pages
 // neuves, pas de caviardage laissant le texte extractable en dessous).
 // pdf-lib et pdfjs tournent en Node → entièrement testable ici.
 import { test } from 'node:test';
@@ -51,7 +51,7 @@ test('reconstruction : aucune PII d\'origine ne subsiste, placeholders présents
 });
 
 test('reconstruction : un PDF avec image ne plante pas ; texte anonymisé (images gérées en navigateur uniquement)', async () => {
-  // 1x1 PNG. En Node (pas d'OffscreenCanvas), l'image est ignorée SANS casser
+  // 1x1 PNG. En Node (pas d'OffscreenCanvas), l'image est ignorée sans casser
   // la reconstruction du texte - la sécurité tient sur le texte, pas l'image.
   const redPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
   const doc = await PDFDocument.create();
@@ -78,15 +78,15 @@ test('reconstruction : caractères typographiques hors WinAnsi ne font pas plant
 
 // --- P1bis : mot coupé en fin de ligne (typographie justifiée). Constaté sur
 // un vrai CV : « auto- » / « matisée » soumis séparément au modèle sortait à
-// 0,70 comme donnée de santé - AU-DESSUS du score du vrai nom du candidat
-// (0,47). Le chemin de RECONSTRUCTION a sa propre logique de jointure
+// 0,70 comme donnée de santé - au-dessus du score du vrai nom du candidat
+// (0,47). Le chemin de reconstruction a sa propre logique de jointure
 // (paragraphToRuns, positionnée) - testée ici séparément de groupIntoLines/
 // groupIntoParagraphs (pdf-adapter.test.mjs), qui ne couvrent que le Markdown.
 //
-// Lignes RAPPROCHÉES (14pt, sous le seuil PARAGRAPH_GAP_RATIO×taille) pour
-// rester dans le MÊME paragraphe - makePdf() espace ses lignes de 28pt,
+// Lignes rapprochées (14pt, sous le seuil paragraph_GAP_ratio×taille) pour
+// rester dans le même paragraphe - makePdf() espace ses lignes de 28pt,
 // volontairement large ailleurs dans ce fichier, ce qui déclencherait un
-// NOUVEAU paragraphe et ne testerait jamais la jointure inter-lignes.
+// Nouveau paragraphe et ne testerait jamais la jointure inter-lignes.
 async function makePdfParagrapheSerre(lines) {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -121,7 +121,7 @@ test('reconstruction : interligne 1,5 → un seul paragraphe soumis au modèle',
   const page = doc.addPage([460, 700]);
   let y = 650;
   // Interligne 19 pt en police 11 : au-dessus de l'ancien seuil (17,6), donc
-  // AVANT correctif chaque ligne partait en unité séparée.
+  // Avant correctif chaque ligne partait en unité séparée.
   const phrases = [
     'Le rapport porte sur la localisation des jeux',
     'video et sur les echanges entre studios. Il',
@@ -141,7 +141,7 @@ test('reconstruction : interligne 1,5 → un seul paragraphe soumis au modèle',
   await reconstructPdf((await doc.save()).buffer, { deps, nerPipeline: espion });
 
   // Une seule unité de détection. On compare en minuscules : detectNER fait
-  // DEUX passes par unité (texte naturel + casse boostée), donc deux chaînes
+  // Deux passes par unité (texte naturel + casse boostée), donc deux chaînes
   // distinctes pour un même paragraphe.
   const distincts = new Set(recus.map(t => t.toLowerCase()));
   assert.equal(distincts.size, 1,
@@ -168,7 +168,7 @@ test('tailleQuiTient : un fragment qui déborde est réduit, un autre non', asyn
   assert.equal(tailleQuiTient(font, court, 12, x, largeurPage), 12,
     'un fragment qui tient ne doit PAS être réduit');
 
-  // Chaîne construite pour DÉPASSER à coup sûr : on la mesure au lieu de la
+  // Chaîne construite pour dépasser à coup sûr : on la mesure au lieu de la
   // supposer (une première version « visiblement trop longue » tenait en fait).
   let long = 'fragment';
   while (font.widthOfTextAtSize(long, 12) <= largeurPage - x) long += ' encore plus long';
@@ -207,7 +207,7 @@ test('reconstruction : un placeholder en fin de ligne reste ENTIÈREMENT extract
 
 // --- FOND NOIR DES IMAGES TRANSPARENTES -----------------------------------
 // encodeImage dépend d'OffscreenCanvas (navigateur) et n'a jamais pu être
-// couvert ici : c'est ce trou qui a laissé le bug vivre. La DÉCISION, elle,
+// couvert ici : c'est ce trou qui a laissé le bug vivre. La décision, elle,
 // est une fonction pure - donc testable.
 
 test('aDeLaTransparence : un seul pixel non opaque suffit', () => {
@@ -215,7 +215,7 @@ test('aDeLaTransparence : un seul pixel non opaque suffit', () => {
   assert.equal(aDeLaTransparence(new Uint8ClampedArray([1, 2, 3, 255, 4, 5, 6, 255])), false);
   // Le second est totalement transparent : c'est lui qui virerait au noir.
   assert.equal(aDeLaTransparence(new Uint8ClampedArray([1, 2, 3, 255, 0, 0, 0, 0])), true);
-  // Semi-transparent : le JPEG l'aplatirait aussi.
+  // Semi-transparent : le jpeg l'aplatirait aussi.
   assert.equal(aDeLaTransparence(new Uint8ClampedArray([1, 2, 3, 128])), true);
 });
 
@@ -258,7 +258,7 @@ test('calculerBornes : un fragment à GAUCHE ne borne pas', () => {
 });
 
 test('calculerBornes : la COLONNE VOISINE borne, même sans lien logique', () => {
-  // Le cas qui a motivé le passage à une portée PAGE. Deux colonnes sont des
+  // Le cas qui a motivé le passage à une portée page. Deux colonnes sont des
   // unités distinctes ; borner dans l'unité laissait la gauche mordre sur la
   // droite. On ne cherche pas à savoir si les fragments forment « une ligne » -
   // seulement si leurs plages se recoupent à la même hauteur.
@@ -276,7 +276,7 @@ test('calculerBornes : la tolérance encaisse un décalage de ligne de base', ()
 });
 
 test('calculerBornes : l’indexation par bande ne perd aucun voisin', () => {
-  // L'index range par bandes de MEME_LIGNE ; un voisin peut tomber dans la
+  // L'index range par bandes de MEME_ligne ; un voisin peut tomber dans la
   // bande d'à côté. On le vérifie sur 200 fragments à des y légèrement
   // dispersés, en comparant à une recherche exhaustive naïve.
   const runs = [], textes = [];

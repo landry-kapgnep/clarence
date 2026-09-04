@@ -46,7 +46,7 @@ test('identityTerms : dédoublonnage insensible à la casse, premier gagnant', (
 });
 
 test('bout en bout : identité → forcedMasks → toutes les occurrences masquées', () => {
-  // Le chemin RÉEL de production (identitySearchTerms, avec variantes de
+  // Le chemin réel de production (identitySearchTerms, avec variantes de
   // casse) : les termes déclarés doivent masquer chaque occurrence,
   // indépendamment de tout modèle et de tout score.
   const texte = 'LANDRY KAPGNEP — contact : landry.kapgnep.pro@gmail.com. Landry travaille chez Semantikmatch.';
@@ -109,8 +109,8 @@ test('les particules et civilités ne deviennent PAS des termes isolés', () => 
     assert.ok(!terms.includes(interdit), `particule/civilité isolée : « ${interdit} »`);
   }
   assert.ok(terms.includes('Charles'));
-  // DERNIER composant : « Fontaine » est un vrai patronyme, jamais une
-  // particule - c'est la règle de POSITION, pas la seule appartenance.
+  // Dernier composant : « Fontaine » est un vrai patronyme, jamais une
+  // particule - c'est la règle de position, pas la seule appartenance.
   assert.ok(terms.includes('Fontaine'));
 });
 

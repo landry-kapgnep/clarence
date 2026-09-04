@@ -3,7 +3,7 @@
 //
 //     node tools/filtre/diagnostiquer.mjs [fichier…]
 //
-// Existe parce qu'un filtre qui DÉMASQUE doit pouvoir se justifier candidat par
+// Existe parce qu'un filtre qui démasque doit pouvoir se justifier candidat par
 // candidat. Sans ça, une régression au banc se diagnostique par hypothèses ;
 // avec ça, elle se lit.
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -57,10 +57,10 @@ const pipe = await chargerGliner();
 const off = new Set(TYPES_PEU_FIABLES);
 
 for (const f of fichiers) {
-  // ⚠️ UN PDF NE SE LIT PAS COMME DU TEXTE. Première version : `readFileSync`
+  // Un pdf ne se lit pas comme du texte. Première version : `readFileSync`
   // en utf8 sur un PDF rendait les entrailles du format, et le diagnostic
   // affichait dix fois « FlateDecode » comme faux positif - on analysait le
-  // conteneur au lieu du document. Les PDF passent donc par le VRAI adaptateur,
+  // conteneur au lieu du document. Les PDF passent donc par le vrai adaptateur,
   // celui-là même qu'utilise la production.
   let unites;
   if (f.toLowerCase().endsWith('.pdf')) {

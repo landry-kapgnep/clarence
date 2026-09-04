@@ -1,8 +1,8 @@
-// Génère tests/bench/corpus/rapport-interligne.pdf - le document qui MANQUAIT
+// Génère tests/bench/corpus/rapport-interligne.pdf - le document qui manquait
 // au corpus, et dont l'absence a laissé vivre un bug pendant des mois.
 //
-// Tout le reste du corpus est en interligne SIMPLE. Or le seuil de paragraphe
-// comparait l'écart entre lignes à la taille de POLICE : sur un document en
+// Tout le reste du corpus est en interligne simple. Or le seuil de paragraphe
+// comparait l'écart entre lignes à la taille de police : sur un document en
 // interligne 1,5 (police 11, écart 19 contre un seuil à 17,7), chaque ligne
 // devenait un paragraphe. Mesuré sur un vrai mémoire de 75 pages : 1 782
 // unités de 91 caractères médians dont 52 % coupaient une phrase, 39 % du
@@ -11,7 +11,7 @@
 // Ce document reproduit exactement ce réglage typographique - c'est celui de
 // la quasi-totalité des mémoires, rapports et articles académiques.
 //
-// Valeurs TOUTES fictives (.example) - règle du projet.
+// Valeurs toutes fictives (.example) - règle du projet.
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';

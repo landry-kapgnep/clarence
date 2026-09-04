@@ -21,9 +21,9 @@ function splitId(id) {
 // Numéro de ligne d'une adresse de cellule (« B12 » → 12).
 const ligneDe = addr => Number((/\d+$/.exec(addr) || [0])[0]);
 
-// La première ligne d'une feuille est-elle un EN-TÊTE de colonnes ?
+// La première ligne d'une feuille est-elle un en-tête de colonnes ?
 // Même prudence que dans csv-adapter (voir looksLikeHeader) : croire à tort
-// qu'une ligne de DONNÉES est un en-tête ferait sauter la détection
+// qu'une ligne de données est un en-tête ferait sauter la détection
 // contextuelle sur de vraies personnes. On exige donc une signature nette.
 function premiereLigneEstEntete(sheet) {
   const textuelles = Object.keys(sheet).filter(a => !a.startsWith('!'));

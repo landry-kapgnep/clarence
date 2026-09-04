@@ -1,30 +1,30 @@
-// « À quoi ressemble ce document ? » - pour PROPOSER le bon profil.
+// « À quoi ressemble ce document ? » - pour proposer le bon profil.
 //
-// D'OÙ ÇA VIENT. L'idée d'origine était d'entraîner un modèle PAR FORMAT (un
+// D'où ça vient. L'idée d'origine était d'entraîner un modèle par format (un
 // pour les CV, un pour l'administratif, un pour le scolaire), parce qu'un même
 // mot doit être masqué ici et ignoré là. L'intuition est juste ; le modèle
 // n'est pas la bonne pièce pour la porter. Mesuré sur un vrai CV : les faux
 // positifs qui restent sont `IA`, `Ollama`, `BDD`, `NSI` - des acronymes d'un
-// seul mot qu'AUCUN signal contextuel ne distingue de `UNODC` ou `Twini`, qui
+// seul mot qu'aucun signal contextuel ne distingue de `UNODC` ou `Twini`, qui
 // sont de vraies entités. Un modèle entraîné là-dessus apprendrait à jeter les
 // vraies, donc à fuir.
 //
 // Ce qui les traite déjà, et bien, c'est la liste éditable d'un PROFIL -
 // c'est-à-dire exactement « masqué dans un CV, ignoré dans un dossier admin ».
-// La pièce qui manquait n'était donc pas un modèle : c'était de savoir QUEL
+// La pièce qui manquait n'était donc pas un modèle : c'était de savoir quel
 // profil proposer. Ce module répond à ça, sans ML, en quelques signaux.
 //
-// ⚠️ RÈGLE NON NÉGOCIABLE : CE MODULE NE DÉCIDE JAMAIS D'UN MASQUAGE. Il
+// Règle non négociable : ce module ne décide jamais d'un masquage. Il
 // propose un profil, que l'utilisateur accepte ou non. Une suggestion fausse
 // coûte un clic ; un masquage changé en silence casserait l'UX de relecture qui
 // est la colonne vertébrale du produit (cadrage §5). Il rend `null` - « je ne
 // sais pas » - plutôt que de deviner : une mauvaise suggestion est pire que pas
 // de suggestion du tout.
 //
-// STRUCTURE D'ABORD, MOTS ENSUITE. Les signaux structurels (points de suite
+// Structure d'abord, mots ensuite. Les signaux structurels (points de suite
 // d'un sommaire, paires libellé/valeur, densité de puces, plages de dates,
 // en-têtes d'e-mail) ne dépendent d'aucune langue et portent l'essentiel du
-// verdict. Les mots-clés complètent, et ils sont regroupés PAR LANGUE, déclarés
+// verdict. Les mots-clés complètent, et ils sont regroupés par langue, déclarés
 // comme tels - ajouter une langue est alors un geste explicite et localisé, pas
 // une réécriture.
 
@@ -48,7 +48,7 @@ const PAIRE_LIBELLE = /^\s*[^\s:][^:\n]{1,28}(?::\s+|\s{2,})\S/;
 const PUCE = /^\s*[•·▪◦‣*·]|(?:\s[•·▪◦‣]\s)/;
 
 // Plage de dates « Janv. 2025 - Mars 2026 » : un CV en est fait, un formulaire
-// n'en a pas. Sans nom de mois - c'est la STRUCTURE année-tiret-année qui parle.
+// n'en a pas. Sans nom de mois - c'est la structure année-tiret-année qui parle.
 const PLAGE_DE_DATES = /(?:1[89]|20)\d{2}\s*[-–—à]\s*(?:(?:1[89]|20)\d{2}|en cours|présent|aujourd)/i;
 
 // --- Marqueurs LEXICAUX : DÉRIVÉS de la source unique ---------------------
@@ -58,15 +58,15 @@ const PLAGE_DE_DATES = /(?:1[89]|20)\d{2}\s*[-–—à]\s*(?:(?:1[89]|20)\d{2}|e
 // `vocabulaire-formats.js`, d'où les profils les tirent aussi. Deux listes
 // auraient divergé - le motif que ce projet a déjà payé plusieurs fois.
 
-// NORMALISATION, et pourquoi elle n'est pas cosmétique.
+// Normalisation, et pourquoi elle n'est pas cosmétique.
 //
-// ⚠️ LE DÉFAUT QU'ELLE FERME. La première version testait `texte.includes(mot)`,
-// une SOUS-CHAÎNE sans frontière de mot. Le marqueur bancaire « rib » matchait
+// Le défaut qu'elle ferme. La première version testait `texte.includes(mot)`,
+// une sous-chaîne sans frontière de mot. Le marqueur bancaire « rib » matchait
 // donc « contribuer », « distribution », « attribué » - mesuré : 0,8 point de
 // « bancaire » sur une note de service qui n'a rien de bancaire. Le verdict
 // n'était sauvé que par l'écart minimal, c'est-à-dire par chance.
 //
-// Le risque MONTE avec chaque langue ajoutée : plus il y a de marqueurs courts,
+// Le risque monte avec chaque langue ajoutée : plus il y a de marqueurs courts,
 // plus il y a de mots d'une autre langue qui les contiennent par accident.
 //
 // On remplace donc tout ce qui n'est ni lettre ni chiffre par une espace, et on
@@ -76,7 +76,7 @@ const PLAGE_DE_DATES = /(?:1[89]|20)\d{2}\s*[-–—à]\s*(?:(?:1[89]|20)\d{2}|e
 const normaliser = (t) => ' ' + String(t || '').toLowerCase()
   .replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
 
-// Normalisés UNE FOIS au chargement.
+// Normalisés une fois au chargement.
 const MARQUEURS_NORMALISES = Object.fromEntries(
   FORMATS.map(f => [f, motsDeForme(f).map(m => normaliser(m).slice(1, -1))]));
 
@@ -84,7 +84,7 @@ export const TYPES = ['cv', 'administratif', 'scolaire', 'bancaire', 'email'];
 
 // Écart minimal entre le premier et le second type pour oser proposer.
 //
-// POURQUOI UN ÉCART ET PAS UN SEUIL ABSOLU. Un document peut cocher beaucoup de
+// Pourquoi un écart et pas un seuil absolu. Un document peut cocher beaucoup de
 // cases sans être caractéristique - un rapport de stage porte des mots de CV
 // (« stage », « tuteur ») ET des mots de rapport. Ce qui autorise à proposer,
 // ce n'est pas « j'ai beaucoup de points » mais « un type se détache ». Sous
@@ -93,7 +93,7 @@ export const ECART_MINIMAL = 1.5;
 
 const compterLignes = (lignes, motif) => lignes.filter(l => motif.test(l)).length;
 
-// `entites` (optionnel) : la liste déjà détectée. Sert UNIQUEMENT au type
+// `entites` (optionnel) : la liste déjà détectée. Sert uniquement au type
 // bancaire, où la densité d'IBAN et de montants est le signal décisif - et il
 // est déterministe, validé mod-97, donc bien plus sûr que n'importe quel mot.
 export function analyserTypeDocument(texte, { entites = [] } = {}) {
@@ -115,7 +115,7 @@ export function analyserTypeDocument(texte, { entites = [] } = {}) {
   const sommaire = compterLignes(lignes, POINTS_DE_SUITE);
   noter('scolaire', Math.min(sommaire, 8) * 0.6, `${sommaire} ligne(s) de sommaire`);
 
-  // Les en-têtes d'e-mail ne comptent qu'en TÊTE du document : « Objet : » au
+  // Les en-têtes d'e-mail ne comptent qu'en tête du document : « Objet : » au
   // milieu d'un rapport est une phrase, pas un en-tête.
   const enTete = compterLignes(lignes.slice(0, 8), ENTETE_EMAIL);
   noter('email', enTete >= 2 ? 3 + enTete : 0, `${enTete} en-tête(s) d'e-mail`);

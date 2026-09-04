@@ -11,28 +11,28 @@ export const entityKey = e => `${e.start}:${e.end}:${e.type}`;
 // - un masque manuel a priorité absolue sur toute détection automatique
 //   qui le chevauche ;
 // - le résultat est sans chevauchement et trié.
-// ⚠️ UN MASQUE MANUEL CONTENU DANS UNE DÉTECTION NE DOIT PAS LA DÉCOUPER.
+// Un masque manuel contenu dans une détection ne doit pas la découper.
 //
-// LA FUITE QUE ÇA FERME, mesurée le 04/09/2026 sur un vrai CV. L'utilisateur
+// La fuite que ça ferme, mesurée le 04/09/2026 sur un vrai CV. L'utilisateur
 // déclare son nom de famille dans son profil d'identité ; ce terme est cherché
-// littéralement, donc il matche AUSSI à l'intérieur de son adresse e-mail. La
+// littéralement, donc il matche aussi à l'intérieur de son adresse e-mail. La
 // règle d'origine jetait toute détection chevauchant un masque manuel, si bien
 // que l'entité EMAIL disparaissait et que le résultat livré était :
 //
 //     sans profil : [EMAIL_1]
 //     avec profil : landry.[PERSONNALISE_1].pro@gmail.com
 //
-// Déclarer son identité rendait donc son e-mail MOINS masqué - la
+// Déclarer son identité rendait donc son e-mail moins masqué - la
 // fonctionnalité censée mieux protéger protégeait moins, et précisément pour
 // l'utilisateur le plus prudent.
 //
 // La règle corrigée distingue les deux sens du chevauchement :
-//   · le manuel COUVRE la détection  → le manuel gagne, il masque un surensemble ;
-//   · la détection CONTIENT le manuel → la détection gagne, le manuel est
+//   · le manuel couvre la détection  → le manuel gagne, il masque un surensemble ;
+//   · la détection contient le manuel → la détection gagne, le manuel est
 //     redondant (tout ce qu'il masquerait est déjà masqué) et le garder ne
 //     ferait que fragmenter.
 //
-// Cette correction ne peut JAMAIS réduire le masquage : dans le cas qu'elle
+// Cette correction ne peut jamais réduire le masquage : dans le cas qu'elle
 // change, le span conservé couvre entièrement celui qu'on écarte.
 const contient = (grand, petit) => grand.start <= petit.start && grand.end >= petit.end;
 
@@ -67,7 +67,7 @@ export function forcedMasks(text, terms) {
   return out;
 }
 
-// Découpe en MOTS pour la comparaison des règles « ne jamais masquer ».
+// Découpe en mots pour la comparaison des règles « ne jamais masquer ».
 // Comparer des sous-chaînes brutes ferait correspondre « MT » à l'intérieur de
 // « Amtrak » ; comparer des suites de mots ne le peut pas. `\p{L}\p{N}` couvre
 // les accents, indispensable ici (Quémerais, Vanmassenhove, Müller).
@@ -83,13 +83,13 @@ function contientLesMots(botte, aiguille) {
 }
 
 // Filtre post-sélection : retire les entités des types désactivés et celles
-// visées par « ne jamais masquer ». Les masques MANUELS (y compris forcés)
+// visées par « ne jamais masquer ». Les masques manuels (y compris forcés)
 // sont intouchables : l'utilisateur a le dernier mot.
 //
-// LA CORRESPONDANCE N'EST PLUS EXACTE, et c'est une correction de bug mesurée.
+// La correspondance n'est plus exacte, et c'est une correction de bug mesurée.
 // Sur un vrai mémoire, 14 termes saisis en « ne jamais masquer » n'en ont vu
 // que 6 appliqués. Cause : le modèle détecte « Joss Moorkens », « Rivas
-// Ginel », « Google Translate » comme entités ENTIÈRES, tandis que
+// Ginel », « Google Translate » comme entités entières, tandis que
 // l'utilisateur saisit le patronyme ou la marque seuls. Aucune égalité stricte
 // ne pouvait donc matcher, et la règle restait sans effet - sans que rien ne
 // le signale, ce qui est le pire cas : on croit sa consigne appliquée.
@@ -100,7 +100,7 @@ function contientLesMots(botte, aiguille) {
 // Les frontières de mot interdisent les correspondances par accident :
 // « MT » n'épargne ni « Amtrak » ni « Smith ».
 //
-// RISQUE ASSUMÉ : garder « Paris » épargnerait aussi une personne nommée
+// Risque assumé : garder « Paris » épargnerait aussi une personne nommée
 // « Paris Dupont ». C'est une conséquence directe d'une consigne explicite de
 // l'utilisateur, et « toujours masquer » reprend la main dessus (les masques
 // manuels passent avant, première condition du filtre).
@@ -109,7 +109,7 @@ export function filterByRules(entities, { disabledTypes = new Set(), keepValues 
     .map(v => motsDe(v))
     .filter(m => m.length);
   return entities.filter(e => {
-    // AVANT TOUT LE RESTE, sélections manuelles comprises : un placeholder que
+    // Avant tout le reste, sélections manuelles comprises : un placeholder que
     // nous avons nous-mêmes écrit n'est jamais une donnée personnelle, et le
     // remasquer détruit la réinjection (voir estPlaceholder dans masking.js).
     // Il n'existe aucun cas où le masquer rendrait service.

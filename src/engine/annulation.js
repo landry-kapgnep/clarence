@@ -1,6 +1,6 @@
 // Annulation d'un traitement en cours.
 //
-// POURQUOI CE MODULE EXISTE. Sans signal d'annulation, un traitement abandonné
+// Pourquoi ce module existe. Sans signal d'annulation, un traitement abandonné
 // (changement de fichier, relance, bouton Annuler) continue à tourner : il
 // occupe le modèle et le run suivant fait la queue derrière des centaines
 // d'inférences dont plus personne ne veut. C'est ce qui donnait l'impression
@@ -28,10 +28,10 @@ export function estAnnulation(err) {
   return err instanceof OperationAnnulee || err?.name === 'AbortError';
 }
 
-// À appeler AUX POINTS DE REPRISE d'une boucle longue (entre deux unités, deux
+// À appeler aux points de reprise d'une boucle longue (entre deux unités, deux
 // pages, deux vagues). Lève si le traitement a été abandonné.
 //
-// Placer la vérification APRÈS chaque `await` et non seulement en tête de
+// Placer la vérification après chaque `await` et non seulement en tête de
 // boucle : c'est pendant l'attente que l'annulation arrive.
 export function verifierAnnulation(signal) {
   if (!signal?.aborted) return;

@@ -48,7 +48,7 @@ test('chaque niveau porte un libellé et une classe CSS', () => {
 test('sans aucun signal, on retombe sur la taille sans planter', () => {
   const p = poidsDeTraitement({ ext: 'docx', taille: 500 * 1024 });
   assert.equal(p.cle, 'lourd');
-  // L'explication doit DIRE que c'est approximatif : un classement opaque
+  // L'explication doit dire que c'est approximatif : un classement opaque
   // n'est pas contestable par l'utilisateur.
   assert.match(expliquerPoids(p), /approximatif/);
 });

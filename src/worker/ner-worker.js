@@ -1,5 +1,5 @@
-// Worker de détection contextuelle : fait tourner le modèle HORS du thread
-// principal. Deux moteurs interchangeables derrière le MÊME protocole.
+// Worker de détection contextuelle : fait tourner le modèle hors du thread
+// principal. Deux moteurs interchangeables derrière le même protocole.
 //
 // Pourquoi hors du thread principal : sur le thread principal l'UI gèle - au
 // point que les menus dépliés voyaient leur contenu coupé (la hauteur du
@@ -35,7 +35,7 @@ const enFile = serialiser();
 let moteur = null;
 let pipe = null;    // pipeline BERT (token-classification)
 let gliner = null;  // instance GLiNER
-// Compression de prompt (LLMLingua-2). INDÉPENDANT des deux moteurs de
+// Compression de prompt (LLMLingua-2). Indépendant des deux moteurs de
 // détection : ce n'est pas une troisième façon de détecter, c'est une autre
 // tâche, chargée séparément et seulement si l'utilisateur l'active.
 let compresseur = null;
@@ -92,13 +92,13 @@ async function chargerModele(url) {
   return new Uint8Array(buf);
 }
 
-// WebGPU disponible ? Test de CAPACITÉ RÉELLE, pas de simple présence d'API :
+// WebGPU disponible ? Test de capacité réelle, pas de simple présence d'API :
 // `navigator.gpu` peut exister alors qu'aucun adaptateur n'est utilisable
 // (pilote sur liste noire, machine virtuelle, GPU désactivé). Demander
 // l'adaptateur est le seul test qui ne mente pas.
 //
 // Le cadrage (§8) chiffre ~1 utilisateur sur 3 sans WebGPU : le repli n'est pas
-// un cas limite, c'est un chemin nominal. Il doit être SILENCIEUX - jamais une
+// un cas limite, c'est un chemin nominal. Il doit être silencieux - jamais une
 // erreur visible.
 async function webgpuUtilisable() {
   try {
@@ -113,7 +113,7 @@ async function construireGliner({ wasmPath, model, modelBytes, provider }) {
     onnxSettings: {
       modelPath: modelBytes,
       executionProvider: provider,
-      // JAMAIS le CDN par défaut de la lib : MV3 interdit le code distant.
+      // Jamais le CDN par défaut de la lib : MV3 interdit le code distant.
       wasmPaths: wasmPath,
       // Mesuré : le multi-thread n'apporte rien (923 ms contre 927 ms sur une
       // fenêtre de 1000 c.), et une popup n'est de toute façon jamais
@@ -130,7 +130,7 @@ async function construireGliner({ wasmPath, model, modelBytes, provider }) {
   await instance.initialize();
 
   // Correction du découpeur. Si la structure interne de la lib change à une
-  // mise à jour, on ÉCHOUE FORT plutôt que de tourner avec le découpeur cassé :
+  // mise à jour, on échoue fort plutôt que de tourner avec le découpeur cassé :
   // une détection FR silencieusement dégradée serait une fuite invisible.
   // L'échec déclenche le repli sur BERT côté popup.
   const decoupeur = instance?.model?.processor?.wordsSplitter;
@@ -147,7 +147,7 @@ async function initGliner({ wasmPath, model, modelUrl, accelerateur: demande }) 
   const modelBytes = await chargerModele(modelUrl);
 
   // WebGPU seulement si demandé. Mesuré le 05/08 : avec le modèle int8 il
-  // n'apporte RIEN (5 min 36 contre 5 min 45), parce que le fournisseur WebGPU
+  // n'apporte rien (5 min 36 contre 5 min 45), parce que le fournisseur WebGPU
   // d'ORT supporte mal les opérateurs quantifiés et retombe sur le CPU. Le
   // réglage vit dans main.js (ACCELERATEUR) pour rendre l'A/B possible sans
   // toucher au worker.
@@ -162,7 +162,7 @@ async function initGliner({ wasmPath, model, modelUrl, accelerateur: demande }) 
       accelerateur = 'webgpu';
       return;
     } catch (e) {
-      // Repli SILENCIEUX, chemin nominal pour ~1 utilisateur sur 3 (cadrage §8).
+      // Repli silencieux, chemin nominal pour ~1 utilisateur sur 3 (cadrage §8).
       // On trace en console pour pouvoir diagnostiquer, sans rien montrer.
       console.warn('[clarence] WebGPU indisponible, repli WASM :', e?.message || e);
     }
@@ -193,7 +193,7 @@ async function init(msg) {
 
 // ── COMPRESSION DE PROMPT ──────────────────────────────────────────────────
 //
-// CHARGÉ À LA DEMANDE, et c'est non négociable : 170 Mo de plus ne doivent
+// Chargé à la demande, et c'est non négociable : 170 Mo de plus ne doivent
 // jamais être téléchargés par quelqu'un qui n'active pas l'option. La détection
 // (183 Mo) est le chemin nominal ; ceci est un supplément que l'utilisateur
 // choisit, conformément à la première des trois contraintes produit (docs/notes-techniques.md).
@@ -205,11 +205,11 @@ async function initCompression({ wasmPath, model }) {
   compresseur = await pipeline('token-classification', model, { quantized: true });
 }
 
-// Rend le flux COMPLET de tokens scorés attendu par src/engine/compression.js.
+// Rend le flux complet de tokens scorés attendu par src/engine/compression.js.
 //
 // Deux pièges silencieux traités ici, tous deux mesurés au spike et tous deux
-// produisant une ABSENCE de compression sans lever d'erreur :
-//   - le modèle plafonne à 512 POSITIONS, pas 512 mots → lots de 120 ;
+// produisant une absence de compression sans lever d'erreur :
+//   - le modèle plafonne à 512 positions, pas 512 mots → lots de 120 ;
 //   - le pipeline OMET des tokens de sa sortie (le champ `index` saute) → on
 //     retokenise soi-même et on recolle par index.
 // La logique de ces deux gardes vit dans le moteur, testée ; ici on ne fait que
@@ -225,7 +225,7 @@ async function compresserTokens(texte) {
     // Même verrou ORT que partout ailleurs : une inférence à la fois.
     const sorties = (await enFile(() => compresseur(morceau))).map(o => ({
       index: o.index,
-      // LABEL_1 = « garder ». La config du modèle n'a pas d'id2label : la
+      // Label_1 = « garder ». La config du modèle n'a pas d'id2label : la
       // correspondance a été établie par sonde (docs/spike-llmlingua2.md).
       garder: o.entity === 'LABEL_1' ? o.score : 1 - o.score
     }));
@@ -283,14 +283,14 @@ self.addEventListener('message', async ev => {
         // pour que le protocole ne casse pas si un appelant n'est pas groupé.
         const textes = msg.texts || [msg.text];
         // Seuil bas ici : le filtrage fin appartient au moteur pur
-        // (GLINER_THRESHOLD dans src/engine/gliner.js), pas au worker.
+        // (gliner_THRESHOLD dans src/engine/gliner.js), pas au worker.
         const res = await enFile(() => gliner.inference({
           texts: textes,
           entities: msg.labels,
           threshold: 0.05,
           flatNer: false
         }));
-        // Réponse indexée COMME l'entrée. C'est le contrat dont dépend la
+        // Réponse indexée comme l'entrée. C'est le contrat dont dépend la
         // redistribution côté appelant : un décalage ici collerait les entités
         // d'un texte sur un autre - donc un masquage faux ET une fuite.
         const spansBatch = textes.map((_, i) => res[i] || []);

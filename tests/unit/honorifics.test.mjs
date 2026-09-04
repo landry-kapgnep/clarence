@@ -1,7 +1,7 @@
-// Civilités : liste PARTAGÉE entre la détection déterministe et la
+// Civilités : liste partagée entre la détection déterministe et la
 // pseudonymisation. Le risque n'est pas la couverture (classe fermée) mais
 // les collisions : un mot courant pris pour une civilité fabrique une PII
-// fantôme, et un vrai patronyme pris pour une civilité FUIT.
+// fantôme, et un vrai patronyme pris pour une civilité fuit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HONORIFICS, isHonorificAt, normalizeHonorific } from '../../src/engine/honorifics.js';

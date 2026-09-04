@@ -105,7 +105,7 @@ test('nerDetect injecté : le mode fichier utilise le moteur fourni', async () =
 });
 
 test('sans nerDetect, le moteur BERT historique reste utilisé (non-régression)', async () => {
-  // Pipeline BERT simulé : renvoie des TOKENS, pas des spans.
+  // Pipeline BERT simulé : renvoie des tokens, pas des spans.
   const pipeBert = async chunk => chunk.includes('Dupont')
     ? [{ entity: 'B-PER', word: 'Jean', score: 0.99 }, { entity: 'I-PER', word: 'Dupont', score: 0.98 }]
     : [];
@@ -118,7 +118,7 @@ test('sans nerDetect, le moteur BERT historique reste utilisé (non-régression)
 
 // --- Propagation dans les ENTITÉS, pas seulement dans la chaîne masquée.
 // Régression réelle (rapport de stage, 26 pages) : le nom du tuteur était
-// détecté dans un paragraphe rédigé mais restait EN CLAIR en page de garde,
+// détecté dans un paragraphe rédigé mais restait en clair en page de garde,
 // où il n'apparaît qu'après un libellé, sans phrase autour. L'aperçu le
 // montrait masqué ; le PDF reconstruit, qui repart des entités et non de
 // maskedText, le laissait lisible. C'est une fuite, pas une imperfection.
@@ -172,7 +172,7 @@ test('la propagation ne double JAMAIS une entité déjà détectée', async () =
 // caractéristiques (occurrences, « le mot apparaît-il ailleurs en minuscules
 // dans ce document ? ») n'existent qu'à l'échelle du document : si
 // l'orchestrateur oubliait ce second argument, le filtre continuerait de
-// tourner mais sur un contexte VIDE - il déciderait donc sur des chiffres
+// tourner mais sur un contexte vide - il déciderait donc sur des chiffres
 // faux, sans la moindre erreur pour le signaler. Exactement le genre de
 // dégradation silencieuse que ce projet paie cher.
 test('l’arbitre reçoit le texte COMBINÉ de toutes les unités', async () => {

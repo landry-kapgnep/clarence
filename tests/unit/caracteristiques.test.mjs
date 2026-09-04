@@ -1,4 +1,4 @@
-// Caractéristiques du filtre de précision : fonctions PURES, donc testables -
+// Caractéristiques du filtre de précision : fonctions pures, donc testables -
 // c'est tout l'intérêt de les avoir sorties de la décision (leçon d'encodeImage,
 // dont le bug de fond noir a vécu parce que la décision était noyée dans du code
 // dépendant du navigateur).
@@ -8,10 +8,10 @@ import {
   caracteristiques, contexteDocument, morceaux, vecteur, NOMS_CARACTERISTIQUES
 } from '../../src/engine/caracteristiques.js';
 
-// ⚠️ LE TEST LE PLUS IMPORTANT DU FICHIER. Les poids appris sont un tableau
+// Le test le plus important du fichier. Les poids appris sont un tableau
 // aligné sur cet ordre. Réordonner l'objet `caracteristiques` sans réentraîner
 // appliquerait le poids du lexique à la casse, celui du score aux occurrences -
-// SANS AUCUNE ERREUR, juste des décisions fausses. Si ce test casse, il faut
+// Sans aucune erreur, juste des décisions fausses. Si ce test casse, il faut
 // réentraîner, pas mettre la liste à jour.
 test('l’ordre des caractéristiques est verrouillé', () => {
   assert.deepEqual(NOMS_CARACTERISTIQUES, [
@@ -63,7 +63,7 @@ test('lexique et suffixes sont comptés SÉPARÉMENT', () => {
 // --- Ce que dit le document -----------------------------------------------
 
 test('« le même mot ailleurs en minuscules » - le document se sert de dictionnaire', () => {
-  // AUCUNE langue n'intervient ici : si le document écrit lui-même le mot en
+  // Aucune langue n'intervient ici : si le document écrit lui-même le mot en
   // minuscules ailleurs, c'est un nom commun, quelle que soit la langue.
   const ctx = contexteDocument('COMPÉTENCES Développement Web\nJe fais du développement web depuis 2019.');
   assert.equal(caracteristiques({ value: 'Développement Web' }, ctx).minusculeAilleurs, 1);
@@ -131,7 +131,7 @@ test('un candidat vide ne produit ni NaN ni division par zéro', () => {
 });
 
 test('la fragmentation ne doit PAS mesurer la casse - piège allemand', () => {
-  // Le vocabulaire est CASED : « Unternehmen » y figure, « unternehmen » non.
+  // Le vocabulaire est cased : « Unternehmen » y figure, « unternehmen » non.
   // Une première version minusculisait avant de segmenter et rendait donc 2
   // morceaux pour le mot allemand le plus banal qui soit. Elle mesurait la
   // casse au lieu de la rareté - et se trompait précisément sur la famille que
@@ -139,7 +139,7 @@ test('la fragmentation ne doit PAS mesurer la casse - piège allemand', () => {
   // porte une capitale, donc aucun n'entre au lexique.
   const vocab = new Set(['Unternehmen', 'terrain', 'kap', '##gne', '##p']);
   assert.equal(morceaux('Unternehmen', vocab), 1);
-  // Les CAPITALES d'un intitulé sont de la mise en page, pas un autre mot.
+  // Les capitales d'un intitulé sont de la mise en page, pas un autre mot.
   assert.equal(morceaux('UNTERNEHMEN', vocab), 1);
   assert.equal(morceaux('terrain', vocab), 1);
 });

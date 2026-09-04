@@ -78,10 +78,10 @@ function parseMeta(csvText) {
   return { rows, delimiter, eol, hasBOM, trailingEOL };
 }
 
-// La première ligne est-elle un EN-TÊTE de colonnes plutôt que des données ?
+// La première ligne est-elle un en-tête de colonnes plutôt que des données ?
 //
 // L'enjeu est asymétrique, d'où la prudence : se tromper en croyant qu'une
-// ligne de DONNÉES est un en-tête ferait sauter la détection contextuelle sur
+// ligne de données est un en-tête ferait sauter la détection contextuelle sur
 // de vraies personnes - une fuite. Se tromper dans l'autre sens ne coûte que
 // du sur-masquage. On n'affirme donc « en-tête » que sur une signature nette :
 // plusieurs lignes, libellés courts, tous distincts, aucun chiffre isolé et
@@ -115,9 +115,9 @@ function looksLikeHeader(rows) {
 // modèle masquait « Date de naissance », « Matricule », « Salaire » - le
 // fichier ressortait sûr et illisible (voir detectNerPerUnit).
 //
-// Les cellules de données, elles, restent ISOLÉES : leur isolement est ce qui
+// Les cellules de données, elles, restent isolées : leur isolement est ce qui
 // permet au zero-shot de les qualifier. Leur ajouter le libellé de colonne en
-// contexte a été mesuré et REJETÉ (détail dans anonymize-units.js).
+// contexte a été mesuré et rejeté (détail dans anonymize-units.js).
 export function extractTextUnits(csvText) {
   const meta = parseMeta(csvText);
   const entete = looksLikeHeader(meta.rows);

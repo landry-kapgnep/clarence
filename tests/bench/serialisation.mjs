@@ -1,18 +1,18 @@
-// PHASE 1 - Quelle forme de texte donner au modèle ?
+// Phase 1 - Quelle forme de texte donner au modèle ?
 //
 //     node tests/bench/serialisation.mjs <document.pdf>
 //
-// LA QUESTION. Le modèle ne voit qu'une suite de tokens. Or ce qui désambiguïse
-// dans un document, c'est la MISE EN PAGE : la section où l'on se trouve, le
+// La question. Le modèle ne voit qu'une suite de tokens. Or ce qui désambiguïse
+// dans un document, c'est la mise en page : la section où l'on se trouve, le
 // libellé qui précède une valeur. Rien de tout ça n'est dans la suite de
 // tokens. Si on veut un jour l'entraîner à s'en servir, il faut d'abord décider
-// SOUS QUELLE FORME le lui écrire - et le générateur de la phase 2 devra
+// Sous quelle forme le lui écrire - et le générateur de la phase 2 devra
 // produire cette forme-là.
 //
-// ⚠️ CE QUE CE BANC NE DIT PAS. Ajouter du contexte DÉGRADE un modèle non
+// Ce que ce banc ne dit pas. Ajouter du contexte dégrade un modèle non
 // entraîné : mesuré sur une cellule de tableau, le libellé capte l'attention à
 // la place de la valeur (0,74 contre 0,15). Ce script mesure donc l'état
-// AVANT entraînement. Son but n'est pas d'élire la meilleure forme - c'est
+// Avant entraînement. Son but n'est pas d'élire la meilleure forme - c'est
 // d'écarter celles qui cassent tout, et de chiffrer le point de départ.
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -80,7 +80,7 @@ for (const [nom, rendre] of Object.entries(FORMES)) {
   const vues = new Map();
   for (const u of avecSection) {
     for (const e of await G.detectGliner(rendre(u), pipe, { disabledTypes: off })) {
-      // Une entité trouvée DANS le préfixe ajouté n'existe pas dans le
+      // Une entité trouvée dans le préfixe ajouté n'existe pas dans le
       // document : elle ne compte pas, mais elle signale une forme qui parasite.
       if (u.section && e.value.includes(u.section) && e.value.length <= u.section.length + 2) continue;
       vues.set(e.value, e.type);
@@ -93,7 +93,7 @@ for (const [nom, rendre] of Object.entries(FORMES)) {
     + String(vraies.length).padStart(14) + String(bruit).padStart(8));
 }
 
-// Ce que chaque forme change PAR RAPPORT au brut : c'est là que se lit
+// Ce que chaque forme change par rapport au brut : c'est là que se lit
 // l'effet, pas dans les totaux.
 const base = detail['brut (actuel)'];
 for (const [nom, vues] of Object.entries(detail)) {

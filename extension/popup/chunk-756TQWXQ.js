@@ -174,10 +174,10 @@ function resultat(avant, segments, motsAvant, motsApres, motsSansScore = 0) {
     segments,
     motsAvant,
     motsApres,
-    // NOMBRE DE MOTS SANS SCORE, remonté exprès. Un mot non aligné est
+    // Nombre de mots sans score, remonté exprès. Un mot non aligné est
     // conservé - c'est le bon sens de l'échec - mais si le flux de tokens
     // s'épuise (pipeline qui tronque au-delà de 512 positions, par exemple),
-    // TOUT est conservé et la compression ne mord plus, en silence. Sans ce
+    // Tout est conservé et la compression ne mord plus, en silence. Sans ce
     // compteur, l'appelant croit compresser et ne compresse rien : exactement
     // le cas rencontré au spike sur un document de 328 mots.
     motsSansScore,

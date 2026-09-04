@@ -18,13 +18,13 @@ const en = JSON.parse(lire('../../extension/_locales/en/messages.json'));
 // Clés utilisées par le manifeste, absentes de la page par construction.
 const HORS_PAGE = new Set(['extName', 'extDescription']);
 
-// Les clés vivent à DEUX endroits : les attributs data-i18n de la page, et
+// Les clés vivent à deux endroits : les attributs data-i18n de la page, et
 // les appels msg('…') du code. Ne scanner que le premier ferait passer toutes
 // les clés du second pour des orphelines.
 const SOURCES_JS = ['../../src/popup/main.js', '../../src/popup/profiles.js'];
 
 const clesUtilisees = () => {
-  // Suffixe GÉNÉRIQUE, et non la liste des attributs connus. Cette liste avait
+  // Suffixe générique, et non la liste des attributs connus. Cette liste avait
   // déjà pris du retard une fois : `data-i18n-alt` - qui porte le nom
   // accessible des boutons-images - n'y figurait pas, et ses clés passaient
   // pour orphelines. Un scanner qu'il faut penser à mettre à jour finit
@@ -33,7 +33,7 @@ const clesUtilisees = () => {
   const vues = new Set(
     [...html.matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)].map(m => m[1])
   );
-  // Le HTML n'est pas tout : la popup CONSTRUIT du balisage (le formulaire
+  // Le HTML n'est pas tout : la popup construit du balisage (le formulaire
   // d'identité, les puces de types, la table des corrections). Un data-i18n
   // posé dans un gabarit JS était invisible au scanner, et sa clé passait pour
   // orpheline. Troisième angle mort de ce même scanner - d'où la règle : on
@@ -42,12 +42,12 @@ const clesUtilisees = () => {
     for (const m of lire(f).matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)) vues.add(m[1]);
   }
   for (const f of SOURCES_JS) {
-    // `[,)]` et non `)` seul : un message PARAMÉTRÉ s'écrit msg('clé', [...]),
+    // `[,)]` et non `)` seul : un message paramétré s'écrit msg('clé', [...]),
     // et le scanner le manquait - il déclarait alors orpheline une clé bel et
     // bien utilisée.
     for (const m of lire(f).matchAll(/msg\('([^']+)'\s*[,)]/g)) vues.add(m[1]);
   }
-  // Les noms de profils livrés servent de clé d'AFFICHAGE, résolue au rendu
+  // Les noms de profils livrés servent de clé d'affichage, résolue au rendu
   // depuis le nom interne : ils n'apparaissent donc pas littéralement.
   for (const k of Object.keys(fr)) if (k.startsWith('profil_')) vues.add(k);
   // Même cas : le nom lisible d'un format se résout par msg('format_' + type),
@@ -93,7 +93,7 @@ test('les balises des messages riches survivent à la traduction', () => {
 });
 
 test('le manifeste déclare une langue par défaut', () => {
-  // Obligatoire dès qu'un dossier _locales existe : sans elle, Chrome REFUSE
+  // Obligatoire dès qu'un dossier _locales existe : sans elle, Chrome refuse
   // de charger l'extension.
   const manifest = JSON.parse(lire('../../extension/manifest.json'));
   assert.equal(manifest.default_locale, 'fr');

@@ -1,5 +1,5 @@
 // Moteur GLiNER : contrat de sortie, groupes disjoints, seuil, chevauchements.
-// Pipeline SIMULÉ (comme ner-chunk.test.mjs) - aucun modèle chargé ici.
+// Pipeline simulé (comme ner-chunk.test.mjs) - aucun modèle chargé ici.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs, desaccentuer, adoucirCasse, estPronom } from '../../src/engine/gliner.js';
@@ -39,9 +39,9 @@ test('les labels des trois groupes sont mappés vers les bons types', async () =
     ['nationality', 'NATIONALITE'], ['school', 'ETABLISSEMENT'],
     ['medical condition', 'SANTE']
   ];
-  // La valeur factice doit être plausible pour TOUS les types testés (voir
+  // La valeur factice doit être plausible pour tous les types testés (voir
   // estPlausiblePourLeType) : une majuscule pour PER/ORG/LIEU, et une vraie
-  // FORME DE DATE pour DATE_NAISSANCE - « un chiffre » ne suffit plus depuis
+  // FORME DE DATE pour DATE_naissance - « un chiffre » ne suffit plus depuis
   // que « ANNEXE 2 » et « 2021 » passaient pour des dates de naissance.
   // Ce test porte sur le mapping label→type, pas sur la forme.
   const factice = 'C1988-03-14';
@@ -57,7 +57,7 @@ test('les labels des trois groupes sont mappés vers les bons types', async () =
 // « ANNEXE 2 », « 2021 » et « 12 mars » sur tous-defauts.pdf - du sur-masquage
 // qui abîme le texte sans rien protéger.
 //
-// Le contrôle est STRUCTUREL et sans liste de mois : le projet doit rester
+// Le contrôle est structurel et sans liste de mois : le projet doit rester
 // multilingue, or les noms de mois sont propres à une langue.
 for (const [valeur, garde] of [
   ['1988-03-14', true],        // date numérique nue (cas phare du zero-shot)
@@ -126,14 +126,14 @@ test('un type désactivé fait SAUTER la passe entière (pas juste un filtre ava
       ? [{ label: 'date of birth', start: 0, end: 10, spanText: '1988-03-14', score: 0.9 }]
       : [];
   };
-  // « 1988-03-14 » n'a AUCUNE majuscule : le groupe identité est sauté par son
+  // « 1988-03-14 » n'a aucune majuscule : le groupe identité est sauté par son
   // pré-filtre `pertinent` (il ne pourrait produire aucun nom propre). Restent
   // le groupe date et le groupe sensible → 2 appels.
   passes = 0;
   await detectGliner('1988-03-14', pipe);
   assert.equal(passes, 2);
 
-  // DATE_NAISSANCE désactivé → le groupe date n'est plus appelé du tout.
+  // DATE_naissance désactivé → le groupe date n'est plus appelé du tout.
   passes = 0;
   const out = await detectGliner('1988-03-14', pipe, { disabledTypes: new Set(['DATE_NAISSANCE']) });
   assert.equal(passes, 1, 'la passe désactivée a quand même coûté une inférence');
@@ -237,7 +237,7 @@ test('pipeline absent : aucune entité, aucune exception (repli silencieux)', as
 
 // --- Seuil par groupe + pontage des noms en deux morceaux.
 // Régression réelle : sur un vrai CV, « LANDRY KAPGNEP » (titre du document,
-// seul sur sa ligne) sortait en DEUX spans à 0,47 et 0,36. Avec un seuil
+// seul sur sa ligne) sortait en deux spans à 0,47 et 0,36. Avec un seuil
 // unique à 0,50 le nom fuyait entièrement ; sans pontage, seul le prénom
 // aurait été masqué et le patronyme serait resté en clair à côté.
 
@@ -266,7 +266,7 @@ test('un nom de CV isolé à 0,47 est masqué ENTIÈREMENT (seuil + pontage)', a
   assert.equal(masked, '[PERSONNE_1]');
 });
 
-// Revers du pontage ci-dessus : il absorbait AUSSI les sigles suivis d'un
+// Revers du pontage ci-dessus : il absorbait aussi les sigles suivis d'un
 // identifiant. « Nadia Belkacem EMP-0012 » produisait le patronyme fantôme
 // « Belkacem EMP » (mesuré sur tous-defauts.pdf), qui masque un bout du
 // matricule ET affiche un nom qui n'existe pas.
@@ -301,7 +301,7 @@ test('les groupes sans seuil propre gardent le défaut', async () => {
 // une personne (« vendor », « candidate », « le protagoniste »), pas seulement
 // un nom. Mesuré sur un vrai formulaire de consentement : 797 placeholders sur
 // un document quasi vierge de données. PERSONNE/ENTREPRISE/LIEU étant par
-// définition des noms PROPRES, un span sans la moindre majuscule est écarté.
+// définition des noms propres, un span sans la moindre majuscule est écarté.
 test('un nom commun en minuscules n\'est pas une PERSONNE/ENTREPRISE/LIEU', async () => {
   const texte = 'Le protagoniste et ses compagnons quittent le vendor.';
   const spans = await detectGliner(texte, fakePipe({
@@ -356,7 +356,7 @@ test('une vraie date nue reste détectée', async () => {
 //
 // Re-mesuré en fp16 : **0,998**. Le nom a quitté la zone de bordure, ce qui
 // est précisément ce qui autorise le seuil à remonter à 0,46 sans le reperdre.
-// On garde le score RÉEL plutôt qu'une valeur commode : le test doit dire ce
+// On garde le score réel plutôt qu'une valeur commode : le test doit dire ce
 // que le modèle livré fait, pas ce qui arrangerait l'assertion.
 test('un nom réel qu\'un seuil trop haut avait déjà fait fuir est masqué', async () => {
   const texte = 'Amandine ROUSSEAU, c\'est moi.';
@@ -368,11 +368,11 @@ test('un nom réel qu\'un seuil trop haut avait déjà fait fuir est masqué', a
 });
 
 // --- Borne BASSE, re-mesurée en fp16 : « CERTIFICAT DE SCOLARITE » (titre en
-// capitales de certificat-fr.txt) sort à 0,469 en ORG quand on le soumet SEUL,
+// capitales de certificat-fr.txt) sort à 0,469 en ORG quand on le soumet seul,
 // contre 0,36 en PER sous int8. En contexte réel il reste sous le seuil - le
 // banc donne 100 % de termes préservés sur ce document à 0,46.
 //
-// La marge est donc MINCE (0,469 isolé contre un seuil à 0,46) : ce test fige
+// La marge est donc mince (0,469 isolé contre un seuil à 0,46) : ce test fige
 // la borne basse pour qu'une future baisse de seuil ne se fasse pas sans
 // revenir sur CE cas précis.
 test('le seuil ne doit PAS descendre au point de masquer un titre en capitales', async () => {
@@ -383,10 +383,10 @@ test('le seuil ne doit PAS descendre au point de masquer un titre en capitales',
 
 // --- ARBITRAGE DES FAUX POSITIFS. Le label « person » désigne toute expression
 // qui RÉFÈRE à une personne : le modèle sort « Analyste », « Poste occupé ».
-// Une passe SÉPARÉE (les labels se concurrencent dans un même appel) demande
+// Une passe séparée (les labels se concurrencent dans un même appel) demande
 // une seconde opinion sur chaque valeur proposée.
 //
-// Enjeu de sûreté : cette fonction RETIRE des masques. Toute erreur y est une
+// Enjeu de sûreté : cette fonction retire des masques. Toute erreur y est une
 // fuite, d'où la densité de tests.
 
 // Pipeline simulé : rend les scores demandés pour le span couvrant tout le texte.
@@ -459,7 +459,7 @@ test('arbitrage : une valeur n\'est jugée QU\'UNE fois même répétée', async
 });
 
 // --- PASSE DÉSACCENTUÉE (P10) --------------------------------------------
-// L'invariant porteur est la LONGUEUR. Les deux passes partagent un seul
+// L'invariant porteur est la longueur. Les deux passes partagent un seul
 // repère d'offsets : si desaccentuer décalait d'un caractère, on masquerait la
 // mauvaise sous-chaîne - corruption silencieuse, la pire classe de bug ici.
 
@@ -484,14 +484,14 @@ test('desaccentuer : retire les diacritiques, laisse les ligatures intactes', ()
 });
 
 test('desaccentuer : la casse est PRÉSERVÉE (à ne pas confondre avec minusculiser)', () => {
-  // La minusculisation a été mesurée et REJETÉE au spike POS : un modèle
+  // La minusculisation a été mesurée et rejetée au spike POS : un modèle
   // « cased » se sert de la majuscule comme signal. Désaccentuer la garde.
   assert.equal(desaccentuer('ÉLÉONORE'), 'ELEONORE');
   assert.equal(desaccentuer('Éléonore'), 'Eleonore');
 });
 
 test('une entité vue SEULEMENT sur la copie désaccentuée est retenue', async () => {
-  // Le pipeline simulé ne répond que sur la forme SANS accents : c'est
+  // Le pipeline simulé ne répond que sur la forme sans accents : c'est
   // exactement le cas P10 (0,418 avec accents contre 0,618 sans).
   const pipe = async (texte, labels) => {
     const i = texte.indexOf('ELEONORE VASSEUR');
@@ -500,7 +500,7 @@ test('une entité vue SEULEMENT sur la copie désaccentuée est retenue', async 
   };
   const [e] = await detectGliner('ÉLÉONORE VASSEUR', pipe);
   assert.equal(e.type, 'PER');
-  // La VALEUR doit venir du texte d'ORIGINE, accents compris : c'est elle
+  // La valeur doit venir du texte d'origine, accents compris : c'est elle
   // qu'on masquera et qu'on réinjectera.
   assert.equal(e.value, 'ÉLÉONORE VASSEUR');
   assert.equal(e.start, 0);
@@ -520,14 +520,14 @@ test('sans accent dans le texte, AUCUNE passe supplémentaire n\'est payée', as
 });
 
 // --- PASSE À CASSE ADOUCIE (P12) ------------------------------------------
-// Même invariant porteur que P10 : la LONGUEUR. Les passes partagent un seul
+// Même invariant porteur que P10 : la longueur. Les passes partagent un seul
 // repère d'offsets ; un décalage d'un caractère masquerait la mauvaise
 // sous-chaîne, soit une corruption silencieuse.
 
 test('adoucirCasse : longueur strictement préservée', () => {
   for (const s of [
     'LANDRY KAPGNEP', 'NANTES CEDEX 3', 'Sébastien PIEVE', 'ÉLÉONORE VASSEUR',
-    // « İ » minusculise en DEUX points de code : le garde-fou doit le laisser
+    // « İ » minusculise en deux points de code : le garde-fou doit le laisser
     // intact plutôt que d'allonger la chaîne.
     'BİLGİ', 'STRAßE', 'L\'ÉTAT', '', 'rien en capitales', 'BIC', 'A',
   ]) {
@@ -539,10 +539,10 @@ test('adoucirCasse : garde l\'initiale, n\'adoucit que la suite', () => {
   assert.equal(adoucirCasse('LANDRY KAPGNEP'), 'Landry Kapgnep');
   assert.equal(adoucirCasse('NANTES CEDEX 3'), 'Nantes Cedex 3');
   // La majuscule initiale est le signal dont se sert un modèle « cased » : la
-  // retirer a été mesuré et REJETÉ (spike POS, 3 fuites).
+  // retirer a été mesuré et rejeté (spike POS, 3 fuites).
   assert.equal(adoucirCasse('Sébastien PIEVE'), 'Sébastien Pieve');
   assert.equal(adoucirCasse('BIC AGRIFRPP882'), 'Bic Agrifrpp882');
-  // MOINS DE TROIS LETTRES : épargné. « IL » et « A » restent intacts, seul
+  // Moins de trois lettres : épargné. « IL » et « A » restent intacts, seul
   // « DIT » est adouci - la borne évite de brouiller les sigles courts, que le
   // déterministe traite déjà.
   assert.equal(adoucirCasse('IL A DIT'), 'IL A Dit');
@@ -559,7 +559,7 @@ test('une entité vue SEULEMENT sur la copie à casse adoucie est retenue', asyn
   };
   const [e] = await detectGliner('LANDRY KAPGNEP', pipe);
   assert.equal(e.type, 'PER');
-  // La VALEUR se relit sur le texte d'ORIGINE : c'est elle qu'on masque et
+  // La valeur se relit sur le texte d'origine : c'est elle qu'on masque et
   // qu'on réinjecte, pas la copie de travail.
   assert.equal(e.value, 'LANDRY KAPGNEP');
   assert.equal(e.start, 0);
@@ -603,7 +603,7 @@ test('un patronyme à apostrophe n\'est PAS pris pour un pronom', () => {
 
 test('la liste des pronoms reste FERMÉE : aucun nom commun dedans', () => {
   // Les noms communs sur-masqués (« Universities », « Contents ») sont une
-  // classe OUVERTE : leur place est dans un profil éditable, jamais ici.
+  // classe ouverte : leur place est dans un profil éditable, jamais ici.
   for (const mot of ['Universities', 'Contents', 'Overview', 'Company', 'Report']) {
     assert.equal(estPronom(mot), false, mot);
   }
@@ -613,8 +613,8 @@ test('la liste des pronoms reste FERMÉE : aucun nom commun dedans', () => {
 
 test('deux années font une PLAGE, jamais une date de naissance', async () => {
   // Mesuré sur un vrai CV : « Oct. 2025 - Janv. 2026 » sortait en DATE DE
-  // NAISSANCE. La règle « une année + un autre nombre » était satisfaite par la
-  // SECONDE ANNÉE, prise pour un quantième. Le type étant faux, l'option
+  // Naissance. La règle « une année + un autre nombre » était satisfaite par la
+  // Seconde année, prise pour un quantième. Le type étant faux, l'option
   // Pseudonymes fabriquait une fausse date de naissance à la place d'une
   // période d'expérience.
   const plage = 'Oct. 2025 - Janv. 2026';
@@ -640,18 +640,18 @@ test('une vraie date de naissance passe toujours', async () => {
 
 // --- UN TYPE DÉSACTIVÉ NE DOIT PAS ÉVINCER UN TYPE ACTIF ------------------
 //
-// FUITE MESURÉE SUR UN VRAI CV (02/09/2026). L'utilisateur avait décoché
-// ETABLISSEMENT mais laissé SANTE - or les deux vivent dans le MÊME groupe de
-// labels, et le saut de groupe n'écarte une passe que si TOUS ses types sont
+// Fuite mesurée sur un vrai cv (02/09/2026). L'utilisateur avait décoché
+// ETABLISSEMENT mais laissé SANTE - or les deux vivent dans le même groupe de
+// labels, et le saut de groupe n'écarte une passe que si tous ses types sont
 // désactivés. Le groupe tournait donc, sortait « ETABLISSEMENT : Sorbonne Paris
 // Nord », ce span évinçait le « LIEU : Sorbonne Paris Nord » du groupe identité
 // dans la résolution des chevauchements (« le plus long gagne »), puis
 // disparaissait tout à la fin dans filterByRules. Le nom de l'université
-// partait EN CLAIR, sans qu'aucune couche ne le rattrape.
+// partait en clair, sans qu'aucune couche ne le rattrape.
 //
-// La leçon dépasse ce cas : une entité écartée en AVAL peut avoir déjà écarté,
+// La leçon dépasse ce cas : une entité écartée en aval peut avoir déjà écarté,
 // en amont, celle qui l'aurait remplacée. Un filtre de type doit s'appliquer
-// AVANT l'arbitrage des chevauchements, jamais après.
+// Avant l'arbitrage des chevauchements, jamais après.
 test('un type désactivé n’évince pas une détection d’un type actif', async () => {
   const pipe = fakePipe({
     'Sorbonne Paris Nord': [

@@ -1,20 +1,20 @@
-// Notre conversion produit-elle le MÊME TEXTE que celle qu'elle remplace ?
+// Notre conversion produit-elle le même texte que celle qu'elle remplace ?
 //
 //     node tools/verifier-conversion.mjs
 //
-// POURQUOI CE SCRIPT EXISTE. Une conversion qui CHARGE ne prouve rien : si elle
+// Pourquoi ce script existe. Une conversion qui charge ne prouve rien : si elle
 // notait les mots différemment, la compression changerait de comportement en
 // silence - et personne ne le verrait, puisqu'on ne relit jamais un texte
 // compressé (c'est la contrepartie assumée de la fonction).
 //
-// CE QU'ON MESURE, ET POURQUOI PAS AUTRE CHOSE. Une première version comparait
+// Ce qu'on mesure, et pourquoi pas autre chose. Une première version comparait
 // les probabilités brutes et exigeait un écart maximal de 0,05. C'était un
-// seuil INVENTÉ : deux quantifications int8 indépendantes du même modèle ne
+// seuil inventé : deux quantifications int8 indépendantes du même modèle ne
 // s'accordent jamais à ce point, et le script criait au loup pour du bruit
 // numérique sans conséquence.
 //
-// Le seul critère qui compte est celui que l'utilisateur voit : le TEXTE
-// COMPRESSÉ. On fait donc tourner le VRAI moteur (src/engine/compression.js)
+// Le seul critère qui compte est celui que l'utilisateur voit : le texte
+// Compressé. On fait donc tourner le vrai moteur (src/engine/compression.js)
 // avec chaque modèle et on compare les sorties mot à mot. Les scores restent
 // affichés, mais à titre indicatif.
 //
@@ -22,7 +22,7 @@
 // référence qui fasse autorité : tools/verifier-fidelite.py compare chaque
 // conversion au PyTorch de Microsoft.
 //
-// À REJOUER si on reconvertit un jour (nouvelle version d'optimum, autre opset,
+// À rejouer si on reconvertit un jour (nouvelle version d'optimum, autre opset,
 // autre recette de quantification).
 import { join } from 'node:path';
 import { pipeline, env } from '@xenova/transformers';
@@ -46,7 +46,7 @@ const TEXTES = [
 const pGarder = o => (o.entity === 'LABEL_1' ? o.score : 1 - o.score);
 
 // Même adaptateur que le worker : on retokenise soi-même pour obtenir le flux
-// COMPLET, parce que le pipeline OMET des tokens de sa sortie (voir le
+// Complet, parce que le pipeline OMET des tokens de sa sortie (voir le
 // commentaire détaillé dans tests/spike-llmlingua2/run.mjs).
 const adapteur = (pipe) => async (texte) => {
   const mots = texte.split(/\s+/).filter(Boolean);

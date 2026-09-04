@@ -1,23 +1,23 @@
-// Non-régression sur de VRAIS documents - le filet que le banc ne peut pas tendre.
+// Non-régression sur de vrais documents - le filet que le banc ne peut pas tendre.
 //
-// POURQUOI CE HARNAIS EXISTE, en plus de `npm run bench`.
+// Pourquoi ce harnais existe, en plus de `npm run bench`.
 //
-// Le banc tourne sur 7 documents SYNTHÉTIQUES, écrits en connaissant le moteur.
+// Le banc tourne sur 7 documents synthétiques, écrits en connaissant le moteur.
 // C'est un biais structurel, et le banc l'admet lui-même en pied de page :
 // « 7 documents synthétiques ne prédisent PAS le fichier d'un inconnu ». Le
 // fait est vérifiable : tous les défauts réels de la session du 07-08/08 ont
-// été trouvés sur de VRAIS documents (un mémoire de 75 pages, un mémoire
+// été trouvés sur de vrais documents (un mémoire de 75 pages, un mémoire
 // anglais de 21 pages), aucun sur le corpus.
 //
 // Ce harnais ne mesure PAS la justesse - sans vérité terrain sur un document
 // quelconque, personne ne sait ce qui aurait dû être masqué. Il mesure la
-// STABILITÉ : la sortie a-t-elle changé depuis la dernière fois ? C'est
+// Stabilité : la sortie a-t-elle changé depuis la dernière fois ? C'est
 // beaucoup moins ambitieux, et beaucoup plus utile qu'il n'y paraît - ça
 // attrape la régression silencieuse, celle qui passe les 360 tests unitaires
 // et le banc sans laisser de trace.
 //
 // ── CE QUI EST COMMITTÉ ET CE QUI NE L'EST PAS ─────────────────────────────
-// Les documents vivent dans `corpus/`, IGNORÉ PAR GIT : ce sont de vrais
+// Les documents vivent dans `corpus/`, ignoré par git : ce sont de vrais
 // fichiers, parfois personnels, et la règle du projet est absolue - jamais de
 // données réelles dans le dépôt, même anonymisées.
 //
@@ -29,7 +29,7 @@
 //
 // Lancer :
 //   npm run regression              compare à l'instantané, échoue s'il bouge
-//   npm run regression -- --maj     réécrit les instantanés (après un changement VOULU)
+//   npm run regression -- --maj     réécrit les instantanés (après un changement voulu)
 //   npm run regression -- --detail  montre les valeurs en clair (local uniquement)
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -50,8 +50,8 @@ const DETAIL = process.argv.includes('--detail');
 
 const empreinte = s => createHash('sha256').update(s).digest('hex').slice(0, 12);
 
-// MIROIR EN CLAIR - jamais committé (.gitignore), écrit à côté de l'instantané.
-// Il n'existe que pour répondre à « QUELLE valeur n'est plus masquée ? », que
+// Miroir en clair - jamais committé (.gitignore), écrit à côté de l'instantané.
+// Il n'existe que pour répondre à « quelle valeur n'est plus masquée ? », que
 // les empreintes seules ne peuvent pas dire. Même statut que corpus/ : local,
 // utile, hors du dépôt.
 const cheminMiroir = nom => join(INSTANTANES, `${nom}.clair.json`);
@@ -129,7 +129,7 @@ async function analyser(chemin, pipe) {
   for (const m of mapping) parType[m.type] = (parType[m.type] || 0) + 1;
 
   return {
-    // Empreinte de la SOURCE : si le document change, l'écart d'instantané
+    // Empreinte de la source : si le document change, l'écart d'instantané
     // n'est pas une régression du moteur, et il faut le dire tout de suite.
     empreinteSource: empreinte(octets),
     unites: units.length,
@@ -139,7 +139,7 @@ async function analyser(chemin, pipe) {
     valeurs: mapping.map(m => `${m.type}:${empreinte(m.value)}`).sort(),
     // Gardé hors instantané, pour --detail uniquement.
     _clair: mapping.map(m => `${m.type}:${m.value}`).sort(),
-    // La SORTIE, pour trancher « absorbée » contre « fuitée » (voir comparer).
+    // La sortie, pour trancher « absorbée » contre « fuitée » (voir comparer).
     _sortie: results.map(r => r.maskedText).join('\n')
   };
 }
@@ -158,18 +158,18 @@ function comparer(nom, avant, apres, clair, sortie) {
   const nouvelles = apres.valeurs.filter(v => !avantSet.has(v));
 
   // Le sens de l'écart est ce qui compte : « ne masque plus » est un risque de
-  // FUITE, « masque en plus » est un risque de sur-masquage. Jamais mis dans
+  // Fuite, « masque en plus » est un risque de sur-masquage. Jamais mis dans
   // le même sac.
   //
-  // MAIS une valeur qui quitte le mapping n'est pas forcément en clair : elle
-  // peut avoir été ABSORBÉE par un span plus long ou reclassée sous un autre
+  // Mais une valeur qui quitte le mapping n'est pas forcément en clair : elle
+  // peut avoir été absorbée par un span plus long ou reclassée sous un autre
   // type. Le mapping est indexé par `type:valeur`, il ne sait pas voir la
   // différence - et il criait donc « risque de fuite » sur des changements
   // parfaitement sains (constaté le 08/08 : « 41001 » et une affiliation
   // universitaire, toutes deux encore masquées).
   //
   // Le miroir permet de trancher pour de bon : on retrouve la valeur en clair,
-  // et on regarde si elle est PRÉSENTE DANS LA SORTIE. Absente = absorbée.
+  // et on regarde si elle est présente dans la sortie. Absente = absorbée.
   // Présente = fuite, et c'est la seule qui mérite le mot.
   const miroir = lireMiroir(nom);
   const fuites = [], absorbees = [];
@@ -186,10 +186,10 @@ function comparer(nom, avant, apres, clair, sortie) {
 
   if (DETAIL && clair) {
     const parEmpreinte = new Map(apres.valeurs.map((v, i) => [v, clair[i]]));
-    // Ce qui a DISPARU est le sens dangereux, et c'est celui que l'instantané
+    // Ce qui a disparu est le sens dangereux, et c'est celui que l'instantané
     // ne sait pas nommer : il ne contient que des empreintes, et une valeur
     // qui n'est plus masquée n'est plus dans la passe courante non plus. D'où
-    // le miroir en clair, écrit à côté de l'instantané et IGNORÉ PAR GIT (voir
+    // le miroir en clair, écrit à côté de l'instantané et ignoré par git (voir
     // .gitignore) - les vraies valeurs ne doivent jamais entrer dans le dépôt.
     // Sans lui, le harnais criait « risque de fuite » sans pouvoir dire de
     // quoi : défaut constaté à l'usage le 08/08, sur son deuxième vrai écart.

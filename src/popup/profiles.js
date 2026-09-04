@@ -1,27 +1,27 @@
 // Profils d'anonymisation persistants. Un profil = un préréglage nommé des
-// options de personnalisation DÉJÀ gérées par le moteur (selection.js) : il ne
+// options de personnalisation déjà gérées par le moteur (selection.js) : il ne
 // fait que pré-remplir les champs existants, le moteur ne sait rien des profils.
 //
 // Stockage : chrome.storage.local (persiste entre sessions, 100% local, jamais
 // transmis - c'est de la config utilisateur, pas de la donnée document).
 //
 // Le profil « Développeur / Tech » livré par défaut résout le sur-masquage des
-// technos (React/Prisma/Docker étiquetés ENTREPRISE par le NER) SANS liste
-// cachée dans le moteur : c'est un défaut ÉDITABLE, propriété de l'utilisateur.
+// technos (React/Prisma/Docker étiquetés ENTREPRISE par le NER) sans liste
+// cachée dans le moteur : c'est un défaut éditable, propriété de l'utilisateur.
 // Zéro risque de fuite (conservation explicite, jamais un retrait de détection).
 
 import { motsDeForme } from '../engine/vocabulaire-formats.js';
 
 export const PROFILES_KEY = 'clarenceProfiles';
 
-// Noms de profils LIVRÉS que l'utilisateur a supprimés.
+// Noms de profils livrés que l'utilisateur a supprimés.
 //
-// LE DÉFAUT QUE ÇA CORRIGE : seedDefaults recrée tout profil livré dont le nom
+// Le défaut que ça corrige : seedDefaults recrée tout profil livré dont le nom
 // manque. Supprimer « Développeur / Tech » ne servait donc à rien - il
 // revenait au rechargement suivant, indéfiniment. Anecdotique avec trois
 // profils, pénible avec cinq.
 //
-// Clé SÉPARÉE plutôt qu'un champ dans la liste : un profil supprimé n'a plus
+// Clé séparée plutôt qu'un champ dans la liste : un profil supprimé n'a plus
 // d'entrée où poser un drapeau.
 export const PROFILES_ECARTES_KEY = 'clarenceProfilsEcartes';
 
@@ -46,7 +46,7 @@ const TECH_KEEP = [
   // Tests, qualité, build - absents du premier jet, et masqués sur un vrai CV.
   'JUnit', 'JaCoCo', 'Pytest', 'Jest', 'Vitest', 'Selenium', 'Cypress',
   'Maven', 'Gradle', 'SonarQube', 'Postman', 'Swagger',
-  // SIGLES DE MÉTIER. Trois lettres en capitales, donc happés en priorité
+  // Sigles de métier. Trois lettres en capitales, donc happés en priorité
   // par la passe à casse adoucie (P12) : « LAMP » et « BDD » sortaient en
   // ENTREPRISE sur un CV réel. Jamais des données personnelles.
   'SQL', 'BDD', 'ETL', 'API', 'REST', 'SOAP', 'gRPC', 'JWT', 'CRUD', 'ORM',
@@ -67,9 +67,9 @@ const TECH_KEEP = [
 // PLATEFORMES ET PRODUITS PUBLICS. Même statut que les technos : jamais une
 // donnée personnelle, et pourtant massivement masqués - mesuré sur un mémoire
 // réel, « ChatGPT » ressortait 41 fois et « Facebook » 6 fois, dans un document
-// QUI PORTE SUR eux.
+// Qui porte sur eux.
 //
-// Ils vont dans un profil ÉDITABLE, pas dans le moteur : la classe est ouverte
+// Ils vont dans un profil éditable, pas dans le moteur : la classe est ouverte
 // (il s'en crée tous les mois), et une liste cachée dans le moteur serait
 // exactement ce que la règle du projet interdit.
 const PUBLIC_KEEP = [
@@ -79,28 +79,28 @@ const PUBLIC_KEEP = [
   'YouTube', 'Reddit', 'Wikipedia', 'Twitter', 'Slack', 'Zoom', 'Teams'
 ];
 
-// MOTS D'ARCHITECTURE DE DOCUMENT - dans TOUS les profils, jamais dans un seul.
+// Mots d'architecture de document - dans tous les profils, jamais dans un seul.
 //
-// POURQUOI PARTOUT. Un intitulé de section n'appartient pas à un type de
+// Pourquoi partout. Un intitulé de section n'appartient pas à un type de
 // document : « COMPÉTENCES » vaut pour un CV, « SOMMAIRE » pour un mémoire,
 // « MENTIONS » pour un formulaire. En faire un profil « CV » obligerait à
 // choisir entre lui et son profil de métier, alors qu'on veut les deux - les
 // profils sont exclusifs.
 //
-// CE QUE ÇA CORRIGE, mesuré : la passe à casse adoucie (P12) fait ressembler un
+// Ce que ça corrige, mesuré : la passe à casse adoucie (P12) fait ressembler un
 // intitulé en capitales à un nom propre. « COMPÉTENCES CLÉS », « Outils »,
 // « Systèmes », « Spécialités » et « SPRACHEN » sont sortis masqués sur de
 // vrais documents.
 //
 // ===================== RÈGLE D'ADMISSION, LA PLUS IMPORTANTE ================
 // Elle vaut pour les trois listes ci-dessous. Ce qu'on écrit dans un « ne
-// jamais masquer » ne sera JAMAIS masqué, pour personne : une liste blanche
+// jamais masquer » ne sera jamais masqué, pour personne : une liste blanche
 // est un vecteur de fuite, pas une simple commodité.
 //
-// Donc du vocabulaire GÉNÉRIQUE uniquement. Jamais un nom d'école, d'employeur
+// Donc du vocabulaire générique uniquement. Jamais un nom d'école, d'employeur
 // ou de ville : ce sont des quasi-identifiants, et les blanchir rouvrirait
 // exactement le trou qu'on ferme ailleurs. Un nom propre n'est admis que s'il
-// ne peut désigner personne (voir PUBLIC_KEEP : ChatGPT, Google).
+// ne peut désigner personne (voir public_keep : ChatGPT, Google).
 // ===========================================================================
 const STRUCTURE_KEEP = [
   'SOMMAIRE', 'INTRODUCTION', 'CONCLUSION', 'REMERCIEMENTS', 'ANNEXE', 'ANNEXES',
@@ -114,11 +114,11 @@ const STRUCTURE_KEEP = [
   'INHALT', 'ZUSAMMENFASSUNG', 'SPRACHEN', 'KENNTNISSE', 'BERUFSERFAHRUNG'
 ];
 
-// ADMINISTRATIF - vocabulaire des démarches. Justifié par un vrai casier
+// Administratif - vocabulaire des démarches. Justifié par un vrai casier
 // judiciaire, où « RÉPUBLIQUE FRANÇAISE », « MINISTÈRE DE LA JUSTICE »,
-// « IDENTITÉ » et « NÉANT » sortaient masqués en ENTREPRISE.
+// « identité » et « NÉANT » sortaient masqués en ENTREPRISE.
 //
-// AUCUN nom d'administration précise n'y figure, volontairement : « CAF »,
+// Aucun nom d'administration précise n'y figure, volontairement : « CAF »,
 // « URSSAF » ou une préfecture nommée renseignent sur la situation de la
 // personne. Seuls les mots de la démarche elle-même sont ici.
 const ADMIN_KEEP = [
@@ -133,13 +133,13 @@ const ADMIN_KEEP = [
   'Délivré le'
 ];
 
-// ÉCOLE / ÉTUDES - vocabulaire académique générique. Justifié par un vrai CV,
+// École / ÉTUDES - vocabulaire académique générique. Justifié par un vrai CV,
 // où « Baccalauréat », « Spécialités », « Cohortes » et « Général » sortaient
 // masqués.
 //
 // Aucun nom d'établissement : « Sorbonne » ou « IUT » identifient un parcours,
 // donc restent masquables.
-// PARCOURS - universel, donc partagé comme STRUCTURE_KEEP.
+// Parcours - universel, donc partagé comme structure_keep.
 //
 // POURQUOI PAS DANS LE PROFIL ÉCOLE. Mesuré, et c'est ce qui a tranché : sur un
 // vrai CV de développeur, « Développeur / Tech » ne récupérait que 4 des 25
@@ -147,7 +147,7 @@ const ADMIN_KEEP = [
 // document a besoin des technos ET des diplômes. Les profils étant exclusifs,
 // il fallait choisir, et choisir était perdant dans les deux sens.
 //
-// La ligne de partage retenue : ce qui apparaît dans un document QUEL QUE SOIT
+// La ligne de partage retenue : ce qui apparaît dans un document quel que soit
 // le domaine va dans les listes partagées ; ce qui n'apparaît que dans un
 // document du domaine reste dans son profil. Un diplôme figure sur le CV d'un
 // développeur comme d'un juriste ; un « contrôle continu » ne se lit que sur
@@ -159,7 +159,7 @@ const PARCOURS_KEEP = [
   'Professionnel', 'Alternance', 'Apprentissage', 'Stage', 'Bachelor'
 ];
 
-// ÉCOLE / ÉTUDES - ce qui ne se lit QUE sur un document scolaire, au-delà du
+// École / ÉTUDES - ce qui ne se lit QUE sur un document scolaire, au-delà du
 // vocabulaire de parcours ci-dessus.
 //
 // Aucun nom d'établissement : « Sorbonne » ou « IUT » identifient un parcours,
@@ -173,11 +173,11 @@ const ECOLE_KEEP = [
   'Coursework', 'Dissertation', 'Semester', 'Transcript'
 ];
 
-// Profils livrés. seedDefaults les ajoute SEULEMENT s'ils n'existent pas déjà
+// Profils livrés. seedDefaults les ajoute seulement s'ils n'existent pas déjà
 // (jamais d'écrasement d'une version éditée par l'utilisateur).
 export function defaultProfiles() {
   return [
-    // « Vierge » reste VIDE, et doit le rester : c'est le profil qui ne
+    // « Vierge » reste vide, et doit le rester : c'est le profil qui ne
     // présuppose rien, donc le témoin quand on soupçonne qu'une liste blanche
     // cache un défaut de détection.
     { name: 'Vierge', alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
@@ -186,18 +186,18 @@ export function defaultProfiles() {
     { name: 'École / Études', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP, ...motsDeForme('scolaire')], alwaysMask: [], disabledTypes: [], realistic: false },
     // ── PROFILS PAR FORMAT ──
     //
-    // Les précédents décrivent un MÉTIER (« je suis développeur »), ceux-ci un
-    // TYPE DE DOCUMENT (« ceci est un CV »). Les deux axes sont utiles et ne se
+    // Les précédents décrivent un métier (« je suis développeur »), ceux-ci un
+    // Type de document (« ceci est un CV »). Les deux axes sont utiles et ne se
     // remplacent pas : un développeur qui envoie un relevé bancaire n'a pas
     // besoin de sa liste de frameworks, il a besoin des mots d'un relevé.
     //
     // Leur vocabulaire vient de `vocabulaire-formats.js`, la même source que la
-    // reconnaissance de type - c'est ce qui permet de les PROPOSER
-    // automatiquement (voir PROFIL_POUR_TYPE), et ce qui garantit qu'ajouter
+    // reconnaissance de type - c'est ce qui permet de les proposer
+    // automatiquement (voir PROFIL_pour_type), et ce qui garantit qu'ajouter
     // une langue serve les deux d'un coup.
     { name: 'CV / Résumé', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme('cv')], alwaysMask: [], disabledTypes: [], realistic: false },
     { name: 'Relevé bancaire', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...motsDeForme('bancaire')], alwaysMask: [], disabledTypes: [], realistic: false },
-    // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
+    // Un document qui parle d'IA ou de plateformes n'est pas forcément un
     // document technique : ce profil sert le rédacteur, l'étudiant, le
     // chercheur - sans leur imposer la liste des frameworks.
     { name: 'Rédaction / Recherche', alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme('scolaire')], alwaysMask: [], disabledTypes: [], realistic: false }
@@ -220,7 +220,7 @@ export function normalizeProfile(p) {
   return out;
 }
 
-// Empreinte du CONTENU d'un profil - le nom en est exclu, puisqu'il sert de
+// Empreinte du contenu d'un profil - le nom en est exclu, puisqu'il sert de
 // clé. FNV-1a : déterministe, sans dépendance, suffisant ici (on compare une
 // valeur à elle-même, il n'y a rien à attaquer).
 export function empreinteDe(profil) {
@@ -236,24 +236,24 @@ export function empreinteDe(profil) {
 
 // Empreintes des versions DÉJÀ EXPÉDIÉES d'un profil livré.
 //
-// POURQUOI CETTE LISTE. Les profils installés avant l'introduction du champ
+// Pourquoi cette liste. Les profils installés avant l'introduction du champ
 // `empreinte` n'en portent pas : impossible de dire, pour eux, s'ils ont été
 // édités ou non. Sans repère, on ne pourrait que les laisser tels quels - et
 // un utilisateur garderait à vie la liste du jour de sa première installation.
 // C'est exactement ce qui s'est produit : « BDD », « LAMP » et « JaCoCo »
 // ajoutés aux technos n'atteignaient personne d'installé.
 //
-// Une empreinte connue vaut donc preuve de non-édition. AJOUTER UNE LIGNE ICI
+// Une empreinte connue vaut donc preuve de non-édition. Ajouter une ligne ici
 // à chaque fois qu'on modifie un profil livré, avec l'empreinte de la version
 // remplacée - sinon la mise à jour cessera d'atteindre les installations
 // existantes, en silence.
 const EMPREINTES_HISTORIQUES = {
   // 2cb8ce1c : jusqu'au 15/08/2026, avant les sigles de métier et l'outillage
   //            de test (commit 115b097).
-  // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de STRUCTURE_KEEP.
+  // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de structure_keep.
   // 519521a4 : jusqu'au 02/09/2026, avant les mots de forme multilingues.
   'Développeur / Tech': ['2cb8ce1c', '5a83db13', '519521a4'],
-  // Relevées AVANT modification, pour que la mise à jour atteigne aussi les
+  // Relevées avant modification, pour que la mise à jour atteigne aussi les
   // copies stockées à une époque où le champ `empreinte` n'existait pas encore.
   // Sans ça, elles seraient prises pour des versions éditées par l'utilisateur
   // et ne recevraient jamais l'espagnol ni le portugais.
@@ -264,20 +264,20 @@ const EMPREINTES_HISTORIQUES = {
 };
 
 // Complète une liste existante avec les profils par défaut manquants, ET met à
-// jour ceux que l'utilisateur n'a JAMAIS touchés.
+// jour ceux que l'utilisateur n'a jamais touchés.
 //
-// LE DÉFAUT QUE ÇA CORRIGE. L'ancienne version n'ajoutait un profil que si son
+// Le défaut que ça corrige. L'ancienne version n'ajoutait un profil que si son
 // nom était absent. Conséquence : enrichir une liste livrée n'atteignait
-// personne d'installé, et c'était SILENCIEUX - on voit un profil au bon nom,
+// personne d'installé, et c'était silencieux - on voit un profil au bon nom,
 // rien ne dit qu'il date de la première installation. Mesuré sur un vrai CV :
 // « BDD », « LAMP » et « JaCoCo » restaient masqués malgré leur ajout.
 //
-// LA RÈGLE : on ne remplace un profil livré que si son contenu correspond
-// encore EXACTEMENT à une version qu'on a expédiée. Une seule différence, et
+// La règle : on ne remplace un profil livré que si son contenu correspond
+// encore exactement à une version qu'on a expédiée. Une seule différence, et
 // on n'y touche plus - l'édition de l'utilisateur prime toujours.
 //
-// CE QU'ON NE FAIT SURTOUT PAS : fusionner les listes. Ce serait plus simple,
-// mais ça ressusciterait les termes que l'utilisateur a volontairement RETIRÉS
+// Ce qu'on ne fait surtout pas : fusionner les listes. Ce serait plus simple,
+// mais ça ressusciterait les termes que l'utilisateur a volontairement retirés
 // d'un « ne jamais masquer » - donc ça conserverait en clair ce qu'il voulait
 // masquer. Mauvais sens, au regard de « zéro-fuite d'abord ».
 export function seedDefaults(existing, ecartes = []) {
@@ -360,7 +360,7 @@ export async function upsertProfile(profile) {
 export async function deleteProfile(name) {
   const list = (await loadProfiles()).filter(p => p.name !== name);
   await saveAllProfiles(list);
-  // Mémoriser le retrait UNIQUEMENT pour un profil livré : sans ça,
+  // Mémoriser le retrait uniquement pour un profil livré : sans ça,
   // seedDefaults le recréerait au prochain chargement.
   if (estProfilLivre(name)) await ecrireEcartes([...(await lireEcartes()), name]);
   return list;

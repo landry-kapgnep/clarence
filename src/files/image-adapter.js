@@ -1,15 +1,15 @@
-// Adaptateur Image (JPEG/PNG) - nettoyage de métadonnées uniquement, pas
+// Adaptateur Image (jpeg/PNG) - nettoyage de métadonnées uniquement, pas
 // d'anonymisation de contenu (voir docs/notes-techniques.md "Idées explorées" : la détection
 // visuelle par OCR/vision est un chantier à part, hors de portée ici).
 //
 // L'EXIF (GPS, modèle d'appareil, date) et les chunks texte PNG (tEXt/iTXt/
 // eXIf) sont une vraie fuite de PII sous-estimée. Stratégie retenue :
-// RE-ENCODAGE via canvas plutôt qu'un parseur binaire artisanal des segments
-// JPEG/chunks PNG. Un canvas ne préserve QUE les pixels décodés - aucune
+// Re-encodage via canvas plutôt qu'un parseur binaire artisanal des segments
+// Jpeg/chunks PNG. Un canvas ne préserve QUE les pixels décodés - aucune
 // métadonnée ne peut structurellement survivre, donc aucun risque qu'un bug
 // de parsing laisse fuiter un GPS résiduel (priorité zéro-fuite, même logique
 // que le masquage IBAN/NIR sur structure dans regex-detect.js). Contrepartie
-// assumée : le JPEG est recompressé (perte de génération mineure, qualité
+// assumée : le jpeg est recompressé (perte de génération mineure, qualité
 // 0.92) ; le PNG reste sans perte de pixels (juste une redéfinition d'octets).
 //
 // Non testable en Node (pas de createImageBitmap/OffscreenCanvas) : vérifié

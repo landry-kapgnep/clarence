@@ -38,7 +38,7 @@ test('isLineWrapHyphen : trait d\'union collé + minuscule qui suit = coupure de
 });
 
 test('isLineWrapHyphen : un tiret de séparation réel (entouré d\'espaces) n\'est jamais une coupure', () => {
-  // Un vrai tiret de plage/séparation est TOUJOURS entouré d'espaces en
+  // Un vrai tiret de plage/séparation est toujours entouré d'espaces en
   // français - signal qui le distingue sans ambiguïté d'un mot coupé.
   assert.equal(isLineWrapHyphen('Anglais - C1 Cambridge Certificate', 'et Allemand'), false);
   assert.equal(isLineWrapHyphen('Concours d’éloquence - Double lauréat (Sorbonne Paris', 'Nord).'), false);
@@ -60,7 +60,7 @@ test('groupIntoLines/paragraphes : un mot coupé en fin de ligne est RECOLLÉ, s
   assert.equal(units[0].text, 'Une évaluation automatisée (~15 000 extractions).');
 });
 
-// Construit un faux extractTextUnits minimal à partir de LIGNES déjà groupées
+// Construit un faux extractTextUnits minimal à partir de lignes déjà groupées
 // (mêmes items qu'utilisés ailleurs dans ce fichier), pour tester le
 // regroupement en paragraphes sans dépendre d'un vrai PDF binaire.
 function extractionParagraphesSynthetiques(itemsParLigne) {
@@ -158,7 +158,7 @@ async function twoColumnBuffer() {
     'SQL et PostgreSQL', 'Bases MongoDB', 'Contact : gauche@ex.fr'];
   const rightLines = ['Experiences', 'Data Engineer Semantik', 'Responsable Twini',
     'Benevole terrain MSF', 'Projets R&D divers', 'Tel : 06 12 34 56 78'];
-  // les DEUX colonnes partagent les mêmes Y (côte à côte) - sans détection de
+  // les deux colonnes partagent les mêmes Y (côte à côte) - sans détection de
   // colonnes, chaque ligne gauche+droite fusionnerait.
   leftLines.forEach((t, i) => T(t, 50, 750 - i * 16));
   rightLines.forEach((t, i) => T(t, 320, 750 - i * 16));
@@ -188,8 +188,8 @@ test("le buffer d'entrée reste réutilisable après extractTextUnits (pas de d�
 
 // --- Interligne : le seuil de paragraphe doit se calibrer sur le DOCUMENT.
 // Trouvé sur un vrai mémoire de 75 pages en interligne 1,5 : police 11, écart
-// réel 19,0 contre un seuil `police × 1.6 = 17,7` - donc UN PARAGRAPHE PAR
-// LIGNE. 1 782 unités de 91 caractères médians dont 52 % coupaient une phrase,
+// réel 19,0 contre un seuil `police × 1.6 = 17,7` - donc un paragraphe par
+// Ligne. 1 782 unités de 91 caractères médians dont 52 % coupaient une phrase,
 // 39 % du document masqué, 11 minutes de traitement.
 const ligneFictive = (y, size = 11) => ({ y, size, text: 'x' });
 
@@ -209,7 +209,7 @@ test('le seuil ne DESCEND jamais sous l\'ancien : le correctif ne peut que fusio
 });
 
 test('trop peu de lignes : repli sur l\'ancien seuil', () => {
-  // Sur 5 lignes, la médiane des écarts tombe sur l'écart de PARAGRAPHE et non
+  // Sur 5 lignes, la médiane des écarts tombe sur l'écart de paragraphe et non
   // sur l'interligne (mesuré sur tests/fixtures/echantillon.pdf) - d'où la garde.
   const lines = [ligneFictive(700), ligneFictive(684), ligneFictive(668), ligneFictive(634), ligneFictive(618)];
   assert.equal(paragraphGapThreshold(lines, 11), 11 * 1.6);
@@ -250,7 +250,7 @@ test('ce qui n\'est PAS un intitulé le reste', () => {
 });
 
 test('un nom en GROS CORPS n\'est jamais neutralisé — le garde-fou anti-fuite', () => {
-  // Mesuré : la détection de titre attrape EXACTEMENT les noms à masquer
+  // Mesuré : la détection de titre attrape exactement les noms à masquer
   // (« ÉLÉONORE VASSEUR » corps 21 contre corps 8 des rubriques). Sans cette
   // condition, la règle ferait fuir le nom en tête de chaque CV.
   const units = [
@@ -276,7 +276,7 @@ test('un seul intitulé dans tout le document : on ne neutralise RIEN', () => {
 // réellement produite : « BIC : AGRIFRPP882 », « SSN: 123-45-6789 »,
 // « DNI: 12345678Z » et « EMP-0012 » passaient la règle (≤ 3 mots, capitales,
 // pas de ponctuation de phrase). Les classer ainsi ouvrait la porte à leur
-// DÉMASQUAGE - exactement l'inverse du but.
+// Démasquage - exactement l'inverse du but.
 test('un identifiant ne passe JAMAIS pour un intitulé de rubrique', () => {
   for (const t of ['BIC : AGRIFRPP882', 'MAC : 3C:5A:B4:0F:11:22',
                    'SSN: 123-45-6789', 'DNI: 12345678Z', 'EMP-0012',
@@ -298,12 +298,12 @@ test('intitulesRetenus applique la règle des « au moins deux »', () => {
 });
 
 // --- MOT DE RUBRIQUE (P9) -------------------------------------------------
-// La discrimination est POSITIONNELLE, jamais lexicale : aucune liste de mots
+// La discrimination est positionnelle, jamais lexicale : aucune liste de mots
 // de rubrique n'est tenue dans le moteur (classe ouverte, et multilingue).
 
 test('formesDeRubrique reconnaît un titre à rubrique, dans les quatre langues', () => {
   assert.deepEqual(formesDeRubrique('ANNEXE — DOSSIER ADMINISTRATIF'), ['ANNEXE']);
-  // Le numéro est relevé AUSSI : le modèle rend « ANEXO 5 » d'un seul tenant.
+  // Le numéro est relevé aussi : le modèle rend « ANEXO 5 » d'un seul tenant.
   assert.deepEqual(formesDeRubrique('ANNEXE 2 — CAS DIFFICILES'), ['ANNEXE', 'ANNEXE 2']);
   assert.deepEqual(formesDeRubrique('ANEXO 5 — EXPEDIENTE EN ESPAÑOL'), ['ANEXO', 'ANEXO 5']);
   assert.deepEqual(formesDeRubrique('ANLAGE 6 — DEUTSCHE AKTE'), ['ANLAGE', 'ANLAGE 6']);

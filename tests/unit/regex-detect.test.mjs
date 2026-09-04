@@ -274,7 +274,7 @@ test('adresse : type de voie abrégé, avec ou sans majuscule', () => {
 
 // ===== P5 - i18n de la couche déterministe (08/08/2026) =====================
 // Les pages EN/ES/DE du document piégé l'ont montré : 100 % des fuites étaient
-// dans cette couche, ZÉRO dans le contextuel. Le modèle se débrouille en
+// dans cette couche, zéro dans le contextuel. Le modèle se débrouille en
 // espagnol et en allemand ; c'était notre regex franco-française qui était le
 // trou. Ces tests figent la couverture ajoutée.
 
@@ -316,7 +316,7 @@ test('un nombre suivi d\'un mot long n\'est pas pris pour un code postal', () =>
 });
 
 test('téléphone nord-américain au format national, sans libellé', () => {
-  // findMerged et non find : « mobile 617-555-0143 » est vu par DEUX motifs
+  // findMerged et non find : « mobile 617-555-0143 » est vu par deux motifs
   // (la forme 3-3-4 nue et le motif à libellé). La fusion doit n'en laisser
   // qu'une - c'est justement ce qu'on vérifie ici.
   assert.equal(findMerged('Phone: (617) 555-0142', 'TELEPHONE').length, 1);

@@ -1,19 +1,19 @@
-// FILTRE DE PRÉCISION, étape 2 - apprendre les poids.
+// Filtre de précision, étape 2 - apprendre les poids.
 //
 //     node tools/filtre/entrainer.mjs tools/filtre/jeu.jsonl
 //
-// POURQUOI UNE RÉGRESSION LOGISTIQUE, et pas mieux. Le modèle tient en une
+// Pourquoi une régression logistique, et pas mieux. Le modèle tient en une
 // quinzaine de nombres, s'embarque comme un littéral, n'ajoute aucune
 // dépendance, aucun téléchargement, et surtout SES POIDS SE LISENT : on peut
 // dire à l'utilisateur « ce terme n'a pas été masqué parce qu'il est au lexique
 // et qu'il apparaît douze fois en minuscules ». Dans un produit dont la colonne
 // vertébrale est l'anti-fausse-confiance (cadrage §5), une boîte noire qui
-// DÉMASQUE serait un contresens.
+// Démasque serait un contresens.
 //
 // LE JEU EST DÉSÉQUILIBRÉ et l'asymétrie du risque l'est encore plus : jeter un
-// faux positif fait gagner en confort, jeter une vraie entité est une FUITE.
+// faux positif fait gagner en confort, jeter une vraie entité est une fuite.
 // L'entraînement pondère donc les vraies entités plus lourd que les fausses
-// (POIDS_VRAI), et le seuil final est choisi sur une tolérance de perte ÉNONCÉE
+// (POIDS_vrai), et le seuil final est choisi sur une tolérance de perte énoncée
 // - jamais sur la précision maximale. Voir TOLERANCE plus bas, et surtout
 // pourquoi la contrainte « zéro perte exacte » a dû être abandonnée.
 import { readFileSync } from 'node:fs';
@@ -23,11 +23,11 @@ import { estVocabulaireCourant } from '../../src/engine/vocabulaire.js';
 const fichier = process.argv[2] || 'tools/filtre/jeu.jsonl';
 const lignes = readFileSync(fichier, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l));
 
-// PER est EXCLU de l'entraînement comme il l'est du filtre. La raison n'a pas
-// changé depuis vocabulaire.js : beaucoup de patronymes SONT des mots courants
+// PER est exclu de l'entraînement comme il l'est du filtre. La raison n'a pas
+// changé depuis vocabulaire.js : beaucoup de patronymes sont des mots courants
 // (Blanc, Petit, Roux), et notre propre vivier de pseudonymes en est plein. Un
 // filtre qui démasque des personnes ne rend pas service, il fuit.
-// MÊME PÉRIMÈTRE QUE LE FILTRE LIVRÉ, importé plutôt que réécrit - sinon on
+// Même périmètre que le filtre livré, importé plutôt que réécrit - sinon on
 // mesure autre chose que ce qu'on expédie, l'erreur exacte qui a fait croire
 // que le filtre ne changeait rien au banc.
 const { TYPES_FILTRES, MOTS_MINIMUM, formeDeNomPropre } = await import('../../src/engine/precision.js');
@@ -41,7 +41,7 @@ console.log(`      ${jeu.filter(l => l.y === 1).length} vrais · ${jeu.filter(l 
 
 // --- Séparation apprentissage / évaluation --------------------------------
 //
-// PAR VALEUR, et non par ligne. Si « Semantikmatch » apparaît dans les deux
+// Par valeur, et non par ligne. Si « Semantikmatch » apparaît dans les deux
 // moitiés, le score d'évaluation mesure une mémorisation, pas une capacité à
 // généraliser - le piège classique, et il serait invisible.
 const valeurs = [...new Set(jeu.map(l => l.valeur))];
@@ -86,26 +86,26 @@ const proba = (modele, x, colonnes) =>
 
 // --- Le seuil est choisi sur une CONTRAINTE ÉNONCÉE, pas à la main --------
 //
-// PREMIÈRE VERSION, ET POURQUOI ELLE NE MARCHE PAS. On cherchait le seuil qui
-// retire le plus de faux positifs SANS perdre une seule vraie entité. Sur 93
+// Première version, et pourquoi elle ne marche pas. On cherchait le seuil qui
+// retire le plus de faux positifs sans perdre une seule vraie entité. Sur 93
 // candidats d'évaluation, ça donnait 0,10. Sur 367, ça donne **0,00** : une
-// contrainte à zéro exact est décidée par le PIRE point du lot, donc plus
+// contrainte à zéro exact est décidée par le pire point du lot, donc plus
 // l'échantillon grandit, plus elle tend vers « ne rien faire ». Elle n'est pas
 // prudente, elle est instable - et sa prudence apparente est une illusion.
 //
-// CE QU'ON FAIT À LA PLACE. Une tolérance ÉNONCÉE, par défaut 0,5 % des vraies
+// Ce qu'on fait à la place. Une tolérance énoncée, par défaut 0,5 % des vraies
 // entités. Ce n'est pas un renoncement à « zéro-fuite d'abord » : le produit
-// accepte DÉJÀ des pertes sur ce périmètre - vocabulaire.js documente
+// accepte déjà des pertes sur ce périmètre - vocabulaire.js documente
 // « Orange », « Total », « Le Monde » comme des pertes connues et assumées - et
 // il ne s'agit ici ni de personnes ni de données structurées, que le filtre ne
 // touche jamais.
 //
-// ⚠️ LA TOLÉRANCE NE DISPENSE PAS DE REGARDER CE QU'ON PERD. Un chiffre ne dit
+// LA TOLÉRANCE NE DISPENSE PAS DE REGARDER CE QU'ON PERD. Un chiffre ne dit
 // pas si la perte est un artefact ou une vraie fuite. Mesuré ici : l'unique
 // perte à 0,40 est « Roquetas de Mar. août 2023 » - le modèle a collé la date à
-// la ville, c'est une erreur de FRONTIÈRE. À 0,50 en revanche on perdrait
+// la ville, c'est une erreur de frontière. À 0,50 en revanche on perdrait
 // « Kallabisland » et « Le roux et Fontaine », de vraies entités sans excuse :
-// c'est là que se situe la limite, et c'est la LECTURE des pertes qui la
+// c'est là que se situe la limite, et c'est la lecture des pertes qui la
 // montre, pas leur décompte. D'où l'affichage nominatif plus bas.
 const TOLERANCE = Number(process.env.TOLERANCE ?? 0.005);
 
@@ -123,7 +123,7 @@ function evaluer(modele, donnees, colonnes) {
   return { ...meilleur, faux, vrais, budget, scores };
 }
 
-// LA RÉFÉRENCE, sans laquelle aucun chiffre de ce script ne veut rien dire :
+// La référence, sans laquelle aucun chiffre de ce script ne veut rien dire :
 // ce que le filtre ACTUELLEMENT LIVRÉ (estVocabulaireCourant, une seule
 // caractéristique et un seuil binaire) fait sur exactement les mêmes candidats.
 // « 8 faux retirés » n'est un progrès que comparé à quelque chose.
@@ -137,10 +137,10 @@ function reference(donnees) {
   };
 }
 
-// LE COMPROMIS EN ENTIER, pas un point unique. Le seuil « zéro perte » est
+// Le compromis en entier, pas un point unique. Le seuil « zéro perte » est
 // choisi sur un échantillon fini : un seul candidat mal placé le fait chuter.
 // Afficher la courbe montre s'il est un plateau stable ou une falaise - et ce
-// qu'une tolérance minime achèterait. Le produit accepte DÉJÀ des pertes sur ce
+// qu'une tolérance minime achèterait. Le produit accepte déjà des pertes sur ce
 // périmètre (voir vocabulaire.js : « Orange », « Total », « Le Monde » sont des
 // pertes connues et assumées), donc la question mérite d'être posée en chiffres
 // plutôt que tranchée par principe.
@@ -200,21 +200,21 @@ for (const [nom, colonnes] of Object.entries(variantes)) {
 // Constaté en regardant les données plutôt qu'en supposant : les faux positifs
 // du corpus se répartissent en deux familles de nature différente.
 //
-//   · VOCABULAIRE - « Bénévole terrain », « Stack conteneurisée »,
+//   · vocabulaire - « Bénévole terrain », « Stack conteneurisée »,
 //     « Téléphone », « Baccalauréat Général ». C'est le défaut mesuré sur de
 //     vrais documents, et c'est ce que ce filtre existe pour traiter.
 //
-//   · TECHNOLOGIES - « Docker », « JWT », « PostgreSQL », « JaCoCo ». Aucune
+//   · technologies - « Docker », « JWT », « PostgreSQL », « JaCoCo ». Aucune
 //     caractéristique de ce module ne peut les distinguer de « Twini »,
-//     « UNODC » ou « Semantikmatch » : ce sont les MÊMES chaînes, courtes,
+//     « UNODC » ou « Semantikmatch » : ce sont les mêmes chaînes, courtes,
 //     capitalisées, absentes de tout dictionnaire. Vouloir les faire tomber ici
 //     apprendrait au filtre à jeter les vraies entités qui leur ressemblent -
-//     donc à FUIR. Le produit a déjà une réponse à ce problème, et elle est
+//     donc à fuir. Le produit a déjà une réponse à ce problème, et elle est
 //     meilleure : le profil « Développeur / Tech » et sa liste « ne jamais
 //     masquer », éditable et propriété de l'utilisateur (voir docs/notes-techniques.md, le
 //     refus explicite d'une liste de technos cachée dans le moteur).
 //
-// On mesure donc les deux familles SÉPARÉMENT. Les confondre donnerait un
+// On mesure donc les deux familles séparément. Les confondre donnerait un
 // chiffre global médiocre qui masquerait à la fois ce que le filtre sait faire
 // et ce qu'il ne peut pas faire.
 const { TECHNOS, NEGATIFS_DURS } = await import('../corpus/generer.mjs');
@@ -241,7 +241,7 @@ function parFamille(modele, donnees, colonnes, seuil) {
     + '   ← hors de portée, traité par les profils');
 
   // ── CE QU'ON PERD, NOMMÉMENT. Un décompte ne dit pas si la perte est un
-  // artefact de frontière ou une vraie fuite : seule la LECTURE le dit. C'est
+  // artefact de frontière ou une vraie fuite : seule la lecture le dit. C'est
   // la sortie la plus importante de ce script, celle qui doit être relue avant
   // de recopier le moindre poids.
   const perdues = [...new Set(b.ev.scores
@@ -303,9 +303,9 @@ for (const d of test) {
 
 // --- Écriture du fichier de poids ----------------------------------------
 //
-// ÉCRIT PAR LE SCRIPT, jamais recopié à la main : un poids mal transcrit ne
+// Écrit par le script, jamais recopié à la main : un poids mal transcrit ne
 // produit aucune erreur, seulement des décisions fausses. `ECRIRE=1` pour
-// l'activer - par défaut on ne fait qu'AFFICHER, pour qu'une exécution
+// l'activer - par défaut on ne fait qu'afficher, pour qu'une exécution
 // exploratoire ne modifie jamais le moteur par surprise.
 if (process.env.ECRIRE) {
   const { writeFileSync } = await import('node:fs');
@@ -320,7 +320,7 @@ if (process.env.ECRIRE) {
 // le filtre inerte, comportement sûr par défaut.
 //
 // Variante « ${choisi} », entraînée sur ${app.length} candidats, évaluée sur
-// ${test.length} SÉPARÉS PAR VALEUR. Au seuil ci-dessous : ${c.ev.retires}/${c.ev.faux}
+// ${test.length} séparés par valeur. Au seuil ci-dessous : ${c.ev.retires}/${c.ev.faux}
 // faux positifs retirés, ${c.ev.perdues}/${c.ev.vrais} vraie(s) entité(s) perdue(s).
 //
 // Le seuil n'est pas un optimum de F-mesure : c'est le plus agressif dont la

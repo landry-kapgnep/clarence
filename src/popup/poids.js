@@ -1,16 +1,16 @@
-// Poids de TRAITEMENT d'un fichier - « Léger / Moyen / Lourd / Très lourd ».
+// Poids de traitement d'un fichier - « Léger / Moyen / Lourd / Très lourd ».
 //
-// POURQUOI PAS UNE ESTIMATION DE TEMPS. Un temps annoncé est une PROMESSE, et
+// POURQUOI PAS UNE ESTIMATION DE TEMPS. Un temps annoncé est une promesse, et
 // on ne peut pas la tenir : il dépend de la machine, de la présence de WebGPU,
 // du cache du modèle. Annoncer « ~40 s » puis en mettre 3 minutes, c'est
 // l'application qui a tort aux yeux de l'utilisateur.
 //
-// Un poids, lui, décrit le FICHIER. Il est vérifiable, il ne peut pas être
+// Un poids, lui, décrit le fichier. Il est vérifiable, il ne peut pas être
 // démenti, et il déplace utilement la responsabilité : l'utilisateur voit ce
 // qu'il soumet et sait à quoi s'attendre avant de cliquer.
 //
-// POURQUOI PAS LA TAILLE EN OCTETS - le piège principal. Ce qui coûte, c'est la
-// quantité de TEXTE à soumettre au modèle (« ~37 ms fixes + k × longueur », par
+// Pourquoi pas la taille en octets - le piège principal. Ce qui coûte, c'est la
+// quantité de texte à soumettre au modèle (« ~37 ms fixes + k × longueur », par
 // unité et par groupe de labels). Or :
 //   - un PDF de 5 Mo rempli d'images se traite en quelques secondes ;
 //   - un PDF de 430 Ko et 75 pages de prose en prend environ 45.
@@ -24,7 +24,7 @@ export const NIVEAUX = {
   tresLourd: { libelle: 'Très lourd', classe: 'poids-tres-lourd' }
 };
 
-// Seuils en PAGES, calés sur des mesures réelles et non au jugé :
+// Seuils en pages, calés sur des mesures réelles et non au jugé :
 //   6 pages   (tests/manuel/tous-defauts.pdf) → quelques secondes
 //   75 pages  (mémoire réel, ~190 000 caractères) → ~45 s
 // Le mémoire doit donc tomber en « Très lourd » : c'est le cas qui a motivé
@@ -35,7 +35,7 @@ const SEUILS_PAGES = [
   [60, 'lourd']
 ];
 
-// Seuils en CARACTÈRES de texte, pour les formats où on lit le texte
+// Seuils en caractères de texte, pour les formats où on lit le texte
 // directement (CSV, TXT). ~190 000 caractères = le mémoire = très lourd.
 const SEUILS_CARACTERES = [
   [15000, 'leger'],
@@ -43,7 +43,7 @@ const SEUILS_CARACTERES = [
   [150000, 'lourd']
 ];
 
-// Seuils en OCTETS - repli le moins fiable, réservé aux formats compressés
+// Seuils en octets - repli le moins fiable, réservé aux formats compressés
 // (DOCX, XLSX) dont on ne connaît pas le volume de texte sans les ouvrir.
 const SEUILS_OCTETS = [
   [40 * 1024, 'leger'],
@@ -79,7 +79,7 @@ export function poidsDeTraitement({ ext, taille = 0, pages = null, caracteres = 
   return { cle, ...NIVEAUX[cle], base: 'octets' };
 }
 
-// Phrase affichée au survol : dit sur QUOI le classement repose, pour qu'il
+// Phrase affichée au survol : dit sur quoi le classement repose, pour qu'il
 // reste contestable par l'utilisateur plutôt que d'être un verdict opaque.
 export function expliquerPoids(poids) {
   switch (poids.base) {

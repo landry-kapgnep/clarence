@@ -27,7 +27,7 @@ test('les espaces de tête et de queue sont retirés', () => {
 });
 
 test('la VIRGULE sépare - le séparateur qu\'on VOIT en se relisant', () => {
-  // Choix REVU. La tabulation marchait - mesuré sur un vrai document, six
+  // Choix revu. La tabulation marchait - mesuré sur un vrai document, six
   // termes saisis ainsi ont bien été appliqués - mais elle est invisible : sa
   // largeur varie, on ne distingue pas une tabulation de deux, et il fallait
   // lancer le traitement pour savoir si la saisie était correcte. Or ce champ
@@ -44,7 +44,7 @@ test('CONTREPARTIE assumée : un terme ne peut plus contenir de virgule', () => 
   // « Dupont, Marie » devient deux termes. Côté « toujours masquer » c'est sans
   // danger (on masque davantage) ; côté « ne jamais masquer » ça peut laisser
   // en clair un fragment qu'on n'avait pas l'intention d'épargner. Le cas est
-  // rare, et la virgule reste VISIBLE donc rattrapable - exactement l'inverse
+  // rare, et la virgule reste visible donc rattrapable - exactement l'inverse
   // du défaut de la tabulation.
   assert.deepEqual(parseTermes('Dupont, Marie'), ['Dupont', 'Marie']);
 });

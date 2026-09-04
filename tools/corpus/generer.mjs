@@ -1,31 +1,31 @@
-// PHASE 2 - Générateur de documents étiquetés, pour entraîner la détection.
+// Phase 2 - Générateur de documents étiquetés, pour entraîner la détection.
 //
 //     node tools/corpus/generer.mjs [nombre] > corpus.jsonl
 //
-// POURQUOI SYNTHÉTIQUE. Il n'existe pas de corpus annoté de PII en français, et
+// Pourquoi synthétique. Il n'existe pas de corpus annoté de PII en français, et
 // il ne peut pas en exister d'ouvert : ce serait, par définition, des données
 // personnelles. En GÉNÉRANT les documents, les étiquettes sont connues par
 // construction - c'est nous qui plaçons les entités. Zéro annotation, zéro
 // donnée réelle, volume illimité. C'est la méthode de LLMLingua-2, qu'on
 // embarque déjà.
 //
-// CE QUE LE MODÈLE DOIT APPRENDRE, ET QUI N'EST PAS CE QU'ON CROIT. Notre
-// défaut mesuré n'est pas un manque de rappel (84 % au banc) : c'est le BRUIT.
+// Ce que le modèle doit apprendre, et qui n'est pas ce qu'on croit. Notre
+// défaut mesuré n'est pas un manque de rappel (84 % au banc) : c'est le bruit.
 // Sur un vrai CV, 20 masques dont 10 faux. Le corpus doit donc être riche en
 // NÉGATIFS DIFFICILES - des groupes nominaux qui ressemblent à des entités sans
 // en être - bien plus qu'en entités à trouver. Voir NEGATIFS_DURS : ce sont les
 // cas réellement observés, pas des inventions.
 //
-// FORMAT DE SÉRIALISATION : « [SECTION] texte ». Choisi par mesure
+// Format de sérialisation : « [section] texte ». Choisi par mesure
 // (tests/bench/serialisation.mjs) : sur un vrai CV, le préfixe de section
 // retire 4 bruits sans perdre une seule vraie valeur, là où des champs nommés
 // (« section: X | texte: Y ») coûtaient deux vraies valeurs. À ne pas confondre
-// avec le libellé de CHAMP accolé à une cellule, qui lui DÉGRADE la détection
+// avec le libellé de champ accolé à une cellule, qui lui dégrade la détection
 // (mesure d'août : 0,74 sur le libellé contre 0,15 sur la valeur).
 import { fakerFR, fakerEN, fakerDE, fakerES } from '@faker-js/faker';
 
-// Le MÊME découpeur que celui posé au runtime dans ner-worker.js. Les indices
-// d'entités sont donnés en TOKENS : s'ils étaient comptés autrement qu'à
+// Le même découpeur que celui posé au runtime dans ner-worker.js. Les indices
+// d'entités sont donnés en tokens : s'ils étaient comptés autrement qu'à
 // l'exécution, chaque étiquette serait décalée et l'entraînement apprendrait
 // des frontières fausses.
 const DECOUPEUR = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
@@ -33,12 +33,12 @@ const decouper = (texte) => texte.match(DECOUPEUR) || [];
 
 // ── Sources d'entités ──────────────────────────────────────────────────────
 //
-// ⚠️ LE RISQUE PRINCIPAL DE TOUTE CETTE APPROCHE. Si les noms viennent d'un
-// vivier étroit, le modèle apprend CES MOTS-LÀ et non « à quoi ressemble un
+// Le risque principal de toute cette approche. Si les noms viennent d'un
+// vivier étroit, le modèle apprend ces mots-là et non « à quoi ressemble un
 // nom » : score parfait sur nos données, rien de plus en production. Nos
 // propres viviers (40 prénoms, 34 patronymes) sont très en dessous du
 // nécessaire. D'où quatre locales de Faker plutôt qu'une, et des raisons
-// sociales COMPOSÉES plutôt que tirées d'une liste.
+// sociales composées plutôt que tirées d'une liste.
 const LOCALES = [fakerFR, fakerFR, fakerFR, fakerEN, fakerDE, fakerES];
 const tirer = (a) => a[Math.floor(Math.random() * a.length)];
 const parfois = (p) => Math.random() < p;
@@ -58,17 +58,17 @@ const entite = {
   TEL: () => fakerFR.phone.number({ style: 'national' }),
   DATE_NAISSANCE: () => fakerFR.date.birthdate().toLocaleDateString('fr-FR'),
 
-  // ⚠️ AJOUTÉS LE 29/08/2026 APRÈS UNE FUITE MESURÉE, et c'est la leçon la plus
-  // chère de ce corpus. Jusqu'ici, TOUTE valeur portant un chiffre y était un
+  // Ajoutés le 29/08/2026 après une fuite mesurée, et c'est la leçon la plus
+  // chère de ce corpus. Jusqu'ici, toute valeur portant un chiffre y était un
   // piège (« Baccalauréat Général 2016 », « Mars 2026 ») et aucune n'était une
   // vraie entité. Le filtre de précision en a tiré la règle « chiffre ⇒ pas une
   // entité » - poids −4,6, la troisième plus forte - et s'est mis à retirer
   //     « 42 rue des Cordeliers »   (adresse)
   //     « 44000 Nantes »            (code postal + ville)
-  //     « EMP-0012 »                (matricule, que le déterministe NE VOIT PAS)
-  // Le banc est passé NON PUBLIABLE. Ce n'était pas le classifieur qui avait
+  //     « EMP-0012 »                (matricule, que le déterministe ne voit pas)
+  // Le banc est passé non publiable. Ce n'était pas le classifieur qui avait
   // tort : c'est le corpus qui ne lui avait jamais montré qu'un identifiant, une
-  // adresse ou un code postal SONT des données personnelles.
+  // adresse ou un code postal sont des données personnelles.
   //
   // Même leçon que P12 (« le corpus était le vrai coupable ») : quand le modèle
   // apprend une règle absurde, chercher d'abord ce qu'on a oublié de lui montrer.
@@ -86,9 +86,9 @@ const entite = {
 
 // ── NÉGATIFS DURS ──────────────────────────────────────────────────────────
 //
-// Le cœur du corpus. Chacun de ces groupes a été RÉELLEMENT produit comme faux
+// Le cœur du corpus. Chacun de ces groupes a été réellement produit comme faux
 // positif par le modèle actuel sur de vrais documents - ils ne sont pas
-// imaginés. Ils apparaissent dans les phrases SANS AUCUNE ÉTIQUETTE : c'est
+// imaginés. Ils apparaissent dans les phrases sans aucune étiquette : c'est
 // ainsi que le modèle apprend à ne rien y voir.
 export const NEGATIFS_DURS = [
   'Canal acoustique de données', 'Stack conteneurisée', 'Bénévole terrain',
@@ -127,8 +127,8 @@ const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
 
 // ── Gabarits ───────────────────────────────────────────────────────────────
 //
-// Un gabarit produit une LIGNE et déclare ses entités. `{PER}` est remplacé et
-// étiqueté ; `{NEG}`, `{TECHNO}`, `{MOIS}` sont remplacés SANS étiquette - ce
+// Un gabarit produit une ligne et déclare ses entités. `{PER}` est remplacé et
+// étiqueté ; `{NEG}`, `{TECHNO}`, `{MOIS}` sont remplacés sans étiquette - ce
 // sont les pièges.
 export const GABARITS = {
   'PROFIL': [
@@ -172,7 +172,7 @@ export const GABARITS = {
     'Téléphone {TEL}',
     'Sexe Masculin',
     'Nationalité Française',
-    // Ces trois-là portent des CHIFFRES et sont de VRAIES données personnelles.
+    // Ces trois-là portent des chiffres et sont de vraies données personnelles.
     // Sans elles, le corpus n'enseignait qu'une chose sur les chiffres : les
     // ignorer. Voir le commentaire de `entite.ADRESSE`.
     'Adresse {ADRESSE}, {CP_VILLE}',
@@ -200,9 +200,9 @@ export const SECTIONS_PAR_DOC = {
   rh: ['COMPTE RENDU'],
 };
 
-// Génère une ligne : le texte final et ses entités en indices de TOKENS.
+// Génère une ligne : le texte final et ses entités en indices de tokens.
 //
-// Rend AUSSI `texte` et `spans` (offsets en CARACTÈRES). Le format GLiNER
+// Rend aussi `texte` et `spans` (offsets en caractères). Le format GLiNER
 // compte en tokens, mais notre propre moteur, lui, rend des offsets de
 // caractères : sans cette seconde vue, on ne pourrait pas confronter ce que le
 // détecteur propose à ce que le générateur a réellement placé - c'est
@@ -232,7 +232,7 @@ export function ligne(section, gabarit) {
     else valeur = entite[slot]();
     texte += valeur;
     const apres = decouper(texte).length;
-    // Étiqueté SEULEMENT si c'est une vraie entité. Les négatifs, les technos,
+    // Étiqueté seulement si c'est une vraie entité. Les négatifs, les technos,
     // les mois et les années restent NUS : c'est tout l'enjeu.
     if (entite[slot]) {
       const type = slot === 'PER_MAJ' ? 'PER' : slot === 'TEL' ? 'TELEPHONE' : slot;
@@ -241,11 +241,11 @@ export function ligne(section, gabarit) {
     }
   }
   const tokens = decouper(texte);
-  // GARDE-FOU NON NÉGOCIABLE. Les indices sont calculés en découpant le texte
-  // PARTIEL à chaque insertion ; si le découpeur se comporte autrement sur le
+  // Garde-fou non négociable. Les indices sont calculés en découpant le texte
+  // Partiel à chaque insertion ; si le découpeur se comporte autrement sur le
   // texte complet - une ponctuation qui fusionne, un tiret qui colle - les
   // étiquettes glissent. Le modèle apprendrait alors de fausses frontières, et
-  // RIEN ne le signalerait : ni erreur, ni test, juste un corpus subtilement
+  // Rien ne le signalerait : ni erreur, ni test, juste un corpus subtilement
   // faux. On revérifie donc chaque span contre la valeur réellement insérée.
   const nu = (s) => s.replace(/\s+/g, '');
   for (const [a, b, label, attendu] of entites) {
@@ -254,7 +254,7 @@ export function ligne(section, gabarit) {
       throw new Error(`étiquette désalignée : « ${relu} » au lieu de « ${attendu} » (${label})`);
     }
   }
-  // Le MÊME garde-fou pour la vue en caractères : elle sert de vérité de
+  // Le même garde-fou pour la vue en caractères : elle sert de vérité de
   // référence au filtre de précision, un décalage y serait tout aussi
   // silencieux et tout aussi ruineux.
   for (const s of spans) {
@@ -262,10 +262,10 @@ export function ligne(section, gabarit) {
       throw new Error(`span désaligné : « ${texte.slice(s.start, s.end)} » au lieu de « ${s.valeur} »`);
     }
   }
-  // `prefixeLongueur` : de quoi RETIRER exactement le « [SECTION] » de tête.
+  // `prefixeLongueur` : de quoi retirer exactement le « [section] » de tête.
   //
   // Il est indispensable à l'entraînement de GLiNER (forme choisie par mesure,
-  // voir l'en-tête), mais la PRODUCTION, elle, ne préfixe rien : un intitulé y
+  // voir l'en-tête), mais la production, elle, ne préfixe rien : un intitulé y
   // est une unité à part, marquée `structurel` et épargnée par la passe
   // contextuelle. Un consommateur qui veut reproduire fidèlement l'inférence
   // doit donc pouvoir s'en débarrasser - sinon il mesure des faux positifs
@@ -277,12 +277,12 @@ export function ligne(section, gabarit) {
   };
 }
 
-// Les labels du corpus doivent être CEUX de l'inférence - ce sont eux que le
+// Les labels du corpus doivent être ceux de l'inférence - ce sont eux que le
 // modèle apprendra à reconnaître. Voir GROUPES dans src/engine/gliner.js.
 const LABELS = {
   PER: 'person', ORG: 'company', LOC: 'location',
   EMAIL: 'email', TELEPHONE: 'phone number', DATE_NAISSANCE: 'date of birth',
-  // Adresse et code postal + ville SONT des lieux : le label existe déjà et
+  // Adresse et code postal + ville sont des lieux : le label existe déjà et
   // c'est le bon. Le matricule, lui, n'a pas de label dédié dans GROUPES -
   // « company » est ce que le modèle en fait spontanément (mesuré : « EMP-0012 »
   // seul sort à 0,57 en entreprise), donc c'est l'étiquette qui décrit
@@ -292,7 +292,7 @@ const LABELS = {
 
 // Tire une ligne au hasard, en respectant les sections propres à chaque type de
 // document. Exporté : le constructeur de jeu du filtre de précision
-// (tools/filtre/) doit produire EXACTEMENT les mêmes documents que
+// (tools/filtre/) doit produire exactement les mêmes documents que
 // l'entraînement du modèle, jamais une variante réécrite à côté.
 export function ligneAuHasard() {
   const doc = tirer(Object.keys(SECTIONS_PAR_DOC));
@@ -322,7 +322,7 @@ for (let i = 0; i < combien; i++) {
     if (distincts[label]) distincts[label].add(ex.tokenized_text.slice(a, b + 1).join(' '));
   }
   // Seules les deux clés du format GLiNER sont écrites : `texte`/`spans` sont
-  // une vue interne, les ajouter au JSONL d'entraînement serait du bruit.
+  // une vue interne, les ajouter au jsonl d'entraînement serait du bruit.
   process.stdout.write(JSON.stringify({ tokenized_text: ex.tokenized_text, ner: ex.ner }) + '\n');
 }
 console.error(`${stats.lignes} lignes · ${stats.entites} entités étiquetées · `

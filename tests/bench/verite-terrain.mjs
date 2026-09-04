@@ -1,17 +1,17 @@
-// Vérité terrain du banc d'essai : ce QUI DOIT être masqué, et ce qui doit
-// SURVIVRE, pour chaque document du corpus.
+// Vérité terrain du banc d'essai : ce qui doit être masqué, et ce qui doit
+// Survivre, pour chaque document du corpus.
 //
-// Annotation PAR VALEUR, jamais par position : un offset casse au moindre
+// Annotation par valeur, jamais par position : un offset casse au moindre
 // caractère ajouté au corpus, une valeur littérale non. La contrepartie est
 // qu'une valeur qui apparaît plusieurs fois est vérifiée globalement (elle ne
-// doit subsister NULLE PART dans la sortie), ce qui est exactement la garantie
+// doit subsister nulle part dans la sortie), ce qui est exactement la garantie
 // qu'on veut.
 //
 // La criticité n'est pas annotée à la main : elle se déduit du `type` (voir
 // TYPES_STRUCTURES dans run.mjs). Une seule source de vérité, pas deux listes
 // à garder synchronisées.
 //
-// Les valeurs sont TOUTES fictives et reconnaissables comme telles (carte
+// Les valeurs sont toutes fictives et reconnaissables comme telles (carte
 // 4242…, domaines .example) - règle du projet : ne jamais committer de données
 // ressemblant à du réel.
 
@@ -32,7 +32,7 @@ export const CORPUS = [
       { valeur: '42 rue des Cordeliers', type: 'ADRESSE' },
       { valeur: 'Nantes', type: 'LOC' }
     ],
-    // Termes qui doivent SURVIVRE : sans eux le document n'a plus de sens pour
+    // Termes qui doivent survivre : sans eux le document n'a plus de sens pour
     // le LLM. C'est le critère d'utilisabilité, aussi bloquant que les fuites
     // pour un produit payant.
     aGarder: [
@@ -51,7 +51,7 @@ export const CORPUS = [
       { valeur: '12201603', type: 'ID_NATIONAL' },
       { valeur: '16 octobre 2004', type: 'DATE_NAISSANCE' },
       { valeur: 'Sarcelles', type: 'LOC' },
-      // ⚠️ AJOUTÉE LE 30/08/2026. Le commentaire ci-dessous AFFIRMAIT déjà que
+      // Ajoutée le 30/08/2026. Le commentaire ci-dessous affirmait déjà que
       // la ville est masquée, mais rien ne le vérifiait : elle apparaît deux
       // fois dans le document (« IUT de Villetaneuse », « Fait à Villetaneuse »)
       // et n'était dans aucune assertion. Un banc dont un commentaire promet
@@ -61,7 +61,7 @@ export const CORPUS = [
     // « IUT » et non « IUT de Villetaneuse » : la ville est masquée en LIEU,
     // exactement comme « Sarcelles » deux lignes plus haut dans le même
     // document - attendre l'inverse ici serait se contredire. Ce qui doit
-    // survivre, c'est le SIGLE : sans lui le LLM ne sait plus qu'il s'agit
+    // survivre, c'est le sigle : sans lui le LLM ne sait plus qu'il s'agit
     // d'un institut universitaire.
     aGarder: ['CERTIFICAT DE SCOLARITE', 'BUT Informatique', 'IUT']
   },
@@ -114,7 +114,7 @@ export const CORPUS = [
       { valeur: 'recherche@korrigane-labs.example', type: 'EMAIL' },
       { valeur: '02 40 11 22 33', type: 'TELEPHONE' }
     ],
-    // Mots ordinaires que le modèle masquait quand il recevait des DEMI-PHRASES
+    // Mots ordinaires que le modèle masquait quand il recevait des demi-phrases
     // (un paragraphe par ligne). Ce sont eux qui font de ce document une garde :
     // s'ils repartent, c'est que le regroupement en paragraphes a régressé.
     aGarder: [
@@ -129,7 +129,7 @@ export const CORPUS = [
     // Ce document manquait, et son absence a coûté une fuite chez un vrai
     // utilisateur (P12). Tout le corpus était fait de CV et de mémoires, où les
     // noms sont en casse mixte - or dans un formulaire officiel (casier
-    // judiciaire, acte d'état civil, attestation), les VALEURS sont en
+    // judiciaire, acte d'état civil, attestation), les valeurs sont en
     // capitales et les libellés ne le sont pas.
     //
     // Mesuré : « LANDRY KAPGNEP » sortait en ENTREPRISE à 0,72 sur le texte
@@ -142,7 +142,7 @@ export const CORPUS = [
     // n'est reprise ici.
     aMasquer: [
       { valeur: 'MARCHESSEAU', type: 'PER' },
-      // Le prénom SEUL derrière son libellé : c'est lui qui fuyait.
+      // Le prénom seul derrière son libellé : c'est lui qui fuyait.
       { valeur: 'THIBAULT', type: 'PER' },
       { valeur: 'Camille DUVERNOY', type: 'PER' },
       { valeur: 'MONTLUÇON', type: 'LOC' },
@@ -150,7 +150,7 @@ export const CORPUS = [
       { valeur: '18 RUE DES GLYCINES', type: 'ADRESSE' },
       { valeur: '16 octobre 1994', type: 'DATE_NAISSANCE' }
     ],
-    // L'AUTRE MOITIÉ DU MARCHÉ, et c'est pour ça que ce document est une garde :
+    // L'autre moitié du marché, et c'est pour ça que ce document est une garde :
     // adoucir la casse rend les intitulés en capitales plus « nom propre » aux
     // yeux du modèle. Si ceux-ci repartent, la passe P12 coûte plus qu'elle ne
     // rapporte et il faut la resserrer.
@@ -166,7 +166,7 @@ export const CORPUS = [
     quoi: 'Le SEUL document qui éprouve POSITIVEMENT poste/santé/établissement',
     // Ce document manquait, et son absence bloquait une décision : le 3e groupe
     // de labels (POSTE/NATIONALITE/ETABLISSEMENT/SANTE) ne produisait que du
-    // bruit sur tout le corpus - mais AUCUN document ne contenait de vraie
+    // bruit sur tout le corpus - mais aucun document ne contenait de vraie
     // valeur de ces types. Impossible de dire si le désactiver par défaut
     // coûterait quelque chose. Il le dit maintenant.
     //
@@ -174,7 +174,7 @@ export const CORPUS = [
     // la plus grave que le produit puisse commettre.
     //
     // POSTE/SANTE/NATIONALITE/ETABLISSEMENT restent listés ici alors qu'ils sont
-    // DÉCOCHÉS par défaut (TYPES_PEU_FIABLES) : décider de ne pas chercher une
+    // Décochés par défaut (TYPES_PEU_fiables) : décider de ne pas chercher une
     // donnée ne la rend pas moins sensible. Le banc doit continuer à afficher
     // qu'on ne les attrape pas - c'est le même refus de fausse confiance qu'on
     // applique à l'utilisateur, appliqué à notre propre métrique.
@@ -212,33 +212,33 @@ export const CORPUS = [
       'BUT Informatique',
       // Mot volontairement coupé en fin de ligne dans le PDF généré (voir
       // gen-cv-pdf.mjs) : reproduit le mécanisme réel de P1bis. Doit ressortir
-      // RECOLLÉ ; s'il reste fragmenté (« vante » isolée), ce test le signale.
+      // Recollé ; s'il reste fragmenté (« vante » isolée), ce test le signale.
       'innovante'
     ]
   },
 
   // ─────────────────────────────────────────────────────────────────────────
-  // LE DOCUMENT PIÉGÉ - borne basse, jamais fondu dans les moyennes.
+  // Le document piégé - borne basse, jamais fondu dans les moyennes.
   //
-  // `tests/manuel/tous-defauts.pdf` empile délibérément TOUS les défauts connus
-  // et n'a AUCUNE vocation à être réaliste : page 2 faite de lignes courtes sans
+  // `tests/manuel/tous-defauts.pdf` empile délibérément tous les défauts connus
+  // et n'a aucune vocation à être réaliste : page 2 faite de lignes courtes sans
   // phrases, sommaire à points de suite, blocs d'identifiants nus. Le lire comme
   // un document représentatif tirerait les trois chiffres du banc vers le bas
   // sans rien dire de vrai sur un fichier d'utilisateur.
   //
-  // D'où `borneBasse` : run.mjs le rapporte À PART. Une seule exception, le
-  // STRUCTURÉ - un raté déterministe est un bug partout, y compris ici.
+  // D'où `borneBasse` : run.mjs le rapporte À part. Une seule exception, le
+  // Structuré - un raté déterministe est un bug partout, y compris ici.
   //
-  // Sa vérité terrain vivait en PROSE dans tests/manuel/README.md, avec la
+  // Sa vérité terrain vivait en prose dans tests/manuel/README.md, avec la
   // mention « à industrialiser ». La voici. Elle sert de banc d'essai à P9 :
-  // toute variante sur les intitulés doit être mesurée DANS LES DEUX SENS,
+  // toute variante sur les intitulés doit être mesurée dans les deux sens,
   // et c'est ce document qui porte le contre-exemple (voir aMasquer, en tête).
   {
     fichier: '../manuel/tous-defauts.pdf',
     borneBasse: true,
     quoi: 'DOCUMENT PIÉGÉ (borne basse) — 6 pages, 4 langues, tous les défauts connus',
     aMasquer: [
-      // ⚠️ LE CONTRE-EXEMPLE DE P9. « ÉLÉONORE VASSEUR » est une unité-TITRE
+      // Le contre-exemple de p9. « ÉLÉONORE VASSEUR » est une unité-titre
       // isolée (21 pt), tout en capitales, deux mots, sans ponctuation ni
       // chiffre : `ressembleAUnIntitule` la reconnaîtrait comme un intitulé de
       // section, exactement comme « COMPÉTENCES ». Formellement indiscernables.
@@ -299,7 +299,7 @@ export const CORPUS = [
       { valeur: 'Nordwind Logistik GmbH', type: 'ORG' }
     ],
 
-    // CE QUI DOIT SURVIVRE. Les intitulés de section en tête : ce sont EUX que
+    // Ce qui doit survivre. Les intitulés de section en tête : ce sont EUX que
     // P9 cherche à démasquer, dans les quatre langues - la règle est formelle,
     // donc elle doit être indépendante de la langue.
     aGarder: [
@@ -316,12 +316,12 @@ export const CORPUS = [
       'PERSÖNLICHE DATEN', 'SPRACHEN', 'AUSBILDUNG', 'BERUFSERFAHRUNG',
       'ANLAGE',
       // Noms communs que le modèle étiquette volontiers ORG ou LIEU quand ils
-      // sont isolés. L'allemand est le pire cas : il met une majuscule à TOUS
+      // sont isolés. L'allemand est le pire cas : il met une majuscule à tous
       // les noms communs, donc le filtre de casse ne protège rien.
       'Contents', 'Overview', 'Conclusion',
       'Contenido', 'Resumen', 'Conclusión',
       'Besprechung', 'Vertrag', 'Unternehmen', 'Bescheinigung', 'Abteilung',
-      // Le piège le plus fin du document : le MÊME mot, nom propre puis nom
+      // Le piège le plus fin du document : le même mot, nom propre puis nom
       // commun. Aucun lexique ne peut trancher - seule la position le peut.
       'the baker', 'rose grower', 'une rose ancienne',
       // Technos et sigles : sans eux le CV ne veut plus rien dire.

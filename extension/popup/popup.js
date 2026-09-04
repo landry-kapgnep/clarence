@@ -17,7 +17,7 @@ import {
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-YCX7A7IX.js";
+} from "./chunk-2WVRHT5R.js";
 import {
   createBatchedPipeline
 } from "./chunk-IT5BP6N7.js";
@@ -25,7 +25,7 @@ import {
   COMPRESSION_MODEL,
   compresser,
   compresserSegments
-} from "./chunk-ZCCQBMVJ.js";
+} from "./chunk-756TQWXQ.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/lexique.js
@@ -71,17 +71,17 @@ var GROUPES = [
     // 0,38 le 05/08/2026 - trouvé sur un vrai rapport (`rapport-fr.txt`) : le
     // patronyme « ROUSSEAU » matche le motif BIC et annule « Amandine
     // ROUSSEAU » dans la fusion (voir merge.js), mais le nom lui-même ne
-    // dépassait le seuil sur AUCUNE de ses 3 occurrences (0,364 / 0,398).
+    // dépassait le seuil sur aucune de ses 3 occurrences (0,364 / 0,398).
     // « Nadia Belkacem » (`dossier-rh.txt`) était dans le même cas.
     //
-    // Seuil choisi par balayage sur le banc COMPLET, pas par extrapolation :
+    // Seuil choisi par balayage sur le banc complet, pas par extrapolation :
     // 0,45 → 0,40 → 0,38 → 0,36 → 0,35. 0,38 est le point pivot exact où les
-    // deux noms sont trouvés SANS qu'aucun faux positif n'apparaisse. En
+    // deux noms sont trouvés sans qu'aucun faux positif n'apparaisse. En
     // dessous (0,36), « CERTIFICAT DE SCOLARITE » (titre en capitales) devient
     // un faux positif PER et le préservé de `certificat-fr.txt` chute de
     // 100 % à 67 %. Ne pas descendre sans re-vérifier CE cas précis.
     //
-    // Effet mesuré : rappel contextuel 78 → 83 %, préservé INCHANGÉ (98 %),
+    // Effet mesuré : rappel contextuel 78 → 83 %, préservé inchangé (98 %),
     // structuré inchangé. Plus aucune fuite partielle sur les 7 documents.
     //
     // RECALIBRÉ à 0,46 le 06/08/2026 en passant les poids de int8 à fp16.
@@ -89,14 +89,14 @@ var GROUPES = [
     // est numériquement plus précis, tous les scores remontent, et le 0,38
     // calibré sur l'int8 devenait trop bas - préservé 98 % → 93 %
     // (« SOMMAIRE » et « Docker » sur-masqués en plus). Changer de variante
-    // SANS rebalayer, c'est troquer de la qualité contre de la vitesse sans
+    // Sans rebalayer, c'est troquer de la qualité contre de la vitesse sans
     // s'en apercevoir.
     //
     // Balayage sur le banc complet, en fp16 :
     //   0,38 → 83 % / 93 %      0,42 → 83 % / 93 %
     //   0,45 → 83 % / 96 %      0,46 → 83 % / **98 %**  ← retenu
     //   0,47 / 0,48 → identiques à 0,46 (plateau)
-    //   0,50 → casse le STRUCTURÉ (19/20) : rédhibitoire, non négociable
+    //   0,50 → casse le structuré (19/20) : rédhibitoire, non négociable
     // 0,46 est le plus BAS du plateau - donc le plus détectant à qualité égale,
     // conformément à « zéro-fuite > faux positifs ».
     seuil: 0.46,
@@ -415,7 +415,7 @@ function caracteristiques(candidat, ctx) {
     minusculeAilleurs: part(nbMinusculeAilleurs, n),
     // - ce que dit le modèle -
     // En dernier, et volontairement : mesuré sur un vrai CV, le score seul ne
-    // sépare RIEN (vraies 0,738 · fausses 0,648, et le meilleur score du
+    // sépare rien (vraies 0,738 · fausses 0,648, et le meilleur score du
     // document est un faux positif). Il n'a sa place qu'en compagnie des autres.
     score: borne(Number(candidat?.score) || 0, 1)
   };
@@ -835,7 +835,7 @@ var TECH_KEEP = [
   "SonarQube",
   "Postman",
   "Swagger",
-  // SIGLES DE MÉTIER. Trois lettres en capitales, donc happés en priorité
+  // Sigles de métier. Trois lettres en capitales, donc happés en priorité
   // par la passe à casse adoucie (P12) : « LAMP » et « BDD » sortaient en
   // ENTREPRISE sur un CV réel. Jamais des données personnelles.
   "SQL",
@@ -1049,7 +1049,7 @@ var ECOLE_KEEP = [
 ];
 function defaultProfiles() {
   return [
-    // « Vierge » reste VIDE, et doit le rester : c'est le profil qui ne
+    // « Vierge » reste vide, et doit le rester : c'est le profil qui ne
     // présuppose rien, donc le témoin quand on soupçonne qu'une liste blanche
     // cache un défaut de détection.
     { name: "Vierge", alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false },
@@ -1058,18 +1058,18 @@ function defaultProfiles() {
     { name: "\xC9cole / \xC9tudes", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...ECOLE_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false },
     // ── PROFILS PAR FORMAT ──
     //
-    // Les précédents décrivent un MÉTIER (« je suis développeur »), ceux-ci un
-    // TYPE DE DOCUMENT (« ceci est un CV »). Les deux axes sont utiles et ne se
+    // Les précédents décrivent un métier (« je suis développeur »), ceux-ci un
+    // Type de document (« ceci est un CV »). Les deux axes sont utiles et ne se
     // remplacent pas : un développeur qui envoie un relevé bancaire n'a pas
     // besoin de sa liste de frameworks, il a besoin des mots d'un relevé.
     //
     // Leur vocabulaire vient de `vocabulaire-formats.js`, la même source que la
-    // reconnaissance de type - c'est ce qui permet de les PROPOSER
-    // automatiquement (voir PROFIL_POUR_TYPE), et ce qui garantit qu'ajouter
+    // reconnaissance de type - c'est ce qui permet de les proposer
+    // automatiquement (voir PROFIL_pour_type), et ce qui garantit qu'ajouter
     // une langue serve les deux d'un coup.
     { name: "CV / R\xE9sum\xE9", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("cv")], alwaysMask: [], disabledTypes: [], realistic: false },
     { name: "Relev\xE9 bancaire", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...motsDeForme("bancaire")], alwaysMask: [], disabledTypes: [], realistic: false },
-    // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
+    // Un document qui parle d'IA ou de plateformes n'est pas forcément un
     // document technique : ce profil sert le rédacteur, l'étudiant, le
     // chercheur - sans leur imposer la liste des frameworks.
     { name: "R\xE9daction / Recherche", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false }
@@ -1100,10 +1100,10 @@ function empreinteDe(profil) {
 var EMPREINTES_HISTORIQUES = {
   // 2cb8ce1c : jusqu'au 15/08/2026, avant les sigles de métier et l'outillage
   //            de test (commit 115b097).
-  // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de STRUCTURE_KEEP.
+  // 5a83db13 : jusqu'au 18/08/2026, avant l'ajout de structure_keep.
   // 519521a4 : jusqu'au 02/09/2026, avant les mots de forme multilingues.
   "D\xE9veloppeur / Tech": ["2cb8ce1c", "5a83db13", "519521a4"],
-  // Relevées AVANT modification, pour que la mise à jour atteigne aussi les
+  // Relevées avant modification, pour que la mise à jour atteigne aussi les
   // copies stockées à une époque où le champ `empreinte` n'existait pas encore.
   // Sans ça, elles seraient prises pour des versions éditées par l'utilisateur
   // et ne recevraient jamais l'espagnol ni le portugais.
@@ -1193,7 +1193,7 @@ var ATTRIBUTS = [
   ["i18nTitle", "title"],
   ["i18nPlaceholder", "placeholder"],
   ["i18nAria", "aria-label"],
-  // `alt` porte le NOM ACCESSIBLE des boutons-images (Copier, Télécharger) :
+  // `alt` porte le nom accessible des boutons-images (Copier, Télécharger) :
   // le mot y est cuit dans le bitmap, donc invisible autrement. Sans cette
   // ligne, ces boutons resteraient en français pour un lecteur d'écran anglais.
   ["i18nAlt", "alt"]
@@ -1684,7 +1684,7 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
     // Rousseau » - pour qu'un lycée ne devienne pas une université, et
     // reprenait la position du mot sur l'original plutôt que sur la locale
     // (« Westfield College » → « Boyer College »). Retiré avec le type
-    // lui-même : voir REALISTIC_TYPES. Récupérable tel quel dans l'historique
+    // lui-même : voir realistic_TYPES. Récupérable tel quel dans l'historique
     // si la détection des établissements devient un jour fiable.
     LOC: (h) => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: (h) => unique((h2, i) => `${(h2 + i * 7) % 98 + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
@@ -1695,12 +1695,12 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
       const repli = `${stripAccents(pick(L.prenoms, h2, i))}.${stripAccents(pick(L.noms, (h2 >>> 7) + i, i))}`;
       return `${local || repli}@${pick(L.emailDomains, h2 >>> 11, i)}`;
     }, h),
-    // Handle (GitHub, LinkedIn…). IDENTIFIANT, et sa détection est
-    // DÉTERMINISTE (regex-detect.js) : les deux conditions de REALISTIC_TYPES
+    // Handle (GitHub, LinkedIn…). Identifiant, et sa détection est
+    // Déterministe (regex-detect.js) : les deux conditions de realistic_TYPES
     // sont remplies. Il sortait en « [PSEUDO_1] » faute d'avoir été branché.
     PSEUDO: (h, original) => unique((h2, i) => composeIdentifiant(original) || `${stripAccents(pick(L.prenoms, h2, i))}${stripAccents(pick(L.noms, (h2 >>> 5) + i, i))}`, h),
     TELEPHONE: (h) => unique((h2, i) => L.phone(h2, i), h),
-    // Le FORMAT d'origine est reproduit, pas seulement la nature de la donnée :
+    // Le format d'origine est reproduit, pas seulement la nature de la donnée :
     // « january 1 2002 » devenait « 13/10/1976 », ce qui saute aux yeux au
     // milieu d'un texte anglais et trahit le passage de l'outil.
     DATE_NAISSANCE: (h, original) => unique((h2, i) => {
@@ -1849,7 +1849,7 @@ var TYPE_DISPLAY = {
   PSEUDO: msg("type_pseudo"),
   DATE: msg("type_date"),
   ID_NATIONAL: msg("type_id_national"),
-  // Apportés par la détection zero-shot. Décocher un de ces types SAUTE
+  // Apportés par la détection zero-shot. Décocher un de ces types saute
   // l'inférence correspondante (voir GROUPES dans engine/gliner.js) : on ne
   // paie que ce qu'on demande.
   POSTE: msg("type_poste"),
@@ -2561,7 +2561,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-KILMF6ZF.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-NQCILTAS.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -2574,7 +2574,7 @@ async function retirerDuMasquage(valeur) {
       fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
       mapping = res.mapping;
     } else {
-      const { anonymizeUnits } = await import("./anonymize-units-B25Y2LNC.js");
+      const { anonymizeUnits } = await import("./anonymize-units-MCS4VLZD.js");
       const { results, mapping: m } = await anonymizeUnits(r.units, {
         entitesConnues: r.entites,
         intitules: r.intitules,
@@ -3153,7 +3153,7 @@ async function processFile() {
       fileSetStatus(msg("etat_lecture_pdf"));
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-KILMF6ZF.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-NQCILTAS.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -3163,8 +3163,8 @@ async function processFile() {
         arbitre: arbitreContextuel(),
         onProgress: nerProgress,
         // Manquait entièrement : le PDF reconstruit ignorait la case
-        // Pseudonymes, contrairement aux autres formats. Toujours [TYPE_N].
-        // SANS argument : `units` n'existe pas encore sur ce chemin (il est
+        // Pseudonymes, contrairement aux autres formats. Toujours [type_N].
+        // Sans argument : `units` n'existe pas encore sur ce chemin (il est
         // déclaré plus bas, pour l'autre branche) - le lui passer plantait en
         // « Cannot access 'units' before initialization ». reconstructPdf
         // extrait ses propres unités en interne.
@@ -3184,7 +3184,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-B25Y2LNC.js");
+    const { anonymizeUnits } = await import("./anonymize-units-MCS4VLZD.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {

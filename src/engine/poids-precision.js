@@ -1,4 +1,4 @@
-// FICHIER GÉNÉRÉ - ne pas modifier à la main.
+// Fichier généré - ne pas modifier à la main.
 //
 //     ECRIRE=1 node tools/filtre/entrainer.mjs tools/filtre/jeu.jsonl
 //
@@ -6,7 +6,7 @@
 // le filtre inerte, comportement sûr par défaut.
 //
 // Variante « sans-les-deux », entraînée sur 555 candidats, évaluée sur
-// 104 SÉPARÉS PAR VALEUR. Au seuil ci-dessous : 36/56
+// 104 séparés par valeur. Au seuil ci-dessous : 36/56
 // faux positifs retirés, 0/48 vraie(s) entité(s) perdue(s).
 //
 // Le seuil n'est pas un optimum de F-mesure : c'est le plus agressif dont la

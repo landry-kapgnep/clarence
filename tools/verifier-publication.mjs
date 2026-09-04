@@ -3,13 +3,13 @@
 //     node tools/verifier-publication.mjs
 //
 // POURQUOI SÉPARÉ DES AUTRES VÉRIFICATIONS. `verifier-conversion.mjs` charge
-// les poids depuis un dossier LOCAL : il valide le modèle, jamais sa
+// les poids depuis un dossier local : il valide le modèle, jamais sa
 // publication. Or entre les deux il reste tout ce qui peut casser sans que le
 // modèle y soit pour rien - un dépôt privé, un fichier oublié au téléversement,
 // une disposition que Transformers.js ne sait pas lire (il attend le tokenizer
-// à la RACINE et les poids dans `onnx/`), une licence absente de la fiche.
+// à la racine et les poids dans `onnx/`), une licence absente de la fiche.
 //
-// Ce script part donc d'un cache VIDE et télécharge depuis huggingface.co,
+// Ce script part donc d'un cache vide et télécharge depuis huggingface.co,
 // exactement comme le fera l'extension au premier lancement.
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -65,7 +65,7 @@ const adapteur = async (texte) => {
 };
 
 // Taux 0,1 : la compression la plus agressive possible. Les placeholders
-// doivent survivre QUAND MÊME - sans eux la réinjection est morte, et la
+// doivent survivre quand même - sans eux la réinjection est morte, et la
 // panne serait invisible puisqu'on ne relit pas un texte compressé.
 const TEXTE = `Le dossier de [PERSONNE_1] a été transmis à [ENTREPRISE_1] le 12 mars.
 Merci d'adresser toute correspondance à [EMAIL_1] ou par téléphone au [TELEPHONE_1].

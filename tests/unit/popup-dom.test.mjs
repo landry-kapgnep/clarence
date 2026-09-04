@@ -1,4 +1,4 @@
-// Le SEUL test qui touche src/popup/main.js - et il ne l'exécute pas.
+// Le seul test qui touche src/popup/main.js - et il ne l'exécute pas.
 //
 // main.js dépend de `chrome.*` : il n'est pas testable en Node, et c'est
 // précisément là qu'un plantage a déjà cassé tout le mode PDF « Préserver »

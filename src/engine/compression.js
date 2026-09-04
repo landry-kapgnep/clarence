@@ -1,34 +1,34 @@
 // Compression de prompt - supprime les mots peu porteurs pour réduire le coût
 // en tokens du texte collé dans un LLM.
 //
-// POURQUOI. Mesuré le 09/08 : il n'y a AUCUN gain en tokens du côté du texte
+// Pourquoi. Mesuré le 09/08 : il n'y a aucun gain en tokens du côté du texte
 // (conversion Markdown −1 %, en-têtes répétés 1 %, sommaire 1 %). Un modèle de
 // compression est le seul levier d'un ordre de grandeur supérieur - ×1,5 à ×5,9
 // mesurés au spike (docs/spike-llmlingua2.md).
 //
-// EXTRACTIF, jamais génératif : on ne peut que SUPPRIMER des mots, jamais en
+// EXTRACTIF, jamais génératif : on ne peut que supprimer des mots, jamais en
 // écrire. Aucune hallucination possible, contrairement à un résumé par LLM -
 // c'est ce qui rend l'idée compatible avec le principe du cadrage §8.
 //
-// TROIS CONTRAINTES PRODUIT (docs/notes-techniques.md, posées avant tout code) : option
+// Trois contraintes produit (docs/notes-techniques.md, posées avant tout code) : option
 // explicite jamais par défaut, prose appauvrie annoncée, et transformation
-// d'EXPORT - on relit le texte masqué, lisible, et la compression ne touche que
+// d'export - on relit le texte masqué, lisible, et la compression ne touche que
 // ce qui part au presse-papiers. Ce module ne fait que la transformation ; c'est
 // à l'appelant de respecter les deux autres.
 //
-// LE PIPELINE EST INJECTÉ, comme dans gliner.js et ner.js : le moteur reste
+// Le pipeline est injecté, comme dans gliner.js et ner.js : le moteur reste
 // testable en Node sans charger 170 Mo.
 
-// NOTRE PROPRE CONVERSION des poids Apache 2.0 de Microsoft, sous une licence
+// Notre propre conversion des poids Apache 2.0 de Microsoft, sous une licence
 // explicite - bloquant de publication levé le 15/08/2026.
 //
 // Le dépôt officiel `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`
 // n'expose que du PyTorch, or le navigateur ne sait exécuter que de l'ONNX. Le
 // développement s'appuyait sur une conversion communautaire dont la fiche ne
-// déclarait AUCUNE licence - donc « tous droits réservés » par défaut, et
+// déclarait aucune licence - donc « tous droits réservés » par défaut, et
 // impossible à redistribuer sur le Chrome Web Store.
 //
-// La nôtre est MESURÉE meilleure, pas simplement conforme : écart nul en fp32
+// La nôtre est mesurée meilleure, pas simplement conforme : écart nul en fp32
 // contre le vrai PyTorch (l'export est exact), et en int8 moins de décisions
 // retournées que la communautaire (1 contre 2), grâce à une quantification par
 // canal choisie sur six recettes comparées. Voir tools/README.md pour la
@@ -60,18 +60,18 @@ export function motsDuTexte(texte) {
 
 // ── Opérateurs logiques - conservation FORCÉE ──────────────────────────────
 //
-// LE DÉFAUT QUE ÇA CORRIGE, et il est disqualifiant sans ça : le modèle
+// Le défaut que ça corrige, et il est disqualifiant sans ça : le modèle
 // supprime des mots qui portent toute la polarité de la phrase. Mesuré au
 // spike, « Le patient n'est pas allergique à la pénicilline mais l'est aux
 // sulfamides » ressortait « patient allergique à pénicilline sulfamides » -
 // le LLM lit exactement l'inverse.
 //
-// C'est le pire cas possible pour cet outil : l'erreur est SILENCIEUSE et
+// C'est le pire cas possible pour cet outil : l'erreur est silencieuse et
 // l'utilisateur ne peut pas la rattraper, puisqu'on ne relit pas un texte
 // compressé. Une fuite se voit à la relecture ; une négation retournée, non.
 //
 // UNE LISTE STATIQUE EST ADMISSIBLE ICI, et seulement parce que la classe est
-// FERMÉE - même règle que honorifics.js : une langue compte une poignée de
+// Fermée - même règle que honorifics.js : une langue compte une poignée de
 // négations et de connecteurs et n'en invente pas, contrairement aux noms, aux
 // entreprises ou aux technos qu'on refuse catégoriquement de lister.
 // NE PAS ÉTENDRE cette liste à des mots « importants » : ce serait rouvrir la
@@ -112,7 +112,7 @@ export function estIntouchable(mot) {
 // coïncident pas avec notre découpage par blancs. On avance donc un curseur :
 // on consomme des tokens jusqu'à couvrir le mot courant.
 //
-// EN CAS DE DÉSYNCHRONISATION on GARDE le mot. C'est le bon sens de l'échec :
+// EN CAS DE DÉSYNCHRONISATION on garde le mot. C'est le bon sens de l'échec :
 // garder coûte quelques tokens, supprimer par erreur peut retourner une phrase.
 const nettoie = t => String(t).replace(/^##/, '');
 
@@ -126,7 +126,7 @@ export function scoresParMot(mots, tokens) {
     while (iTok < tokens.length && couvert.length < cible.length) {
       const t = tokens[iTok++];
       couvert += nettoie(t.mot);
-      // Score du groupe = le MAXIMUM : si un seul morceau d'un mot est jugé
+      // Score du groupe = le maximum : si un seul morceau d'un mot est jugé
       // porteur, le mot l'est. Prendre la moyenne diluerait un mot rare dont
       // seule une syllabe compte.
       if (t.garder > max) max = t.garder;
@@ -141,11 +141,11 @@ export function scoresParMot(mots, tokens) {
 //
 // Ces deux fonctions sont pures et testées ici parce que le reste de
 // l'adaptation vit dans le worker, hors de portée des tests - et que les deux
-// pannes qu'elles évitent ne lèvent AUCUNE erreur : elles produisent simplement
+// pannes qu'elles évitent ne lèvent aucune erreur : elles produisent simplement
 // un texte non compressé, en silence.
 
-// PIÈGE 1 - le modèle plafonne à 512 POSITIONS, pas 512 mots. En français un mot
-// pèse souvent 2 à 3 sous-mots : au-delà, le pipeline TRONQUE sans rien dire, le
+// Piège 1 - le modèle plafonne à 512 positions, pas 512 mots. En français un mot
+// pèse souvent 2 à 3 sous-mots : au-delà, le pipeline tronque sans rien dire, le
 // flux de tokens s'épuise, et tout mot non aligné est conservé par sécurité.
 // Résultat : aucune compression, aucun message.
 export const MOTS_PAR_LOT = 120;
@@ -156,12 +156,12 @@ export function decouperEnLots(mots, taille = MOTS_PAR_LOT) {
   return lots;
 }
 
-// PIÈGE 2 - le pipeline OMET des tokens de sa sortie. Vérifié sur le champ
+// Piège 2 - le pipeline OMET des tokens de sa sortie. Vérifié sur le champ
 // `index`, qui saute (…6, 7, 9, 10…) : tirets cadratins et quelques symboles
 // disparaissent. Un curseur qui avance sur ce flux troué se désynchronise et ne
 // s'en remet jamais - la moitié des mots d'un document se retrouvait sans score.
 //
-// On reconstruit donc le flux COMPLET à partir de la tokenisation faite
+// On reconstruit donc le flux complet à partir de la tokenisation faite
 // soi-même, et on y recolle les scores par `index`. Un token absent reçoit 0 :
 // s'il accompagne d'autres tokens du même mot, le maximum l'ignore ; s'il est
 // seul (un tiret), le jeter est le comportement voulu.
@@ -179,7 +179,7 @@ export function recollerScores(tokens, sorties) {
 
 // ── Compression ────────────────────────────────────────────────────────────
 //
-// `taux` est un taux de CONSERVATION visé (0,3 = garder ~30 % des mots), pas un
+// `taux` est un taux de conservation visé (0,3 = garder ~30 % des mots), pas un
 // seuil brut. Le spike a montré pourquoi : au seuil naturel du modèle, le taux
 // est SUBI et varie de ×1,25 à ×5,89 selon le document - sur l'un d'eux il ne
 // restait que 47 mots sur 515, ce qui est intenable. L'utilisateur doit choisir
@@ -192,18 +192,18 @@ export async function compresser(texte, pipeline, options = {}) {
   return { ...r, texte: r.segments[0] ?? '' };
 }
 
-// COMPRESSION D'UN DOCUMENT DÉCOUPÉ EN SEGMENTS, chacun rendu séparément.
+// Compression d'un document découpé en segments, chacun rendu séparément.
 //
-// POURQUOI CETTE FORME. Les formats qui préservent la mise en page (DOCX, PDF
-// reconstruit) ne réécrivent pas un texte : ils redessinent des FRAGMENTS à
+// Pourquoi cette forme. Les formats qui préservent la mise en page (DOCX, PDF
+// reconstruit) ne réécrivent pas un texte : ils redessinent des fragments à
 // leurs positions d'origine. Compresser « le texte du document » ne leur sert à
 // rien - il leur faut savoir, pour chaque fragment, quels mots survivent.
 //
 // Sans ça, l'option ne pouvait exister que sur les sorties texte, ce qui la
 // vide de son intérêt : l'utilisateur veut moins de tokens dans le fichier
-// qu'il envoie RÉELLEMENT, pas dans une variante qu'il n'utilise pas.
+// qu'il envoie réellement, pas dans une variante qu'il n'utilise pas.
 //
-// Le modèle voit le document ENTIER (segments recollés) : c'est indispensable,
+// Le modèle voit le document entier (segments recollés) : c'est indispensable,
 // il décide au contexte. Seule la restitution est refragmentée.
 export async function compresserSegments(segments, pipeline, { taux = 0.5 } = {}) {
   // Recollage avec UNE espace : elle sépare les segments sans jamais fusionner
@@ -257,10 +257,10 @@ function resultat(avant, segments, motsAvant, motsApres, motsSansScore = 0) {
     segments,
     motsAvant,
     motsApres,
-    // NOMBRE DE MOTS SANS SCORE, remonté exprès. Un mot non aligné est
+    // Nombre de mots sans score, remonté exprès. Un mot non aligné est
     // conservé - c'est le bon sens de l'échec - mais si le flux de tokens
     // s'épuise (pipeline qui tronque au-delà de 512 positions, par exemple),
-    // TOUT est conservé et la compression ne mord plus, en silence. Sans ce
+    // Tout est conservé et la compression ne mord plus, en silence. Sans ce
     // compteur, l'appelant croit compresser et ne compresse rien : exactement
     // le cas rencontré au spike sur un document de 328 mots.
     motsSansScore,

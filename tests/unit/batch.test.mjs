@@ -1,4 +1,4 @@
-// Le regroupement en lots est sur le CHEMIN D'UNE FUITE : si les résultats
+// Le regroupement en lots est sur le chemin d'une fuite : si les résultats
 // d'un lot sont redistribués de travers, les entités d'un texte atterrissent
 // sur un autre - masquage faux d'un côté, donnée en clair de l'autre. D'où une
 // couverture au niveau des validateurs, pas au niveau « UI ».
@@ -47,11 +47,11 @@ test('le batcher ne lance JAMAIS deux lots en parallèle', async () => {
   // REPRODUCTION EXACTE du bug. Il ne suffit pas d'envoyer beaucoup d'appels
   // d'un coup : ceux-là partent dans un seul vidage, qui enchaîne ses lots
   // proprement même avec l'ancien code. Le défaut n'apparaît que quand des
-  // appels naissent PENDANT le vidage - c'est le cas réel, chaque unité
+  // appels naissent pendant le vidage - c'est le cas réel, chaque unité
   // relançant une passe en réagissant à la résolution de la précédente.
   //
   // Avec l'ancien code (`planifie = false` dès l'entrée de `vider`), ces
-  // retardataires programmaient un SECOND vidage qui postait son lot avant la
+  // retardataires programmaient un second vidage qui postait son lot avant la
   // réponse du premier → deux inférences en vol → « Session already started ».
   let enVol = 0;
   let maxEnVol = 0;

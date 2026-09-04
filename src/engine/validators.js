@@ -32,10 +32,10 @@ export function nirCheck(nirRaw) {
   return Number(97n - (n % 97n)) === key;
 }
 
-// DNI / NIE espagnols - 8 chiffres + une lettre de contrôle CALCULÉE.
+// DNI / NIE espagnols - 8 chiffres + une lettre de contrôle calculée.
 //
 // Pourquoi un vrai validateur plutôt qu'un masquage sur structure : « 8 chiffres
-// suivis d'une lettre » est une forme FAIBLE, qu'un code produit ou une
+// suivis d'une lettre » est une forme faible, qu'un code produit ou une
 // référence interne peut prendre par accident. C'est exactement le raisonnement
 // déjà appliqué à la carte bancaire (Luhn strict) plutôt qu'à l'IBAN ou au NIR,
 // dont la structure se suffit à elle-même.

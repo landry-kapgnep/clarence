@@ -1,9 +1,9 @@
 // Passe 2 - NER local. Regroupement WordPiece + relocalisation portés du
 // prototype validé (ce modèle ne renvoie pas d'offsets fiables).
 //
-// IMPORTANT - découpage en fenêtres : BERT ne traite que ~512 tokens. Sans
+// Important - découpage en fenêtres : BERT ne traite que ~512 tokens. Sans
 // découpage, tout ce qui dépasse (~1 500-2 000 caractères FR) serait ignoré
-// SILENCIEUSEMENT - le pire mode de défaillance pour un anonymiseur. On
+// Silencieusement - le pire mode de défaillance pour un anonymiseur. On
 // découpe donc en fenêtres avec recouvrement, et on fusionne les résultats.
 
 export const NER_MODEL = 'Xenova/bert-base-multilingual-cased-ner-hrl';
@@ -14,7 +14,7 @@ export const CHUNK_OVERLAP = 120; // évite de trancher une entité à la fronti
 // Mots-outils français qu'on ne capitalise jamais avant de passer le texte au
 // NER. Le modèle est "cased" : un nom en minuscule (ex. "je m'appelle jean
 // dupont") est hors distribution et souvent ignoré. On aide le modèle en
-// capitalisant tout mot minuscule candidat à un nom propre, SAUF ces mots-outils
+// capitalisant tout mot minuscule candidat à un nom propre, sauf ces mots-outils
 // - sinon toute la phrase serait capitalisée et le signal casse deviendrait
 // inutile. Sur-capitaliser un mot commun (absent de cette liste) peut produire
 // un faux positif, mais un faux positif se retire d'un clic ; un nom raté est
@@ -43,7 +43,7 @@ const STOPWORDS_FR = new Set([
   'bonjour', 'bonsoir', 'merci', 'cordialement', 'svp'
 ]);
 
-// Longueur minimale d'un mot TOUT EN MAJUSCULES pour être remis en Titre.
+// Longueur minimale d'un mot tout en majuscules pour être remis en Titre.
 // Épargne les acronymes courts omniprésents dans un CV (SQL, API, JWT, CTF,
 // IUT, BUT, NSI, PHP) tout en visant les patronymes (LANDRY, KAPGNEP).
 const ALLCAPS_MIN = 4;
@@ -51,9 +51,9 @@ const ALLCAPS_MIN = 4;
 // Normalise la casse pour la passe "boostée" du NER. Deux cas, car le modèle
 // est *cased* et ne reconnaît un nom propre qu'en Casse Titre :
 //  - mot entièrement minuscule (hors mot-outil) → capitalisé ;
-//  - mot entièrement MAJUSCULE d'au moins ALLCAPS_MIN lettres → mis en Titre.
+//  - mot entièrement majuscule d'au moins ALLCAPS_MIN lettres → mis en Titre.
 //    Sans ça, un nom en titre de document (« LANDRY KAPGNEP » sur un CV) n'est
-//    JAMAIS détecté : fuite constatée sur un vrai fichier.
+//    Jamais détecté : fuite constatée sur un vrai fichier.
 // Préserve la longueur exacte de la chaîne (les offsets restent valides) ;
 // un mot en casse mixte (déjà exploitable par le modèle) n'est jamais modifié.
 export function boostCase(text) {
@@ -140,10 +140,10 @@ export function locateGroups(text, groups) {
   return entities;
 }
 
-// Recalage des entités sur les frontières de mot - PARTAGÉ par les deux
+// Recalage des entités sur les frontières de mot - partagé par les deux
 // moteurs contextuels (BERT ici, GLiNER dans gliner.js), jamais dupliqué.
 // Corrige deux défauts qui laissent fuir une partie d'un nom :
-//  - reconstruction tronquée EN PLEIN MOT ("mandine" pour "Amandine" →
+//  - reconstruction tronquée en plein mot ("mandine" pour "Amandine" →
 //    "A[PERSONNE]") : on étend vers la gauche jusqu'au début du mot ;
 //  - arrêt au 1er élément d'un composé à trait d'union ("Antoine" dans
 //    "Marc-Antoine", "ROUSSEAU" sans "-LEFEBVRE") : on étend des deux côtés à
@@ -152,9 +152,9 @@ export function locateGroups(text, groups) {
 // franchissement d'espace), et on rogne les tirets aux extrémités.
 // Vaut pour ORG/LOC autant que PER : le modèle n'étiquette parfois que le
 // premier sous-mot (« Sem » de Semantikmatch, « UT » de IUT), ce qui laissait
-// le reste du mot EN CLAIR à côté du placeholder ([ENTREPRISE_4]antikmatch) -
+// le reste du mot en clair à côté du placeholder ([ENTREPRISE_4]antikmatch) -
 // fuite partielle constatée sur un vrai CV.
-// Modifie les entités EN PLACE et les retourne.
+// Modifie les entités en place et les retourne.
 const SNAP_TYPES = new Set(['PER', 'ORG', 'LOC']);
 const NAME_CHAR = /[A-Za-zÀ-ÿ'’-]/;
 export function snapToWordBoundaries(text, entities) {
@@ -172,21 +172,21 @@ export function snapToWordBoundaries(text, entities) {
   return entities;
 }
 
-// Pontage de noms à particules / patronymes ratés - PARTAGÉ par les deux
+// Pontage de noms à particules / patronymes ratés - partagé par les deux
 // moteurs contextuels. Deux défauts distincts, tous deux constatés sur de
 // vrais fichiers :
 //  - noms nobiliaires ("Sébastien De La Villardière" : "Villardière" pris pour
 //    un LIEU, le prénom + particules laissés en clair) ;
-//  - patronyme en MAJUSCULES séparé du prénom en deux détections distinctes
+//  - patronyme en majuscules séparé du prénom en deux détections distinctes
 //    ("Amandine" + "ROUSSEAU-LEFEBVRE" ; ou, avec GLiNER, "LANDRY" détecté et
 //    "KAPGNEP" laissé en clair - le nom en tête d'un vrai CV).
-// Recollage déterministe, TOUJOURS ancré sur une détection existante (jamais
+// Recollage déterministe, toujours ancré sur une détection existante (jamais
 // de nom créé de zéro). Tradeoff assumé (priorité zéro-fuite) : peut
 // sur-masquer un lieu précédé d'un mot capitalisé + particule ("Voyage De La
 // Rochelle").
 //
-// Ce tradeoff était annoncé « cas rare » - le banc a montré que c'est FAUX
-// pour une forme précise : « SIGLE de Ville » est le squelette de la moitié
+// Ce tradeoff était annoncé « cas rare » - le banc a montré que c'est faux
+// pour une forme précise : « sigle de Ville » est le squelette de la moitié
 // des noms d'établissements français (« IUT de Villetaneuse », « CHU de
 // Nantes », « ENS de Lyon »). Le pontage en faisait des PERSONNE, donc un
 // placeholder [PERSONNE_n] avalait le sigle - l'information « c'est un
@@ -195,22 +195,22 @@ export function snapToWordBoundaries(text, entities) {
 // qu'il contienne une minuscule (« Sébastien de … » oui, « IUT de … » non).
 // La ville reste masquée par ailleurs, en LIEU - ce qui est le comportement
 // voulu, identique à « Sarcelles » dans le même document.
-// Modifie les entités EN PLACE et les retourne.
+// Modifie les entités en place et les retourne.
 const PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['’]|[Ll]['’]|von|van|[Dd]a|[Dd]i)";
 const CAPWORD = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*";
-// Comme CAPWORD, mais avec AU MOINS UNE MINUSCULE : exclut les sigles.
+// Comme CAPWORD, mais avec au moins une minuscule : exclut les sigles.
 const CAPWORD_MIXTE = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*[a-zà-ÿ][A-Za-zÀ-ÿ'’-]*";
 const ALLCAPS = "[A-ZÀ-Ü]{2,}(?:[-'’][A-ZÀ-Ü]+)*";
 const FWD_PARTICLE = new RegExp(`^(?:\\s+${PARTICLE})+\\s+${CAPWORD}`);
-// La garde de fin refuse aussi un CHIFFRE, directement ou après un tiret :
+// La garde de fin refuse aussi un chiffre, directement ou après un tiret :
 // sans elle, « Nadia Belkacem EMP-0012 » absorbait « EMP » et produisait le
 // patronyme fantôme « Belkacem EMP » (mesuré sur tous-defauts.pdf). Un sigle
-// suivi d'un tiret et de chiffres est un IDENTIFIANT, jamais un nom de famille.
+// suivi d'un tiret et de chiffres est un identifiant, jamais un nom de famille.
 const FWD_ALLCAPS = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-zÀ-ÿ0-9]|[-'’]?\\d)`);
 const BACK_PARTICLE = new RegExp(`(${CAPWORD_MIXTE}(?:\\s+${PARTICLE})+\\s+)$`);
 export function bridgeNameParts(text, entities) {
   for (const e of entities) {
-    // (a) extension AVANT depuis un PER : " De La Rochefoucauld", " KAPGNEP".
+    // (a) extension avant depuis un PER : " De La Rochefoucauld", " KAPGNEP".
     if (e.type === 'PER') {
       let m;
       while ((m = FWD_PARTICLE.exec(text.slice(e.end))) || (m = FWD_ALLCAPS.exec(text.slice(e.end)))) {
@@ -255,7 +255,7 @@ const MIN_SCORE = 0.6;
 // longueur - même logique que resolveOverlaps dans merge.js pour le regex.
 // onProgress({ done, total }) (optionnel) : appelé après chaque fenêtre. Le NER
 // tourne sur le thread principal (pas de worker, contrainte CSP MV3) et fait
-// DEUX inférences BERT par fenêtre - sur un document de quelques milliers de
+// Deux inférences BERT par fenêtre - sur un document de quelques milliers de
 // caractères ça se compte en dizaines de secondes. Sans retour chiffré,
 // l'utilisateur croit à un plantage et interrompt (constaté).
 export async function detectNER(text, nerPipeline, { onProgress } = {}) {
@@ -264,10 +264,10 @@ export async function detectNER(text, nerPipeline, { onProgress } = {}) {
   const chunks = chunkText(text);
   let done = 0;
   for (const { offset, text: chunk } of chunks) {
-    // Le filtre de confiance s'applique AVANT le calcul des chevauchements :
+    // Le filtre de confiance s'applique avant le calcul des chevauchements :
     // un fragment bruité (score très faible) ne doit pas pouvoir bloquer une
     // détection solide de l'autre passe puis disparaître lui-même au filtre
-    // final - sinon la position ne récupère plus AUCUNE entité.
+    // final - sinon la position ne récupère plus aucune entité.
     const natural = locateGroups(chunk, groupTokens(await nerPipeline(chunk)))
       .filter(e => e.score >= MIN_SCORE);
 

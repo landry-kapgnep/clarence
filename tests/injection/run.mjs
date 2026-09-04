@@ -1,24 +1,24 @@
 // Rappel mesuré par INJECTION CONTRÔLÉE - de la vraie prose, une vérité
 // terrain parfaite.
 //
-// LE PROBLÈME QUE ÇA RÉSOUT. Le banc mesure sur des documents que j'ai écrits :
+// Le problème que ça résout. Le banc mesure sur des documents que j'ai écrits :
 // biais structurel. Le harnais de non-régression mesure sur de vrais documents,
-// mais sans vérité terrain - il dit si la sortie BOUGE, jamais si elle est
-// JUSTE. Il manquait une mesure de justesse sur de la langue authentique.
+// mais sans vérité terrain - il dit si la sortie bouge, jamais si elle est
+// Juste. Il manquait une mesure de justesse sur de la langue authentique.
 //
-// LE PRINCIPE. On prend de la vraie prose (les documents de
-// tests/regression/corpus, déjà en place et ignorés par git), on y INJECTE des
+// Le principe. On prend de la vraie prose (les documents de
+// tests/regression/corpus, déjà en place et ignorés par git), on y injecte des
 // PII synthétiques à des positions connues, et on vérifie qu'elles ressortent
 // masquées. La prose est authentique - ses tournures, sa ponctuation, ses
 // fragments d'extraction PDF - mais on sait exactement ce qui doit disparaître.
 //
-// CE QUE ÇA NE MESURE PAS, et il faut le dire : le SUR-masquage. On ne connaît
+// Ce que ça ne mesure pas, et il faut le dire : le SUR-masquage. On ne connaît
 // la vérité que sur ce qu'on a injecté ; le reste du document garde son statut
-// inconnu. C'est donc une mesure de RAPPEL, pas de précision. Le sur-masquage
+// inconnu. C'est donc une mesure de rappel, pas de précision. Le sur-masquage
 // se mesure ailleurs - sur tests/manuel/tous-defauts.pdf, où la vérité terrain
 // est écrite à la main dans les deux sens.
 //
-// POURQUOI DES PII SYNTHÉTIQUES ET RECONNAISSABLES. Règle du projet : jamais de
+// Pourquoi des pii synthétiques et reconnaissables. Règle du projet : jamais de
 // données de test qui ressemblent à du réel. Les valeurs ci-dessous sont
 // fabriquées - carte 4242…, domaines en .example, IBAN et NIR à structure
 // valide mais sans titulaire.
@@ -39,7 +39,7 @@ const CORPUS = join(ici, '..', 'regression', 'corpus');
 
 // ── Les PII injectées ──────────────────────────────────────────────────────
 // Chaque entrée : la phrase porteuse (dans la langue visée) et la valeur qui
-// DOIT ressortir masquée. La phrase porteuse compte : une valeur jetée sans
+// Doit ressortir masquée. La phrase porteuse compte : une valeur jetée sans
 // contexte ne teste pas la même chose qu'une valeur dans une vraie phrase.
 const INJECTIONS = [
   // ── Structuré : la couche déterministe, exigence 100 %
@@ -117,7 +117,7 @@ console.log(`prose porteuse : ${prose.length} paragraphes réels tirés de ${pdf
 
 const pipe = await chargerMoteur();
 
-// Chaque PII est injectée dans un paragraphe RÉEL, à la suite de son texte.
+// Chaque PII est injectée dans un paragraphe réel, à la suite de son texte.
 // On garde une unité par injection pour que l'échec soit attribuable.
 const unites = INJECTIONS.map(([langue, phrase, valeur, couche], i) => ({
   id: `inj${i}`,

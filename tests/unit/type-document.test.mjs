@@ -1,6 +1,6 @@
-// Reconnaissance du TYPE de document, pour proposer le bon profil.
+// Reconnaissance du type de document, pour proposer le bon profil.
 //
-// Mesuré sur les VRAIS documents du banc, dont on connaît le type - pas sur des
+// Mesuré sur les vrais documents du banc, dont on connaît le type - pas sur des
 // exemples fabriqués pour l'occasion, qui ne prouveraient que la capacité du
 // module à reconnaître ce qu'on vient d'écrire pour lui.
 import { test } from 'node:test';
@@ -28,7 +28,7 @@ test('reconnaît le type des documents réels du banc', () => {
   }
 });
 
-// ⚠️ LE COMPORTEMENT LE PLUS IMPORTANT DU MODULE. Une suggestion fausse envoie
+// Le comportement le plus important du module. Une suggestion fausse envoie
 // l'utilisateur vers le mauvais vocabulaire, donc vers du sur-masquage ou une
 // fuite. « Je ne sais pas » est toujours préférable - l'utilisateur choisit
 // alors lui-même, ce qu'il sait très bien faire, les profils étant peu nombreux.
@@ -48,9 +48,9 @@ test('un document trop court ne produit aucune suggestion', () => {
   assert.equal(analyserTypeDocument(null).type, null);
 });
 
-// Le seuil porte sur l'ÉCART, pas sur le score absolu : un rapport de stage
+// Le seuil porte sur l'écart, pas sur le score absolu : un rapport de stage
 // contient des mots de CV (« stage », « tuteur ») ET des mots de rapport. Ce
-// qui autorise à proposer, c'est qu'un type se DÉTACHE.
+// qui autorise à proposer, c'est qu'un type se détache.
 test('le verdict exige un écart, pas seulement un gros score', () => {
   const r = analyserTypeDocument(lire('rapport-fr.txt'));
   assert.ok(r.ecart >= ECART_MINIMAL);
@@ -87,8 +87,8 @@ test('les en-têtes d’e-mail ne comptent qu’en tête du document', () => {
 
 // --- Cinq langues ---------------------------------------------------------
 //
-// ⚠️ HONNÊTETÉ SUR CE QUE CES CAS PROUVENT. Pour le français et l'anglais, les
-// tests plus haut portent sur de VRAIS documents du banc. Pour l'espagnol,
+// HONNÊTETÉ SUR CE QUE CES CAS PROUVENT. Pour le français et l'anglais, les
+// tests plus haut portent sur de vrais documents du banc. Pour l'espagnol,
 // l'allemand et le portugais, on n'en a pas - ce sont des échantillons
 // construits. Ils valent comme test de FUMÉE (les marqueurs sont bien câblés,
 // la structure porte le verdict) et surtout comme non-régression sur les
@@ -114,8 +114,8 @@ test('reconnaît les types en espagnol, allemand et portugais', () => {
   }
 });
 
-// ⚠️ LE DÉFAUT QUE CE TEST FERME, et qui empire à chaque langue ajoutée. La
-// première version comparait par SOUS-CHAÎNE : le marqueur bancaire « rib »
+// Le défaut que ce test ferme, et qui empire à chaque langue ajoutée. La
+// première version comparait par sous-chaîne : le marqueur bancaire « rib »
 // matchait « contribuer », « distribution », « attribué » - 0,8 point de
 // « bancaire » sur une note de service qui n'a rien de bancaire. Le verdict
 // n'était sauvé que par l'écart minimal, c'est-à-dire par chance.

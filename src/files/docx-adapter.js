@@ -9,7 +9,7 @@
 // uniquement, jamais bundlée dans l'extension).
 //
 // Répartition des responsabilités (voir plan) :
-// - le suivi des modifications (<w:del>/<w:ins>) est TOUJOURS retiré, y
+// - le suivi des modifications (<w:del>/<w:ins>) est toujours retiré, y
 //   compris par extractTextUnits/applyMask seuls : un <w:del> est du contenu
 //   récupérable en un clic ("rejeter les modifications"), donc une vraie
 //   fuite potentielle, pas juste de la métadonnée cosmétique.
@@ -23,7 +23,7 @@ import { stripCoreProps, stripAppProps, stripCommentParts } from './ooxml-metada
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 // footnotes/endnotes inclus : leurs <w:p> sont des paragraphes normaux (même
-// traitement), et les exclure serait une fuite SILENCIEUSE - une PII en note
+// traitement), et les exclure serait une fuite silencieuse - une PII en note
 // de bas de page ressortirait en clair sans que rien ne le signale.
 const PART_RE = /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/;
 
@@ -80,7 +80,7 @@ function collectRuns(paragraphEl) {
   return runs;
 }
 
-// XMLSerializer natif (navigateur) n'émet JAMAIS le prologue <?xml ...?>,
+// XMLSerializer natif (navigateur) n'émet jamais le prologue <?xml ...?>,
 // même si le document original en avait un ; @xmldom (tests) le réémet, lui,
 // s'il était présent à l'analyse. Il faut donc vérifier avant de préfixer,
 // sous peine de dupliquer le prologue selon l'environnement d'exécution.
@@ -131,7 +131,7 @@ export async function applyMask(buffer, resultsById, opts = {}) {
   const zip = unzipSync(new Uint8Array(buffer));
   const out = new Map(Object.entries(zip));
 
-  // Total d'unités sur TOUTES les parties, calculé d'avance : le crochet de
+  // Total d'unités sur toutes les parties, calculé d'avance : le crochet de
   // compression est appelé une fois par paragraphe et ne connaît pas l'échelle.
   const parties = partNamesOf([...out.keys()]).map(nom =>
     [nom, processPart(strFromU8(out.get(nom)), nom, DP)]);
@@ -147,10 +147,10 @@ export async function applyMask(buffer, resultsById, opts = {}) {
         runs.map(r => ({ id: r.id, text: r.text })),
         result.entities || []
       );
-      // COMPRESSION DE PROMPT, optionnelle et injectée (le modèle vit dans un
-      // worker, cet adaptateur reste testable). Appliquée APRÈS le masquage et
-      // AVANT la réécriture : c'est le seul point où l'on connaît à la fois le
-      // texte final et le fragment dont il provient. Le paragraphe ENTIER est
+      // Compression de prompt, optionnelle et injectée (le modèle vit dans un
+      // worker, cet adaptateur reste testable). Appliquée après le masquage et
+      // Avant la réécriture : c'est le seul point où l'on connaît à la fois le
+      // texte final et le fragment dont il provient. Le paragraphe entier est
       // soumis d'un coup - fragment par fragment, le modèle n'aurait aucun
       // contexte pour décider.
       let textes = newRuns.map(r => r.text);

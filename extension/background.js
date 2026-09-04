@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   }
 });
 
-// UNE SEULE FAÇON D'OUVRIR CLARENCE.
+// Une seule façon d'ouvrir Clarence.
 //
 // L'extension avait deux entrées qui n'affichaient pas la même chose : le
 // panneau injecté dans la page, et une popup native ouverte par l'icône de la
@@ -22,7 +22,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 // deux mises en page pour un même outil.
 //
 // `default_popup` a donc été retiré du manifeste, ce qui fait remonter le clic
-// ici. L'icône ouvre maintenant EXACTEMENT ce que le bouton flottant ouvre.
+// ici. L'icône ouvre maintenant exactement ce que le bouton flottant ouvre.
 // Le raccourci clavier (`_execute_action`) passe par le même chemin.
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab?.id) return;
@@ -34,9 +34,9 @@ chrome.action.onClicked.addListener(async (tab) => {
     // ni Gemini - ou la page n'a pas été rechargée depuis l'installation.
   }
 
-  // REPLI, et il est délibéré. Ne rien faire sur un clic serait le pire des
+  // Repli, et il est délibéré. Ne rien faire sur un clic serait le pire des
   // choix : l'utilisateur ne saurait pas si l'extension est cassée. On ouvre
-  // donc la MÊME interface, avec la même mise en page (`?panel=1`), dans un
+  // donc la même interface, avec la même mise en page (`?panel=1`), dans un
   // onglet. Le contenant change, pas le visuel.
   const onglets = await chrome.tabs.query({ url: chrome.runtime.getURL('popup/popup.html*') });
   if (onglets.length) {

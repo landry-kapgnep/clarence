@@ -1,5 +1,5 @@
 // Téléphones internationaux via libphonenumber-js. Zéro tolérance : cette
-// passe s'ajoute à la regex FR, elle ne doit RIEN casser (les pièges des
+// passe s'ajoute à la regex FR, elle ne doit rien casser (les pièges des
 // fixtures doivent rester non détectés) tout en couvrant les autres pays.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

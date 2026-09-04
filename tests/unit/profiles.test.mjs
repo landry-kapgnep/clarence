@@ -50,7 +50,7 @@ test('normalizeProfile : nom vide → « Sans nom »', () => {
 
 test('un profil livré JAMAIS touché reçoit la liste à jour', () => {
   const [defaut] = defaultProfiles().filter(p => p.name === 'Développeur / Tech');
-  // Une ANCIENNE version expédiée : contenu plus court, et son empreinte à
+  // Une ancienne version expédiée : contenu plus court, et son empreinte à
   // elle. C'est le cas réel - installé il y a des semaines, jamais édité.
   const ancienne = {
     name: 'Développeur / Tech', alwaysKeep: ['React', 'Docker'],
@@ -75,7 +75,7 @@ test('un profil livré ÉDITÉ n\'est jamais écrasé', () => {
 test('un profil d\'AVANT le champ empreinte est reconnu comme intact', () => {
   // Installé avant l'introduction du champ : aucune empreinte stockée. Son
   // contenu correspond pourtant à une version expédiée - c'est ce que la
-  // table EMPREINTES_HISTORIQUES sait démontrer.
+  // table empreintes_HISTORIQUES sait démontrer.
   const ancien = {
     name: 'Vierge', alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false
   };
@@ -149,7 +149,7 @@ test('« Vierge » reste vide - c est le temoin', () => {
 });
 
 test('aucune liste blanche ne contient de quasi-identifiant', () => {
-  // LA règle du fichier : ce qui est ici ne sera JAMAIS masqué, pour personne.
+  // LA règle du fichier : ce qui est ici ne sera jamais masqué, pour personne.
   // Un nom d école, d employeur ou de ville identifie un parcours - les
   // blanchir rouvrirait le trou fermé ailleurs (P12).
   const interdits = [
@@ -236,16 +236,16 @@ test('les cinq langues sont représentées dans le profil CV', async () => {
   }
 });
 
-// ⚠️ LA LISTE BLANCHE EST UN VECTEUR DE FUITE, pas une commodité : ce qu'on y
-// écrit ne sera JAMAIS masqué, pour personne. Un mot trop générique qui se
+// La liste blanche est un vecteur de fuite, pas une commodité : ce qu'on y
+// écrit ne sera jamais masqué, pour personne. Un mot trop générique qui se
 // trouve dans une vraie entité la démasquerait.
 //
-// CE QUE CE TEST PROUVE, ET CE QU'IL NE PROUVE PAS. Il vérifie que les mots de
-// forme n'ouvrent pas les entités PLAUSIBLES - noms d'école, d'employeur, de
+// Ce que ce test prouve, et ce qu'il ne prouve pas. Il vérifie que les mots de
+// forme n'ouvrent pas les entités plausibles - noms d'école, d'employeur, de
 // personne, de ville, y compris ceux qui ont réellement fui dans ce projet. Il
 // ne prouve pas l'absence totale de risque : « Cabinet Introduction & Associés »
 // serait bel et bien démasqué par « introduction ». Ce mot est admis quand même,
-// et le compromis est explicite - il est déjà dans STRUCTURE_KEEP depuis des
+// et le compromis est explicite - il est déjà dans structure_keep depuis des
 // mois, la détection de type en a besoin, et masquer chaque intitulé
 // « INTRODUCTION » coûterait bien plus qu'une raison sociale improbable.
 test('aucun mot de forme ne démasque une entité plausible', async () => {
@@ -260,12 +260,12 @@ test('aucun mot de forme ne démasque une entité plausible', async () => {
     'un mot de forme a démasqué une entité plausible');
 });
 
-// ⚠️ NE PAS PROPOSER UN RECUL - la règle qui empêche la suggestion de nuire.
+// Ne pas proposer un recul - la règle qui empêche la suggestion de nuire.
 //
-// Comparer les NOMS ne suffit pas : les profils de MÉTIER portent eux aussi le
+// Comparer les noms ne suffit pas : les profils de métier portent eux aussi le
 // vocabulaire de leur format. « Développeur / Tech » contient tout le
 // vocabulaire CV, donc proposer « CV / Résumé » à quelqu'un déjà dessus lui
-// ferait PERDRE sa liste de technos - et remasquerait « Ollama », « JaCoCo »,
+// ferait perdre sa liste de technos - et remasquerait « Ollama », « JaCoCo »,
 // « BDD », constaté sur un vrai CV. La bonne question n'est pas « le profil
 // est-il différent ? » mais « couvre-t-il déjà ce format ? ».
 test('un profil qui couvre déjà le format ne doit pas recevoir de suggestion', async () => {

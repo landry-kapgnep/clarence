@@ -1,19 +1,19 @@
-// BALAYAGE DE LA TAILLE D'UNITÉ - le compromis rappel / bruit, chiffré.
+// Balayage de la taille d'unité - le compromis rappel / bruit, chiffré.
 //
 //     node tests/bench/taille-unite.mjs [cv.pdf]
 //
-// LA QUESTION. P8 a ALLONGÉ les paragraphes pour réduire le bruit (un mémoire
+// La question. P8 a ALLONGÉ les paragraphes pour réduire le bruit (un mémoire
 // découpé en lignes faisait masquer 39 % du document). P17 a mesuré l'inverse :
 // le même texte, mêmes labels, donne 0,453 sur une unité de 340 caractères et
 // 0,531 sur 48 - le signal se dilue avec la longueur. Les deux objectifs
 // s'opposent donc, et personne n'a mesuré où se croisent les courbes.
 //
-// CE QU'ON MESURE, et pourquoi seulement ça. La couche DÉTERMINISTE (regex,
+// Ce qu'on mesure, et pourquoi seulement ça. La couche déterministe (regex,
 // validateurs) ne dépend pas du découpage : elle tourne sur le document
 // combiné. Seule la couche contextuelle est concernée, donc c'est elle seule
 // qu'on note ici - mélanger les deux diluerait l'effet qu'on cherche à voir.
 //
-// ⚠️ CE N'EST PAS LE BANC. Le banc mesure ce qui est LIVRÉ, de bout en bout.
+// Ce n'est pas le banc. Le banc mesure ce qui est livré, de bout en bout.
 // Ici on force un découpage qui n'existe dans aucun adaptateur, pour savoir s'il
 // vaudrait la peine d'en construire un. Les chiffres ne sont donc pas
 // comparables à ceux de `npm run bench`.
@@ -64,7 +64,7 @@ async function charger() {
 }
 
 // Regroupe des lignes en fenêtres d'environ `taille` caractères. On ne coupe
-// JAMAIS au milieu d'une ligne : un fragment tronqué produit du charabia, et
+// Jamais au milieu d'une ligne : un fragment tronqué produit du charabia, et
 // c'est déjà la cause connue du bruit sur les PDF multi-colonnes (P1bis).
 function fenetrer(lignes, taille) {
   const out = [];

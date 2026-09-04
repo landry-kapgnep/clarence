@@ -1,6 +1,6 @@
 // Regroupement d'inférences : plusieurs textes en UN seul passage du modèle.
 //
-// POURQUOI. Le coût d'une inférence est « ~37 ms fixes + k × longueur » - les
+// Pourquoi. Le coût d'une inférence est « ~37 ms fixes + k × longueur » - les
 // 37 ms sont payés à chaque appel, quelle que soit la taille du texte. Sur un
 // mémoire de 75 pages découpé en ~470 unités × 2 groupes de labels, cela fait
 // ~940 appels, soit **~35 s de surcoût fixe pur**, avant le moindre calcul
@@ -12,18 +12,18 @@
 // module se contente donc de rassembler les appels concurrents.
 //
 // CE QUE CE N'EST PAS. Ce n'est pas le « regroupement d'unités » déjà mesuré et
-// REJETÉ (voir anonymize-units.js) : là, on concaténait les textes en un seul,
+// Rejeté (voir anonymize-units.js) : là, on concaténait les textes en un seul,
 // et le modèle perdait les entités isolées. Ici chaque texte reste une entrée
 // distincte du lot, analysée indépendamment ; seul le transport change. La
 // preuve que la qualité est intacte est au banc, pas dans ce commentaire.
 //
-// PIÈGE DU REMBOURRAGE (padding). `inputLength = Math.max(...textLengths)` :
-// un lot est calculé à la longueur de son PLUS LONG texte. Mettre une cellule
+// Piège du rembourrage (padding). `inputLength = Math.max(...textLengths)` :
+// un lot est calculé à la longueur de son plus long texte. Mettre une cellule
 // de 20 caractères avec une fenêtre de 900 fait payer 900 à la cellule. D'où le
 // tri par longueur et le budget ci-dessous - sans quoi le regroupement peut
 // coûter plus cher qu'il ne rapporte.
 
-// Taille de lot, CHOISIE PAR MESURE et non au jugé. 240 unités réalistes
+// Taille de lot, choisie par mesure et non au jugé. 240 unités réalistes
 // (longueurs d'un vrai mémoire), même modèle fp16, deux tirages concordants :
 //
 //   lot  1 → 18,8 s      lot 16 → 7,5-8,2 s
@@ -33,11 +33,11 @@
 // plus le lot est gros, plus il mélange des longueurs éloignées, et plus le
 // rembourrage gaspille. Inutile de monter - 8 tient aussi moins de mémoire.
 //
-// Contrôle de non-régression de la mesure : 570 spans produits, IDENTIQUES à
+// Contrôle de non-régression de la mesure : 570 spans produits, identiques à
 // toutes les tailles de lot. Le regroupement ne change pas la détection.
 const TAILLE_LOT = 8;
 
-// Borne le coût RÉEL d'un lot une fois rembourré (taille × plus long texte).
+// Borne le coût réel d'un lot une fois rembourré (taille × plus long texte).
 // À 8000, une fenêtre pleine de 1000 caractères part par 8 - au-delà, le
 // rembourrage coûterait plus que le groupage ne rapporte.
 const BUDGET = 8000;
@@ -46,7 +46,7 @@ const BUDGET = 8000;
 //
 // Tri par longueur : des textes de tailles voisines dans un même lot, pour que
 // le rembourrage reste marginal. Le budget borne `taille du lot × plus long
-// texte`, c'est-à-dire le VRAI coût du lot une fois rembourré - borner le seul
+// texte`, c'est-à-dire le vrai coût du lot une fois rembourré - borner le seul
 // nombre d'éléments laisserait passer 16 × 1000 caractères.
 export function decouperEnLots(items, { maxLot = TAILLE_LOT, budget = BUDGET } = {}) {
   const tries = [...items].sort((a, b) => a.text.length - b.text.length);
@@ -71,7 +71,7 @@ export function decouperEnLots(items, { maxLot = TAILLE_LOT, budget = BUDGET } =
   return lots;
 }
 
-// Met les tâches BOUT À BOUT : la suivante ne démarre qu'une fois la précédente
+// Met les tâches bout à bout : la suivante ne démarre qu'une fois la précédente
 // terminée, succès ou échec.
 //
 // POURQUOI C'EST OBLIGATOIRE ET PAS UNE PRÉCAUTION. ORT n'autorise qu'UNE
@@ -120,10 +120,10 @@ export function createBatchedPipeline(runBatch, opts = {}) {
   let planifie = false;
   let enCours = false;
 
-  // UN SEUL vidage à la fois - c'est une correction de bug, pas une élégance.
+  // Un seul vidage à la fois - c'est une correction de bug, pas une élégance.
   //
-  // La version précédente remettait `planifie` à faux dès son ENTRÉE : les
-  // appels nés pendant ses `await` programmaient un SECOND vidage, qui postait
+  // La version précédente remettait `planifie` à faux dès son entrée : les
+  // appels nés pendant ses `await` programmaient un second vidage, qui postait
   // son lot alors que le premier n'avait pas répondu. Deux inférences se
   // chevauchaient et ORT levait « Session already started » - son fournisseur
   // WebGPU pose un marqueur global et n'en tolère qu'une à la fois. Le
@@ -145,7 +145,7 @@ export function createBatchedPipeline(runBatch, opts = {}) {
           for (const lot of decouperEnLots(items, { maxLot, budget })) {
             try {
               const res = await runBatch(lot.map(i => i.text), lot[0].labels);
-              // Le modèle renvoie un tableau indexé COMME l'entrée. Une absence
+              // Le modèle renvoie un tableau indexé comme l'entrée. Une absence
               // devient une liste vide plutôt qu'`undefined` : l'appelant boucle
               // dessus sans garde.
               lot.forEach((it, i) => it.resolve(res?.[i] || []));

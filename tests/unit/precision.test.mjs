@@ -1,8 +1,8 @@
-// Garde-fous du filtre de précision. Zéro tolérance : ce module DÉMASQUE, donc
+// Garde-fous du filtre de précision. Zéro tolérance : ce module démasque, donc
 // une erreur ici est une fuite silencieuse - la catégorie que docs/notes-techniques.md classe
 // en priorité stricte, au même titre que les validateurs et le masquage.
 //
-// Les tests utilisent un modèle SYNTHÉTIQUE plutôt que les poids appris : les
+// Les tests utilisent un modèle synthétique plutôt que les poids appris : les
 // garde-fous doivent tenir quels que soient les nombres, et un test qui
 // dépendrait du dernier entraînement ne prouverait rien de durable.
 import { test } from 'node:test';
@@ -12,7 +12,7 @@ import {
 } from '../../src/engine/precision.js';
 import { contexteDocument } from '../../src/engine/caracteristiques.js';
 
-// Modèle qui REJETTE tout ce qu'il a le droit d'évaluer : le pire cas possible.
+// Modèle qui rejette tout ce qu'il a le droit d'évaluer : le pire cas possible.
 // C'est exactement ce qu'il faut pour prouver que les garde-fous, eux, tiennent.
 const TOUT_REJETER = { seuil: 0.5, biais: -20, poids: { partLexique: 0 } };
 
@@ -117,7 +117,7 @@ test('le seuil est respecté au sens large : p === seuil garde l’entité', () 
 });
 
 test('l’explication voit aussi ce qui MANQUE, pas seulement ce qui pénalise', () => {
-  // Piège corrigé : une caractéristique à poids POSITIF dont la valeur est
+  // Piège corrigé : une caractéristique à poids positif dont la valeur est
   // basse (ici le score du modèle) n'apporte rien - apport nul, pas négatif -
   // alors qu'elle est LA raison du verdict. La comparer à zéro la rendrait
   // invisible et l'explication désignerait un coupable secondaire.
@@ -128,14 +128,14 @@ test('l’explication voit aussi ce qui MANQUE, pas seulement ce qui pénalise',
 
 // --- Les valeurs qui ont RÉELLEMENT fui, verrouillées ---------------------
 //
-// Ce test-ci dépend VOLONTAIREMENT des poids livrés, contrairement à tous les
+// Ce test-ci dépend volontairement des poids livrés, contrairement à tous les
 // autres : c'est une porte de qualité sur le modèle expédié, pas sur la
 // mécanique. Il est né d'une fuite mesurée au banc (29/08/2026, verdict NON
-// PUBLIABLE) - le corpus ne contenait aucune valeur À CHIFFRES qui soit une
+// Publiable) - le corpus ne contenait aucune valeur À chiffres qui soit une
 // vraie donnée personnelle, donc le filtre avait appris « chiffre ⇒ pas une
 // entité » (poids −4,6) et retirait adresses, codes postaux et matricules.
 //
-// Le matricule est le plus grave des trois : le déterministe NE LE VOIT PAS
+// Le matricule est le plus grave des trois : le déterministe ne le voit pas
 // (vérifié, detectRegex('EMP-0012') rend []), il n'était masqué que par la
 // couche contextuelle. Le retirer était une fuite franche.
 test('le filtre ne retire JAMAIS une valeur à chiffres qui a déjà fui', { skip: POIDS === null }, () => {
@@ -153,14 +153,14 @@ test('le filtre ne retire JAMAIS une valeur à chiffres qui a déjà fui', { ski
 });
 
 test('les poids livrés ne pèsent que des caractéristiques calculables EN PRODUCTION', { skip: POIDS === null }, () => {
-  // ⚠️ PIÈGE VÉCU. `fragmentation` a besoin du vocabulaire de sous-mots (~1 Mo,
+  // Piège vécu. `fragmentation` a besoin du vocabulaire de sous-mots (~1 Mo,
   // hors dépôt). Le banc d'entraînement le charge, la production NON : elle
   // appelle filtrerParPrecision sans `sousMots`, donc la caractéristique y vaut
   // 0 en toutes circonstances. Un modèle entraîné avec de vraies valeurs et un
   // poids de −7,59 s'appliquait donc hors de son domaine - sans erreur, sans
   // signal, juste des décisions décalées.
   //
-  // Si un jour on embarque le vocabulaire, ce test doit être MODIFIÉ en même
+  // Si un jour on embarque le vocabulaire, ce test doit être modifié en même
   // temps que le câblage : c'est là tout son intérêt.
   assert.ok(!('fragmentation' in POIDS.poids),
     'poids sur « fragmentation » alors que la production ne la calcule pas');
@@ -169,9 +169,9 @@ test('les poids livrés ne pèsent que des caractéristiques calculables EN PROD
 // --- Garde-fou 5 : la FORME d'un nom protège, pas l'étiquette -------------
 
 test('un candidat en forme de nom de personne n’est JAMAIS filtré', () => {
-  // LA FUITE QUI A IMPOSÉ CE GARDE-FOU, reproduite telle quelle. Sur
+  // La fuite qui a imposé ce garde-fou, reproduite telle quelle. Sur
   // tests/manuel/tous-defauts.pdf, le modèle étiquette « Rose Fontaine » en
-  // ENTREPRISE - le garde-fou 3 raisonne par TYPE et ne la voit donc pas - et
+  // ENTREPRISE - le garde-fou 3 raisonne par type et ne la voit donc pas - et
   // le filtre la retirait à 0,177 : « rose » est au dictionnaire, et le
   // document l'écrit lui-même en minuscules dans la phrase suivante. Les deux
   // signaux dont ce filtre tire sa valeur se retournaient contre un patronyme.
