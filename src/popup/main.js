@@ -56,23 +56,19 @@ const TYPE_DISPLAY = {
 // src/popup/termes.js pour le choix des séparateurs et ce qu'on en exclut.
 const parseLines = parseTermes;
 
-// Affiche les termes TELS QUE LE MOTEUR LES LIRA, sous le champ de saisie.
+// Affiche les termes TELS QUE LE MOTEUR LES LIRA, sous le champ.
 //
-// Pourquoi. Vécu deux fois de suite sur un vrai document : une virgule oubliée
-// avait soudé « UE » et « Ginel » en un terme fantôme « UEGinel », et un
-// rechargement de l'extension avait vidé le champ sans que rien ne le signale -
-// 7 termes sur 15 perdus, découverts seulement en comparant deux sorties.
+// Vécu deux fois : une virgule oubliée avait soudé « UE » et « Ginel » en un
+// terme fantôme, et un rechargement avait vidé le champ sans rien signaler -
+// 7 termes sur 15 perdus, découverts en comparant deux sorties. Une consigne
+// qu'on croit appliquée alors qu'elle ne l'est pas est le pire cas ici.
 //
-// Une consigne qu'on croit appliquée alors qu'elle ne l'est pas est le pire cas
-// pour cet outil : la même famille de défaut que le sur-masquage silencieux.
 // L'aperçu utilise `parseTermes`, la même fonction que le moteur, donc il ne
-// peut pas mentir - s'il affiche 8 termes, le moteur en appliquera 8.
-// Fonction AUTONOME plutôt qu'un écouteur qui se suffirait à lui-même : les
-// deux champs sont aussi écrits par programme - par le bouton « ne plus
-// masquer » et par l'effacement au changement de fichier. Or une écriture
-// programmatique ne déclenche PAS `input`, et le déclencher à la main
-// appellerait `invalidateFileResult`, qui détruirait le résultat qu'on est en
-// train de régénérer. On rafraîchit donc explicitement.
+// peut pas mentir.
+//
+// Fonction autonome et pas un simple écouteur : les deux champs sont aussi
+// écrits par programme, ce qui ne déclenche pas `input`, et le déclencher à la
+// main appellerait `invalidateFileResult`.
 const APERCUS_TERMES = [
   ['docKeep', 'docKeepLus'], ['docMask', 'docMaskLus'],
   ['fileAlwaysKeep', 'fileAlwaysKeepLus'], ['fileAlwaysMask', 'fileAlwaysMaskLus']
@@ -431,21 +427,13 @@ async function ensureNER() {
 
 // ── COMPRESSION DE PROMPT ──────────────────────────────────────────────────
 //
-// Le modèle (170 Mo) n'est demandé QUE si l'utilisateur active l'option - il
-// s'ajoute aux 183 Mo de la détection, et personne ne doit les payer sans
-// l'avoir choisi. Première des trois contraintes produit (docs/notes-techniques.md).
-//
-// Il vit dans le même worker que la détection : ORT n'exécute qu'une inférence
-// à la fois de toute façon, et un second worker ne ferait que dupliquer le
-// runtime WASM sans rien gagner.
-// Texte compressé, calculé une fois à la fin du traitement.
-//
-// Pourquoi pas au clic. `navigator.clipboard.writeText` exige une activation
-// utilisateur récente, qui expire en quelques secondes. Compresser pendant le
-// clic - plusieurs secondes sur un document - faisait expirer l'autorisation et
-// l'écriture échouait sans erreur : le bouton « Copier » ne copiait rien.
-// En le calculant à l'avance, le clic n'a plus qu'à écrire une chaîne déjà prête.
-// Bilan de la dernière compression, affiché avec le résumé du résultat.
+// Le modèle (170 Mo) n'est demandé QUE si l'utilisateur active l'option : il
+// s'ajoute aux 183 Mo de la détection. Il vit dans le même worker, ORT
+// n'exécutant qu'une inférence à la fois de toute façon.
+// Texte compressé calculé une fois à la fin du traitement, pas au clic :
+// `clipboard.writeText` exige une activation utilisateur récente qui expire en
+// quelques secondes. Compresser pendant le clic faisait expirer l'autorisation
+// et l'écriture échouait sans erreur - le bouton « Copier » ne copiait rien.
 let compressionInfo = null;
 // Vrai si le modèle n'a pas pu être chargé : reporté jusqu'au résumé final,
 // seul endroit qui ne sera pas écrasé par l'étape suivante.

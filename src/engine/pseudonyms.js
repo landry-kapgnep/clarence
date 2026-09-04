@@ -172,22 +172,18 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   const tokenMap = new Map(); // composant réel (minuscule) → composant pseudo
 
   // Composants gardés tels quels : ils n'identifient personne, et les
-  // substituer produit soit du charabia, soit - bien pire - une seconde
-  // identité pour la même personne.
+  // substituer produit soit du charabia, soit une seconde identité pour la même
+  // personne.
   //
-  // Particules nobiliaires : « de La Villardière » doit rester lisible.
+  // Particules : « de La Villardière » doit rester lisible. Civilités : le
+  // modèle inclut souvent le titre dans l'entité (« miss Deva » d'un bloc), et
+  // traité comme un prénom « miss » devenait « Amélie », si bien que « Priya
+  // Deva » et « miss Deva » désignaient deux personnes de genres différents
+  // dans le même texte.
   //
-  // Civilités (liste partagée, honorifics.js) : le modèle contextuel inclut
-  // souvent le titre dans l'entité (« miss Deva » détecté d'un bloc). Traité
-  // comme un prénom, « miss » devenait « Amélie » - si bien que
-  // « Priya Deva » → « Clément Faure » et « miss Deva » → « Amélie Faure »
-  // désignaient deux personnes de genres différents dans le même texte.
-  //
-  // Dans les deux cas la décision dépend de la position, jamais de la seule
-  // appartenance à une liste : un composant n'est une particule ou une
-  // civilité que s'il précède un autre composant. Sinon « Miss » ou « Le »
-  // employés comme vrais patronymes fuiraient tels quels.
-  // Liste et règle de position partagées avec identity.js - voir honorifics.js.
+  // Dans les deux cas la POSITION décide, jamais l'appartenance à une liste :
+  // un composant n'est particule ou civilité que s'il en précède un autre.
+  // Sinon « Miss » employé comme vrai patronyme fuirait tel quel.
   const estConserve = estComposantNonIdentifiant;
 
   // Reproduit la casse de l'original : un patronyme en tout-majuscule (usage

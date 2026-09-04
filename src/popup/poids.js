@@ -1,21 +1,14 @@
-// Poids de traitement d'un fichier - « Léger / Moyen / Lourd / Très lourd ».
+// Poids de traitement d'un fichier : léger, moyen, lourd, très lourd.
 //
-// POURQUOI PAS UNE ESTIMATION DE TEMPS. Un temps annoncé est une promesse, et
-// on ne peut pas la tenir : il dépend de la machine, de la présence de WebGPU,
-// du cache du modèle. Annoncer « ~40 s » puis en mettre 3 minutes, c'est
-// l'application qui a tort aux yeux de l'utilisateur.
+// Pas une estimation de temps. Un temps annoncé est une promesse qu'on ne peut
+// pas tenir (machine, WebGPU, cache du modèle), et annoncer 40 s pour en mettre
+// 3 minutes met l'application en tort. Un poids décrit le fichier : vérifiable,
+// il ne peut pas être démenti.
 //
-// Un poids, lui, décrit le fichier. Il est vérifiable, il ne peut pas être
-// démenti, et il déplace utilement la responsabilité : l'utilisateur voit ce
-// qu'il soumet et sait à quoi s'attendre avant de cliquer.
-//
-// Pourquoi pas la taille en octets - le piège principal. Ce qui coûte, c'est la
-// quantité de texte à soumettre au modèle (« ~37 ms fixes + k × longueur », par
-// unité et par groupe de labels). Or :
-//   - un PDF de 5 Mo rempli d'images se traite en quelques secondes ;
-//   - un PDF de 430 Ko et 75 pages de prose en prend environ 45.
-// La taille se trompe donc dans les deux sens. On mesure le bon signal quand on
-// peut y accéder à peu de frais, et on retombe sur la taille seulement à défaut.
+// Pas la taille en octets non plus, c'est le piège principal. Ce qui coûte,
+// c'est la quantité de texte soumise au modèle : un PDF de 5 Mo rempli d'images
+// se traite en quelques secondes, un PDF de 430 Ko et 75 pages de prose en
+// prend 45. La taille se trompe dans les deux sens, on ne s'y rabat qu'à défaut.
 
 export const NIVEAUX = {
   leger:     { libelle: 'Léger',      classe: 'poids-leger' },

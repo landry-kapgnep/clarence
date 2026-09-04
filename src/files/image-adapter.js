@@ -1,19 +1,15 @@
-// Adaptateur Image (jpeg/PNG) - nettoyage de métadonnées uniquement, pas
-// d'anonymisation de contenu (voir docs/notes-techniques.md "Idées explorées" : la détection
-// visuelle par OCR/vision est un chantier à part, hors de portée ici).
+// Adaptateur image (jpeg/PNG) : nettoyage de métadonnées uniquement, pas
+// d'anonymisation de contenu. La détection visuelle par OCR est un chantier à
+// part (voir docs/notes-techniques.md).
 //
-// L'EXIF (GPS, modèle d'appareil, date) et les chunks texte PNG (tEXt/iTXt/
-// eXIf) sont une vraie fuite de PII sous-estimée. Stratégie retenue :
-// Re-encodage via canvas plutôt qu'un parseur binaire artisanal des segments
-// Jpeg/chunks PNG. Un canvas ne préserve QUE les pixels décodés - aucune
-// métadonnée ne peut structurellement survivre, donc aucun risque qu'un bug
-// de parsing laisse fuiter un GPS résiduel (priorité zéro-fuite, même logique
-// que le masquage IBAN/NIR sur structure dans regex-detect.js). Contrepartie
-// assumée : le jpeg est recompressé (perte de génération mineure, qualité
-// 0.92) ; le PNG reste sans perte de pixels (juste une redéfinition d'octets).
+// L'EXIF (GPS, appareil, date) et les chunks texte PNG sont une fuite de PII
+// sous-estimée. On ré-encode via canvas plutôt que d'écrire un parseur binaire
+// des segments : un canvas ne préserve QUE les pixels décodés, donc aucune
+// métadonnée ne peut structurellement survivre, et aucun bug de parsing ne peut
+// laisser fuir un GPS résiduel.
 //
-// Non testable en Node (pas de createImageBitmap/OffscreenCanvas) : vérifié
-// manuellement en navigateur réel (règle du projet), voir docs/notes-techniques.md.
+// Contrepartie : le jpeg est recompressé (qualité 0.92), le PNG reste sans
+// perte. Non testable en Node, vérifié manuellement en navigateur.
 
 export async function stripMetadata(buffer, opts = {}) {
   const mime = opts.mime === 'image/jpeg' || opts.mime === 'image/jpg' ? 'image/jpeg' : 'image/png';

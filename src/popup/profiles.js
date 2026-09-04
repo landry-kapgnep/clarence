@@ -126,25 +126,19 @@ const ADMIN_KEEP = [
   'Délivré le'
 ];
 
-// École / ÉTUDES - vocabulaire académique générique. Justifié par un vrai CV,
-// où « Baccalauréat », « Spécialités », « Cohortes » et « Général » sortaient
-// masqués.
+// École / Études : vocabulaire académique générique. Justifié par un vrai CV où
+// « Baccalauréat », « Spécialités » et « Général » sortaient masqués. Aucun nom
+// d'établissement, « Sorbonne » ou « IUT » identifient un parcours.
+// Parcours : universel, donc partagé comme structure_keep.
 //
-// Aucun nom d'établissement : « Sorbonne » ou « IUT » identifient un parcours,
-// donc restent masquables.
-// Parcours - universel, donc partagé comme structure_keep.
+// Pas dans le profil École, et c'est mesuré : sur un CV de développeur,
+// « Développeur / Tech » ne récupérait que 4 des 25 termes sur-masqués et
+// « École / Études » 7, mais aucun les deux, alors que le document a besoin des
+// technos ET des diplômes. Les profils étant exclusifs, choisir était perdant
+// dans les deux sens.
 //
-// POURQUOI PAS DANS LE PROFIL ÉCOLE. Mesuré, et c'est ce qui a tranché : sur un
-// vrai CV de développeur, « Développeur / Tech » ne récupérait que 4 des 25
-// termes sur-masqués, « École / Études » 7 - mais aucun les deux, alors que le
-// document a besoin des technos ET des diplômes. Les profils étant exclusifs,
-// il fallait choisir, et choisir était perdant dans les deux sens.
-//
-// La ligne de partage retenue : ce qui apparaît dans un document quel que soit
-// le domaine va dans les listes partagées ; ce qui n'apparaît que dans un
-// document du domaine reste dans son profil. Un diplôme figure sur le CV d'un
-// développeur comme d'un juriste ; un « contrôle continu » ne se lit que sur
-// un document scolaire.
+// Ligne de partage : ce qui apparaît quel que soit le domaine va dans les
+// listes partagées, ce qui n'apparaît que dans un domaine reste dans son profil.
 const PARCOURS_KEEP = [
   'Baccalauréat', 'Licence', 'Master', 'Doctorat', 'BUT', 'BTS', 'DUT', 'CAP',
   'Diplôme', 'Mention', 'Promotion', 'Cohorte', 'Cohortes',
