@@ -2637,7 +2637,7 @@ function showFileResults(mapping, copyable, duree) {
   $("fileMappingWrap").innerHTML = mapping.length ? `<table><thead><tr>
         <th scope="col">${msg("placeholder")}</th>
         <th scope="col">${msg("valeur")}</th>
-        <th scope="col" class="map-occ">${msg("fois")}</th>
+        <th scope="col" class="map-occ"><span class="visuellement-cache">${msg("fois")}</span></th>
         <th scope="col" class="map-act">${msg("garder")}</th>
         <th scope="col" class="map-act">${msg("profil")}</th>
       </tr></thead><tbody>${triees.map(

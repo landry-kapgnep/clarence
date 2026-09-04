@@ -318,7 +318,7 @@
     "message": "See all"
   },
   "suggestion_profil": {
-    "message": "Looks like a $FORMAT$.",
+    "message": "This document looks like a $FORMAT$.",
     "placeholders": {
       "format": {
         "content": "$1"
@@ -326,7 +326,7 @@
     }
   },
   "profil_applique": {
-    "message": "“$PROFIL$” profile applied. Run the analysis again to see the effect.",
+    "message": "“$PROFIL$” profile applied — run the analysis again.",
     "placeholders": {
       "profil": {
         "content": "$1"

@@ -1566,3 +1566,29 @@ select option { background: var(--bg-raised); color: var(--paper); }
    SEULE : son libellé dit déjà « Supprimer » ou « Effacer ». */
 .btn-primary.danger { background: var(--seal); color: var(--paper); }
 .btn-primary.danger:hover:not(:disabled) { filter: brightness(1.12); }
+
+/* LES TROIS ACTIONS DU RÉSULTAT ONT LA MÊME EMPREINTE.
+   Elles n'avaient ni la même hauteur ni la même nature : une icône seule dans
+   un bouton calibré pour du texte (l'image est CARRÉE, 200×200 — elle flottait
+   dans un rectangle), un bouton de texte, et une carte à bordure pointillée.
+   Trois formes pour trois gestes de même rang.
+   Leurs RÔLES restent distincts — plein pour l'action principale, discret pour
+   la secondaire, pointillé pour ce qui se glisse — mais leur géométrie ne l'est
+   plus : c'est la hiérarchie qui doit parler, pas l'accident de rembourrage. */
+#fileResults > .controls > button,
+#fileResults > .controls > .drag-card {
+  height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 0;
+  box-sizing: border-box;
+}
+#fileResults .dlbtn { width: 15px; }
+
+/* Les deux légendes d'action se touchaient. Le « × » se lisant seul, le mot
+   « fois » est retiré de l'écran (gardé pour les lecteurs d'écran), et il reste
+   de quoi séparer « garder » de « profil ». */
+#fileMappingWrap thead th.map-act { padding-left: 6px; padding-right: 6px; }
+#fileMappingWrap thead th.map-occ { padding-right: 10px; }
