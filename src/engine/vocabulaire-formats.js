@@ -4,13 +4,13 @@
 // format sont exactement ceux qui ne doivent JAMAIS y être masqués : « SOMMAIRE »
 // dit « ceci est un rapport » ET doit survivre à l'anonymisation, sans quoi le
 // LLM ne sait plus lire la structure du document. Deux besoins, un seul
-// vocabulaire — donc un seul endroit, et une langue ajoutée profite aux deux.
+// vocabulaire - donc un seul endroit, et une langue ajoutée profite aux deux.
 //
 // Deux consommateurs :
-//   · src/engine/type-document.js — pour PROPOSER un profil ;
-//   · src/popup/profiles.js       — pour remplir « ne jamais masquer ».
+//   · src/engine/type-document.js - pour PROPOSER un profil ;
+//   · src/popup/profiles.js       - pour remplir « ne jamais masquer ».
 //
-// CE QUI A LE DROIT D'ENTRER ICI : des mots de MISE EN FORME — intitulés de
+// CE QUI A LE DROIT D'ENTRER ICI : des mots de MISE EN FORME - intitulés de
 // rubrique, formules consacrées, en-têtes normalisés. Jamais un mot de contenu,
 // jamais un nom d'entreprise, de techno ou de personne. C'est ce qui rend la
 // liste courte, stable, et traduisible sans expertise métier.
@@ -19,7 +19,7 @@
 // trouver DANS une vraie entité. La correspondance de « ne jamais masquer » est
 // bidirectionnelle et mot à mot (voir filterByRules) : inscrire « formations »
 // démasquerait « Formations Dupont SARL ». On préfère donc les intitulés
-// distinctifs ou composés — et dans le doute, on n'inscrit rien : un mot de
+// distinctifs ou composés - et dans le doute, on n'inscrit rien : un mot de
 // forme oublié coûte un masque de trop, un mot de trop coûte une FUITE.
 
 export const FORMATS = ['cv', 'administratif', 'scolaire', 'bancaire'];
@@ -82,7 +82,7 @@ export const MOTS_DE_FORME = {
 // Le dédoublonnage n'est pas cosmétique : « introduction » et « conclusion »
 // s'écrivent pareil en français et en anglais, « índice » et « certifica que »
 // en espagnol et en portugais. Comptés deux fois, ils gonflaient le score de
-// leur type — défaut mesuré sur dossier-rh.txt, qu'un simple « conclusion »
+// leur type - défaut mesuré sur dossier-rh.txt, qu'un simple « conclusion »
 // suffisait à tirer vers le rapport.
 export function motsDeForme(format) {
   const parLangue = MOTS_DE_FORME[format] || {};

@@ -1,4 +1,4 @@
-# Spike LLMLingua-2 — compression de prompt par modèle (09/08/2026)
+# Spike LLMLingua-2 - compression de prompt par modèle (09/08/2026)
 
 `node tests/spike-llmlingua2/run.mjs`
 
@@ -16,7 +16,7 @@ est le seul levier d'un ordre de grandeur supérieur qu'ait donné la recherche.
 
 ## Le modèle
 
-`microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`, Apache 2.0 —
+`microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`, Apache 2.0 -
 **même architecture et même tâche** (classification de tokens) que notre moteur
 BERT de repli : le worker existant saurait l'héberger sans réécriture.
 
@@ -28,18 +28,18 @@ compatible avec le principe du cadrage §8.
 |---|---|
 | Poids ONNX quantifié | **170 Mo** (676 Mo en fp32) |
 | Chargement, première fois, Node | ~19 s |
-| Fenêtre | 512 positions — même contrainte que le NER BERT |
+| Fenêtre | 512 positions - même contrainte que le NER BERT |
 | Étiquettes | pas d'`id2label` ; **LABEL_1 = garder**, identifié par sonde |
 
-✅ **Réserve de licence — LEVÉE le 15/08/2026.** Le dépôt officiel Microsoft
+✅ **Réserve de licence - LEVÉE le 15/08/2026.** Le dépôt officiel Microsoft
 n'a **pas** de poids ONNX. Le spike passait par une conversion communautaire
-(`ldenoue/llmlingua-2-…`) dont la fiche **ne déclarait aucune licence** — donc
+(`ldenoue/llmlingua-2-…`) dont la fiche **ne déclarait aucune licence** - donc
 « tous droits réservés » par défaut, impossible à redistribuer. La conversion
 est désormais faite maison (`tools/convertir-llmlingua2.py`) et publiée sous
 **`clarenceorg/llmlingua-2-onnx`**, Apache 2.0 déclarée, `NOTICE` d'attribution
 inclus. Chiffres et pièges plus bas.
 
-## 1. Les placeholders survivent — question rédhibitoire levée
+## 1. Les placeholders survivent - question rédhibitoire levée
 
 | | |
 |---|---|
@@ -48,7 +48,7 @@ inclus. Chiffres et pièges plus bas.
 
 Le modèle juge les placeholders très informatifs : `PERSONNE` sort à **1,00**,
 `_` à 0,81, le chiffre à 0,99. Seul le crochet **ouvrant** flotte autour du
-seuil (0,42 à 0,80) — le forcer suffit, c'est un caractère.
+seuil (0,42 à 0,80) - le forcer suffit, c'est un caractère.
 
 ⚠️ Piège de mesure rencontré : une première version annonçait **0/8**. Elle
 rejoignait les mots par des espaces et cherchait `[PERSONNE_1]` dans un texte
@@ -58,8 +58,8 @@ elle casse les placeholders qu'elle vient de conserver.
 
 ## 2. Le français ne souffre pas
 
-Crainte de départ — entraîné sur MeetingBank, des transcriptions de réunions en
-**anglais** — non confirmée.
+Crainte de départ - entraîné sur MeetingBank, des transcriptions de réunions en
+**anglais** - non confirmée.
 
 | Document | Langue | Tokens | Gardés | Ratio |
 |---|---|---|---|---|
@@ -71,7 +71,7 @@ Crainte de départ — entraîné sur MeetingBank, des transcriptions de réunio
 Le français n'est pas pénalisé face à l'anglais. **En revanche le taux varie
 énormément selon le DOCUMENT** (×1,25 à ×5,89), et c'est un enseignement
 opérationnel : le seuil naturel (argmax) donne un taux subi, pas choisi. Le
-×5,89 ne garde que **47 mots sur 515** — beaucoup trop agressif pour un usage
+×5,89 ne garde que **47 mots sur 515** - beaucoup trop agressif pour un usage
 réel. L'API LLMLingua-2 prend un **taux cible** ; ce doit être un réglage
 utilisateur, jamais un sous-produit du seuil.
 
@@ -85,7 +85,7 @@ Sur quatre phrases pièges, **deux voient leur sens inversé** :
 | « **n'est pas** allergique à la pénicilline **mais** l'est aux sulfamides » | « patient allergique à pénicilline sulfamides » |
 
 Le second est le pire cas imaginable pour cet outil : le LLM lira exactement
-l'inverse, sur un document médical, **et l'utilisateur ne peut pas le voir** —
+l'inverse, sur un document médical, **et l'utilisateur ne peut pas le voir** -
 c'est la contrainte même qu'il a posée, on ne relit pas du texte compressé.
 Une fuite est visible à la relecture ; ça, non.
 
@@ -93,7 +93,7 @@ Une fuite est visible à la relecture ; ça, non.
 
 Admissible au sens de la règle du projet (voir `honorifics.js`) parce que la
 classe est **FERMÉE** : une langue compte une poignée de négations et de
-connecteurs et n'en invente pas — contrairement aux noms ou aux entreprises.
+connecteurs et n'en invente pas - contrairement aux noms ou aux entreprises.
 
 | Piège | Sans | Avec |
 |---|---|---|
@@ -111,7 +111,7 @@ verbe sautent). La polarité est préservée, la lisibilité non.
 
 ## Le moteur, construit et mesuré (09/08/2026)
 
-`src/engine/compression.js` — pipeline injecté, 20 tests, aucun modèle chargé.
+`src/engine/compression.js` - pipeline injecté, 20 tests, aucun modèle chargé.
 
 **Décision au niveau du MOT, pas du token.** C'est ce qui règle le piège du
 spike sans aucun recollage : un placeholder est UN mot, donc le garder le garde
@@ -142,18 +142,18 @@ Ils ne viennent pas du modèle mais de son enveloppe, et tous deux produisent
 2. **Le pipeline OMET des tokens de sa sortie.** Visible sur le champ `index`,
    qui saute (…6, 7, **9**, 10…) : tirets cadratins et quelques symboles
    disparaissent. Un alignement par curseur sur ce flux troué se désynchronise
-   et ne s'en remet jamais — la moitié des mots d'un document se retrouvaient
+   et ne s'en remet jamais - la moitié des mots d'un document se retrouvaient
    sans score, donc conservés par sécurité, donc aucune compression.
    **Correctif : retokeniser soi-même pour obtenir le flux complet et y
    recoller les scores par `index`.** À reproduire tel quel dans le worker.
 
-Note : `start`/`end` sont à `null`, exactement comme sur le modèle NER — même
+Note : `start`/`end` sont à `null`, exactement comme sur le modèle NER - même
 gotcha déjà consigné dans docs/notes-techniques.md, donc pas d'alignement par offsets.
 
 Le moteur remonte `motsSansScore` précisément pour que ce genre de panne ne
 puisse plus être silencieuse.
 
-## Conversion maison — faite le 15/08/2026
+## Conversion maison - faite le 15/08/2026
 
 `python tools/convertir-llmlingua2.py` exporte les poids Apache 2.0 de Microsoft
 en ONNX, les quantifie en int8 (**179 Mo**) et écrit le `NOTICE` d'attribution
@@ -183,16 +183,16 @@ décisions retournées (1 contre 2). Contre-intuitif au passage :
 
 **3. Ça tourne vraiment dans le navigateur.** La quantification par canal était
 le vrai risque : ORT Web est en **1.14** (2023) et son support ne se devine pas.
-Vérifié dans un navigateur réel sur ce runtime exact — modèle chargé en 878 ms,
+Vérifié dans un navigateur réel sur ce runtime exact - modèle chargé en 878 ms,
 inférence OK, et les placeholders tous au-dessus de **0,99**.
 
 **Effet sur le texte produit** (`node tools/verifier-conversion.mjs`, qui fait
 tourner le vrai moteur) : **5 sorties sur 6 rigoureusement identiques** à celles
 du modèle communautaire. La seule différence apparaît au taux le plus agressif
-(0,3), où « associés » cède la place à « prévisionnel » — deux noms communs
+(0,3), où « associés » cède la place à « prévisionnel » - deux noms communs
 voisins au classement. Aucun placeholder, aucun opérateur logique perdu.
 
-### Publication — faite le 15/08/2026
+### Publication - faite le 15/08/2026
 
 `clarenceorg/llmlingua-2-onnx`, sous une **organisation** HuggingFace et non un
 compte personnel : cette URL est visible dans l'onglet Network, là même où le
@@ -202,7 +202,7 @@ transfert futur sans imposer une mise à jour d'extension.
 Deux pièges, tous deux rencontrés :
 
 - **La fiche porte la licence.** Le dépôt a d'abord été publié **sans** en-tête
-  `license:` — donc réputé « tous droits réservés », exactement le défaut
+  `license:` - donc réputé « tous droits réservés », exactement le défaut
   reproché à la conversion communautaire. Toute la conversion n'aurait servi à
   rien, et rien dans le code ne l'aurait signalé. La fiche est désormais un
   **artefact de build** (`tools/carte-modele.md`, recopiée par le script) et non
@@ -212,7 +212,7 @@ Deux pièges, tous deux rencontrés :
   183 Mo, et il se régénère en une commande.
 
 `node tools/verifier-publication.mjs` vérifie ce qu'aucun autre script ne peut
-voir — les autres chargent les poids depuis un dossier local et valident donc le
+voir - les autres chargent les poids depuis un dossier local et valident donc le
 modèle, jamais sa publication. Il part d'un cache **vide** et télécharge comme
 le fera l'extension. Mesuré sur le dépôt en ligne : **179 Mo en 55 s**, licence
 `apache-2.0` déclarée, **5/5 placeholders intacts au taux 0,1**, négation
@@ -220,7 +220,7 @@ conservée, zéro mot sans score.
 
 ## Ce qu'il resterait à faire avant de livrer
 
-1. **Préserver l'espacement d'origine** à la reconstruction — sinon les
+1. **Préserver l'espacement d'origine** à la reconstruction - sinon les
    placeholders conservés sont cassés à l'écriture.
 2. **Exposer un taux cible**, pas le seuil brut.
 3. Respecter les **trois contraintes produit** déjà consignées dans docs/notes-techniques.md :
@@ -232,5 +232,5 @@ conservée, zéro mot sans score.
 
 Il mesure la compression et la préservation du sens sur des phrases choisies
 pour piéger. Il ne dit **rien** de la qualité des réponses d'un vrai LLM sur un
-vrai document compressé — c'est la mesure suivante, et elle demande d'appeler un
+vrai document compressé - c'est la mesure suivante, et elle demande d'appeler un
 LLM, donc elle ne peut pas être automatisée dans ce dépôt.

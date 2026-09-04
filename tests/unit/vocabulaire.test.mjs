@@ -46,7 +46,7 @@ test('les mots-outils ne font pas échouer le test', () => {
   assert.ok(estVocabulaireCourant('gestion de projet'));
 });
 
-test('faux positifs mesurés sur un vrai CV — reconnus comme vocabulaire', () => {
+test('faux positifs mesurés sur un vrai CV - reconnus comme vocabulaire', () => {
   for (const v of ['Anglais', 'Allemand', 'Mars 2026', 'Développement & Web',
                    'Développeur Data']) {
     assert.ok(estVocabulaireCourant(v), `« ${v} » aurait dû être écarté`);
@@ -92,7 +92,7 @@ test('une entreprise au nom PROPRE reste détectée', async () => {
 // LA TROISIÈME FOIS QUE CE PIÈGE SE REFERME, et la raison pour laquelle il a
 // survécu si longtemps : rien ne le vérifiait. « Villetaneuse » apparaît deux
 // fois dans certificat-fr.txt et un commentaire de la vérité terrain affirmait
-// que la ville est masquée — sans aucune assertion pour l'exiger. Le suffixe
+// que la ville est masquée - sans aucune assertion pour l'exiger. Le suffixe
 // `-euse` la faisait passer pour du vocabulaire, donc P14 la laissait en clair.
 //
 // Les suffixes dérivationnels du français et les toponymes français PARTAGENT

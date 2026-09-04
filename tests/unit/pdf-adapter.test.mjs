@@ -27,7 +27,7 @@ test('P1 fragmentation : deux mots avec un vrai écart restent séparés', () =>
 
 // --- P1bis : mot coupé en FIN DE LIGNE (typographie justifiée, colonne
 // étroite). Constaté sur un vrai CV multi-colonnes : « auto- » / « matisée »,
-// « Fas- » / « tify », « ap- » / « plicative » — soumis tel quel au modèle,
+// « Fas- » / « tify », « ap- » / « plicative » - soumis tel quel au modèle,
 // ces fragments sortent avec plus de confiance que le vrai nom du candidat
 // (« matisée » → donnée de santé 0,70 ; « plicative » → entreprise 0,70 ;
 // nom du candidat : 0,47).
@@ -39,7 +39,7 @@ test('isLineWrapHyphen : trait d\'union collé + minuscule qui suit = coupure de
 
 test('isLineWrapHyphen : un tiret de séparation réel (entouré d\'espaces) n\'est jamais une coupure', () => {
   // Un vrai tiret de plage/séparation est TOUJOURS entouré d'espaces en
-  // français — signal qui le distingue sans ambiguïté d'un mot coupé.
+  // français - signal qui le distingue sans ambiguïté d'un mot coupé.
   assert.equal(isLineWrapHyphen('Anglais - C1 Cambridge Certificate', 'et Allemand'), false);
   assert.equal(isLineWrapHyphen('Concours d’éloquence - Double lauréat (Sorbonne Paris', 'Nord).'), false);
 });
@@ -153,12 +153,12 @@ async function twoColumnBuffer() {
   const page = doc.addPage([595, 842]);
   const T = (t, x, y) => page.drawText(t, { x, y, size: 11, font });
   page.drawText('RAPPORT DEUX COLONNES', { x: 50, y: 790, size: 18, font });
-  // colonne gauche (x=50) — plusieurs lignes pour dépasser le seuil de détection
+  // colonne gauche (x=50) - plusieurs lignes pour dépasser le seuil de détection
   const leftLines = ['Competences', 'Python et FastAPI', 'Docker et CI/CD',
     'SQL et PostgreSQL', 'Bases MongoDB', 'Contact : gauche@ex.fr'];
   const rightLines = ['Experiences', 'Data Engineer Semantik', 'Responsable Twini',
     'Benevole terrain MSF', 'Projets R&D divers', 'Tel : 06 12 34 56 78'];
-  // les DEUX colonnes partagent les mêmes Y (côte à côte) — sans détection de
+  // les DEUX colonnes partagent les mêmes Y (côte à côte) - sans détection de
   // colonnes, chaque ligne gauche+droite fusionnerait.
   leftLines.forEach((t, i) => T(t, 50, 750 - i * 16));
   rightLines.forEach((t, i) => T(t, 320, 750 - i * 16));
@@ -188,13 +188,13 @@ test("le buffer d'entrée reste réutilisable après extractTextUnits (pas de d�
 
 // --- Interligne : le seuil de paragraphe doit se calibrer sur le DOCUMENT.
 // Trouvé sur un vrai mémoire de 75 pages en interligne 1,5 : police 11, écart
-// réel 19,0 contre un seuil `police × 1.6 = 17,7` — donc UN PARAGRAPHE PAR
+// réel 19,0 contre un seuil `police × 1.6 = 17,7` - donc UN PARAGRAPHE PAR
 // LIGNE. 1 782 unités de 91 caractères médians dont 52 % coupaient une phrase,
 // 39 % du document masqué, 11 minutes de traitement.
 const ligneFictive = (y, size = 11) => ({ y, size, text: 'x' });
 
 test('interligne 1,5 : le seuil dépasse l\'écart entre lignes (plus de paragraphe par ligne)', () => {
-  // 12 lignes espacées de 19 pt en police 11 — le cas exact du mémoire.
+  // 12 lignes espacées de 19 pt en police 11 - le cas exact du mémoire.
   const lines = Array.from({ length: 12 }, (_, i) => ligneFictive(700 - i * 19));
   const seuil = paragraphGapThreshold(lines, 11);
   assert.ok(seuil > 19, `un écart d'interligne (19) doit rester SOUS le seuil, obtenu ${seuil}`);
@@ -203,14 +203,14 @@ test('interligne 1,5 : le seuil dépasse l\'écart entre lignes (plus de paragra
 
 test('le seuil ne DESCEND jamais sous l\'ancien : le correctif ne peut que fusionner', () => {
   // Interligne serré (8 pt) en police 11 : la médiane × 1.3 vaut 10,4, sous
-  // l'ancien seuil de 17,6 — c'est l'ancien qui doit gagner.
+  // l'ancien seuil de 17,6 - c'est l'ancien qui doit gagner.
   const lines = Array.from({ length: 12 }, (_, i) => ligneFictive(700 - i * 8));
   assert.equal(paragraphGapThreshold(lines, 11), 11 * 1.6);
 });
 
 test('trop peu de lignes : repli sur l\'ancien seuil', () => {
   // Sur 5 lignes, la médiane des écarts tombe sur l'écart de PARAGRAPHE et non
-  // sur l'interligne (mesuré sur tests/fixtures/echantillon.pdf) — d'où la garde.
+  // sur l'interligne (mesuré sur tests/fixtures/echantillon.pdf) - d'où la garde.
   const lines = [ligneFictive(700), ligneFictive(684), ligneFictive(668), ligneFictive(634), ligneFictive(618)];
   assert.equal(paragraphGapThreshold(lines, 11), 11 * 1.6);
 });
@@ -232,7 +232,7 @@ test('un vrai saut de paragraphe reste détecté malgré le calibrage', async ()
 });
 
 // --- INTITULÉS DE SECTION. Un CV dont « COMPÉTENCES » et « LANGUES » sont
-// maquillés en [ENTREPRISE_3] est illisible pour le LLM — et c'est ce que
+// maquillés en [ENTREPRISE_3] est illisible pour le LLM - et c'est ce que
 // faisait le modèle (scores 0,50 à 0,79, au-dessus de vraies entités, donc
 // aucun seuil ne pouvait les séparer).
 test('un intitulé de rubrique est reconnu par sa FORME, pas par son sens', () => {
@@ -276,7 +276,7 @@ test('un seul intitulé dans tout le document : on ne neutralise RIEN', () => {
 // réellement produite : « BIC : AGRIFRPP882 », « SSN: 123-45-6789 »,
 // « DNI: 12345678Z » et « EMP-0012 » passaient la règle (≤ 3 mots, capitales,
 // pas de ponctuation de phrase). Les classer ainsi ouvrait la porte à leur
-// DÉMASQUAGE — exactement l'inverse du but.
+// DÉMASQUAGE - exactement l'inverse du but.
 test('un identifiant ne passe JAMAIS pour un intitulé de rubrique', () => {
   for (const t of ['BIC : AGRIFRPP882', 'MAC : 3C:5A:B4:0F:11:22',
                    'SSN: 123-45-6789', 'DNI: 12345678Z', 'EMP-0012',
@@ -310,7 +310,7 @@ test('formesDeRubrique reconnaît un titre à rubrique, dans les quatre langues'
   assert.deepEqual(formesDeRubrique('APPENDIX 3 — ENGLISH RECORD'), ['APPENDIX', 'APPENDIX 3']);
 });
 
-test('formesDeRubrique NE reconnaît PAS un nom de personne — le contre-exemple', () => {
+test('formesDeRubrique NE reconnaît PAS un nom de personne - le contre-exemple', () => {
   // Le titre d'un CV est une unité-titre exactement comme « COMPÉTENCES ».
   // Si ces deux cas passaient, le nom de la personne fuirait.
   assert.deepEqual(formesDeRubrique('ÉLÉONORE VASSEUR'), [], 'pas de tiret');

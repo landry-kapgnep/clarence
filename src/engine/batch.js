@@ -1,6 +1,6 @@
 // Regroupement d'inférences : plusieurs textes en UN seul passage du modèle.
 //
-// POURQUOI. Le coût d'une inférence est « ~37 ms fixes + k × longueur » — les
+// POURQUOI. Le coût d'une inférence est « ~37 ms fixes + k × longueur » - les
 // 37 ms sont payés à chaque appel, quelle que soit la taille du texte. Sur un
 // mémoire de 75 pages découpé en ~470 unités × 2 groupes de labels, cela fait
 // ~940 appels, soit **~35 s de surcoût fixe pur**, avant le moindre calcul
@@ -20,7 +20,7 @@
 // PIÈGE DU REMBOURRAGE (padding). `inputLength = Math.max(...textLengths)` :
 // un lot est calculé à la longueur de son PLUS LONG texte. Mettre une cellule
 // de 20 caractères avec une fenêtre de 900 fait payer 900 à la cellule. D'où le
-// tri par longueur et le budget ci-dessous — sans quoi le regroupement peut
+// tri par longueur et le budget ci-dessous - sans quoi le regroupement peut
 // coûter plus cher qu'il ne rapporte.
 
 // Taille de lot, CHOISIE PAR MESURE et non au jugé. 240 unités réalistes
@@ -31,14 +31,14 @@
 //
 // Le gain est là dès 8 (×2,6), puis la courbe s'aplatit et remonte légèrement :
 // plus le lot est gros, plus il mélange des longueurs éloignées, et plus le
-// rembourrage gaspille. Inutile de monter — 8 tient aussi moins de mémoire.
+// rembourrage gaspille. Inutile de monter - 8 tient aussi moins de mémoire.
 //
 // Contrôle de non-régression de la mesure : 570 spans produits, IDENTIQUES à
 // toutes les tailles de lot. Le regroupement ne change pas la détection.
 const TAILLE_LOT = 8;
 
 // Borne le coût RÉEL d'un lot une fois rembourré (taille × plus long texte).
-// À 8000, une fenêtre pleine de 1000 caractères part par 8 — au-delà, le
+// À 8000, une fenêtre pleine de 1000 caractères part par 8 - au-delà, le
 // rembourrage coûterait plus que le groupage ne rapporte.
 const BUDGET = 8000;
 
@@ -46,7 +46,7 @@ const BUDGET = 8000;
 //
 // Tri par longueur : des textes de tailles voisines dans un même lot, pour que
 // le rembourrage reste marginal. Le budget borne `taille du lot × plus long
-// texte`, c'est-à-dire le VRAI coût du lot une fois rembourré — borner le seul
+// texte`, c'est-à-dire le VRAI coût du lot une fois rembourré - borner le seul
 // nombre d'éléments laisserait passer 16 × 1000 caractères.
 export function decouperEnLots(items, { maxLot = TAILLE_LOT, budget = BUDGET } = {}) {
   const tries = [...items].sort((a, b) => a.text.length - b.text.length);
@@ -83,7 +83,7 @@ export function decouperEnLots(items, { maxLot = TAILLE_LOT, budget = BUDGET } =
 //
 // La sérialisation vit ici, au plus près du modèle, et NON chez l'appelant :
 // c'est une contrainte du moteur d'exécution. La placer en amont obligerait
-// chaque futur appelant à la connaître — et à la réintroduire en l'oubliant.
+// chaque futur appelant à la connaître - et à la réintroduire en l'oubliant.
 export function serialiser() {
   let file = Promise.resolve();
   return tache => {
@@ -114,18 +114,18 @@ export function createBatchedPipeline(runBatch, opts = {}) {
 
   // Clé = jeu de labels : un lot ne peut porter qu'UN jeu d'entités (c'est une
   // entrée du modèle, pas un paramètre de post-traitement). Les groupes
-  // disjoints de gliner.js sont donc regroupés séparément — ce qui tombe bien,
+  // disjoints de gliner.js sont donc regroupés séparément - ce qui tombe bien,
   // c'est déjà ainsi qu'ils doivent rester (voir GROUPES).
   const attente = new Map();
   let planifie = false;
   let enCours = false;
 
-  // UN SEUL vidage à la fois — c'est une correction de bug, pas une élégance.
+  // UN SEUL vidage à la fois - c'est une correction de bug, pas une élégance.
   //
   // La version précédente remettait `planifie` à faux dès son ENTRÉE : les
   // appels nés pendant ses `await` programmaient un SECOND vidage, qui postait
   // son lot alors que le premier n'avait pas répondu. Deux inférences se
-  // chevauchaient et ORT levait « Session already started » — son fournisseur
+  // chevauchaient et ORT levait « Session already started » - son fournisseur
   // WebGPU pose un marqueur global et n'en tolère qu'une à la fois. Le
   // traitement échouait au bout de deux secondes.
   //

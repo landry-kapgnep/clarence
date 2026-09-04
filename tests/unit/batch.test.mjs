@@ -1,6 +1,6 @@
 // Le regroupement en lots est sur le CHEMIN D'UNE FUITE : si les résultats
 // d'un lot sont redistribués de travers, les entités d'un texte atterrissent
-// sur un autre — masquage faux d'un côté, donnée en clair de l'autre. D'où une
+// sur un autre - masquage faux d'un côté, donnée en clair de l'autre. D'où une
 // couverture au niveau des validateurs, pas au niveau « UI ».
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -47,7 +47,7 @@ test('le batcher ne lance JAMAIS deux lots en parallèle', async () => {
   // REPRODUCTION EXACTE du bug. Il ne suffit pas d'envoyer beaucoup d'appels
   // d'un coup : ceux-là partent dans un seul vidage, qui enchaîne ses lots
   // proprement même avec l'ancien code. Le défaut n'apparaît que quand des
-  // appels naissent PENDANT le vidage — c'est le cas réel, chaque unité
+  // appels naissent PENDANT le vidage - c'est le cas réel, chaque unité
   // relançant une passe en réagissant à la résolution de la précédente.
   //
   // Avec l'ancien code (`planifie = false` dès l'entrée de `vider`), ces
@@ -75,7 +75,7 @@ test('le batcher ne lance JAMAIS deux lots en parallèle', async () => {
 
 test('les appels arrivés PENDANT un vidage sont quand même traités', async () => {
   // Le corollaire du verrou : si on refuse de programmer un second vidage, la
-  // boucle doit reprendre les retardataires — sinon leur promesse ne se résout
+  // boucle doit reprendre les retardataires - sinon leur promesse ne se résout
   // jamais et la détection se fige.
   const pipe = createBatchedPipeline(
     async textes => { await new Promise(r => setTimeout(r, 5)); return textes.map(t => [t]); },

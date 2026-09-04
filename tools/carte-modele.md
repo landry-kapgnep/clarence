@@ -26,7 +26,7 @@ quantization. The weights are not retrained or otherwise modified.
 
 The upstream repository ships PyTorch weights only, and browsers can only run
 ONNX. Existing community conversions were unusable for redistribution because
-they declared **no licence** — and with no licence, the default is "all rights
+they declared **no licence** - and with no licence, the default is "all rights
 reserved". This conversion is made from the Apache 2.0 original so that the
 same permissions carry over, attribution included.
 
@@ -34,7 +34,7 @@ same permissions carry over, attribution included.
 
 | file | size |
 |---|---|
-| `onnx/model_quantized.onnx` | 179 MB — int8, this is what you want |
+| `onnx/model_quantized.onnx` | 179 MB - int8, this is what you want |
 
 The fp32 export is not published: it is 710 MB and no runtime here needs it.
 Regenerate it from the upstream weights if required.
@@ -55,7 +55,7 @@ set:
 The fp32 figure is the one that matters: the export itself is exact, and the
 remaining gap comes only from quantization.
 
-`per_channel=True` is deliberate — per-tensor quantization degrades roughly 3×
+`per_channel=True` is deliberate - per-tensor quantization degrades roughly 3×
 more for 1 MB less. `reduce_range=True` was also measured and made things
 clearly worse, so it is not used.
 
@@ -79,7 +79,7 @@ The model has no `id2label`, so labels come out as `LABEL_0` / `LABEL_1`.
 
 Two practical notes, both learned the hard way:
 
-- The window is **512 positions, not 512 words** — beyond that the pipeline
+- The window is **512 positions, not 512 words** - beyond that the pipeline
   truncates silently. Batch your input.
 - The pipeline **omits some tokens** from its output (its `index` field skips
   values). Aligning a cursor over that stream desynchronises it permanently.

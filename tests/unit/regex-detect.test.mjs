@@ -17,7 +17,7 @@ test('IBAN valide : détecté et marqué validated=true', () => {
 });
 
 test('IBAN à structure correcte mais mod-97 invalide : détecté quand même (validated=false)', () => {
-  // Numéros fabriqués (échouent le checksum) — doivent tout de même être masqués.
+  // Numéros fabriqués (échouent le checksum) - doivent tout de même être masqués.
   for (const v of [
     'FR76 3000 6000 0123 4567 8901 234',
     'FR76 1007 1002 0001 2345 6789 099',
@@ -197,7 +197,7 @@ test('un hexa isolé de 2 caractères n\'est pas une MAC', () => {
 });
 
 // --- BIC. findMerged : le motif nu (liste blanche) et le motif contextuel
-// (« BIC: ») peuvent matcher le même span — une seule entité après fusion.
+// (« BIC: ») peuvent matcher le même span - une seule entité après fusion.
 test('BIC détecté (8 et 11 caractères), mot en majuscules rejeté', () => {
   assert.equal(findMerged('BIC: BNPAPRRPXXX', 'BIC').length, 1, 'pays hors liste mais libellé BIC explicite');
   assert.equal(findMerged('BIC: SOGEFRPP', 'BIC').length, 1);
@@ -228,7 +228,7 @@ test('identifiant interne séparé de son libellé par un verbe (trouvé par le 
 // --- Civilité + nom : le motif ne doit pas franchir une ligne VIDE.
 // Trouvé par le banc (sur-masquage) : « Madame Hélène Brassard\n\nSOMMAIRE »
 // produisait une seule entité PER incluant le titre de section, parce que le
-// séparateur entre composants était `\s+` — qui traverse tout.
+// séparateur entre composants était `\s+` - qui traverse tout.
 test('un nom capté par civilité s\'arrête à la ligne vide', () => {
   const t = 'Tuteur pédagogique : Madame Hélène Brassard\n\nSOMMAIRE\nIntroduction';
   const per = find(t, 'PER');
@@ -261,7 +261,7 @@ test('un mot quelconque suivi d\'un code n\'est pas une référence', () => {
 
 // --- Type de voie ABRÉGÉ et capitalisé. Le motif ne connaissait que « av. »
 // en minuscules : « 99 Av. Jean Jaurès » n'était pas une adresse, et le modèle
-// contextuel récupérait « Jean Jaurès » comme une PERSONNE — un nom de rue
+// contextuel récupérait « Jean Jaurès » comme une PERSONNE - un nom de rue
 // affiché comme un individu. Mesuré sur tous-defauts.pdf.
 test('adresse : type de voie abrégé, avec ou sans majuscule', () => {
   assert.equal(find('99 Av. Jean Jaurès, 93430 Villetaneuse', 'ADRESSE')[0].value,
@@ -272,7 +272,7 @@ test('adresse : type de voie abrégé, avec ou sans majuscule', () => {
   assert.equal(find('42 rue des Cordeliers', 'ADRESSE')[0].value, '42 rue des Cordeliers');
 });
 
-// ===== P5 — i18n de la couche déterministe (08/08/2026) =====================
+// ===== P5 - i18n de la couche déterministe (08/08/2026) =====================
 // Les pages EN/ES/DE du document piégé l'ont montré : 100 % des fuites étaient
 // dans cette couche, ZÉRO dans le contextuel. Le modèle se débrouille en
 // espagnol et en allemand ; c'était notre regex franco-française qui était le
@@ -300,7 +300,7 @@ test('identifiants ES/DE annoncés par un libellé', () => {
 
 test('un code postal reste détecté quand un MOT s\'intercale avant la ville', () => {
   // « 28013 Madrid » passait déjà ; « 08001 para Barcelona » et « 20095 für
-  // Hamburg » fuyaient. Le défaut valait aussi en français — la page
+  // Hamburg » fuyaient. Le défaut valait aussi en français - la page
   // multilingue a révélé un bug franco-français.
   for (const t of ['Código postal 08001 para Barcelona', 'Postleitzahl 20095 für Hamburg',
                    'Le siège est au 75001 dans Paris', 'Calle Mayor 12, 28013 Madrid']) {
@@ -318,7 +318,7 @@ test('un nombre suivi d\'un mot long n\'est pas pris pour un code postal', () =>
 test('téléphone nord-américain au format national, sans libellé', () => {
   // findMerged et non find : « mobile 617-555-0143 » est vu par DEUX motifs
   // (la forme 3-3-4 nue et le motif à libellé). La fusion doit n'en laisser
-  // qu'une — c'est justement ce qu'on vérifie ici.
+  // qu'une - c'est justement ce qu'on vérifie ici.
   assert.equal(findMerged('Phone: (617) 555-0142', 'TELEPHONE').length, 1);
   assert.equal(findMerged('mobile 617-555-0143 disponible', 'TELEPHONE').length, 1);
 });
@@ -331,7 +331,7 @@ test('téléphone national ES/DE via LIBELLÉ', () => {
 test('le piège SIREN n\'est JAMAIS pris pour un téléphone', () => {
   // libphonenumber tourne sans pays par défaut pour cette raison précise :
   // avec `FR`, « 483 921 657 » passerait pour un numéro. Les motifs nationaux
-  // ajoutés ici ne doivent pas réintroduire ce risque — d'où le libellé requis.
+  // ajoutés ici ne doivent pas réintroduire ce risque - d'où le libellé requis.
   assert.equal(find('Siren : 483 921 657', 'TELEPHONE').length, 0);
   assert.equal(find('Le numéro 483 921 657 figure au registre', 'TELEPHONE').length, 0);
 });

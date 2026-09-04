@@ -1,19 +1,19 @@
-// PHASE 2 — Générateur de documents étiquetés, pour entraîner la détection.
+// PHASE 2 - Générateur de documents étiquetés, pour entraîner la détection.
 //
 //     node tools/corpus/generer.mjs [nombre] > corpus.jsonl
 //
 // POURQUOI SYNTHÉTIQUE. Il n'existe pas de corpus annoté de PII en français, et
 // il ne peut pas en exister d'ouvert : ce serait, par définition, des données
 // personnelles. En GÉNÉRANT les documents, les étiquettes sont connues par
-// construction — c'est nous qui plaçons les entités. Zéro annotation, zéro
+// construction - c'est nous qui plaçons les entités. Zéro annotation, zéro
 // donnée réelle, volume illimité. C'est la méthode de LLMLingua-2, qu'on
 // embarque déjà.
 //
 // CE QUE LE MODÈLE DOIT APPRENDRE, ET QUI N'EST PAS CE QU'ON CROIT. Notre
 // défaut mesuré n'est pas un manque de rappel (84 % au banc) : c'est le BRUIT.
 // Sur un vrai CV, 20 masques dont 10 faux. Le corpus doit donc être riche en
-// NÉGATIFS DIFFICILES — des groupes nominaux qui ressemblent à des entités sans
-// en être — bien plus qu'en entités à trouver. Voir NEGATIFS_DURS : ce sont les
+// NÉGATIFS DIFFICILES - des groupes nominaux qui ressemblent à des entités sans
+// en être - bien plus qu'en entités à trouver. Voir NEGATIFS_DURS : ce sont les
 // cas réellement observés, pas des inventions.
 //
 // FORMAT DE SÉRIALISATION : « [SECTION] texte ». Choisi par mesure
@@ -62,7 +62,7 @@ const entite = {
   // chère de ce corpus. Jusqu'ici, TOUTE valeur portant un chiffre y était un
   // piège (« Baccalauréat Général 2016 », « Mars 2026 ») et aucune n'était une
   // vraie entité. Le filtre de précision en a tiré la règle « chiffre ⇒ pas une
-  // entité » — poids −4,6, la troisième plus forte — et s'est mis à retirer
+  // entité » - poids −4,6, la troisième plus forte - et s'est mis à retirer
   //     « 42 rue des Cordeliers »   (adresse)
   //     « 44000 Nantes »            (code postal + ville)
   //     « EMP-0012 »                (matricule, que le déterministe NE VOIT PAS)
@@ -87,7 +87,7 @@ const entite = {
 // ── NÉGATIFS DURS ──────────────────────────────────────────────────────────
 //
 // Le cœur du corpus. Chacun de ces groupes a été RÉELLEMENT produit comme faux
-// positif par le modèle actuel sur de vrais documents — ils ne sont pas
+// positif par le modèle actuel sur de vrais documents - ils ne sont pas
 // imaginés. Ils apparaissent dans les phrases SANS AUCUNE ÉTIQUETTE : c'est
 // ainsi que le modèle apprend à ne rien y voir.
 export const NEGATIFS_DURS = [
@@ -107,7 +107,7 @@ export const NEGATIFS_DURS = [
   'Spécialités', 'Compétences transverses', 'Veille technologique',
 ];
 
-// LANGUES — famille de faux positifs mesurée sur un vrai CV (« Anglais »,
+// LANGUES - famille de faux positifs mesurée sur un vrai CV (« Anglais »,
 // « Allemand », « Anglais C1 ») et pourtant absente du corpus jusqu'ici. Une
 // langue n'est pas une donnée personnelle ; le modèle la voit volontiers comme
 // une nationalité ou un lieu.
@@ -128,7 +128,7 @@ const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
 // ── Gabarits ───────────────────────────────────────────────────────────────
 //
 // Un gabarit produit une LIGNE et déclare ses entités. `{PER}` est remplacé et
-// étiqueté ; `{NEG}`, `{TECHNO}`, `{MOIS}` sont remplacés SANS étiquette — ce
+// étiqueté ; `{NEG}`, `{TECHNO}`, `{MOIS}` sont remplacés SANS étiquette - ce
 // sont les pièges.
 export const GABARITS = {
   'PROFIL': [
@@ -153,7 +153,7 @@ export const GABARITS = {
     'Baccalauréat Général {ANNEE}. Spécialités : {TECHNO}, mathématiques.',
   ],
   // Une langue n'est pas une donnée personnelle, et « Mars 2026 » n'en est pas
-  // une non plus — deux faux positifs mesurés sur un vrai CV, restés hors du
+  // une non plus - deux faux positifs mesurés sur un vrai CV, restés hors du
   // corpus jusqu'au 29/08/2026. Aucun slot n'y est étiqueté.
   'LANGUES': [
     '{LANGUE} {NIVEAU} · {LANGUE} {NIVEAU}',
@@ -205,7 +205,7 @@ export const SECTIONS_PAR_DOC = {
 // Rend AUSSI `texte` et `spans` (offsets en CARACTÈRES). Le format GLiNER
 // compte en tokens, mais notre propre moteur, lui, rend des offsets de
 // caractères : sans cette seconde vue, on ne pourrait pas confronter ce que le
-// détecteur propose à ce que le générateur a réellement placé — c'est
+// détecteur propose à ce que le générateur a réellement placé - c'est
 // exactement ce dont le filtre de précision a besoin pour s'entraîner. Les deux
 // vues sont produites au même endroit, donc elles ne peuvent pas diverger.
 export function ligne(section, gabarit) {
@@ -243,7 +243,7 @@ export function ligne(section, gabarit) {
   const tokens = decouper(texte);
   // GARDE-FOU NON NÉGOCIABLE. Les indices sont calculés en découpant le texte
   // PARTIEL à chaque insertion ; si le découpeur se comporte autrement sur le
-  // texte complet — une ponctuation qui fusionne, un tiret qui colle — les
+  // texte complet - une ponctuation qui fusionne, un tiret qui colle - les
   // étiquettes glissent. Le modèle apprendrait alors de fausses frontières, et
   // RIEN ne le signalerait : ni erreur, ni test, juste un corpus subtilement
   // faux. On revérifie donc chaque span contre la valeur réellement insérée.
@@ -268,7 +268,7 @@ export function ligne(section, gabarit) {
   // voir l'en-tête), mais la PRODUCTION, elle, ne préfixe rien : un intitulé y
   // est une unité à part, marquée `structurel` et épargnée par la passe
   // contextuelle. Un consommateur qui veut reproduire fidèlement l'inférence
-  // doit donc pouvoir s'en débarrasser — sinon il mesure des faux positifs
+  // doit donc pouvoir s'en débarrasser - sinon il mesure des faux positifs
   // (« EXPÉRIENCES PROFESSIONNELLES » vu comme une entreprise) que l'utilisateur
   // ne rencontre jamais.
   return {
@@ -277,13 +277,13 @@ export function ligne(section, gabarit) {
   };
 }
 
-// Les labels du corpus doivent être CEUX de l'inférence — ce sont eux que le
+// Les labels du corpus doivent être CEUX de l'inférence - ce sont eux que le
 // modèle apprendra à reconnaître. Voir GROUPES dans src/engine/gliner.js.
 const LABELS = {
   PER: 'person', ORG: 'company', LOC: 'location',
   EMAIL: 'email', TELEPHONE: 'phone number', DATE_NAISSANCE: 'date of birth',
   // Adresse et code postal + ville SONT des lieux : le label existe déjà et
-  // c'est le bon. Le matricule, lui, n'a pas de label dédié dans GROUPES —
+  // c'est le bon. Le matricule, lui, n'a pas de label dédié dans GROUPES -
   // « company » est ce que le modèle en fait spontanément (mesuré : « EMP-0012 »
   // seul sort à 0,57 en entreprise), donc c'est l'étiquette qui décrit
   // réellement son comportement plutôt qu'une catégorie qui n'existe pas.
@@ -303,7 +303,7 @@ export function ligneAuHasard() {
 
 // Le corps de script ne tourne QUE si le fichier est lancé directement : le
 // module doit être importable sans écrire 2 000 lignes sur la sortie standard.
-// `pathToFileURL` plutôt qu'une concaténation à la main — sur Windows, un
+// `pathToFileURL` plutôt qu'une concaténation à la main - sur Windows, un
 // chemin `C:\…` ne devient pas une URL valide par simple préfixage.
 const { pathToFileURL } = await import('node:url');
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

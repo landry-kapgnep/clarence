@@ -1,11 +1,11 @@
-/* Syne Mono — la police de l'identité visuelle, désormais RÉELLEMENT servie.
+/* Syne Mono - la police de l'identité visuelle, désormais RÉELLEMENT servie.
    Elle était nommée dans --font-body depuis toujours, mais aucun @font-face ne
    la chargeait : le fichier dormait dans fonts/ sans jamais être lu. Sur une
    machine où elle est installée localement (celle du développeur) tout semblait
    normal ; chez tout autre utilisateur l'interface retombait sur system-ui.
    L'identité typographique ne fonctionnait donc que sur un seul poste.
 
-   font-display: swap — le texte s'affiche immédiatement dans la police de
+   font-display: swap - le texte s'affiche immédiatement dans la police de
    repli, puis bascule. Sur une popup, un texte invisible le temps du
    chargement serait pire que le mauvais rendu qu'on cherche à corriger.
 
@@ -41,36 +41,36 @@
   --line: rgb(0, 0, 0);
   --line-soft: rgba(237, 230, 211, 0.10);
 
-  /* ÉCHELLE TYPOGRAPHIQUE — quatre tailles, une fonction chacune.
+  /* ÉCHELLE TYPOGRAPHIQUE - quatre tailles, une fonction chacune.
      Il y en avait HUIT (9, 10, 11, 12, 12.5, 13, 14, 18), dont trois tenaient
      dans un seul pixel : 12 / 12.5 / 13. Un écart d'un demi-pixel ne se voit
-     pas, donc ne hiérarchise rien — il ne reste que l'incohérence. Pire, `h2`
+     pas, donc ne hiérarchise rien - il ne reste que l'incohérence. Pire, `h2`
      valait 14px, exactement --control-size : un titre de section avait la
      taille d'un libellé de bouton, et rien dans la typographie ne disait lequel
      gouvernait l'autre.
      Les titres ne se distinguent donc plus par la TAILLE (ils sont plus petits
-     que le corps) mais par le TRAITEMENT — capitales, interlettrage, teinte.
+     que le corps) mais par le TRAITEMENT - capitales, interlettrage, teinte.
      C'est ce qui libère 14px pour ne plus vouloir dire que « contrôle ».
      Seule exception assumée : le « ? » de .info-tip reste à 9px. Un appel de
      note en exposant n'est pas du texte de lecture, il n'appartient pas à
-     l'échelle — l'agrandir le rendrait visible, à l'inverse de son rôle. */
+     l'échelle - l'agrandir le rendrait visible, à l'inverse de son rôle. */
   --t-titre: 18px;             /* l'en-tête, une fois */
   --t-corps: 14px;             /* contrôles, saisie, texte lu */
   --t-etiquette: 12px;         /* étiquettes, indices, état, tables */
   --t-meta: 11px;              /* badges, compteurs, en-têtes de colonne */
 
-  /* TRAME D'ESPACEMENT — quatre pas, tous multiples de 4.
+  /* TRAME D'ESPACEMENT - quatre pas, tous multiples de 4.
      Il y avait DIX-SEPT valeurs verticales distinctes (1, 2, 3, 4, 5, 6, 7, 8,
      9, 10, 12, 14, 16, 18, 20, 22, 26), dont 5/6/7 et 8/9/10 indiscernables à
      l'œil. Aucun rythme ne peut émerger d'une suite qui n'a pas de pas : on
      lisait une bouillie régulière au lieu de groupes.
 
      L'ESPACE EST LE MÉCANISME DE SECTIONNEMENT, et le seul qui ne coûte pas un
-     pixel de largeur — précieux dans un panneau de 420px. Loi de proximité :
+     pixel de largeur - précieux dans un panneau de 420px. Loi de proximité :
      ce qui est proche est lu ensemble, ce qui est écarté est lu à part.
      Le rapport compte plus que les valeurs. Un titre appartient à ce qui le
      SUIT, jamais à ce qui le précède, donc son blanc supérieur doit écraser
-     son blanc inférieur — au moins 3:1. `h2` valait 14 au-dessus et 8 en
+     son blanc inférieur - au moins 3:1. `h2` valait 14 au-dessus et 8 en
      dessous (1,75:1), assez peu pour flotter entre les deux. */
   --e-xs: 4px;                 /* étiquette collée à son champ */
   --e-s: 8px;                  /* entre éléments d'un même groupe */
@@ -79,7 +79,7 @@
 
   /* LE ROUGE DE LA MARQUE, relevé sur le logo lui-même (#FF2700, identique
      dans les cinq fichiers source, icône d'extension comprise) plutôt
-     qu'inventé — puis assombri de 6 %, à teinte constante.
+     qu'inventé - puis assombri de 6 %, à teinte constante.
      Raison, mesurée : blanc sur #FF2700 donne 3,79:1. Assez pour une icône
      (WCAG 1.4.11, seuil 3:1), pas pour le libellé « Vers la page » qui est du
      texte de 14px (WCAG 1.4.3, seuil 4,5:1). #E62300 monte à 4,56:1 et reste
@@ -87,7 +87,7 @@
   --rouge-marque: #E62300;
 
   /* Débord du bandeau de livraison : il doit filer jusqu'aux bords du panneau,
-     donc annuler TOUS les rembourrages qui l'en séparent — .popup-shell (12px)
+     donc annuler TOUS les rembourrages qui l'en séparent - .popup-shell (12px)
      puis .wrap (16px). Une seule constante, sinon les trois valeurs divergent
      au premier réglage de l'une d'elles. */
   --debord-panneau: 28px;
@@ -118,7 +118,7 @@
 * { box-sizing: border-box; }
 
 /* L'attribut `hidden` doit TOUJOURS l'emporter. Sans ça, la moindre règle
-   `display` explicite sur un élément masqué le rend visible malgré tout — ce
+   `display` explicite sur un élément masqué le rend visible malgré tout - ce
    qui a déjà affiché deux barres de progression avant l'heure. Le masquage
    piloté en JS doit être fiable, pas dépendre de l'ordre des feuilles. */
 [hidden] { display: none !important; }
@@ -251,9 +251,9 @@ header { display: block; }
 h1 { font-size: var(--t-titre); margin: 0; font-weight: 400; }
 
 /* ===== TROIS RANGS, ET UN SEUL PIGMENT =====
-   h2            section de premier rang  — teinte du sceau, porte le rail
-   .groupe-titre sous-groupe              — neutre, porte un trait fin
-   .field-label  étiquette d'un champ     — neutre, casse normale
+   h2            section de premier rang  - teinte du sceau, porte le rail
+   .groupe-titre sous-groupe              - neutre, porte un trait fin
+   .field-label  étiquette d'un champ     - neutre, casse normale
    La teinte ne dit qu'une chose : « ceci est une charpente ». --tan et --moss
    n'y entrent JAMAIS : ils sont déjà sémantiques (masques manuels /
    pseudonymes pour l'un, détections du modèle / tokens pour l'autre) et un
@@ -286,13 +286,13 @@ h2, .section-titre {
 }
 details[open] > .section-titre::before { content: "▾"; }
 
-/* ===== SECTION — du blanc, pas du trait =====
+/* ===== SECTION - du blanc, pas du trait =====
    Un filet vertical a d'abord été essayé le long de chaque section. Il marquait
    bien l'étendue, mais coûtait 14px de largeur sur 420 (bordure + retrait) et
    donnait à chaque section l'air d'un bloc de code cité.
    Une section ne se signale donc plus que par ce qui ne coûte AUCUNE largeur :
    le blanc au-dessus (--e-l, contre --e-m entre groupes), et un filet
-   HORIZONTAL qui prolonge son titre jusqu'au bord — sur la ligne du titre,
+   HORIZONTAL qui prolonge son titre jusqu'au bord - sur la ligne du titre,
    donc sans un pixel de hauteur en plus. */
 .bloc {
   margin-top: var(--e-m);
@@ -311,7 +311,7 @@ details[open] > .section-titre::before { content: "▾"; }
   margin-bottom: var(--e-xs);
 }
 
-/* TITRE DE GROUPE — un rang au-dessus de `.field-label`, en dessous de `h2`.
+/* TITRE DE GROUPE - un rang au-dessus de `.field-label`, en dessous de `h2`.
    Il manquait, et son absence était la cause directe d'une confusion signalée
    à l'usage : « Ce document seulement » gouvernait deux champs mais portait la
    même classe qu'eux. Une portée ne peut pas se distinguer de son contenu si
@@ -326,7 +326,7 @@ details[open] > .section-titre::before { content: "▾"; }
   text-transform: uppercase;
   color: var(--paper-dim);
   /* 16 contre 4 : 4:1. Le premier groupe d'un conteneur avait `margin-top: 0`
-     — c'est ce qui collait « Pour ce document » sous le titre du dépliant. Un
+     - c'est ce qui collait « Pour ce document » sous le titre du dépliant. Un
      groupe garde son blanc où qu'il soit ; c'est le CONTENEUR qui décide de le
      supprimer, jamais la position du groupe. */
   margin: var(--e-m) 0 var(--e-xs);
@@ -520,7 +520,7 @@ body.panel-mode .popup-shell {
   display: flex;
   flex-direction: column;
   /* ⚠️ OPAQUE, ET PAS `--bg-shell`. Cette variable vaut
-     `linear-gradient(180deg, var(--seal), rgba(19, 19, 29, 0.5))` — alpha 0,5
+     `linear-gradient(180deg, var(--seal), rgba(19, 19, 29, 0.5))` - alpha 0,5
      sur le second arrêt. Elle est faite pour la coquille, qui repose sur une
      page opaque ; sur une modale FLOTTANTE, la page traversait la carte et le
      formulaire d'identité devenait illisible, superposé au reste de
@@ -662,13 +662,13 @@ body.panel-mode .popup-shell {
 .file-name-ext--png { background: #ec4899; }
 
 /* Envoi direct dans la page (mode panneau).
-   PORTAIT UNE BORDURE EN TIRETS ET UNE TEINTE VERTE PROPRES — deux signaux
+   PORTAIT UNE BORDURE EN TIRETS ET UNE TEINTE VERTE PROPRES - deux signaux
    pour rien. Le tireté annonce un glisser-déposer alors que l'élément écoute
    un `click` (son nom `dragCard` vient d'une version antérieure), et le vert
    est déjà pris : c'est la teinte de « Économiser des tokens ». Un troisième
    emploi de la même couleur la vide de son sens.
    Il porte donc `.btn-ghost` et n'ajoute plus que sa flèche : c'est le même
-   geste que Copier — livrer le résultat — vers une destination différente. */
+   geste que Copier - livrer le résultat - vers une destination différente. */
 .drag-card {
   width: auto;
   display: inline-flex;
@@ -884,7 +884,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
    POURQUOI UNE GRILLE. Les options étaient des `inline-block` dont la case
    vivait en `position: absolute` : hors du flux, elle DÉBORDAIT de sa ligne et
    sa couleur mordait sur l'option du dessus. Ce n'était pas un défaut de marge
-   mais de positionnement — aucune valeur de `margin` ne l'aurait réglé.
+   mais de positionnement - aucune valeur de `margin` ne l'aurait réglé.
 
    Un bouton qui contient son icône ET son texte ne peut plus déborder : la
    couleur reste dans sa propre boîte. La grille, elle, garantit des proportions
@@ -916,7 +916,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 
 /* SEUL LE CARRÉ SE COLORE. Teinter le bouton entier en faisait un pavé de
    couleur qui écrasait le reste de l'écran ; ici la couleur signale l'état sans
-   changer la lecture du texte — exactement ce que fait .file-name-ext. */
+   changer la lecture du texte - exactement ce que fait .file-name-ext. */
 .opt-carre {
   display: flex;
   align-items: center;
@@ -964,7 +964,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 
 /* CASE PORTANT UNE ICÔNE.
    Décochée : fond noir, icône BLANCHE. Cochée : le carré entier se colore et
-   l'icône passe en NOIR — la couleur devient le fond, pas une pastille au
+   l'icône passe en NOIR - la couleur devient le fond, pas une pastille au
    centre. Le carré intérieur (::after) n'a donc plus lieu d'être ici, il
    passerait par-dessus l'icône. */
 .square-checkbox.avec-icone::after { display: none; }
@@ -1004,7 +1004,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 /* Moteur de détection réellement actif. Affiché SEULEMENT quand on n'est pas
    sur le moteur nominal (repli) ou en cas d'indisponibilité totale : un badge
    permanent en fonctionnement normal deviendrait du bruit que l'utilisateur
-   cesserait de lire — or c'est justement quand il change qu'il doit alerter. */
+   cesserait de lire - or c'est justement quand il change qu'il doit alerter. */
 .engine-badge {
   font-size: var(--t-etiquette);
   margin-top: 6px;
@@ -1029,7 +1029,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
    .overlay-body porte `white-space: pre-wrap` (utile pour afficher du texte
    brut, néfaste pour un formulaire : chaque saut de ligne du HTML devenait un
    blanc réel, d'où des colonnes trouées). Même piège que la collision
-   .panel / body.panel-mode déjà documentée — on neutralise ici. */
+   .panel / body.panel-mode déjà documentée - on neutralise ici. */
 .identity-body {
   display: flex;
   flex-direction: column;
@@ -1045,7 +1045,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 }
 /* Chaque cellule : libellé collé à son champ, sans étirement vertical.
    Le sélecteur couvre les DEUX groupes depuis que le formulaire est en deux
-   temps — les champs essentiels et ceux du dépliant. */
+   temps - les champs essentiels et ceux du dépliant. */
 .identity-fields > div,
 .identity-essentiels > div {
   display: flex;
@@ -1065,7 +1065,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 .identity-clear { margin-left: auto; color: var(--tan); }
 
 /* ===== Barre de progression =====
-   Remplit par transform:scaleX (composité GPU) — jamais par width, qui
+   Remplit par transform:scaleX (composité GPU) - jamais par width, qui
    déclencherait un layout à chaque tick pendant que le thread principal
    est déjà sollicité. */
 .progress-track {
@@ -1086,7 +1086,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 
 /* ÉTAPES DU TRAITEMENT.
    Une étape EN COURS montre sa jauge ; une étape FINIE devient une puce, et sa
-   jauge disparaît. Deux jauges pleines empilées ne disaient plus rien — on ne
+   jauge disparaît. Deux jauges pleines empilées ne disaient plus rien - on ne
    savait pas laquelle attendait encore.
 
    ⚠️ AUCUNE règle `display` sur un élément qu'on masque par l'attribut
@@ -1105,7 +1105,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   margin-bottom: 4px;
 }
 /* `tabular-nums` : sans lui, la largeur des chiffres varie et le pourcentage
-   tressaute à chaque mise à jour — sur une détection de deux minutes, ça se
+   tressaute à chaque mise à jour - sur une détection de deux minutes, ça se
    remarque. */
 .etape-pct {
   font-variant-numeric: tabular-nums;
@@ -1124,21 +1124,21 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   padding: 3px 9px;
   font-size: var(--t-etiquette);
   /* Teinte VERDÂTRE, dérivée du moss déjà utilisé pour les détections du
-     modèle — une étape franchie se lit du premier coup d'œil. Le fond des
+     modèle - une étape franchie se lit du premier coup d'œil. Le fond des
      contrôles (7 % d'alpha) était invisible sur la coquille. */
   background: color-mix(in srgb, var(--moss) 22%, var(--bg-raised));
   color: var(--paper);
 }
 .etape-faite .coche { color: var(--moss); }
 
-/* INFOBULLE — un « ! » qui déplie son avertissement au survol.
+/* INFOBULLE - un « ! » qui déplie son avertissement au survol.
    Remplace un paragraphe permanent : la contrepartie de la compression doit
    rester lisible sans encombrer l'option en permanence.
    Même parti pris que la carte « Voir tout » : le fond est FLOUTÉ derrière, ce
    qui détache la boîte sans avoir à l'assombrir. */
 .info-tip {
   /* Discret comme un appel de note : pas de pastille colorée, juste un signe
-     en exposant. Il n'a pas à attirer l'œil — seulement à se laisser trouver. */
+     en exposant. Il n'a pas à attirer l'œil - seulement à se laisser trouver. */
   position: relative;
   display: inline;
   margin-left: 2px;
@@ -1171,7 +1171,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
   /* `visibility` et non `display` : une règle display explicite écraserait
-     l'attribut hidden si on l'utilisait ailleurs — piège déjà rencontré sur
+     l'attribut hidden si on l'utilisait ailleurs - piège déjà rencontré sur
      les barres de progression. */
   visibility: hidden;
   opacity: 0;
@@ -1204,14 +1204,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
    des cases jointives en DOM laissent un interstice d'un sous-pixel dès que
    l'échelle d'affichage n'est pas entière, ce qu'un seul bitmap ne peut pas
    faire. La taille du canvas est fixée en JS (pixels device exacts, pas de
-   pourcentage) pour la même raison — un étirement CSS réintroduirait du
+   pourcentage) pour la même raison - un étirement CSS réintroduirait du
    flou/sous-pixel.
 
    LISIBILITÉ. Deux réglages, à ajuster ensemble :
    - --letter-bg-opacity ci-dessous, l'atténuation d'ensemble. Le motif doit
      rester une texture ; au-delà de ~0.35 il concurrence le contenu.
    - LETTER_GRID_CLEAR_PAD dans main.js, la marge d'évidement autour des
-     éléments d'UI — le motif ne se dessine jamais derrière eux. */
+     éléments d'UI - le motif ne se dessine jamais derrière eux. */
 /* Vit DANS .wrap (déjà position:relative) : le fond de .wrap est opaque, une
    grille placée derrière lui serait purement et simplement invisible. */
 #letterBg {
@@ -1240,7 +1240,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 
 /* Rayon du flou, enregistré pour être ANIMABLE : une propriété personnalisée
    non déclarée via @property est une simple chaîne, donc `transition` ne peut
-   pas l'interpoler — le disque apparaîtrait d'un coup. */
+   pas l'interpoler - le disque apparaîtrait d'un coup. */
 @property --letterBgBlur-radius {
   syntax: '<length>';
   inherits: false;
@@ -1253,7 +1253,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
    (`.wrap > *:not(#letterBg)`, z-index 1).
 
    Le masque fait le partiel : opaque au centre (flou plein sous le curseur),
-   il retombe sur un plancher d'alpha au-delà — donc le reste de la grille
+   il retombe sur un plancher d'alpha au-delà - donc le reste de la grille
    garde un voile léger au lieu de devenir net d'un coup. Rayon à 0 au repos :
    le dégradé se réduit alors à ce seul plancher, uniformément.
 
@@ -1297,15 +1297,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 /* Indicateur de POIDS DE TRAITEMENT du fichier choisi.
    Volontairement pas une estimation de temps : un temps annoncé est une
    promesse qu'on ne peut pas tenir (machine, WebGPU, cache du modèle), et
-   l'utilisateur en voudrait à l'application. Un poids décrit le fichier — il
+   l'utilisateur en voudrait à l'application. Un poids décrit le fichier - il
    est vérifiable et ne peut pas être démenti.
 
    STYLE ALIGNÉ SUR .file-name-ext, son voisin immédiat dans le markup, et non
    sur .engine-badge : la première version (fond color-mix translucide, bordure
    colorée, radius en pilule) reproduisait un réflexe de « pastille SaaS »
-   générique — repéré à l'œil comme hors DA. Ici : plat, opaque, sans bordure,
+   générique - repéré à l'œil comme hors DA. Ici : plat, opaque, sans bordure,
    sans radius (de toute façon écrasé par la règle globale `border-radius: 0
-   !important`), texte sombre à fort contraste — la même famille que les
+   !important`), texte sombre à fort contraste - la même famille que les
    étiquettes d'extension juste à côté. */
 .poids-badge {
   display: inline-block;
@@ -1318,11 +1318,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
   /* Aide au survol : le classement doit rester contestable, pas opaque. */
   cursor: help;
 }
-/* La couleur porte l'information même sans lire le mot — mais le mot est
+/* La couleur porte l'information même sans lire le mot - mais le mot est
    TOUJOURS présent : la couleur seule exclurait les utilisateurs daltoniens.
    Contraste mesuré dans le navigateur (texte --seal sur chaque fond) : 7,23 à
    8,47 pour les trois premiers (AAA, seuil 7:1), 4,94 pour « très lourd »
-   (AA, seuil 4,5:1 — le rouge est plus saturé, la marge y est plus fine). */
+   (AA, seuil 4,5:1 - le rouge est plus saturé, la marge y est plus fine). */
 .poids-badge.poids-leger { background: var(--moss); }
 .poids-badge.poids-moyen { background: var(--seal-lit); }
 .poids-badge.poids-lourd { background: var(--tan); }
@@ -1359,13 +1359,13 @@ td.map-occ {
 /* Quatre colonnes de natures DIFFÉRENTES : trois doivent tenir leur contenu
    (placeholder, compte, bouton), une seule doit absorber le reste (la valeur).
    Sans contrainte, `table { width: 100% }` répartit la largeur à sa façon et
-   ouvre une gouttière au milieu de chaque ligne — l'œil doit alors traverser
+   ouvre une gouttière au milieu de chaque ligne - l'œil doit alors traverser
    un vide pour relier une valeur à son nombre d'occurrences.
    `width: 1%` est l'idiome qui fait tenir une colonne à son contenu : la
    largeur demandée est intenable, le moteur de table retombe donc sur le
    minimum, et tout le reste va à la colonne à 100 %. */
 /* Cinq colonnes : quatre tiennent leur contenu, seule la valeur absorbe le
-   reste. L'ancienne règle visait « la dernière colonne » — vraie quand il n'y
+   reste. L'ancienne règle visait « la dernière colonne » - vraie quand il n'y
    avait qu'une action, fausse depuis qu'il y en a deux : la colonne des actions
    grossissait et écrasait la valeur, dont les longues (une adresse e-mail)
    débordaient sur les boutons. */
@@ -1391,7 +1391,7 @@ td.map-occ {
      et l'en-tête partait avec lui : passé trois lignes, on ne savait plus
      laquelle des deux colonnes d'action était « garder ». Un tableau dont la
      légende s'échappe est un tableau qu'on relit en devinant.
-     ⚠️ FOND OPAQUE OBLIGATOIRE — c'est le même piège que la carte modale : les
+     ⚠️ FOND OPAQUE OBLIGATOIRE - c'est le même piège que la carte modale : les
      lignes défilent DERRIÈRE, et la moindre transparence les laisserait passer
      au travers du titre. `opacity` sur l'élément entier ferait exactement ça,
      d'où sa disparition ici au profit d'une couleur de texte. */
@@ -1423,7 +1423,7 @@ td.map-occ {
 
 /* Aperçu des termes TELS QUE LE MOTEUR LES LIRA.
    Vécu deux fois : une virgule oubliée soudant « UE » et « Ginel » en un terme
-   fantôme, puis un champ vidé par un rechargement — 7 termes sur 15 perdus,
+   fantôme, puis un champ vidé par un rechargement - 7 termes sur 15 perdus,
    découverts seulement en comparant deux sorties. Une consigne qu'on croit
    appliquée alors qu'elle ne l'est pas est le pire cas pour cet outil. */
 .termes-lus {
@@ -1436,23 +1436,23 @@ td.map-occ {
 }
 .termes-lus:empty { display: none; }
 
-/* TABLE DES CORRESPONDANCES — sortie du volet replié où elle était.
+/* TABLE DES CORRESPONDANCES - sortie du volet replié où elle était.
    Elle vivait derrière un <details><summary>Correspondances</summary>, donc
    fermée par défaut et invisible en pratique. Or c'est le SEUL endroit qui
-   dise à l'utilisateur ce que l'IA ne verra plus — et il ne peut pas deviner
+   dise à l'utilisateur ce que l'IA ne verra plus - et il ne peut pas deviner
    de quelles valeurs sa question aura besoin (une chronologie a besoin des
    dates, un devoir d'histoire aussi). Le titre le dit dans ces termes-là :
    « Correspondances » décrivait la mécanique, pas l'enjeu. */
 .mapping-bloc { margin-top: var(--e-m); }
 /* « Corrections » n'est pas une section à part : elle appartient au résultat.
-   Elle porte donc `.groupe-titre` dans la page — rang 2, trait fin — au lieu
+   Elle porte donc `.groupe-titre` dans la page - rang 2, trait fin - au lieu
    d'une classe à elle qui la faisait passer pour un pair de « Résultat ». */
 /* Plafond de hauteur : la popup est bornée à 600px par Chrome, et un document
    à 76 valeurs pousserait tout le reste hors de vue. La table défile chez
    elle. */
 /* Défilement plafonné, et STYLÉ comme celui de la coquille : une barre native
    large, imbriquée dans une popup qui a déjà la sienne, fait bricolage.
-   `overflow-x: hidden` est explicite — sans lui, un dépassement horizontal
+   `overflow-x: hidden` est explicite - sans lui, un dépassement horizontal
    ferait apparaître une SECONDE barre, et deux barres dans un encart de
    200 px de haut ne laissent plus voir le contenu. */
 #mappingWrap, #fileMappingWrap {
@@ -1468,15 +1468,15 @@ td.map-occ {
   background: rgba(237, 230, 211, 0.24);
 }
 
-/* ===================== DÉBORDEMENT HORIZONTAL — RÈGLES SYSTÈME =============
+/* ===================== DÉBORDEMENT HORIZONTAL - RÈGLES SYSTÈME =============
    La popup est large de 520px et `.popup-shell` COUPE ce qui dépasse
    (overflow-x: hidden) : un élément trop large n'ajoute pas de barre de
    défilement, il disparaît. Les règles ci-dessous bornent par CLASSE d'élément
-   plutôt qu'au cas par cas — un tableau ajouté demain est couvert d'office. */
+   plutôt qu'au cas par cas - un tableau ajouté demain est couvert d'office. */
 
 /* ⚠️ NE PAS METTRE `table-layout: fixed` ICI. Essayé, et cassé : les colonnes
    de cette table reposent sur l'idiome `width: 1%` (voir plus haut), qui ne
-   fonctionne QU'EN `auto` — le moteur y lit « aussi étroit que possible ». En
+   fonctionne QU'EN `auto` - le moteur y lit « aussi étroit que possible ». En
    `fixed`, le 1 % est pris au pied de la lettre : la colonne des placeholders
    tombe à 5 px et son texte se dessine PAR-DESSUS la colonne voisine,
    caractère par caractère. Le débordement se règle par le retour à la ligne,
@@ -1496,12 +1496,12 @@ td.map-occ {
 .wrap :where(table, pre, img, canvas, textarea, select) { max-width: 100%; }
 
 /* Infobulles : première borne, la largeur. Le recadrage horizontal, lui, est
-   fait en JS (`recadrerInfobulle`) — une boîte ancrée au « ? » sort du cadre
+   fait en JS (`recadrerInfobulle`) - une boîte ancrée au « ? » sort du cadre
    dès que le « ? » approche un bord, et aucune règle CSS statique ne couvre
    les deux bords à la fois sans se répéter par emplacement. */
 .info-tip-box { max-width: min(240px, calc(100vw - 32px)); }
 
-/* Suggestion de profil — discrète par construction : elle PROPOSE, et une
+/* Suggestion de profil - discrète par construction : elle PROPOSE, et une
    proposition qui crie serait vite ignorée. Ton d'accent léger, jamais rouge :
    ce n'est ni une alerte ni une erreur. */
 .suggestion {
@@ -1520,7 +1520,7 @@ td.map-occ {
 
 /* Lu par les lecteurs d'écran, invisible à l'œil.
    `display:none` et `visibility:hidden` retireraient l'élément de l'arbre
-   d'accessibilité aussi — ce qu'on ne veut pas : le <h1> porte le nom du
+   d'accessibilité aussi - ce qu'on ne veut pas : le <h1> porte le nom du
    produit, que le logo ne donne qu'en image. */
 .visuellement-cache {
   position: absolute;
@@ -1543,7 +1543,7 @@ body.panel-mode.autonome {
 
 /* L'AVERTISSEMENT EST LA PROMESSE DU PRODUIT, pas une mention légale.
    Il partageait sa ligne avec « Mon identité » et portait la couleur la plus
-   pâle de l'interface — le texte le moins visible de l'écran disait la seule
+   pâle de l'interface - le texte le moins visible de l'écran disait la seule
    chose qui protège vraiment l'utilisateur. Il prend sa propre ligne et
    remonte en contraste. Il ne devient PAS une alerte pour autant : un
    avertissement permanent qui crie finit ignoré, et ce n'est pas une erreur. */
@@ -1584,7 +1584,7 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
   .identity-essentiels { grid-template-columns: 1fr; }
 }
 
-/* CE QUI APPARAÎT APRÈS COUP DOIT SE VOIR — une règle, pas un cas.
+/* CE QUI APPARAÎT APRÈS COUP DOIT SE VOIR - une règle, pas un cas.
    Constaté : la barre de suggestion se fondait dans la page et se ratait. Un
    bandeau qui pousse à agir doit se distinguer du contenu qu'on lit. Le repère
    est un LISERÉ au sceau, à gauche : il attire l'œil sur un axe où rien
@@ -1637,7 +1637,7 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
 /* Le <select> à la DA, ce qui en est stylable.
    ⚠️ CE QUE CETTE RÈGLE NE PEUT PAS FAIRE : la LISTE qui s'ouvre au clic est
    peinte par le système d'exploitation, hors de portée du CSS. On habille donc
-   l'état fermé — le seul que l'utilisateur voit la plupart du temps — et le
+   l'état fermé - le seul que l'utilisateur voit la plupart du temps - et le
    menu ouvert reste natif. Le rendre conforme exigerait de remplacer l'élément
    par une liste maison, avec tout le clavier et l'ARIA que ça suppose. */
 select, .mini-select {
@@ -1663,7 +1663,7 @@ select:focus-visible, .mini-select:focus-visible {
   outline: 2px solid var(--seal-lit);
   outline-offset: 1px;
 }
-/* Les options, elles, ne reçoivent que la couleur — et seulement sur les
+/* Les options, elles, ne reçoivent que la couleur - et seulement sur les
    plateformes qui l'acceptent. C'est le plafond du natif. */
 select option { background: var(--bg-raised); color: var(--paper); }
 
@@ -1683,11 +1683,11 @@ select option { background: var(--bg-raised); color: var(--paper); }
 
 /* LES TROIS ACTIONS DU RÉSULTAT ONT LA MÊME EMPREINTE.
    Elles n'avaient ni la même hauteur ni la même nature : une icône seule dans
-   un bouton calibré pour du texte (l'image est CARRÉE, 200×200 — elle flottait
+   un bouton calibré pour du texte (l'image est CARRÉE, 200×200 - elle flottait
    dans un rectangle), un bouton de texte, et une carte à bordure pointillée.
    Trois formes pour trois gestes de même rang.
-   Leurs RÔLES restent distincts — plein pour l'action principale, discret pour
-   la secondaire, pointillé pour ce qui se glisse — mais leur géométrie ne l'est
+   Leurs RÔLES restent distincts - plein pour l'action principale, discret pour
+   la secondaire, pointillé pour ce qui se glisse - mais leur géométrie ne l'est
    plus : c'est la hiérarchie qui doit parler, pas l'accident de rembourrage. */
 #fileResults > .controls > button,
 #fileResults > .controls > .drag-card {
@@ -1705,7 +1705,7 @@ select option { background: var(--bg-raised); color: var(--paper); }
    Les trois gestes qui SORTENT le document (télécharger, copier, envoyer dans
    la page) sont la fin du parcours : ils forment un aplat uni d'un bord à
    l'autre, à la hauteur exacte des boutons, dans le rouge de la marque.
-   Les boutons n'ont plus de forme propre — même couleur que le bandeau, aucune
+   Les boutons n'ont plus de forme propre - même couleur que le bandeau, aucune
    bordure, aucune ombre : ce sont les pictogrammes blancs qui portent tout.
    Aucun rembourrage vertical : la hauteur du bandeau EST celle des boutons. */
 /* Le bandeau EST la séparation : le filet de `.bloc` juste au-dessus ne
@@ -1718,7 +1718,7 @@ select option { background: var(--bg-raised); color: var(--paper); }
   margin-left: calc(-1 * var(--debord-panneau));
   margin-right: calc(-1 * var(--debord-panneau));
   /* Aucun rembourrage : ce sont les BOUTONS qui vont d'un bord à l'autre, pas
-     seulement leur fond. Leur zone cliquable atteint donc le bord du panneau —
+     seulement leur fond. Leur zone cliquable atteint donc le bord du panneau -
      une cible bornée par le bord de l'écran est la plus facile à viser. */
   padding: 0;
   margin-top: var(--e-m);
@@ -1728,7 +1728,7 @@ select option { background: var(--bg-raised); color: var(--paper); }
 }
 /* Chaque geste prend sa part de la largeur : le bandeau est une barre
    d'actions, pas trois boutons posés à gauche. `flex: 1` les répartit à parts
-   égales quel qu'en soit le nombre — Copier et « Vers la page » n'apparaissent
+   égales quel qu'en soit le nombre - Copier et « Vers la page » n'apparaissent
    pas dans tous les cas. */
 #fileResults > .controls > button,
 #fileResults > .controls > .drag-card {
@@ -1749,7 +1749,7 @@ select option { background: var(--bg-raised); color: var(--paper); }
   white-space: nowrap;
 }
 /* L'inversion des pictos ne vaut que sur un bouton CLAIR (.btn-primary) ; ici
-   le fond est sombre, ils redeviennent blancs — leur couleur d'origine. */
+   le fond est sombre, ils redeviennent blancs - leur couleur d'origine. */
 #fileResults > .controls .dlbtn,
 #fileResults > .controls .cpbtn { filter: none; }
 /* Un aplat sans relief doit quand même répondre. On assombrit le bandeau

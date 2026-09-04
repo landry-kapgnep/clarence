@@ -1,4 +1,4 @@
-// Reconstruction PDF anonymisé, avec préservation des images (Stage B) —
+// Reconstruction PDF anonymisé, avec préservation des images (Stage B) -
 // alternative à la sortie Markdown de pdf-adapter.js quand l'utilisateur veut
 // GARDER le contenu visuel plutôt qu'alléger les tokens.
 //
@@ -8,7 +8,7 @@
 // texte anonymisé est écrit. Contrepartie assumée : fidélité visuelle dégradée
 // (police unique Helvetica, positions par fragment, pas de kerning fin).
 //
-// pdf-lib est injecté (deps) — comme DOMParser pour DOCX — pour rester testable
+// pdf-lib est injecté (deps) - comme DOMParser pour DOCX - pour rester testable
 // en Node. Le ré-encodage canvas des images (Stage B) est navigateur-only.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { groupIntoLines, splitIntoColumns, median, needsSpace, isLineWrapHyphen, paragraphGapThreshold, marquerIntitules, releverIntitules, intitulesRetenus, HEADING_SIZE_RATIO, configurerPdfjs, ressourcesPdfjs } from './pdf-adapter.js';
@@ -20,7 +20,7 @@ import { verifierAnnulation } from '../engine/annulation.js';
 // dupliquée ici (voir le commentaire de configurerPdfjs).
 configurerPdfjs();
 
-// StandardFonts.Helvetica encode WinAnsi/CP1252 — le français passe quasi tout,
+// StandardFonts.Helvetica encode WinAnsi/CP1252 - le français passe quasi tout,
 // mais quelques caractères typographiques feraient planter drawText. On les
 // normalise (guillemets courbes, tiret cadratin, points de suspension) et on
 // remplace le reste hors-Latin1 par '?' plutôt que de laisser une exception
@@ -70,7 +70,7 @@ function paragraphToRuns(para, id) {
     line.parts.forEach((p, pi) => {
       // Séparateur ' ' entre fragments : entre deux lignes (frontière de mot),
       // SAUF si la ligne précédente se termine par un mot coupé en fin de
-      // ligne (isLineWrapHyphen) — le trait d'union collé au dernier fragment
+      // ligne (isLineWrapHyphen) - le trait d'union collé au dernier fragment
       // déjà poussé est alors retiré et les deux morceaux recollés sans
       // espace, exactement comme pour needsSpace au sein d'une même ligne
       // (fix fuite partielle P1/P1bis : sans ça, la détection voit « auto- »
@@ -100,7 +100,7 @@ function matMul(a, b) {
 }
 
 // Position/taille de chaque image via interprétation de la matrice de
-// transformation courante (CTM) sur la liste d'opérateurs — validé au spike.
+// transformation courante (CTM) sur la liste d'opérateurs - validé au spike.
 // Une image occupe le carré unité [0,1]² transformé par le CTM au moment du
 // paint. Défensif : toute image problématique est simplement ignorée (les
 // images sont un bonus, la sécurité tient sur le TEXTE reconstruit).
@@ -137,7 +137,7 @@ async function extractImages(page) {
     // Deux formes possibles selon l'environnement (vérifié dans la source
     // pdfjs, qui poste `{bitmap, data}`) : en NAVIGATEUR l'image arrive
     // décodée en ImageBitmap (`bitmap`), en Node en données brutes (`data`).
-    // Ne tester que `data` écartait TOUTES les images en Chrome — le bug.
+    // Ne tester que `data` écartait TOUTES les images en Chrome - le bug.
     if (bitmap && (bitmap.data || bitmap.bitmap) && bitmap.width && bitmap.height && ref.w > 1 && ref.h > 1) {
       out.push({ ...ref, bitmap });
     }
@@ -162,7 +162,7 @@ function rawToRgba({ width, height, kind, data }) {
 }
 
 // Ré-encode une image pdfjs via canvas. NAVIGATEUR UNIQUEMENT (OffscreenCanvas)
-// — comme image-adapter.js ; strippe toute métadonnée au passage.
+// - comme image-adapter.js ; strippe toute métadonnée au passage.
 // Retourne { bytes, jpeg } ou null.
 async function encodeImage(img) {
   if (typeof OffscreenCanvas === 'undefined') return null;
@@ -187,11 +187,11 @@ async function encodeImage(img) {
   // JPEG pour les grandes images (photos/scans) : un PNG sans perte ferait
   // exploser le poids du PDF de sortie.
   //
-  // MAIS LA TAILLE N'EST PAS LE BON CRITÈRE SEUL — bug constaté à l'usage : le
+  // MAIS LA TAILLE N'EST PAS LE BON CRITÈRE SEUL - bug constaté à l'usage : le
   // fond transparent d'un PNG ressortait NOIR. Le seuil décidait sur les
   // dimensions, alors que ce qui compte est la présence d'un canal alpha. Un
   // canvas non peint vaut rgba(0,0,0,0) ; la conversion en JPEG supprime l'alpha
-  // en gardant le RGB tel quel, donc (0,0,0) — du noir opaque partout où la
+  // en gardant le RGB tel quel, donc (0,0,0) - du noir opaque partout où la
   // source était transparente. Toute image de plus de 128×128 était concernée,
   // c'est-à-dire presque toutes.
   //
@@ -206,7 +206,7 @@ async function encodeImage(img) {
 
 // Un SEUL pixel non opaque suffit à interdire le JPEG (voir encodeImage).
 // Exporté pour être testable en Node : `encodeImage` dépend d'OffscreenCanvas,
-// donc du navigateur, et n'a jamais pu être couvert — c'est exactement pour ça
+// donc du navigateur, et n'a jamais pu être couvert - c'est exactement pour ça
 // que le bug a survécu.
 export function aDeLaTransparence(rgba) {
   for (let i = 3; i < rgba.length; i += 4) if (rgba[i] < 255) return true;
@@ -222,7 +222,7 @@ const REDUCTION_MIN = 0.45;
 
 // Taille de police à laquelle un fragment TIENT dans la page.
 //
-// P7 — LE MÊME BUG QUE « LES LIGNES QUI DÉPASSENT ». Un placeholder est presque
+// P7 - LE MÊME BUG QUE « LES LIGNES QUI DÉPASSENT ». Un placeholder est presque
 // toujours plus long que la valeur qu'il remplace (« Nantes » → « [LIEU_3] »),
 // et chaque fragment est redessiné à SA position d'origine : un fragment en fin
 // de ligne finit donc hors page. Deux conséquences, longtemps prises pour deux
@@ -237,7 +237,7 @@ const REDUCTION_MIN = 0.45;
 // ressort tronqué sur une page de 420 pt, et INTACT sur une page de 600 pt.
 //
 // Réduire la taille du fragment le fait rentrer, donc le rend à la fois visible
-// et de nouveau extractible — ce qui restaure la réversibilité, l'enjeu réel
+// et de nouveau extractible - ce qui restaure la réversibilité, l'enjeu réel
 // pour un document destiné à être recollé dans un LLM.
 // Le 5e argument est une BORNE DROITE absolue, pas nécessairement le bord de
 // page : sur une ligne partagée, c'est le début du fragment suivant.
@@ -261,7 +261,7 @@ const MEME_LIGNE = 2;
 // illisibles tous les deux.
 //
 // PORTÉE : LA PAGE ENTIÈRE, pas le paragraphe. Deux fragments à la même hauteur
-// appartiennent très souvent à des unités DIFFÉRENTES — deux colonnes, deux
+// appartiennent très souvent à des unités DIFFÉRENTES - deux colonnes, deux
 // cellules d'un tableau, un titre courant et un numéro de page. Une première
 // version ne comparait qu'à l'intérieur d'une unité et laissait donc un
 // placeholder de la colonne gauche mordre sur la colonne droite.
@@ -285,7 +285,7 @@ const MEME_LIGNE = 2;
 //
 // INDEXÉ PAR BANDE : comparer chaque fragment à tous les autres est quadratique,
 // et une page dense en compte des milliers. On ne compare qu'aux fragments de
-// sa bande et des deux bandes voisines — la tolérance pouvant enjamber une
+// sa bande et des deux bandes voisines - la tolérance pouvant enjamber une
 // frontière de bande.
 export function calculerBornes(runs, textes, largeurPage) {
   const bandes = new Map();
@@ -313,7 +313,7 @@ export function calculerBornes(runs, textes, largeurPage) {
 }
 
 // Ré-extrait la structure géométrique page par page (convention stateless ;
-// buffer.slice(0) car pdfjs détache — cf. gotcha docs/notes-techniques.md).
+// buffer.slice(0) car pdfjs détache - cf. gotcha docs/notes-techniques.md).
 async function parsePages(buffer, signal) {
   const pdf = await pdfjsLib.getDocument({
     data: new Uint8Array(buffer.slice(0)),
@@ -341,7 +341,7 @@ async function parsePages(buffer, signal) {
       const lines = groupIntoLines(columnItems);
       // Relevé AVANT le regroupement, par la fonction PARTAGÉE avec le chemin
       // Markdown. Les deux boucles étaient dupliquées « à l'identique » et ont
-      // divergé dès la première évolution de la règle — deuxième occurrence de
+      // divergé dès la première évolution de la règle - deuxième occurrence de
       // la leçon P1bis. Ne pas la recopier ici.
       releverIntitules(lines, dominantSize, intitulesVus);
       for (const para of paragraphsWithParts(lines, dominantSize)) {
@@ -368,7 +368,7 @@ export async function reconstructPdf(buffer, opts = {}) {
   // unité et rend la même liste, mots peu porteurs retirés. Injectée plutôt que
   // branchée ici : le modèle vit dans un worker, ce module reste testable.
   //
-  // Elle s'applique APRÈS le masquage et AVANT le dessin — c'est le seul point
+  // Elle s'applique APRÈS le masquage et AVANT le dessin - c'est le seul point
   // où l'on connaît à la fois le texte final et le fragment dont il provient.
   // Sans elle, l'option n'existerait que pour les sorties texte, ce qui la vide
   // de son sens : l'utilisateur veut moins de tokens dans le fichier qu'il

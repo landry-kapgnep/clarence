@@ -5,7 +5,7 @@
 // POURQUOI SÉPARÉ DES AUTRES VÉRIFICATIONS. `verifier-conversion.mjs` charge
 // les poids depuis un dossier LOCAL : il valide le modèle, jamais sa
 // publication. Or entre les deux il reste tout ce qui peut casser sans que le
-// modèle y soit pour rien — un dépôt privé, un fichier oublié au téléversement,
+// modèle y soit pour rien - un dépôt privé, un fichier oublié au téléversement,
 // une disposition que Transformers.js ne sait pas lire (il attend le tokenizer
 // à la RACINE et les poids dans `onnx/`), une licence absente de la fiche.
 //
@@ -21,7 +21,7 @@ console.log(`dépôt : ${COMPRESSION_MODEL}\n`);
 
 // ── 1. Métadonnées : public, et surtout SOUS LICENCE ───────────────────────
 //
-// Un dépôt sans `license:` dans sa fiche est réputé « tous droits réservés » —
+// Un dépôt sans `license:` dans sa fiche est réputé « tous droits réservés » -
 // c'est précisément le défaut de la conversion communautaire qu'on a écartée.
 // Publier la nôtre sans licence déclarée referait le problème qu'on corrige,
 // et ça ne se voit nulle part ailleurs qu'ici.
@@ -65,7 +65,7 @@ const adapteur = async (texte) => {
 };
 
 // Taux 0,1 : la compression la plus agressive possible. Les placeholders
-// doivent survivre QUAND MÊME — sans eux la réinjection est morte, et la
+// doivent survivre QUAND MÊME - sans eux la réinjection est morte, et la
 // panne serait invisible puisqu'on ne relit pas un texte compressé.
 const TEXTE = `Le dossier de [PERSONNE_1] a été transmis à [ENTREPRISE_1] le 12 mars.
 Merci d'adresser toute correspondance à [EMAIL_1] ou par téléphone au [TELEPHONE_1].

@@ -12,7 +12,7 @@
 // à garder synchronisées.
 //
 // Les valeurs sont TOUTES fictives et reconnaissables comme telles (carte
-// 4242…, domaines .example) — règle du projet : ne jamais committer de données
+// 4242…, domaines .example) - règle du projet : ne jamais committer de données
 // ressemblant à du réel.
 
 export const CORPUS = [
@@ -60,7 +60,7 @@ export const CORPUS = [
     ],
     // « IUT » et non « IUT de Villetaneuse » : la ville est masquée en LIEU,
     // exactement comme « Sarcelles » deux lignes plus haut dans le même
-    // document — attendre l'inverse ici serait se contredire. Ce qui doit
+    // document - attendre l'inverse ici serait se contredire. Ce qui doit
     // survivre, c'est le SIGLE : sans lui le LLM ne sait plus qu'il s'agit
     // d'un institut universitaire.
     aGarder: ['CERTIFICAT DE SCOLARITE', 'BUT Informatique', 'IUT']
@@ -128,14 +128,14 @@ export const CORPUS = [
     quoi: 'FORMULAIRE administratif : libellé en casse normale, VALEUR EN CAPITALES',
     // Ce document manquait, et son absence a coûté une fuite chez un vrai
     // utilisateur (P12). Tout le corpus était fait de CV et de mémoires, où les
-    // noms sont en casse mixte — or dans un formulaire officiel (casier
+    // noms sont en casse mixte - or dans un formulaire officiel (casier
     // judiciaire, acte d'état civil, attestation), les VALEURS sont en
     // capitales et les libellés ne le sont pas.
     //
     // Mesuré : « LANDRY KAPGNEP » sortait en ENTREPRISE à 0,72 sur le texte
     // naturel, et en PERSONNE à 0,99 une fois la casse adoucie. Le nom recevait
     // donc un pseudonyme d'entreprise, et le prénom isolé n'était jamais
-    // masqué — la décomposition par composant ne vaut que pour les PER.
+    // masqué - la décomposition par composant ne vaut que pour les PER.
     //
     // Données ENTIÈREMENT INVENTÉES : le document réel qui a servi au
     // diagnostic n'est jamais entré dans le dépôt, et aucune de ses valeurs
@@ -166,7 +166,7 @@ export const CORPUS = [
     quoi: 'Le SEUL document qui éprouve POSITIVEMENT poste/santé/établissement',
     // Ce document manquait, et son absence bloquait une décision : le 3e groupe
     // de labels (POSTE/NATIONALITE/ETABLISSEMENT/SANTE) ne produisait que du
-    // bruit sur tout le corpus — mais AUCUN document ne contenait de vraie
+    // bruit sur tout le corpus - mais AUCUN document ne contenait de vraie
     // valeur de ces types. Impossible de dire si le désactiver par défaut
     // coûterait quelque chose. Il le dit maintenant.
     //
@@ -176,7 +176,7 @@ export const CORPUS = [
     // POSTE/SANTE/NATIONALITE/ETABLISSEMENT restent listés ici alors qu'ils sont
     // DÉCOCHÉS par défaut (TYPES_PEU_FIABLES) : décider de ne pas chercher une
     // donnée ne la rend pas moins sensible. Le banc doit continuer à afficher
-    // qu'on ne les attrape pas — c'est le même refus de fausse confiance qu'on
+    // qu'on ne les attrape pas - c'est le même refus de fausse confiance qu'on
     // applique à l'utilisateur, appliqué à notre propre métrique.
     aMasquer: [
       { valeur: 'Nadia Belkacem', type: 'PER' },
@@ -218,7 +218,7 @@ export const CORPUS = [
   },
 
   // ─────────────────────────────────────────────────────────────────────────
-  // LE DOCUMENT PIÉGÉ — borne basse, jamais fondu dans les moyennes.
+  // LE DOCUMENT PIÉGÉ - borne basse, jamais fondu dans les moyennes.
   //
   // `tests/manuel/tous-defauts.pdf` empile délibérément TOUS les défauts connus
   // et n'a AUCUNE vocation à être réaliste : page 2 faite de lignes courtes sans
@@ -227,7 +227,7 @@ export const CORPUS = [
   // sans rien dire de vrai sur un fichier d'utilisateur.
   //
   // D'où `borneBasse` : run.mjs le rapporte À PART. Une seule exception, le
-  // STRUCTURÉ — un raté déterministe est un bug partout, y compris ici.
+  // STRUCTURÉ - un raté déterministe est un bug partout, y compris ici.
   //
   // Sa vérité terrain vivait en PROSE dans tests/manuel/README.md, avec la
   // mention « à industrialiser ». La voici. Elle sert de banc d'essai à P9 :
@@ -243,7 +243,7 @@ export const CORPUS = [
       // chiffre : `ressembleAUnIntitule` la reconnaîtrait comme un intitulé de
       // section, exactement comme « COMPÉTENCES ». Formellement indiscernables.
       // Toute variante qui épargne les unités-titres fait donc fuir le nom de
-      // la candidate — c'est LE garde-fou à ne pas franchir.
+      // la candidate - c'est LE garde-fou à ne pas franchir.
       { valeur: 'ÉLÉONORE VASSEUR', type: 'PER' },
       { valeur: 'Sébastien de La Villardière', type: 'PER' },
       { valeur: 'Hélène Brassard', type: 'PER' },
@@ -270,7 +270,7 @@ export const CORPUS = [
       { valeur: '42 rue des Cordeliers', type: 'ADRESSE' },
       { valeur: '99 Av. Jean Jaurès', type: 'ADRESSE' },
 
-      // Page 4 — anglais
+      // Page 4 - anglais
       { valeur: '(617) 555-0142', type: 'TELEPHONE' },
       { valeur: '617-555-0143', type: 'TELEPHONE' },
       { valeur: '123-45-6789', type: 'ID_NATIONAL' },
@@ -278,7 +278,7 @@ export const CORPUS = [
       { valeur: 'Siobhán Ó Braonáin', type: 'PER' },
       { valeur: 'Ravenscroft & Bell LLP', type: 'ORG' },
 
-      // Page 5 — espagnol
+      // Page 5 - espagnol
       { valeur: '12345678Z', type: 'ID_NATIONAL' },
       { valeur: 'X1234567L', type: 'ID_NATIONAL' },
       { valeur: 'ES91 2100 0418 4502 0005 1332', type: 'IBAN' },
@@ -287,7 +287,7 @@ export const CORPUS = [
       { valeur: 'Calle Mayor 12', type: 'ADRESSE' },
       { valeur: 'María del Carmen Ruiz Salinas', type: 'PER' },
 
-      // Page 6 — allemand
+      // Page 6 - allemand
       { valeur: '12345678901', type: 'ID_NATIONAL' },
       { valeur: 'DE89 3704 0044 0532 0130 00', type: 'IBAN' },
       { valeur: '+49 30 123456', type: 'TELEPHONE' },
@@ -300,15 +300,15 @@ export const CORPUS = [
     ],
 
     // CE QUI DOIT SURVIVRE. Les intitulés de section en tête : ce sont EUX que
-    // P9 cherche à démasquer, dans les quatre langues — la règle est formelle,
+    // P9 cherche à démasquer, dans les quatre langues - la règle est formelle,
     // donc elle doit être indépendante de la langue.
     aGarder: [
-      // Intitulés — français
+      // Intitulés - français
       'COMPÉTENCES', 'FORMATION', 'LANGUES', 'EXPÉRIENCES PROFESSIONNELLES',
       'SOMMAIRE', 'IDENTIFIANTS', 'COORDONNÉES', 'ÉTAT CIVIL',
       'AUTRES CANDIDATS', 'CELLULES NUES', 'OUTILS UTILISÉS',
       'TABLEAU DE SUIVI', 'ANNEXE',
-      // Intitulés — anglais / espagnol / allemand
+      // Intitulés - anglais / espagnol / allemand
       'SUMMARY', 'CONTACT DETAILS', 'PEOPLE', 'AMBIGUOUS WORDS',
       'OTHER SECTIONS', 'APPENDIX',
       'DATOS PERSONALES', 'OBSERVACIONES', 'IDIOMAS', 'COMPETENCIAS',
@@ -322,7 +322,7 @@ export const CORPUS = [
       'Contenido', 'Resumen', 'Conclusión',
       'Besprechung', 'Vertrag', 'Unternehmen', 'Bescheinigung', 'Abteilung',
       // Le piège le plus fin du document : le MÊME mot, nom propre puis nom
-      // commun. Aucun lexique ne peut trancher — seule la position le peut.
+      // commun. Aucun lexique ne peut trancher - seule la position le peut.
       'the baker', 'rose grower', 'une rose ancienne',
       // Technos et sigles : sans eux le CV ne veut plus rien dire.
       'Python', 'Docker', 'PostgreSQL', 'Kubernetes', 'IUT', 'BUT',

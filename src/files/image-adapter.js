@@ -1,11 +1,11 @@
-// Adaptateur Image (JPEG/PNG) — nettoyage de métadonnées uniquement, pas
+// Adaptateur Image (JPEG/PNG) - nettoyage de métadonnées uniquement, pas
 // d'anonymisation de contenu (voir docs/notes-techniques.md "Idées explorées" : la détection
 // visuelle par OCR/vision est un chantier à part, hors de portée ici).
 //
 // L'EXIF (GPS, modèle d'appareil, date) et les chunks texte PNG (tEXt/iTXt/
 // eXIf) sont une vraie fuite de PII sous-estimée. Stratégie retenue :
 // RE-ENCODAGE via canvas plutôt qu'un parseur binaire artisanal des segments
-// JPEG/chunks PNG. Un canvas ne préserve QUE les pixels décodés — aucune
+// JPEG/chunks PNG. Un canvas ne préserve QUE les pixels décodés - aucune
 // métadonnée ne peut structurellement survivre, donc aucun risque qu'un bug
 // de parsing laisse fuiter un GPS résiduel (priorité zéro-fuite, même logique
 // que le masquage IBAN/NIR sur structure dans regex-detect.js). Contrepartie
@@ -32,7 +32,7 @@ export async function stripMetadata(buffer, opts = {}) {
 // Pas de texte : une image n'a pas d'unités PII textuelles à faire transiter
 // par anonymizeUnits. processFile() (main.js) court-circuite tout le pipeline
 // de masquage/NER pour les types marqués `metadataOnly` et appelle
-// stripMetadata directement — ces deux fonctions ne sont là que pour
+// stripMetadata directement - ces deux fonctions ne sont là que pour
 // respecter l'interface commune si jamais invoquées par erreur.
 export async function extractTextUnits() {
   return { units: [] };

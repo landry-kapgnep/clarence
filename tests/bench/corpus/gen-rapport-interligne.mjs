@@ -1,4 +1,4 @@
-// Génère tests/bench/corpus/rapport-interligne.pdf — le document qui MANQUAIT
+// Génère tests/bench/corpus/rapport-interligne.pdf - le document qui MANQUAIT
 // au corpus, et dont l'absence a laissé vivre un bug pendant des mois.
 //
 // Tout le reste du corpus est en interligne SIMPLE. Or le seuil de paragraphe
@@ -8,10 +8,10 @@
 // unités de 91 caractères médians dont 52 % coupaient une phrase, 39 % du
 // document masqué, 11 minutes de traitement.
 //
-// Ce document reproduit exactement ce réglage typographique — c'est celui de
+// Ce document reproduit exactement ce réglage typographique - c'est celui de
 // la quasi-totalité des mémoires, rapports et articles académiques.
 //
-// Valeurs TOUTES fictives (.example) — règle du projet.
+// Valeurs TOUTES fictives (.example) - règle du projet.
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -24,7 +24,7 @@ const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 const page = doc.addPage([595, 842]);
 
 const TAILLE = 11;
-const INTERLIGNE = 19;      // 1,5 — au-dessus de TAILLE × 1.6 = 17,6
+const INTERLIGNE = 19;      // 1,5 - au-dessus de TAILLE × 1.6 = 17,6
 const SAUT_PARAGRAPHE = 38; // un vrai saut, le double
 
 let y = 780;
@@ -39,7 +39,7 @@ saut();
 
 // Paragraphe long en prose continue : c'est LUI qui doit ressortir en une
 // seule unité. Les entités y sont noyées dans du texte ordinaire, comme dans
-// un vrai document — contrairement aux fixtures où elles sont isolées.
+// un vrai document - contrairement aux fixtures où elles sont isolées.
 ligne('Ce travail porte sur la localisation des jeux video et sur les');
 ligne('echanges entre studios. Il analyse le role des editeurs dans la');
 ligne('diffusion des oeuvres, en prenant pour exemple la societe');

@@ -52,7 +52,7 @@ test('reconstruction : aucune PII d\'origine ne subsiste, placeholders présents
 
 test('reconstruction : un PDF avec image ne plante pas ; texte anonymisé (images gérées en navigateur uniquement)', async () => {
   // 1x1 PNG. En Node (pas d'OffscreenCanvas), l'image est ignorée SANS casser
-  // la reconstruction du texte — la sécurité tient sur le texte, pas l'image.
+  // la reconstruction du texte - la sécurité tient sur le texte, pas l'image.
   const redPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -78,13 +78,13 @@ test('reconstruction : caractères typographiques hors WinAnsi ne font pas plant
 
 // --- P1bis : mot coupé en fin de ligne (typographie justifiée). Constaté sur
 // un vrai CV : « auto- » / « matisée » soumis séparément au modèle sortait à
-// 0,70 comme donnée de santé — AU-DESSUS du score du vrai nom du candidat
+// 0,70 comme donnée de santé - AU-DESSUS du score du vrai nom du candidat
 // (0,47). Le chemin de RECONSTRUCTION a sa propre logique de jointure
-// (paragraphToRuns, positionnée) — testée ici séparément de groupIntoLines/
+// (paragraphToRuns, positionnée) - testée ici séparément de groupIntoLines/
 // groupIntoParagraphs (pdf-adapter.test.mjs), qui ne couvrent que le Markdown.
 //
 // Lignes RAPPROCHÉES (14pt, sous le seuil PARAGRAPH_GAP_RATIO×taille) pour
-// rester dans le MÊME paragraphe — makePdf() espace ses lignes de 28pt,
+// rester dans le MÊME paragraphe - makePdf() espace ses lignes de 28pt,
 // volontairement large ailleurs dans ce fichier, ce qui déclencherait un
 // NOUVEAU paragraphe et ne testerait jamais la jointure inter-lignes.
 async function makePdfParagrapheSerre(lines) {
@@ -114,7 +114,7 @@ test('reconstruction : un mot coupé en fin de ligne est recollé AVANT détecti
 
 // --- Le chemin de RECONSTRUCTION a sa propre construction de paragraphes
 // (paragraphsWithParts). Il doit recevoir le même seuil calibré que le chemin
-// Markdown, sinon les deux divergent — ils l'ont déjà fait une fois (P1bis).
+// Markdown, sinon les deux divergent - ils l'ont déjà fait une fois (P1bis).
 test('reconstruction : interligne 1,5 → un seul paragraphe soumis au modèle', async () => {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -152,12 +152,12 @@ test('reconstruction : interligne 1,5 → un seul paragraphe soumis au modèle',
   assert.match(texte, /present travail$/, 'jusqu\'à la dernière');
 });
 
-// --- P7 : placeholders « tronqués » — en réalité DÉBORDANTS.
+// --- P7 : placeholders « tronqués » - en réalité DÉBORDANTS.
 //
 // Un placeholder est presque toujours plus long que la valeur qu'il remplace,
 // et chaque fragment est redessiné à SA position d'origine : un fragment en fin
 // de ligne finit donc hors page. pdfjs.getTextContent() ne retourne pas les
-// glyphes hors cadre — d'où 422 « placeholders tronqués » comptés sur un
+// glyphes hors cadre - d'où 422 « placeholders tronqués » comptés sur un
 // mémoire réel, qui n'étaient pas coupés dans le fichier mais hors page.
 test('tailleQuiTient : un fragment qui déborde est réduit, un autre non', async () => {
   const doc = await PDFDocument.create();
@@ -190,7 +190,7 @@ test('tailleQuiTient : plancher de réduction respecté (jamais de corps illisib
 
 test('reconstruction : un placeholder en fin de ligne reste ENTIÈREMENT extractible', async () => {
   // Ligne qui remplit presque la page ; l'email en fin de ligne devient un
-  // placeholder plus long, ce qui la faisait déborder — donc perdre des
+  // placeholder plus long, ce qui la faisait déborder - donc perdre des
   // caractères à la relecture.
   const inBuf = await makePdf([
     'Merci de bien vouloir confirmer par retour a@b.fr'
@@ -208,7 +208,7 @@ test('reconstruction : un placeholder en fin de ligne reste ENTIÈREMENT extract
 // --- FOND NOIR DES IMAGES TRANSPARENTES -----------------------------------
 // encodeImage dépend d'OffscreenCanvas (navigateur) et n'a jamais pu être
 // couvert ici : c'est ce trou qui a laissé le bug vivre. La DÉCISION, elle,
-// est une fonction pure — donc testable.
+// est une fonction pure - donc testable.
 
 test('aDeLaTransparence : un seul pixel non opaque suffit', () => {
   // 2 pixels opaques.
@@ -260,7 +260,7 @@ test('calculerBornes : un fragment à GAUCHE ne borne pas', () => {
 test('calculerBornes : la COLONNE VOISINE borne, même sans lien logique', () => {
   // Le cas qui a motivé le passage à une portée PAGE. Deux colonnes sont des
   // unités distinctes ; borner dans l'unité laissait la gauche mordre sur la
-  // droite. On ne cherche pas à savoir si les fragments forment « une ligne » —
+  // droite. On ne cherche pas à savoir si les fragments forment « une ligne » -
   // seulement si leurs plages se recoupent à la même hauteur.
   const runs = [{ x: 40, y: 500 }, { x: 320, y: 500 }];
   assert.equal(calculerBornes(runs, ['colonne gauche', 'colonne droite'], 600)[0], 320);

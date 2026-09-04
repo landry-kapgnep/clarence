@@ -1,4 +1,4 @@
-// Adaptateur CSV — Phase 1 (la plus simple : texte pur, zéro métadonnée,
+// Adaptateur CSV - Phase 1 (la plus simple : texte pur, zéro métadonnée,
 // zéro dépendance). Parseur/sérialiseur RFC4180 fait main : champs entre
 // guillemets (délimiteur/retour à la ligne/guillemet doublé), BOM UTF-8 et
 // style de fin de ligne préservés à l'identique en sortie.
@@ -82,7 +82,7 @@ function parseMeta(csvText) {
 //
 // L'enjeu est asymétrique, d'où la prudence : se tromper en croyant qu'une
 // ligne de DONNÉES est un en-tête ferait sauter la détection contextuelle sur
-// de vraies personnes — une fuite. Se tromper dans l'autre sens ne coûte que
+// de vraies personnes - une fuite. Se tromper dans l'autre sens ne coûte que
 // du sur-masquage. On n'affirme donc « en-tête » que sur une signature nette :
 // plusieurs lignes, libellés courts, tous distincts, aucun chiffre isolé et
 // aucune valeur qui ressemble déjà à une donnée personnelle.
@@ -112,7 +112,7 @@ function looksLikeHeader(rows) {
 //
 // La ligne d'en-tête est marquée `structurel` : ses libellés décrivent les
 // colonnes, ils ne sont jamais des données personnelles. Sans ce marquage, le
-// modèle masquait « Date de naissance », « Matricule », « Salaire » — le
+// modèle masquait « Date de naissance », « Matricule », « Salaire » - le
 // fichier ressortait sûr et illisible (voir detectNerPerUnit).
 //
 // Les cellules de données, elles, restent ISOLÉES : leur isolement est ce qui
@@ -131,7 +131,7 @@ export function extractTextUnits(csvText) {
   return { units, meta };
 }
 
-// resultsById : Map<id, { maskedText }> — ré-analyse le CSV depuis zéro
+// resultsById : Map<id, { maskedText }> - ré-analyse le CSV depuis zéro
 // (fonction pure, aucun état réutilisé entre extractTextUnits et applyMask).
 export function applyMask(csvText, resultsById) {
   const { rows, delimiter, eol, hasBOM, trailingEOL } = parseMeta(csvText);

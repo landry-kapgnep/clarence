@@ -25,7 +25,7 @@ const TYPE_LABELS = {
 
 const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// NOS PROPRES PLACEHOLDERS — à ne JAMAIS remasquer.
+// NOS PROPRES PLACEHOLDERS - à ne JAMAIS remasquer.
 //
 // LE DÉFAUT QU'ON FERME (01/09/2026, constaté sur un vrai CV repassé une
 // seconde fois). Le modèle voit « [PERSONNE_2] », y trouve une entité, et on
@@ -35,7 +35,7 @@ const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 //   · LA RÉINJECTION EST MORTE. La table du premier passage a disparu avec la
 //     popup : plus rien ne relie « [PERSONNE_1] » au vrai nom.
 //
-// Le geste est banal — on anonymise, le résultat ne convient pas, on repasse la
+// Le geste est banal - on anonymise, le résultat ne convient pas, on repasse la
 // sortie. Un outil doit reconnaître ce qu'il a lui-même écrit.
 //
 // Le motif est CONSTRUIT à partir de TYPE_LABELS, jamais recopié : ajouter un
@@ -55,7 +55,7 @@ export const estPlaceholder = (valeur) => MOTIF_PLACEHOLDER.test(String(valeur |
 //
 // `indexOf` en boucle et non une RegExp : un pseudonyme réaliste (« Noémie
 // Rousseau ») n'est pas échappé et contiendrait des métacaractères, et un
-// placeholder porte des crochets — deux façons de casser une RegExp construite
+// placeholder porte des crochets - deux façons de casser une RegExp construite
 // à la volée. La recherche littérale n'a pas ce problème.
 function compterOccurrences(texte, aiguille) {
   if (!aiguille) return 0;
@@ -70,7 +70,7 @@ export function maskText(text, entities, opts = {}) {
   const counters = new Map();
   const mapping = [];
 
-  // Passe 1 — remplacement des entités détectées, substitut cohérent par valeur.
+  // Passe 1 - remplacement des entités détectées, substitut cohérent par valeur.
   let out = '';
   let cursor = 0;
   for (const e of entities) {
@@ -89,7 +89,7 @@ export function maskText(text, entities, opts = {}) {
       // `occurrences` est rempli plus bas, une fois la propagation faite : c'est
       // ce compteur qui permet de trier la table de correspondance par
       // fréquence. Le sur-masquage se concentre en tête de cette distribution
-      // — mesuré sur un vrai mémoire, « ChatGPT » masqué 41 fois et « MT »
+      // - mesuré sur un vrai mémoire, « ChatGPT » masqué 41 fois et « MT »
       // 25 fois, quand la vraie donnée personnelle n'apparaissait qu'UNE fois.
       mapping.push({ placeholder: ph, value: e.value, type: e.type, realistic, occurrences: 0 });
     }
@@ -98,7 +98,7 @@ export function maskText(text, entities, opts = {}) {
   }
   out += text.slice(cursor);
 
-  // Passe 2 — propagation (voir propagatedSpans). Appliquée de droite à gauche
+  // Passe 2 - propagation (voir propagatedSpans). Appliquée de droite à gauche
   // pour que les positions calculées restent valides pendant la substitution.
   const spans = propagatedSpans(out, mapping);
   for (let i = spans.length - 1; i >= 0; i--) {
@@ -108,7 +108,7 @@ export function maskText(text, entities, opts = {}) {
 
   // Comptage APRÈS propagation : on compte ce que l'utilisateur voit vraiment
   // dans le document final, pas ce que la détection avait proposé. Les deux
-  // diffèrent — la propagation rattrape des occurrences que le modèle a ratées.
+  // diffèrent - la propagation rattrape des occurrences que le modèle a ratées.
   for (const m of mapping) {
     m.occurrences = compterOccurrences(out, m.placeholder);
   }
@@ -123,7 +123,7 @@ export function maskText(text, entities, opts = {}) {
 // adaptateurs qui réécrivent un fichier (PDF reconstruit, DOCX) ne repartent
 // pas de la chaîne masquée mais de la liste d'entités. Tant que la propagation
 // ne vivait que dans maskText, ces occurrences fuyaient dans le fichier final
-// alors qu'elles étaient bien masquées dans l'aperçu — constaté sur un vrai
+// alors qu'elles étaient bien masquées dans l'aperçu - constaté sur un vrai
 // rapport de stage, où un nom de tuteur détecté page 5 restait en clair
 // page 1. Une seule implémentation, donc, qui ne peut plus diverger.
 //
@@ -141,7 +141,7 @@ const PARTICULES = new Set([
   'de', 'du', 'des', 'la', 'le', 'les', 'van', 'von', 'da', 'di', 'bin', 'al', 'ben'
 ]);
 
-// Composants d'un NOM propagés séparément — la fuite que le banc a révélée.
+// Composants d'un NOM propagés séparément - la fuite que le banc a révélée.
 //
 // La propagation ne travaillait que sur la valeur ENTIÈRE : « Marcus Whitfield »
 // masqué à sa première occurrence, mais « Marcus » réutilisé seul dix lignes
@@ -207,7 +207,7 @@ export function propagatedSpans(text, mapping, occupied = []) {
   return spans.sort((a, b) => a.start - b.start);
 }
 
-// Désanonymisation : substitution en UN SEUL passage — une valeur restituée
+// Désanonymisation : substitution en UN SEUL passage - une valeur restituée
 // qui contiendrait elle-même un motif [TYPE_N] ne doit pas être re-substituée.
 export function reinject(text, mapping) {
   if (!mapping.length) return text;

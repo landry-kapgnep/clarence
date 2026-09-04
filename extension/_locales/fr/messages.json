@@ -1,6 +1,6 @@
 {
   "aide_pdf_reconstruit_depuis_des_pages_neuves_aucu": {
-    "message": "PDF reconstruit depuis des pages <strong>neuves</strong> — aucun texte d'origine ne subsiste dessous. Images conservées.<br> Fidélité approximative : police unique, positions au fragment."
+    "message": "PDF reconstruit depuis des pages <strong>neuves</strong> : aucun texte d'origine ne subsiste dessous. Images conservées.<br> Fidélité approximative : police unique, positions au fragment."
   },
   "aide_remplace_par_des_noms_plausibles_plutot_que": {
     "message": "Remplace par des noms <strong>plausibles</strong> plutôt que <code>[PERSONNE_1]</code>. La même personne garde le même pseudonyme d'un bout à l'autre. <br><br>Poste, nationalité et santé gardent leur étiquette : inventer un faux plausible y tromperait l'IA."
@@ -12,7 +12,7 @@
     "message": "Sortie <strong>.md</strong> : le texte seul, sans les images. Copiable directement dans le chat."
   },
   "aide_supprime_les_mots_peu_porteurs_la_prose_est": {
-    "message": "Supprime les mots peu porteurs. <strong>La prose est appauvrie</strong> et ne peut plus être relue — données masquées et négations préservées.<br> Pour « résume », « quelles dates ? » — pas pour « corrige », « reformule », « traduis ».<br> Premier usage : ~170 Mo, une fois."
+    "message": "Supprime les mots peu porteurs. <strong>La prose est appauvrie</strong> et ne peut plus être relue, mais les données masquées et les négations sont préservées.<br> Pour « résume », « quelles dates ? », pas pour « corrige », « reformule », « traduis ».<br> Premier usage : ~170 Mo, une fois."
   },
   "analyser": {
     "message": "Analyser"
@@ -36,7 +36,7 @@
     "message": "Aucun texte à analyser."
   },
   "aucune_donnee_sensible": {
-    "message": "Aucune donnée sensible détectée — métadonnées nettoyées."
+    "message": "Aucune donnée sensible détectée. Métadonnées nettoyées."
   },
   "changer_de_fichier": {
     "message": "Changer de fichier"
@@ -48,7 +48,7 @@
     "message": "Copié."
   },
   "copie_relis": {
-    "message": "Copié — relis avant de coller."
+    "message": "Copié. Relis avant de coller."
   },
   "copier": {
     "message": "Copier"
@@ -117,7 +117,7 @@
     "message": "Anonymise les données sensibles avant de les coller dans ChatGPT, Claude ou Gemini. Tout reste dans votre navigateur."
   },
   "extName": {
-    "message": "Clarence — anonymiseur local"
+    "message": "Clarence - anonymiseur local"
   },
   "fermer": {
     "message": "Fermer"
@@ -207,7 +207,7 @@
     "message": "Résultat"
   },
   "rien_detecte": {
-    "message": "Rien détecté — ajoute un masque manuel si besoin."
+    "message": "Rien détecté. Ajoute un masque manuel si besoin."
   },
   "selectionne_un_passage_puis_clique_ici": {
     "message": "Sélectionne un passage, puis clique ici"
@@ -249,7 +249,7 @@
     "message": "Tout effacer"
   },
   "traitement_annule": {
-    "message": "Traitement annulé — aucun fichier produit."
+    "message": "Traitement annulé. Aucun fichier produit."
   },
   "type_adresse": {
     "message": "Adresses"
@@ -323,7 +323,7 @@
     }
   },
   "profil_applique": {
-    "message": "Profil « $PROFIL$ » appliqué — relance l’analyse.",
+    "message": "Profil « $PROFIL$ » appliqué. Relance l’analyse.",
     "placeholders": {
       "profil": {
         "content": "$1"
@@ -376,7 +376,7 @@
     "message": "Bonjour, je suis Marie Dubois (marie.dubois@exemple.fr), pouvez-vous relire ce contrat ?"
   },
   "relis_avant_de_coller": {
-    "message": "Relis avant de coller — la détection n’est pas infaillible."
+    "message": "Relis avant de coller : la détection n’est pas infaillible."
   },
   "glisse_un_fichier_ici": {
     "message": "Glisse un fichier ici, ou clique pour le choisir"
@@ -385,7 +385,7 @@
     "message": "Ajouter emails, écoles, employeurs, pseudos…"
   },
   "deja_couverts_sans_rien_declarer": {
-    "message": "Emails, téléphones, IBAN : déjà repérés sans rien déclarer. Ton nom, lui, dépend d’un modèle — et un modèle rate parfois."
+    "message": "Emails, téléphones, IBAN : déjà repérés sans rien déclarer. Ton nom, lui, dépend d’un modèle, et un modèle rate parfois."
   },
   "appliquer_profil": {
     "message": "Appliquer « $PROFIL$ »",

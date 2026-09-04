@@ -1,4 +1,4 @@
-// Banc d'essai — « à quelle distance sommes-nous d'une première version
+// Banc d'essai - « à quelle distance sommes-nous d'une première version
 // publiable ? », répondu en chiffres plutôt qu'à l'anecdote.
 //
 // Lancer :  npm run bench            (moteur complet, GLiNER réellement chargé)
@@ -11,11 +11,11 @@
 // mesurer, pas ce qui compte : est-ce qu'un fichier ressort propre ET encore
 // exploitable.
 //
-// TROIS CRITÈRES, PAS UNE NOTE — c'est le point de conception central :
+// TROIS CRITÈRES, PAS UNE NOTE - c'est le point de conception central :
 //  1. rappel STRUCTURÉ : exigence 100 %. Couche déterministe validée
 //     mathématiquement, un raté est un bug, pas une limite ;
 //  2. rappel CONTEXTUEL : mesuré et affiché, jamais promis (dépend d'un modèle) ;
-//  3. UTILISABILITÉ : un document dont tout est masqué est « sûr » et inutile —
+//  3. UTILISABILITÉ : un document dont tout est masqué est « sûr » et inutile -
 //     personne ne paie pour ça. Mesuré par les termes qui devaient survivre.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -50,7 +50,7 @@ const TYPES_STRUCTURES = new Set([
 // Un banc qui tournerait sur un pipeline simulé ne mesurerait rien. On charge
 // le modèle réellement embarqué, avec le MÊME correctif de découpeur que le
 // worker de production (sans lui, la détection FR est silencieusement dégradée
-// — voir le gotcha « GLiNER.js est cassé sur le français » dans docs/notes-techniques.md).
+// - voir le gotcha « GLiNER.js est cassé sur le français » dans docs/notes-techniques.md).
 const DECOUPEUR_UNICODE = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
 
 async function chargerGliner() {
@@ -87,7 +87,7 @@ async function chargerGliner() {
   // pouvoir prouver que grouper les inférences ne change PAS la détection.
   // Le rembourrage à la longueur du plus long texte du lot pourrait, en
   // théorie, déteindre sur les scores si le masque d'attention était imparfait.
-  // C'est une hypothèse à vérifier, pas à supposer — d'où ce câblage.
+  // C'est une hypothèse à vérifier, pas à supposer - d'où ce câblage.
   return createBatchedPipeline(async (textes, labels) => {
     const res = await instance.inference({ texts: textes, entities: labels, threshold: 0.05 });
     return textes.map((_, i) => res[i] || []);
@@ -98,7 +98,7 @@ async function chargerGliner() {
 //
 // La VARIANTE vient de src/engine/gliner.js, jamais codée en dur ici : le banc
 // doit noter le modèle réellement livré. Quand la variante vivait dans main.js,
-// le banc mesurait `quantized` pendant que la popup chargeait autre chose — une
+// le banc mesurait `quantized` pendant que la popup chargeait autre chose - une
 // porte de qualité qui note un modèle qu'on n'expédie pas ne garantit rien.
 // Le nom de fichier porte la variante, sinon on relirait le cache de l'ancienne.
 async function modeleLocal() {
@@ -143,7 +143,7 @@ async function anonymiser(fichier, glinerPipe) {
   // de `maskedText`. C'est là que vivait la fuite P0 (une valeur rattrapée par
   // propagation restait en clair dans le fichier livré tout en apparaissant
   // masquée dans l'aperçu). Un banc qui lirait `maskedText` ne verrait jamais
-  // cette classe de bug — donc il passerait à côté de sa raison d'être.
+  // cette classe de bug - donc il passerait à côté de sa raison d'être.
   // On relit ensuite le PDF produit : c'est ce que l'utilisateur reçoit.
   if (ext === '.pdf') {
     const { reconstructPdf } = await import('../../src/files/pdf-reconstruct.js');
@@ -201,20 +201,20 @@ async function texteDuPdf(buffer) {
 //
 // Pourquoi insensible aux espaces : la reconstruction PDF dessine chaque
 // fragment à sa position D'ORIGINE (limite de fidélité déjà documentée et
-// acceptée) — un mot recollé par isLineWrapHyphen (« inno-» + « vante » →
+// acceptée) - un mot recollé par isLineWrapHyphen (« inno-» + « vante » →
 // « innovante ») reste donc deux OBJETS TEXTE séparés dans le PDF final,
 // à leurs positions de lignes respectives. Relu naïvement via
-// `items.map(i=>i.str).join(' ')`, ça redonne « inno vante » — un faux
+// `items.map(i=>i.str).join(' ')`, ça redonne « inno vante » - un faux
 // négatif du BANC, pas une régression du produit (vérifié : le texte soumis
 // à la détection contient bien « innovante » d'un seul tenant). Sans cette
 // normalisation, le banc aurait crié au bug sur un correctif qui marche.
 const normalise = s => s.toLowerCase().replace(/\s+/g, '');
 const presente = (sortie, valeur) => normalise(sortie).includes(normalise(valeur));
 
-// FUITE PARTIELLE — le trou que ce banc avait dans sa propre vérité terrain.
+// FUITE PARTIELLE - le trou que ce banc avait dans sa propre vérité terrain.
 //
 // Chercher la valeur ENTIÈRE ne suffit pas : « Amandine ROUSSEAU » comptait
-// comme masquée alors que la sortie disait « Amandine [BIC_1] » — le prénom
+// comme masquée alors que la sortie disait « Amandine [BIC_1] » - le prénom
 // en clair trois fois dans le document, à côté du placeholder qui désigne son
 // propre patronyme. Du point de vue de l'utilisateur c'est une fuite entière :
 // dans un rapport de stage, un prénom accolé à un identifiant suffit
@@ -222,7 +222,7 @@ const presente = (sortie, valeur) => normalise(sortie).includes(normalise(valeur
 //
 // Un nom est le seul type dont CHAQUE composant identifie séparément (un
 // numéro tronqué, une adresse tronquée, non). On ne vérifie donc les
-// composants que pour les PER — ailleurs, « rue » ou « des » déclencheraient
+// composants que pour les PER - ailleurs, « rue » ou « des » déclencheraient
 // des fausses alertes en cascade.
 const PARTICULES = new Set([
   'de', 'du', 'des', 'la', 'le', 'van', 'von', 'da', 'di', 'bin', 'al',
@@ -260,12 +260,12 @@ async function main() {
   for (const doc of CORPUS) {
     const sortie = await anonymiser(doc.fichier, glinerPipe);
 
-    // Une valeur est fuitée si elle subsiste ENTIÈRE, ou — pour un nom — si un
+    // Une valeur est fuitée si elle subsiste ENTIÈRE, ou - pour un nom - si un
     // seul de ses composants reste en clair (voir fuitePartielle).
     const partielles = new Map();
     for (const v of doc.aMasquer) {
       // Si la valeur ENTIÈRE subsiste, ce n'est pas une fuite « partielle »
-      // mais un raté complet — ne pas brouiller les deux dans l'affichage.
+      // mais un raté complet - ne pas brouiller les deux dans l'affichage.
       if (presente(sortie, v.valeur)) continue;
       const restes = fuitePartielle(sortie, v);
       if (restes.length) partielles.set(v, restes);
@@ -284,7 +284,7 @@ async function main() {
     // sans rien dire de vrai sur le fichier d'un utilisateur.
     //
     // Le STRUCTURÉ, lui, compte partout. Un raté déterministe est un bug, pas
-    // une limite de modèle — la borne basse ne l'excuse pas.
+    // une limite de modèle - la borne basse ne l'excuse pas.
     const cible = doc.borneBasse ? borne : global;
     cible.struct[0] += struct.length - fuitesStruct.length;
     cible.struct[1] += struct.length;
@@ -330,7 +330,7 @@ async function main() {
 
   // La borne basse, à part et jamais mêlée aux trois chiffres ci-dessus.
   // Ce bloc est l'instrument de P9 : toute variante sur les intitulés se juge
-  // à SES deux colonnes — ce qu'elle démasque (préservé ↑) contre ce qu'elle
+  // à SES deux colonnes - ce qu'elle démasque (préservé ↑) contre ce qu'elle
   // laisse fuir (contextuel ↓). Une variante qui gagne l'une en perdant l'autre
   // est rejetée, comme la minusculisation l'a été au spike POS.
   if (borne.struct[1] || borne.ctx[1]) {

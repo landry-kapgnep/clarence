@@ -1,9 +1,9 @@
-// Grille de lettres — portage du fond animé de la popup (src/popup/main.js),
+// Grille de lettres - portage du fond animé de la popup (src/popup/main.js),
 // étendu à la page entière.
 //
 // Mêmes constantes et même intention : des amas irréguliers de cases, des
 // teintes de la palette qui s'allument brièvement. C'est la signature visuelle
-// de l'outil — elle littéralise le traitement des caractères.
+// de l'outil - elle littéralise le traitement des caractères.
 //
 // Peint sur UN SEUL canvas, jamais en <div> : deux cases accolées en DOM
 // laissent un interstice au sous-pixel dès que le facteur d'échelle de l'écran
@@ -13,7 +13,7 @@ const LETTRES = ['c', 'l', 'a', 'r', 'e', 'n'];
 const CELL = 16;
 const FONT_PX = 9;
 const TICK_MS = 120;          // plus rapide que la popup : ici le motif VIT
-// Relevé sur les captures de la popup : la trame y est CLAIRSEMÉE — de petits
+// Relevé sur les captures de la popup : la trame y est CLAIRSEMÉE - de petits
 // groupes de 2 à 6 lettres dans les creux, jamais un tapis. À 25 % de
 // couverture le site devenait un damier ; on vise ici ~8 %.
 const R = [1.1, 2.1];
@@ -22,9 +22,9 @@ const JITTER = 0.22;
 const CASES_PAR_AMAS = 130;
 
 // Dérive des amas : c'est ELLE qui fait bouger les lettres. Sans elle le motif
-// est figé et seules les teintes changent — ce qui ne se voit pas.
+// est figé et seules les teintes changent - ce qui ne se voit pas.
 // Réglé À L'ŒIL, sur la page : à 0,035 case par tick (~4 px/s) la dérive
-// existait mais ne se VOYAIT pas — deux rendus à 900 ms d'intervalle étaient
+// existait mais ne se VOYAIT pas - deux rendus à 900 ms d'intervalle étaient
 // identiques au pixel près. Il faut franchir une case de temps en temps pour
 // que le motif se lise comme vivant.
 const DERIVE = 0.10;          // cases par tick
@@ -93,7 +93,7 @@ export function monterGrilleDeLettres(hote) {
     peindre();
   }
 
-  // ÉVIDEMENT DES ZONES DE TEXTE — repris de la popup.
+  // ÉVIDEMENT DES ZONES DE TEXTE - repris de la popup.
   //
   // Sans lui, la trame passe derrière chaque paragraphe et le texte devient
   // pénible à lire (constaté sur le pied de page, illisible). On ne peut pas
@@ -101,7 +101,7 @@ export function monterGrilleDeLettres(hote) {
   // plus du tout. On la garde donc franche, et on l'écarte du texte.
   //
   // Le canvas est FIXE, donc les rectangles du DOM (coordonnées viewport) sont
-  // directement utilisables — mais il faut recalculer au défilement.
+  // directement utilisables - mais il faut recalculer au défilement.
   const SELECTEUR_TEXTE = 'h1, h2, p, table, dt, dd, li, .etiquette, .decompte, .marque, .atelier, .aveu, .compteurs, .apports';
   const MARGE = 6; // px de respiration autour du texte
 
@@ -153,7 +153,7 @@ export function monterGrilleDeLettres(hote) {
 
   // Le champ n'est calculé que dans la boîte englobante de chaque amas.
   // En parcourant toutes les cases pour tous les amas, une page 1440×900
-  // demanderait ~140 000 exponentielles par tick — injouable à 120 ms.
+  // demanderait ~140 000 exponentielles par tick - injouable à 120 ms.
   function calculerChamp() {
     champ.fill(0);
     for (const b of blobs) {
@@ -196,8 +196,8 @@ export function monterGrilleDeLettres(hote) {
         const k = cle(cx, cy);
         const t = teintes.get(k);
         // La case n'est peinte QUE si elle est teintée : la remplir de --seal
-        // reviendrait à peindre du fond sur du fond, et sur une page — au
-        // contraire de la popup — les fonds ne sont pas tous identiques.
+        // reviendrait à peindre du fond sur du fond, et sur une page - au
+        // contraire de la popup - les fonds ne sont pas tous identiques.
         if (t) {
           ctx.fillStyle = t.couleur;
           ctx.fillRect(x, y, CELL, CELL);
@@ -258,7 +258,7 @@ export function monterGrilleDeLettres(hote) {
     requestAnimationFrame(() => { planifie = false; calculerEvidement(); peindre(); });
   }, { passive: true });
 
-  // Mouvement coupé si l'utilisateur en demande moins — la trame reste, figée.
+  // Mouvement coupé si l'utilisateur en demande moins - la trame reste, figée.
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
     allumerDesCases();
     setInterval(() => {

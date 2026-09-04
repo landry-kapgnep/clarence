@@ -1,4 +1,4 @@
-// FILTRE DE PRÉCISION, étape 2 — apprendre les poids.
+// FILTRE DE PRÉCISION, étape 2 - apprendre les poids.
 //
 //     node tools/filtre/entrainer.mjs tools/filtre/jeu.jsonl
 //
@@ -14,7 +14,7 @@
 // faux positif fait gagner en confort, jeter une vraie entité est une FUITE.
 // L'entraînement pondère donc les vraies entités plus lourd que les fausses
 // (POIDS_VRAI), et le seuil final est choisi sur une tolérance de perte ÉNONCÉE
-// — jamais sur la précision maximale. Voir TOLERANCE plus bas, et surtout
+// - jamais sur la précision maximale. Voir TOLERANCE plus bas, et surtout
 // pourquoi la contrainte « zéro perte exacte » a dû être abandonnée.
 import { readFileSync } from 'node:fs';
 import { NOMS_CARACTERISTIQUES } from '../../src/engine/caracteristiques.js';
@@ -27,7 +27,7 @@ const lignes = readFileSync(fichier, 'utf8').split('\n').filter(Boolean).map(l =
 // changé depuis vocabulaire.js : beaucoup de patronymes SONT des mots courants
 // (Blanc, Petit, Roux), et notre propre vivier de pseudonymes en est plein. Un
 // filtre qui démasque des personnes ne rend pas service, il fuit.
-// MÊME PÉRIMÈTRE QUE LE FILTRE LIVRÉ, importé plutôt que réécrit — sinon on
+// MÊME PÉRIMÈTRE QUE LE FILTRE LIVRÉ, importé plutôt que réécrit - sinon on
 // mesure autre chose que ce qu'on expédie, l'erreur exacte qui a fait croire
 // que le filtre ne changeait rien au banc.
 const { TYPES_FILTRES, MOTS_MINIMUM, formeDeNomPropre } = await import('../../src/engine/precision.js');
@@ -43,7 +43,7 @@ console.log(`      ${jeu.filter(l => l.y === 1).length} vrais · ${jeu.filter(l 
 //
 // PAR VALEUR, et non par ligne. Si « Semantikmatch » apparaît dans les deux
 // moitiés, le score d'évaluation mesure une mémorisation, pas une capacité à
-// généraliser — le piège classique, et il serait invisible.
+// généraliser - le piège classique, et il serait invisible.
 const valeurs = [...new Set(jeu.map(l => l.valeur))];
 const hache = (s) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 const enTest = new Set(valeurs.filter(v => hache(v) % 5 === 0));
@@ -91,18 +91,18 @@ const proba = (modele, x, colonnes) =>
 // candidats d'évaluation, ça donnait 0,10. Sur 367, ça donne **0,00** : une
 // contrainte à zéro exact est décidée par le PIRE point du lot, donc plus
 // l'échantillon grandit, plus elle tend vers « ne rien faire ». Elle n'est pas
-// prudente, elle est instable — et sa prudence apparente est une illusion.
+// prudente, elle est instable - et sa prudence apparente est une illusion.
 //
 // CE QU'ON FAIT À LA PLACE. Une tolérance ÉNONCÉE, par défaut 0,5 % des vraies
 // entités. Ce n'est pas un renoncement à « zéro-fuite d'abord » : le produit
-// accepte DÉJÀ des pertes sur ce périmètre — vocabulaire.js documente
-// « Orange », « Total », « Le Monde » comme des pertes connues et assumées — et
+// accepte DÉJÀ des pertes sur ce périmètre - vocabulaire.js documente
+// « Orange », « Total », « Le Monde » comme des pertes connues et assumées - et
 // il ne s'agit ici ni de personnes ni de données structurées, que le filtre ne
 // touche jamais.
 //
 // ⚠️ LA TOLÉRANCE NE DISPENSE PAS DE REGARDER CE QU'ON PERD. Un chiffre ne dit
 // pas si la perte est un artefact ou une vraie fuite. Mesuré ici : l'unique
-// perte à 0,40 est « Roquetas de Mar. août 2023 » — le modèle a collé la date à
+// perte à 0,40 est « Roquetas de Mar. août 2023 » - le modèle a collé la date à
 // la ville, c'est une erreur de FRONTIÈRE. À 0,50 en revanche on perdrait
 // « Kallabisland » et « Le roux et Fontaine », de vraies entités sans excuse :
 // c'est là que se situe la limite, et c'est la LECTURE des pertes qui la
@@ -139,7 +139,7 @@ function reference(donnees) {
 
 // LE COMPROMIS EN ENTIER, pas un point unique. Le seuil « zéro perte » est
 // choisi sur un échantillon fini : un seul candidat mal placé le fait chuter.
-// Afficher la courbe montre s'il est un plateau stable ou une falaise — et ce
+// Afficher la courbe montre s'il est un plateau stable ou une falaise - et ce
 // qu'une tolérance minime achèterait. Le produit accepte DÉJÀ des pertes sur ce
 // périmètre (voir vocabulaire.js : « Orange », « Total », « Le Monde » sont des
 // pertes connues et assumées), donc la question mérite d'être posée en chiffres
@@ -200,15 +200,15 @@ for (const [nom, colonnes] of Object.entries(variantes)) {
 // Constaté en regardant les données plutôt qu'en supposant : les faux positifs
 // du corpus se répartissent en deux familles de nature différente.
 //
-//   · VOCABULAIRE — « Bénévole terrain », « Stack conteneurisée »,
+//   · VOCABULAIRE - « Bénévole terrain », « Stack conteneurisée »,
 //     « Téléphone », « Baccalauréat Général ». C'est le défaut mesuré sur de
 //     vrais documents, et c'est ce que ce filtre existe pour traiter.
 //
-//   · TECHNOLOGIES — « Docker », « JWT », « PostgreSQL », « JaCoCo ». Aucune
+//   · TECHNOLOGIES - « Docker », « JWT », « PostgreSQL », « JaCoCo ». Aucune
 //     caractéristique de ce module ne peut les distinguer de « Twini »,
 //     « UNODC » ou « Semantikmatch » : ce sont les MÊMES chaînes, courtes,
 //     capitalisées, absentes de tout dictionnaire. Vouloir les faire tomber ici
-//     apprendrait au filtre à jeter les vraies entités qui leur ressemblent —
+//     apprendrait au filtre à jeter les vraies entités qui leur ressemblent -
 //     donc à FUIR. Le produit a déjà une réponse à ce problème, et elle est
 //     meilleure : le profil « Développeur / Tech » et sa liste « ne jamais
 //     masquer », éditable et propriété de l'utilisateur (voir docs/notes-techniques.md, le
@@ -305,7 +305,7 @@ for (const d of test) {
 //
 // ÉCRIT PAR LE SCRIPT, jamais recopié à la main : un poids mal transcrit ne
 // produit aucune erreur, seulement des décisions fausses. `ECRIRE=1` pour
-// l'activer — par défaut on ne fait qu'AFFICHER, pour qu'une exécution
+// l'activer - par défaut on ne fait qu'AFFICHER, pour qu'une exécution
 // exploratoire ne modifie jamais le moteur par surprise.
 if (process.env.ECRIRE) {
   const { writeFileSync } = await import('node:fs');

@@ -33,7 +33,7 @@ test('stripMetadata est un passthrough (le CSV ne porte aucune métadonnée)', (
 test('pipeline complet : les valeurs PII de la fixture ne fuient nulle part en sortie, les en-têtes et la ligne sans PII restent intacts', async () => {
   const csvText = fx('echantillon.csv');
   const { units } = extractTextUnits(csvText);
-  const { results } = await anonymizeUnits(units); // regex seul (pas de nerPipeline) — comme fixtures.test.mjs
+  const { results } = await anonymizeUnits(units); // regex seul (pas de nerPipeline) - comme fixtures.test.mjs
 
   const resultsById = new Map(results.map(r => [r.id, { maskedText: r.maskedText }]));
   const output = applyMask(csvText, resultsById);
@@ -63,7 +63,7 @@ test('aller-retour structurel : ré-analyser la sortie donne le même nombre de 
 
 // --- En-tête de colonnes marqué « structurel ».
 // Mesuré au banc : sans ce marquage, un export RH ressortait avec 43 masques
-// pour 62 mots — « Matricule », « Salaire », « Date de naissance » masqués.
+// pour 62 mots - « Matricule », « Salaire », « Date de naissance » masqués.
 // Le fichier était sûr et illisible pour le LLM à qui on le destine.
 test('la ligne d\'en-tête est marquée structurelle, pas les données', () => {
   const { units } = extractTextUnits('Nom,Email,Ville\nDupont,a@b.example,Lyon\n');

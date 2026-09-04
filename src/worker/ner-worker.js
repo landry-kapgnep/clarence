@@ -1,7 +1,7 @@
 // Worker de détection contextuelle : fait tourner le modèle HORS du thread
 // principal. Deux moteurs interchangeables derrière le MÊME protocole.
 //
-// Pourquoi hors du thread principal : sur le thread principal l'UI gèle — au
+// Pourquoi hors du thread principal : sur le thread principal l'UI gèle - au
 // point que les menus dépliés voyaient leur contenu coupé (la hauteur du
 // panneau est annoncée par ResizeObserver → postMessage, qui ne partait
 // qu'une fois le thread libéré) et que l'utilisateur croyait à un plantage.
@@ -28,7 +28,7 @@ import { decouperEnLots, recollerScores } from '../engine/compression.js';
 // ORT n'exécute QU'UNE inférence à la fois : son fournisseur WebGPU pose un
 // marqueur global et lève « Session already started » si un second `run`
 // démarre pendant le premier. Le worker reçoit ses messages en série, mais son
-// gestionnaire est asynchrone — deux `run` rapprochés se chevauchaient donc
+// gestionnaire est asynchrone - deux `run` rapprochés se chevauchaient donc
 // bel et bien. Mesuré : échec du traitement au bout de deux secondes.
 const enFile = serialiser();
 
@@ -39,7 +39,7 @@ let gliner = null;  // instance GLiNER
 // détection : ce n'est pas une troisième façon de détecter, c'est une autre
 // tâche, chargée séparément et seulement si l'utilisateur l'active.
 let compresseur = null;
-// 'webgpu' ou 'wasm' — remonté à la popup avec le message `ready` : sans ça,
+// 'webgpu' ou 'wasm' - remonté à la popup avec le message `ready` : sans ça,
 // impossible de savoir si une lenteur vient d'un repli silencieux.
 let accelerateur = null;
 
@@ -49,7 +49,7 @@ let accelerateur = null;
 // mesurées sur nos fixtures : faux positif « union » sur le garde-fou, nom
 // d'entreprise tronqué, et surtout des entités PURENENT ET SIMPLEMENT RATÉES
 // (« Lefèvre Consulting » invisible avant correction, 0,90 après).
-// La lib est donc structurellement dégradée sur le français — bug jamais vu en
+// La lib est donc structurellement dégradée sur le français - bug jamais vu en
 // amont parce qu'elle est testée en anglais.
 const DECOUPEUR_UNICODE = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
 
@@ -58,7 +58,7 @@ const CACHE_MODELES = 'clarence-models';
 // Le modèle GLiNER est chargé par ORT, qui n'utilise PAS le cache de
 // Transformers.js : sans ça, 183 Mo seraient re-téléchargés à chaque ouverture
 // de la popup. On gère donc le cache nous-mêmes (Cache API), et on passe le
-// modèle en mémoire — `modelPath` accepte un Uint8Array.
+// modèle en mémoire - `modelPath` accepte un Uint8Array.
 async function chargerModele(url) {
   const cache = await caches.open(CACHE_MODELES);
   const enCache = await cache.match(url);
@@ -98,7 +98,7 @@ async function chargerModele(url) {
 // l'adaptateur est le seul test qui ne mente pas.
 //
 // Le cadrage (§8) chiffre ~1 utilisateur sur 3 sans WebGPU : le repli n'est pas
-// un cas limite, c'est un chemin nominal. Il doit être SILENCIEUX — jamais une
+// un cas limite, c'est un chemin nominal. Il doit être SILENCIEUX - jamais une
 // erreur visible.
 async function webgpuUtilisable() {
   try {
@@ -123,7 +123,7 @@ async function construireGliner({ wasmPath, model, modelBytes, provider }) {
     transformersSettings: { allowLocalModels: false, useBrowserCache: true },
     // Imposés par gliner_config.json du checkpoint : span_mode "markerV0",
     // max_width 12. Le mode 'token-level' de la lib est listé comme TODO dans
-    // son propre README tout en s'acceptant silencieusement — ne pas l'utiliser.
+    // son propre README tout en s'acceptant silencieusement - ne pas l'utiliser.
     modelType: 'span-level',
     maxWidth: 12
   });
@@ -154,7 +154,7 @@ async function initGliner({ wasmPath, model, modelUrl, accelerateur: demande }) 
   //
   // `gliner` importe statiquement les trois runtimes ORT (cpu / webgpu /
   // webgl), donc le code est déjà dans le bundle : basculer ne coûte qu'une
-  // option — mais le binaire JSEP doit être dans vendor/ (voir build.mjs),
+  // option - mais le binaire JSEP doit être dans vendor/ (voir build.mjs),
   // sinon l'init échoue et on retombe ici sans le savoir.
   if (demande !== 'wasm' && await webgpuUtilisable()) {
     try {
@@ -175,7 +175,7 @@ async function initGliner({ wasmPath, model, modelUrl, accelerateur: demande }) 
 async function initBert({ wasmPath, model }) {
   env.backends.onnx.wasm.wasmPaths = wasmPath;
   // Le WASM multi-thread exige SharedArrayBuffer, donc une page isolée
-  // (crossOriginIsolated) — pas garanti pour une page d'extension. Test au
+  // (crossOriginIsolated) - pas garanti pour une page d'extension. Test au
   // runtime avec repli à 1 : jamais de plantage, gain si disponible.
   env.backends.onnx.wasm.numThreads = self.crossOriginIsolated
     ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1))
@@ -213,7 +213,7 @@ async function initCompression({ wasmPath, model }) {
 //   - le pipeline OMET des tokens de sa sortie (le champ `index` saute) → on
 //     retokenise soi-même et on recolle par index.
 // La logique de ces deux gardes vit dans le moteur, testée ; ici on ne fait que
-// l'appeler — la dupliquer serait rejouer la divergence P1bis une troisième fois.
+// l'appeler - la dupliquer serait rejouer la divergence P1bis une troisième fois.
 async function compresserTokens(texte) {
   const mots = String(texte || '').split(/\s+/).filter(Boolean);
   const flux = [];
@@ -250,7 +250,7 @@ self.addEventListener('message', async ev => {
     return;
   }
 
-  // Chargement du modèle de compression — séparé de `init` à dessein : il ne
+  // Chargement du modèle de compression - séparé de `init` à dessein : il ne
   // part QUE si l'utilisateur active l'option.
   if (msg.type === 'initCompression') {
     try {
@@ -279,7 +279,7 @@ self.addEventListener('message', async ev => {
         // UN passage du modèle pour N textes. `inference` construit un seul
         // tenseur et lance un seul `run()` : les 37 ms de coût fixe sont payées
         // une fois pour tout le lot au lieu d'une fois par texte.
-        // `texts` (lot) ou `text` (appel unitaire) — les deux restent acceptés
+        // `texts` (lot) ou `text` (appel unitaire) - les deux restent acceptés
         // pour que le protocole ne casse pas si un appelant n'est pas groupé.
         const textes = msg.texts || [msg.text];
         // Seuil bas ici : le filtrage fin appartient au moteur pur
@@ -292,7 +292,7 @@ self.addEventListener('message', async ev => {
         }));
         // Réponse indexée COMME l'entrée. C'est le contrat dont dépend la
         // redistribution côté appelant : un décalage ici collerait les entités
-        // d'un texte sur un autre — donc un masquage faux ET une fuite.
+        // d'un texte sur un autre - donc un masquage faux ET une fuite.
         const spansBatch = textes.map((_, i) => res[i] || []);
         self.postMessage(
           msg.texts

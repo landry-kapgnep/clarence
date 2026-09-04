@@ -9,14 +9,14 @@ Les trois mesures existantes laissaient un angle mort :
 | Mesure | Prose | Vérité terrain |
 |---|---|---|
 | `npm run bench` | synthétique (je l'ai écrite) | complète |
-| `npm run regression` | **réelle** | **aucune** — dit si ça bouge, pas si c'est juste |
+| `npm run regression` | **réelle** | **aucune** - dit si ça bouge, pas si c'est juste |
 | `npm run injection` | **réelle** | **parfaite, sur l'injecté** |
 
 Le principe : prendre de la vraie prose (les documents de
 `tests/regression/corpus/`, déjà en place et ignorés par git), y **injecter**
 des PII synthétiques à des positions connues, et vérifier qu'elles ressortent
-masquées. La langue est authentique — ses tournures, sa ponctuation, ses
-fragments d'extraction PDF — mais on sait exactement ce qui doit disparaître.
+masquées. La langue est authentique - ses tournures, sa ponctuation, ses
+fragments d'extraction PDF - mais on sait exactement ce qui doit disparaître.
 
 ## Ce que ça NE mesure PAS
 
@@ -27,7 +27,7 @@ dont la vérité terrain est écrite à la main dans les deux sens.
 
 ## Les valeurs injectées
 
-Synthétiques et reconnaissables comme telles — règle du projet : jamais de
+Synthétiques et reconnaissables comme telles - règle du projet : jamais de
 données de test qui ressemblent à du réel. Carte `4242…`, domaines en
 `.example`, IBAN et NIR à structure valide mais sans titulaire.
 
@@ -44,12 +44,12 @@ Immédiatement, sur de la prose allemande :
 structuré   de      FUITE     12345678901
 ```
 
-`« Die Steuer-ID lautet 12345678901 »` — le motif exigeait un `:` entre le
+`« Die Steuer-ID lautet 12345678901 »` - le motif exigeait un `:` entre le
 libellé et la valeur. Ici c'est un **verbe allemand** qui les relie. Le motif
 marchait donc sur une fiche et échouait sur une phrase rédigée.
 
 Le défaut était **déjà connu et corrigé** sur le motif `REFERENCE` (« his
-employee identifier **is** EMP-4471-KD ») — il n'avait simplement pas été
+employee identifier **is** EMP-4471-KD ») - il n'avait simplement pas été
 répliqué sur `ID_NATIONAL`. Aucun de nos documents de test ne contenait ce cas.
 
 Le correctif en a révélé un second, antérieur : le préfixe `[A-Z]{0,2}` du
@@ -63,4 +63,4 @@ Après correctif : **100 % structuré, 100 % contextuel**.
 
 Le NI britannique `AB 123456 C` n'est pas détecté : le motif exige un chiffre
 final, or la clé du NI est une **lettre**. Défaut antérieur, hors du périmètre
-FR/EN/ES/DE traité par P5 — consigné plutôt qu'élargi à la volée.
+FR/EN/ES/DE traité par P5 - consigné plutôt qu'élargi à la volée.

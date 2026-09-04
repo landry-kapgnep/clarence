@@ -6,11 +6,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseTermes, ajouterTerme } from '../../src/popup/termes.js';
 
-test('la TABULATION sépare les termes — la saisie en vrac demandée', () => {
+test('la TABULATION sépare les termes - la saisie en vrac demandée', () => {
   assert.deepEqual(parseTermes('ChatGPT\tMT\tOpenAI'), ['ChatGPT', 'MT', 'OpenAI']);
 });
 
-test('le saut de ligne reste accepté — les profils enregistrés en dépendent', () => {
+test('le saut de ligne reste accepté - les profils enregistrés en dépendent', () => {
   // Casser ce format viderait silencieusement les règles déjà enregistrées.
   assert.deepEqual(parseTermes('ChatGPT\nMT'), ['ChatGPT', 'MT']);
   assert.deepEqual(parseTermes('ChatGPT\r\nMT'), ['ChatGPT', 'MT']);
@@ -26,9 +26,9 @@ test('les espaces de tête et de queue sont retirés', () => {
   assert.deepEqual(parseTermes('  ChatGPT  \t  MT '), ['ChatGPT', 'MT']);
 });
 
-test('la VIRGULE sépare — le séparateur qu\'on VOIT en se relisant', () => {
-  // Choix REVU. La tabulation marchait — mesuré sur un vrai document, six
-  // termes saisis ainsi ont bien été appliqués — mais elle est invisible : sa
+test('la VIRGULE sépare - le séparateur qu\'on VOIT en se relisant', () => {
+  // Choix REVU. La tabulation marchait - mesuré sur un vrai document, six
+  // termes saisis ainsi ont bien été appliqués - mais elle est invisible : sa
   // largeur varie, on ne distingue pas une tabulation de deux, et il fallait
   // lancer le traitement pour savoir si la saisie était correcte. Or ce champ
   // sert précisément à se relire avant de lancer.
@@ -44,7 +44,7 @@ test('CONTREPARTIE assumée : un terme ne peut plus contenir de virgule', () => 
   // « Dupont, Marie » devient deux termes. Côté « toujours masquer » c'est sans
   // danger (on masque davantage) ; côté « ne jamais masquer » ça peut laisser
   // en clair un fragment qu'on n'avait pas l'intention d'épargner. Le cas est
-  // rare, et la virgule reste VISIBLE donc rattrapable — exactement l'inverse
+  // rare, et la virgule reste VISIBLE donc rattrapable - exactement l'inverse
   // du défaut de la tabulation.
   assert.deepEqual(parseTermes('Dupont, Marie'), ['Dupont', 'Marie']);
 });
@@ -60,7 +60,7 @@ test('ajouterTerme : recompose avec le séparateur VISIBLE', () => {
   // Le bouton « ne plus masquer » écrit dans ce champ : ce que l'utilisateur
   // relit doit correspondre à ce qui sera appliqué.
   assert.equal(ajouterTerme('ChatGPT', 'MT'), 'ChatGPT, MT');
-  // Une saisie tabulée est normalisée en virgules au premier ajout — elle
+  // Une saisie tabulée est normalisée en virgules au premier ajout - elle
   // devient enfin lisible.
   assert.equal(ajouterTerme('ChatGPT\tMT', 'OpenAI'), 'ChatGPT, MT, OpenAI');
 });

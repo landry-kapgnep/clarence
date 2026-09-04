@@ -1,4 +1,4 @@
-// Pourquoi le filtre a-t-il retiré CE candidat ? — le journal d'explication
+// Pourquoi le filtre a-t-il retiré CE candidat ? - le journal d'explication
 // branché sur les documents du banc.
 //
 //     node tools/filtre/diagnostiquer.mjs [fichier…]
@@ -59,7 +59,7 @@ const off = new Set(TYPES_PEU_FIABLES);
 for (const f of fichiers) {
   // ⚠️ UN PDF NE SE LIT PAS COMME DU TEXTE. Première version : `readFileSync`
   // en utf8 sur un PDF rendait les entrailles du format, et le diagnostic
-  // affichait dix fois « FlateDecode » comme faux positif — on analysait le
+  // affichait dix fois « FlateDecode » comme faux positif - on analysait le
   // conteneur au lieu du document. Les PDF passent donc par le VRAI adaptateur,
   // celui-là même qu'utilise la production.
   let unites;

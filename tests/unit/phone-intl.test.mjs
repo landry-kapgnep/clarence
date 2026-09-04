@@ -19,7 +19,7 @@ test('téléphones internationaux détectés (US, UK, DE, FR)', () => {
 
 test('numéro plausible mais invalide masqué quand même (zéro-fuite)', () => {
   // Central US impossible (019) : la bibliothèque le juge non valide, on le
-  // masque tout de même — même principe que l'IBAN à checksum invalide.
+  // masque tout de même - même principe que l'IBAN à checksum invalide.
   const [e] = detectPhonesIntl('telephone +1 (551) 019-2834 for contact');
   assert.equal(e.value, '+1 (551) 019-2834');
   assert.equal(e.validated, false, 'validated doit rester honnête');

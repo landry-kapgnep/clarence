@@ -1,11 +1,11 @@
 // Catalogues de traduction : cohérence avec la page ET entre eux.
 //
-// Ce sont trois fichiers séparés qui doivent rester d'accord — popup.html,
+// Ce sont trois fichiers séparés qui doivent rester d'accord - popup.html,
 // _locales/fr et _locales/en. Rien dans l'outillage ne le garantit : une clé
 // ajoutée à la page sans message affiche la clé brute, une clé traduite mais
 // disparue de la page pourrit le catalogue, et une balise oubliée dans une
 // traduction casse la mise en forme d'une infobulle. Aucun de ces trois cas
-// ne plante — ils se voient à l'écran, ou pas du tout.
+// ne plante - ils se voient à l'écran, ou pas du tout.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -25,8 +25,8 @@ const SOURCES_JS = ['../../src/popup/main.js', '../../src/popup/profiles.js'];
 
 const clesUtilisees = () => {
   // Suffixe GÉNÉRIQUE, et non la liste des attributs connus. Cette liste avait
-  // déjà pris du retard une fois : `data-i18n-alt` — qui porte le nom
-  // accessible des boutons-images — n'y figurait pas, et ses clés passaient
+  // déjà pris du retard une fois : `data-i18n-alt` - qui porte le nom
+  // accessible des boutons-images - n'y figurait pas, et ses clés passaient
   // pour orphelines. Un scanner qu'il faut penser à mettre à jour finit
   // toujours par mentir. Le contrat réel est « data-i18n, éventuellement
   // suivi d'un tiret et d'un nom d'attribut » : c'est ça qu'on écrit.
@@ -36,14 +36,14 @@ const clesUtilisees = () => {
   // Le HTML n'est pas tout : la popup CONSTRUIT du balisage (le formulaire
   // d'identité, les puces de types, la table des corrections). Un data-i18n
   // posé dans un gabarit JS était invisible au scanner, et sa clé passait pour
-  // orpheline. Troisième angle mort de ce même scanner — d'où la règle : on
+  // orpheline. Troisième angle mort de ce même scanner - d'où la règle : on
   // cherche le contrat, pas les endroits où on se souvient qu'il s'applique.
   for (const f of SOURCES_JS) {
     for (const m of lire(f).matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)) vues.add(m[1]);
   }
   for (const f of SOURCES_JS) {
     // `[,)]` et non `)` seul : un message PARAMÉTRÉ s'écrit msg('clé', [...]),
-    // et le scanner le manquait — il déclarait alors orpheline une clé bel et
+    // et le scanner le manquait - il déclarait alors orpheline une clé bel et
     // bien utilisée.
     for (const m of lire(f).matchAll(/msg\('([^']+)'\s*[,)]/g)) vues.add(m[1]);
   }

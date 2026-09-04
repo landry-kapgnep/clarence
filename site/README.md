@@ -1,4 +1,4 @@
-# Site vitrine — PROTOTYPE
+# Site vitrine - PROTOTYPE
 
 ```bash
 npm run site      # → site/dist/, ouvrir index.html
@@ -21,10 +21,10 @@ Le site importe **le moteur de `src/engine/`**, sans copie ni réécriture : le
 mode texte n'utilise aucune API `chrome.*`, il fonctionne donc tel quel dans une
 page ordinaire. Si le moteur progresse, la démo progresse.
 
-Seule la **couche déterministe** tourne ici — regex + validateurs (Luhn, mod-97,
+Seule la **couche déterministe** tourne ici - regex + validateurs (Luhn, mod-97,
 clé NIR). Instantanée, aucun téléchargement. La couche contextuelle (noms,
 entreprises, lieux) demande 183 Mo de modèle : c'est ce que l'extension apporte,
-et la page le dit au lieu de le masquer — le bloc « Nantes est encore en clair »
+et la page le dit au lieu de le masquer - le bloc « Nantes est encore en clair »
 est délibéré, pas un oubli.
 
 ## Décisions de design, et pourquoi
@@ -43,14 +43,14 @@ SaaS. Concrètement, ce qui a été écarté :
 Ce qui est **repris de l'extension**, pour que les deux se lisent comme un seul
 objet : les jetons de couleur exacts de `popup.css`, les angles droits et
 l'absence de bordures, les polices du dépôt (Syne Mono, Stack Sans), la fée en
-veilleuse, et le bandeau de lettres — porté depuis `src/popup/main.js`.
+veilleuse, et le bandeau de lettres - porté depuis `src/popup/main.js`.
 
 Deux couleurs portent du **sens**, pas de la décoration : violet pour ce qui
 identifie une personne, vert-mousse pour le financier et l'administratif.
 
 ## Le § 02 est un argument, pas une illustration
 
-Le compteur de requêtes lit `PerformanceObserver` — la même source que l'onglet
+Le compteur de requêtes lit `PerformanceObserver` - la même source que l'onglet
 Réseau du navigateur. Il verrait une requête qu'on n'aurait pas voulue. C'est ce
 qui distingue une promesse d'une preuve.
 
@@ -62,7 +62,7 @@ en HTTP pour le voir.
 
 - Aucune ressource tierce : polices copiées depuis le dépôt, pas de CDN. La page
   tient sa promesse dans sa propre construction.
-- `site/dist/` est ignoré par git — c'est une sortie de build.
+- `site/dist/` est ignoré par git - c'est une sortie de build.
 - Trouvé en construisant ce site : `Syne Mono` est déclarée dans `--font-body`
   de `popup.css` mais **aucune règle `@font-face` ne la charge**. L'extension
   retombe sur `system-ui`. Le fichier existe pourtant dans

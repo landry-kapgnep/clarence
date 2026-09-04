@@ -88,7 +88,7 @@ test('filterByRules : un masque MANUEL survit même si son type/valeur est filtr
 // modèle détecte « Joss Moorkens » ou « Google Translate » en entier, tandis
 // que l'utilisateur saisit « Moorkens » ou « Google ». L'égalité stricte ne
 // pouvait rien matcher, et la consigne restait sans effet SANS QUE RIEN NE LE
-// SIGNALE — on croit sa règle appliquée alors qu'elle ne l'est pas.
+// SIGNALE - on croit sa règle appliquée alors qu'elle ne l'est pas.
 const ent = (value, type = 'PER', source = 'ner') =>
   ({ type, value, start: 0, end: value.length, source });
 
@@ -104,7 +104,7 @@ test('un terme gardé épargne l\'entité CONTENUE dedans', () => {
 });
 
 test('la correspondance porte sur des MOTS ENTIERS, jamais des fragments', () => {
-  // Sans frontière de mot, « MT » épargnerait « Amtrak » et « Smith » — et le
+  // Sans frontière de mot, « MT » épargnerait « Amtrak » et « Smith » - et le
   // sur-masquage deviendrait du SOUS-masquage silencieux.
   const gardes = filterByRules(
     [ent('Amtrak', 'ORG'), ent('Smith'), ent('MT', 'ORG')],
@@ -120,7 +120,7 @@ test('la casse et les accents ne font pas échouer la règle', () => {
 
 test('« toujours masquer » l\'emporte sur « ne jamais masquer »', () => {
   // Garde-fou du risque assumé : garder « Paris » épargnerait « Paris Dupont ».
-  // Un masque manuel reprend la main — l'utilisateur a le dernier mot.
+  // Un masque manuel reprend la main - l'utilisateur a le dernier mot.
   const out = filterByRules(
     [{ ...ent('Paris Dupont'), source: 'manuel' }],
     { keepValues: ['Paris'] }
@@ -141,7 +141,7 @@ test('un terme gardé ne désactive pas les entités SANS RAPPORT', () => {
 // Défaut constaté sur un vrai CV repassé une seconde fois dans l'outil : le
 // modèle voyait « [PERSONNE_2] », y trouvait une entité, et on écrivait
 // « [[PERSONNE_1]] ». La table disait alors « [PERSONNE_1] → PERSONNE_2 »,
-// c'est-à-dire rien — et LA RÉINJECTION ÉTAIT MORTE, la table du premier
+// c'est-à-dire rien - et LA RÉINJECTION ÉTAIT MORTE, la table du premier
 // passage ayant disparu avec la popup.
 test('un placeholder déjà posé n’est jamais remasqué', () => {
   const ents = [
@@ -174,7 +174,7 @@ test('un mot qui RESSEMBLE à un placeholder sans en être un reste masqué', ()
 // Fuite mesurée sur un vrai CV le 04/09/2026. L'utilisateur déclare son nom de
 // famille ; ce terme est cherché littéralement, donc il matche AUSSI à
 // l'intérieur de son adresse e-mail. La règle d'origine jetait toute détection
-// chevauchant un masque manuel — l'entité EMAIL disparaissait, et le document
+// chevauchant un masque manuel - l'entité EMAIL disparaissait, et le document
 // livré portait « landry.[PERSONNALISE_1].pro@gmail.com » là où il portait
 // « [EMAIL_1] » SANS le profil. La fonctionnalité censée mieux protéger
 // protégeait moins, et pour l'utilisateur le plus prudent.

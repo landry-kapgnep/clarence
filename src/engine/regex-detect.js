@@ -1,10 +1,10 @@
-// Passe 1 — détection structurée déterministe (portée du prototype validé,
+// Passe 1 - détection structurée déterministe (portée du prototype validé,
 // enrichie des patterns contextuels issus du pseudonymiseur Python).
 import { luhnCheck, ibanCheck, nirCheck, dniCheck } from './validators.js';
 import { HONORIFIC_ALT } from './honorifics.js';
 
 // Séparateur entre les composants d'un nom capté par civilité : espaces
-// horizontaux, ou UN SEUL retour à la ligne — jamais une ligne vide.
+// horizontaux, ou UN SEUL retour à la ligne - jamais une ligne vide.
 //
 // `\s+` (l'ancien séparateur) traverse tout, y compris un saut de paragraphe :
 // « Tuteur pédagogique : Madame Hélène Brassard\n\nSOMMAIRE » produisait une
@@ -12,7 +12,7 @@ import { HONORIFIC_ALT } from './honorifics.js';
 // avec le nom. Mesuré sur le banc : c'était l'un des trois sur-masquages.
 // Un titre de section ne suit jamais un nom sans ligne vide, alors qu'un nom
 // coupé par un retour à la ligne simple (« Sébastien\nVaquier ») est courant
-// dans un texte au fil de l'eau — d'où le newline unique toléré.
+// dans un texte au fil de l'eau - d'où le newline unique toléré.
 const SEP_NOM = '(?:[^\\S\\r\\n]+|[^\\S\\r\\n]*\\r?\\n[^\\S\\r\\n]*)';
 
 // Premiers mots interdits pour un nom capté par civilité (titres, fonctions).
@@ -23,7 +23,7 @@ const STOP_NOMS_CIVILITE = new Set([
 
 // ===== Briques réutilisables pour les motifs internationaux =================
 // Approche « motif + mot-clé de contexte » : c'est la technique de référence
-// (celle de Microsoft Presidio, dont le catalogue est en Python — on porte les
+// (celle de Microsoft Presidio, dont le catalogue est en Python - on porte les
 // motifs, pas le code). Elle règle le cas qu'aucun catalogue ne peut couvrir :
 // les identifiants ARBITRAIRES propres à une organisation (CUST-849204-X), où
 // seul le libellé voisin dit qu'il s'agit d'un identifiant.
@@ -45,7 +45,7 @@ const DATE = `(?:\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4}`
   // qui utilisent DATE exigent tous un libellé de contexte.
   + `|\\d{1,2}[\\/.-]\\d{4})`;
 
-// États américains : liste stable (administrative, pas technologique — elle ne
+// États américains : liste stable (administrative, pas technologique - elle ne
 // « périme » pas comme une liste de frameworks). Sert à reconnaître un code
 // postal US, qui sinon est un simple nombre de 5 chiffres indiscernable.
 const ETATS_US = 'Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia'
@@ -58,7 +58,7 @@ const ETATS_US = 'Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticu
 export const REGEX_PATTERNS = [
   { type: 'EMAIL', re: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, validate: null },
   // maskIfStructureMatches : la structure IBAN (pays connu + 2 chiffres + corps
-  // groupé) est si distinctive qu'on masque même si le mod-97 échoue — numéro
+  // groupé) est si distinctive qu'on masque même si le mod-97 échoue - numéro
   // fabriqué OU vrai IBAN mal recopié restent sensibles (priorité au zéro-fuite ;
   // sans ça les détecteurs plus faibles déchiquettent le numéro et en laissent
   // fuir une partie). Liste blanche de pays (SEPA + voisins usuels) : évite
@@ -99,16 +99,16 @@ export const REGEX_PATTERNS = [
   },
   // (?<!\d)…(?!\d) : ne jamais matcher un « faux téléphone » constitué d'un
   // fragment de 10 chiffres pris AU MILIEU d'un nombre plus long (ex. une carte
-  // ou un IBAN sans espaces) — sinon on déchiquette le numéro et on en laisse
+  // ou un IBAN sans espaces) - sinon on déchiquette le numéro et on en laisse
   // fuir une partie.
   { type: 'TELEPHONE', re: /(?<!\d)(?:(?:\+33|0033)[\s.-]?|0)[1-9](?:[\s.-]?\d{2}){4}(?!\d)/g, validate: null },
   // Code postal à 5 chiffres suivi d'une ville. Le format est commun à la
-  // France, l'Espagne et l'Allemagne — le motif les couvre donc tous les trois
+  // France, l'Espagne et l'Allemagne - le motif les couvre donc tous les trois
   // sans rien ajouter, ce qui est le bon signe d'une règle bien posée.
   //
   // UN MOT DE LIAISON PEUT S'INTERCALER, et son absence était un vrai trou :
   // « 28013 Madrid » passait mais « 08001 para Barcelona » et « 20095 für
-  // Hamburg » fuyaient — mesuré sur les pages ES/DE du document piégé. Le
+  // Hamburg » fuyaient - mesuré sur les pages ES/DE du document piégé. Le
   // défaut vaut aussi en français (« 75001 dans Paris »), il n'était donc pas
   // propre à l'i18n : la page multilingue a révélé un bug franco-français.
   //
@@ -122,7 +122,7 @@ export const REGEX_PATTERNS = [
   },
   {
     // IPv4 : structure très reconnaissable, octets bornés à 255. Peut matcher
-    // un numéro de version logicielle exotique (1.2.3.4) — sur-masquage rare
+    // un numéro de version logicielle exotique (1.2.3.4) - sur-masquage rare
     // et bénin, préférable à laisser fuir une adresse réseau (zéro-fuite).
     type: 'IP',
     re: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
@@ -135,7 +135,7 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
-    // BIC/SWIFT : 4 lettres banque + pays (même liste blanche que l'IBAN —
+    // BIC/SWIFT : 4 lettres banque + pays (même liste blanche que l'IBAN -
     // sans elle, tout mot de 8 lettres MAJUSCULES matcherait, ex. PASSWORD)
     // + 2 alphanum + branche optionnelle.
     type: 'BIC',
@@ -144,7 +144,7 @@ export const REGEX_PATTERNS = [
   },
   {
     // BIC avec contexte explicite (« BIC: », « SWIFT: ») : le libellé lève
-    // l'ambiguïté, donc pas de liste blanche de pays — rattrape les BIC à
+    // l'ambiguïté, donc pas de liste blanche de pays - rattrape les BIC à
     // pays exotique ou mal recopié (cf. cartes/SIREN par contexte, zéro-fuite).
     type: 'BIC',
     re: /(?:BIC|SWIFT)\s*:?\s*([A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)\b/g,
@@ -176,7 +176,7 @@ export const REGEX_PATTERNS = [
     type: 'ADRESSE',
     // Le type de voie accepte l'INITIALE MAJUSCULE : le motif était sensible à
     // la casse et ne connaissait que « av. », donc « 99 Av. Jean Jaurès »
-    // n'était pas une adresse — et le modèle récupérait « Jean Jaurès » comme
+    // n'était pas une adresse - et le modèle récupérait « Jean Jaurès » comme
     // une PERSONNE (mesuré sur tous-defauts.pdf). On ne met pas le drapeau `i`
     // sur tout le motif : les groupes [A-ZÀ-Ü] plus loin exigent délibérément
     // une majuscule pour le nom de la voie.
@@ -190,7 +190,7 @@ export const REGEX_PATTERNS = [
     //  - espagnol : le type de voie PRÉCÈDE et le numéro SUIT (« Calle Mayor 12 »,
     //    « Avenida de la Constitución 45 »), l'inverse du français ;
     //  - allemand : le type de voie est SOUDÉ au nom (« Hauptstraße 15 »,
-    //    « Bahnhofstr. 7a ») — aucune segmentation par espace ne le trouve, il
+    //    « Bahnhofstr. 7a ») - aucune segmentation par espace ne le trouve, il
     //    faut le chercher comme SUFFIXE.
     //
     // Le numéro reste exigé dans les deux cas : c'est lui qui distingue une
@@ -207,7 +207,7 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Date de naissance — contexte explicite FR **ET EN**, tous formats de date
+    // Date de naissance - contexte explicite FR **ET EN**, tous formats de date
     // (« born on March 14, 1988 » ne passait pas : motif FR-only + date
     // numérique seule). Contexte = quasi zéro faux positif.
     // extract: seul le groupe (la date) est masqué, pas le libellé.
@@ -240,7 +240,7 @@ export const REGEX_PATTERNS = [
   },
   {
     // Téléphone nord-américain au format NATIONAL. Deux graphies très
-    // distinctives — indicatif régional entre parenthèses, ou groupes 3-3-4 —
+    // distinctives - indicatif régional entre parenthèses, ou groupes 3-3-4 -
     // qui se passent de libellé, comme le SSN juste au-dessus.
     //
     // À ne pas confondre avec le SSN (3-2-4) : les longueurs de groupes
@@ -255,12 +255,12 @@ export const REGEX_PATTERNS = [
     // POURQUOI PAS DE MOTIF NU PAR PAYS. libphonenumber tourne volontairement
     // SANS pays par défaut : avec `FR`, il prend « 483 921 657 » (le piège
     // SIREN de la fixture) pour un numéro français. Ajouter des motifs
-    // nationaux nus réintroduirait ce risque pays par pays — une suite de 9 ou
+    // nationaux nus réintroduirait ce risque pays par pays - une suite de 9 ou
     // 10 chiffres est trop banale pour être masquée sans contexte.
     //
     // Le libellé lève l'ambiguïté, exactement comme pour les identifiants
     // nationaux. Les formats INTERNATIONAUX (+34, +49) sont déjà couverts par
-    // libphonenumber et n'ont pas besoin de ça — mesuré : ils passaient déjà.
+    // libphonenumber et n'ont pas besoin de ça - mesuré : ils passaient déjà.
     type: 'TELEPHONE',
     re: /\b(?:t[ée]l[ée]phone|t[ée]l\.?|phone|telefon(?:nummer)?|tel[ée]fono|fijo|festnetz|mobile?|m[oó]vil|handy|portable|cell(?:ular)?)\s*[:=]?\s*(\+?\d[\d\s.()-]{6,16}\d)(?!\d)/gi,
     extract: 1,
@@ -276,7 +276,7 @@ export const REGEX_PATTERNS = [
     // sache vérifier à peu de frais, et « 11 chiffres » nu est une forme bien
     // trop banale pour être masquée sans contexte : le libellé est donc
     // INDISPENSABLE ici, contrairement au DNI qui se valide seul (voir plus bas).
-    // UN VERBE DE LIAISON peut séparer le libellé de la valeur — « Die
+    // UN VERBE DE LIAISON peut séparer le libellé de la valeur - « Die
     // Steuer-ID LAUTET 12345678901 », « the tax id IS 123-45-6789 ». Sans lui,
     // le motif n'attrapait que les libellés suivis de deux-points, donc il
     // marchait sur une fiche et échouait sur une phrase rédigée.
@@ -284,7 +284,7 @@ export const REGEX_PATTERNS = [
     // Le défaut était DÉJÀ connu et corrigé sur le motif REFERENCE plus bas
     // (« his employee identifier is EMP-4471-KD ») ; je ne l'avais pas
     // répliqué ici. Trouvé par le harnais d'injection à son premier passage,
-    // sur de la vraie prose allemande — un cas qu'aucun de nos documents de
+    // sur de la vraie prose allemande - un cas qu'aucun de nos documents de
     // test ne contenait.
     //
     // Volontairement UN SEUL mot, comme pour REFERENCE : au-delà on relierait
@@ -320,7 +320,7 @@ export const REGEX_PATTERNS = [
     //   « N° Etudiant : 12201603 »      (numéro propre à l'établissement)
     // Ces valeurs suivent un élève toute sa scolarité et servent de clé de
     // rapprochement entre fichiers : elles identifient aussi sûrement qu'un nom.
-    // Le libellé est indispensable — « 12201603 » nu est une suite de chiffres
+    // Le libellé est indispensable - « 12201603 » nu est une suite de chiffres
     // banale qu'on ne masquerait pas sans lui.
     type: 'ID_NATIONAL',
     re: /(?:id\.?\s*national|(?:num[ée]ro|n[°º]|no\.?)\s*(?:national\s*d?['’]?\s*)?[ée]tudiant|national\s*d['’]\s*[ée]tudiant|\bINE\b|\bBEA\b)\s*[:=]?\s*(\d{8,11}[A-Z]{0,2})\b/gi,
@@ -328,14 +328,14 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Identifiant interne ALPHANUMÉRIQUE annoncé par un libellé — le cas
+    // Identifiant interne ALPHANUMÉRIQUE annoncé par un libellé - le cas
     // qu'aucun catalogue de motifs ne peut deviner (« account identifier
     // CUST-849204-X » : la forme est propre à l'organisation, seul le libellé
     // voisin la qualifie). Complète la REFERENCE numérique FR ci-dessus.
     type: 'REFERENCE',
     // Un VERBE de liaison peut séparer le libellé de la valeur : « his employee
     // identifier IS EMP-4471-KD ». Sans ce petit groupe optionnel le motif
-    // échouait sur une phrase rédigée tout en marchant sur un libellé collé —
+    // échouait sur une phrase rédigée tout en marchant sur un libellé collé -
     // fuite trouvée par le banc d'essai sur un email professionnel anglais.
     // Volontairement limité à un seul mot de liaison : au-delà, on relierait
     // un libellé à une valeur trop lointaine et sans rapport.
@@ -354,7 +354,7 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Code postal US : 5 chiffres (ou ZIP+4) précédés d'un état — sinon
+    // Code postal US : 5 chiffres (ou ZIP+4) précédés d'un état - sinon
     // indiscernable d'un nombre quelconque. « Springfield, Oregon, 97477 ».
     type: 'CODE_POSTAL_VILLE',
     re: new RegExp(`(?:${ETATS_US})\\s*,?\\s*(\\d{5}(?:-\\d{4})?)\\b`, 'g'),
@@ -368,7 +368,7 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Code postal annoncé (ZIP/postal code/postcode) — couvre aussi les formats
+    // Code postal annoncé (ZIP/postal code/postcode) - couvre aussi les formats
     // britannique et canadien, impossibles à deviner sans libellé.
     type: 'CODE_POSTAL_VILLE',
     re: /\b(?:zip(?:\s*code)?|postal\s+code|postcode|code\s+postal)\s*[:=]?\s*(\d{5}(?:-\d{4})?|[A-Z]\d[A-Z]\s?\d[A-Z]\d|[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b/gi,
@@ -393,7 +393,7 @@ export const REGEX_PATTERNS = [
   {
     // Handle de profil social/pro : identifie directement une personne, et
     // contient très souvent le nom en minuscules (« linkedin.com/in/landry-kapgnep »)
-    // — forme que le NER ne détecte pas. Déterministe : le domaine lève toute
+    // - forme que le NER ne détecte pas. Déterministe : le domaine lève toute
     // ambiguïté, donc aucun risque de faux positif sur de la prose.
     // extract: seul le handle est masqué, le domaine reste lisible (contexte utile).
     type: 'PSEUDO',
@@ -405,7 +405,7 @@ export const REGEX_PATTERNS = [
     // Civilité + nom : rattrape en déterministe des noms que le NER peut rater.
     // Civilités multilingues via la liste partagée (honorifics.js) : le motif
     // ne connaissait que le français, donc « Mr Smith » n'était détecté que si
-    // le modèle contextuel le voyait — aucun filet déterministe en anglais.
+    // le modèle contextuel le voyait - aucun filet déterministe en anglais.
     type: 'PER',
     re: new RegExp(
       `\\b(?:${HONORIFIC_ALT})${SEP_NOM}` +
@@ -428,7 +428,7 @@ export function detectRegex(text) {
       if (!value) continue;
       const offset = pattern.extract ? match[0].indexOf(value) : 0;
       const validated = pattern.validate ? pattern.validate(value) : null;
-      // Rejet si le checksum échoue — SAUF pour les types à structure très
+      // Rejet si le checksum échoue - SAUF pour les types à structure très
       // distinctive (maskIfStructureMatches : IBAN, NIR), masqués quand même
       // (le champ `validated` reste honnête : false si le checksum a échoué).
       if (pattern.validate && !validated && !pattern.maskIfStructureMatches) continue;

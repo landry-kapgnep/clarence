@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 // L'extension avait deux entrées qui n'affichaient pas la même chose : le
 // panneau injecté dans la page, et une popup native ouverte par l'icône de la
 // barre d'outils. Même page, mais l'une contrainte par la fenêtre de Chrome
-// (plafonnée à 600 px de haut, non redimensionnable) et l'autre libre — donc
+// (plafonnée à 600 px de haut, non redimensionnable) et l'autre libre - donc
 // deux mises en page pour un même outil.
 //
 // `default_popup` a donc été retiré du manifeste, ce qui fait remonter le clic
@@ -31,7 +31,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     return;
   } catch {
     // Pas de content script sur cet onglet : ce n'est ni ChatGPT, ni Claude,
-    // ni Gemini — ou la page n'a pas été rechargée depuis l'installation.
+    // ni Gemini - ou la page n'a pas été rechargée depuis l'installation.
   }
 
   // REPLI, et il est délibéré. Ne rien faire sur un clic serait le pire des

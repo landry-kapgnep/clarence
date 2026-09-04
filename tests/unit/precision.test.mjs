@@ -1,5 +1,5 @@
 // Garde-fous du filtre de précision. Zéro tolérance : ce module DÉMASQUE, donc
-// une erreur ici est une fuite silencieuse — la catégorie que docs/notes-techniques.md classe
+// une erreur ici est une fuite silencieuse - la catégorie que docs/notes-techniques.md classe
 // en priorité stricte, au même titre que les validateurs et le masquage.
 //
 // Les tests utilisent un modèle SYNTHÉTIQUE plutôt que les poids appris : les
@@ -99,7 +99,7 @@ test('le journal dit ce qui a été retiré et POURQUOI', () => {
   assert.ok(journal[0].p < 0.5);
 });
 
-test('scorePrecision rend 1 sans modèle — donc « garder »', () => {
+test('scorePrecision rend 1 sans modèle - donc « garder »', () => {
   assert.equal(scorePrecision(ent({}), contexteDocument(''), null), 1);
   assert.equal(expliquer(ent({}), contexteDocument(''), null), null);
 });
@@ -118,7 +118,7 @@ test('le seuil est respecté au sens large : p === seuil garde l’entité', () 
 
 test('l’explication voit aussi ce qui MANQUE, pas seulement ce qui pénalise', () => {
   // Piège corrigé : une caractéristique à poids POSITIF dont la valeur est
-  // basse (ici le score du modèle) n'apporte rien — apport nul, pas négatif —
+  // basse (ici le score du modèle) n'apporte rien - apport nul, pas négatif -
   // alors qu'elle est LA raison du verdict. La comparer à zéro la rendrait
   // invisible et l'explication désignerait un coupable secondaire.
   const modele = { seuil: 0.5, biais: 0, poids: { score: 10, partLexique: -1 } };
@@ -131,7 +131,7 @@ test('l’explication voit aussi ce qui MANQUE, pas seulement ce qui pénalise',
 // Ce test-ci dépend VOLONTAIREMENT des poids livrés, contrairement à tous les
 // autres : c'est une porte de qualité sur le modèle expédié, pas sur la
 // mécanique. Il est né d'une fuite mesurée au banc (29/08/2026, verdict NON
-// PUBLIABLE) — le corpus ne contenait aucune valeur À CHIFFRES qui soit une
+// PUBLIABLE) - le corpus ne contenait aucune valeur À CHIFFRES qui soit une
 // vraie donnée personnelle, donc le filtre avait appris « chiffre ⇒ pas une
 // entité » (poids −4,6) et retirait adresses, codes postaux et matricules.
 //
@@ -157,7 +157,7 @@ test('les poids livrés ne pèsent que des caractéristiques calculables EN PROD
   // hors dépôt). Le banc d'entraînement le charge, la production NON : elle
   // appelle filtrerParPrecision sans `sousMots`, donc la caractéristique y vaut
   // 0 en toutes circonstances. Un modèle entraîné avec de vraies valeurs et un
-  // poids de −7,59 s'appliquait donc hors de son domaine — sans erreur, sans
+  // poids de −7,59 s'appliquait donc hors de son domaine - sans erreur, sans
   // signal, juste des décisions décalées.
   //
   // Si un jour on embarque le vocabulaire, ce test doit être MODIFIÉ en même
@@ -171,7 +171,7 @@ test('les poids livrés ne pèsent que des caractéristiques calculables EN PROD
 test('un candidat en forme de nom de personne n’est JAMAIS filtré', () => {
   // LA FUITE QUI A IMPOSÉ CE GARDE-FOU, reproduite telle quelle. Sur
   // tests/manuel/tous-defauts.pdf, le modèle étiquette « Rose Fontaine » en
-  // ENTREPRISE — le garde-fou 3 raisonne par TYPE et ne la voit donc pas — et
+  // ENTREPRISE - le garde-fou 3 raisonne par TYPE et ne la voit donc pas - et
   // le filtre la retirait à 0,177 : « rose » est au dictionnaire, et le
   // document l'écrit lui-même en minuscules dans la phrase suivante. Les deux
   // signaux dont ce filtre tire sa valeur se retournaient contre un patronyme.

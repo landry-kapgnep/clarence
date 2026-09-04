@@ -1,4 +1,4 @@
-// Validateurs mathématiques — zéro tolérance (voir docs/notes-techniques.md §Tests)
+// Validateurs mathématiques - zéro tolérance (voir docs/notes-techniques.md §Tests)
 
 export function luhnCheck(numStr) {
   let sum = 0, alt = false;
@@ -32,7 +32,7 @@ export function nirCheck(nirRaw) {
   return Number(97n - (n % 97n)) === key;
 }
 
-// DNI / NIE espagnols — 8 chiffres + une lettre de contrôle CALCULÉE.
+// DNI / NIE espagnols - 8 chiffres + une lettre de contrôle CALCULÉE.
 //
 // Pourquoi un vrai validateur plutôt qu'un masquage sur structure : « 8 chiffres
 // suivis d'une lettre » est une forme FAIBLE, qu'un code produit ou une

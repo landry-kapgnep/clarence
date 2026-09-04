@@ -4,7 +4,7 @@
 // POURQUOI UN FICHIER À PART, et pas juste un second Worker sur le même code.
 // `ner-worker.js` importe `gliner` en tête de module, et cet import installe
 // ONNX Runtime 1.19. Transformers.js, lui, embarque ORT 1.14. Les deux dans le
-// même graphe de modules = initialisation en échec — c'est l'erreur
+// même graphe de modules = initialisation en échec - c'est l'erreur
 // « Compression indisponible » constatée à l'usage. Lancer un SECOND worker sur
 // le même fichier n'y changeait rien : le thread est neuf, le graphe de modules
 // est identique. Il faut un point d'entrée qui n'importe QUE Transformers.js.
@@ -27,7 +27,7 @@ async function init({ wasmPath, model }) {
   env.allowLocalModels = false;
   env.useBrowserCache = true;
   env.backends.onnx.wasm.wasmPaths = wasmPath;
-  // Multi-thread seulement si la page est isolée (SharedArrayBuffer) — jamais
+  // Multi-thread seulement si la page est isolée (SharedArrayBuffer) - jamais
   // garanti pour une page d'extension. Repli à 1, comme le moteur BERT.
   env.backends.onnx.wasm.numThreads = self.crossOriginIsolated
     ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1))
@@ -43,7 +43,7 @@ async function init({ wasmPath, model }) {
 //   - le pipeline OMET des tokens de sa sortie (le champ `index` saute) → on
 //     retokenise soi-même et on recolle par index.
 // Les deux gardes vivent dans le moteur, testées ; ici on ne fait que les
-// appeler — les dupliquer rejouerait la divergence P1bis.
+// appeler - les dupliquer rejouerait la divergence P1bis.
 async function tokensDe(texte) {
   const mots = String(texte || '').split(/\s+/).filter(Boolean);
   const flux = [];

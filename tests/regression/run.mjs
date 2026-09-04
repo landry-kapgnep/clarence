@@ -1,4 +1,4 @@
-// Non-régression sur de VRAIS documents — le filet que le banc ne peut pas tendre.
+// Non-régression sur de VRAIS documents - le filet que le banc ne peut pas tendre.
 //
 // POURQUOI CE HARNAIS EXISTE, en plus de `npm run bench`.
 //
@@ -9,19 +9,19 @@
 // été trouvés sur de VRAIS documents (un mémoire de 75 pages, un mémoire
 // anglais de 21 pages), aucun sur le corpus.
 //
-// Ce harnais ne mesure PAS la justesse — sans vérité terrain sur un document
+// Ce harnais ne mesure PAS la justesse - sans vérité terrain sur un document
 // quelconque, personne ne sait ce qui aurait dû être masqué. Il mesure la
 // STABILITÉ : la sortie a-t-elle changé depuis la dernière fois ? C'est
-// beaucoup moins ambitieux, et beaucoup plus utile qu'il n'y paraît — ça
+// beaucoup moins ambitieux, et beaucoup plus utile qu'il n'y paraît - ça
 // attrape la régression silencieuse, celle qui passe les 360 tests unitaires
 // et le banc sans laisser de trace.
 //
 // ── CE QUI EST COMMITTÉ ET CE QUI NE L'EST PAS ─────────────────────────────
 // Les documents vivent dans `corpus/`, IGNORÉ PAR GIT : ce sont de vrais
-// fichiers, parfois personnels, et la règle du projet est absolue — jamais de
+// fichiers, parfois personnels, et la règle du projet est absolue - jamais de
 // données réelles dans le dépôt, même anonymisées.
 //
-// Les instantanés, eux, sont committés — mais ils ne contiennent QUE des
+// Les instantanés, eux, sont committés - mais ils ne contiennent QUE des
 // empreintes des valeurs masquées, jamais les valeurs elles-mêmes. Sinon
 // l'instantané deviendrait exactement ce qu'on refuse de committer : une liste
 // de noms, d'adresses et d'identifiants réels. `--detail` réaffiche les vraies
@@ -50,7 +50,7 @@ const DETAIL = process.argv.includes('--detail');
 
 const empreinte = s => createHash('sha256').update(s).digest('hex').slice(0, 12);
 
-// MIROIR EN CLAIR — jamais committé (.gitignore), écrit à côté de l'instantané.
+// MIROIR EN CLAIR - jamais committé (.gitignore), écrit à côté de l'instantané.
 // Il n'existe que pour répondre à « QUELLE valeur n'est plus masquée ? », que
 // les empreintes seules ne peuvent pas dire. Même statut que corpus/ : local,
 // utile, hors du dépôt.
@@ -135,7 +135,7 @@ async function analyser(chemin, pipe) {
     unites: units.length,
     valeursMasquees: mapping.length,
     parType,
-    // Empreintes seulement — jamais les valeurs (voir l'en-tête).
+    // Empreintes seulement - jamais les valeurs (voir l'en-tête).
     valeurs: mapping.map(m => `${m.type}:${empreinte(m.value)}`).sort(),
     // Gardé hors instantané, pour --detail uniquement.
     _clair: mapping.map(m => `${m.type}:${m.value}`).sort(),
@@ -164,7 +164,7 @@ function comparer(nom, avant, apres, clair, sortie) {
   // MAIS une valeur qui quitte le mapping n'est pas forcément en clair : elle
   // peut avoir été ABSORBÉE par un span plus long ou reclassée sous un autre
   // type. Le mapping est indexé par `type:valeur`, il ne sait pas voir la
-  // différence — et il criait donc « risque de fuite » sur des changements
+  // différence - et il criait donc « risque de fuite » sur des changements
   // parfaitement sains (constaté le 08/08 : « 41001 » et une affiliation
   // universitaire, toutes deux encore masquées).
   //
@@ -190,7 +190,7 @@ function comparer(nom, avant, apres, clair, sortie) {
     // ne sait pas nommer : il ne contient que des empreintes, et une valeur
     // qui n'est plus masquée n'est plus dans la passe courante non plus. D'où
     // le miroir en clair, écrit à côté de l'instantané et IGNORÉ PAR GIT (voir
-    // .gitignore) — les vraies valeurs ne doivent jamais entrer dans le dépôt.
+    // .gitignore) - les vraies valeurs ne doivent jamais entrer dans le dépôt.
     // Sans lui, le harnais criait « risque de fuite » sans pouvoir dire de
     // quoi : défaut constaté à l'usage le 08/08, sur son deuxième vrai écart.
     for (const v of fuites.slice(0, 15)) ecarts.push(`   ✘ ${v}`);

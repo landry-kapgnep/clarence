@@ -4,8 +4,8 @@
 // LA VIRGULE EST LE SÉPARATEUR PRINCIPAL, et ce choix corrige le précédent.
 //
 // La tabulation avait d'abord été retenue parce qu'elle ne peut pas apparaître
-// dans un terme. Elle marchait — mesuré sur un vrai document, six termes saisis
-// ainsi ont bien été appliqués — mais elle est INVISIBLE : sa largeur varie
+// dans un terme. Elle marchait - mesuré sur un vrai document, six termes saisis
+// ainsi ont bien été appliqués - mais elle est INVISIBLE : sa largeur varie
 // selon la position, on ne distingue pas une tabulation de deux, et il fallait
 // lancer le traitement pour savoir si la saisie était correcte. Un séparateur
 // qu'on ne voit pas ne permet pas de se relire, et se relire est tout l'objet
@@ -13,13 +13,13 @@
 //
 // Les quatre formes sont acceptées (virgule, point-virgule, tabulation, saut de
 // ligne) : la tabulation reste utile pour un collage depuis un tableur, et le
-// saut de ligne est le format dans lequel les profils sont déjà enregistrés —
+// saut de ligne est le format dans lequel les profils sont déjà enregistrés -
 // le casser viderait silencieusement les règles de quelqu'un.
 //
 // CONTREPARTIE ASSUMÉE : un terme ne peut plus contenir de virgule.
 // « Dupont, Marie » sera lu comme deux termes. Côté « toujours masquer » c'est
 // sans danger (on masque davantage) ; côté « ne jamais masquer » ça peut
-// laisser en clair un fragment qu'on n'avait pas l'intention d'épargner —
+// laisser en clair un fragment qu'on n'avait pas l'intention d'épargner -
 // « Société Générale, Paris » garderait « Paris » visible. Le cas est rare, et
 // la virgule reste visible à la relecture, ce qui le rend rattrapable. C'est
 // l'inverse du défaut de la tabulation, qui était invisible.
@@ -41,7 +41,7 @@ export function parseTermes(valeur) {
 // retiré atterrit dans le champ VISIBLE plutôt que dans un état caché. Trois
 // bénéfices : l'utilisateur voit ce qu'il a retiré, il peut le corriger à la
 // main, et s'il veut le rendre permanent il lui suffit d'enregistrer le profil
-// — l'éphémère devient durable par un geste explicite, jamais par surprise.
+// - l'éphémère devient durable par un geste explicite, jamais par surprise.
 export function ajouterTerme(valeur, terme) {
   const t = (terme || '').trim();
   if (!t) return valeur || '';

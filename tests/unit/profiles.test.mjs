@@ -45,13 +45,13 @@ test('normalizeProfile : nom vide → « Sans nom »', () => {
 // --- MISE À JOUR DES PROFILS LIVRÉS ---------------------------------------
 // L'ancienne version n'ajoutait un profil que si son NOM était absent :
 // enrichir une liste livrée n'atteignait donc jamais une installation
-// existante, et sans le moindre signe. Mesuré sur un vrai CV — « BDD », « LAMP »
+// existante, et sans le moindre signe. Mesuré sur un vrai CV - « BDD », « LAMP »
 // et « JaCoCo » restaient masqués malgré leur ajout aux technos.
 
 test('un profil livré JAMAIS touché reçoit la liste à jour', () => {
   const [defaut] = defaultProfiles().filter(p => p.name === 'Développeur / Tech');
   // Une ANCIENNE version expédiée : contenu plus court, et son empreinte à
-  // elle. C'est le cas réel — installé il y a des semaines, jamais édité.
+  // elle. C'est le cas réel - installé il y a des semaines, jamais édité.
   const ancienne = {
     name: 'Développeur / Tech', alwaysKeep: ['React', 'Docker'],
     alwaysMask: [], disabledTypes: [], realistic: false
@@ -74,7 +74,7 @@ test('un profil livré ÉDITÉ n\'est jamais écrasé', () => {
 
 test('un profil d\'AVANT le champ empreinte est reconnu comme intact', () => {
   // Installé avant l'introduction du champ : aucune empreinte stockée. Son
-  // contenu correspond pourtant à une version expédiée — c'est ce que la
+  // contenu correspond pourtant à une version expédiée - c'est ce que la
   // table EMPREINTES_HISTORIQUES sait démontrer.
   const ancien = {
     name: 'Vierge', alwaysKeep: [], alwaysMask: [], disabledTypes: [], realistic: false
@@ -125,7 +125,7 @@ test('les mots de structure de document sont dans TOUS les profils garnis', () =
 test('le vocabulaire de PARCOURS est partagé, pas réservé au profil École', () => {
   // Mesuré sur un vrai CV de développeur : « Développeur / Tech » ne
   // récupérait que 4 des 25 termes sur-masqués et « École / Études » 7, sans
-  // qu aucun couvre les deux — or le document a besoin des technos ET des
+  // qu aucun couvre les deux - or le document a besoin des technos ET des
   // diplômes, et les profils sont exclusifs.
   //
   // Règle retenue : ce qui apparaît quel que soit le domaine est partagé ; ce
@@ -142,7 +142,7 @@ test('le vocabulaire de PARCOURS est partagé, pas réservé au profil École', 
     'le vocabulaire scolaire déborde hors de son profil');
 });
 
-test('« Vierge » reste vide — c est le temoin', () => {
+test('« Vierge » reste vide - c est le temoin', () => {
   const v = defaultProfiles().find(p => p.name === 'Vierge');
   assert.deepEqual(v.alwaysKeep, []);
   assert.deepEqual(v.alwaysMask, []);
@@ -150,7 +150,7 @@ test('« Vierge » reste vide — c est le temoin', () => {
 
 test('aucune liste blanche ne contient de quasi-identifiant', () => {
   // LA règle du fichier : ce qui est ici ne sera JAMAIS masqué, pour personne.
-  // Un nom d école, d employeur ou de ville identifie un parcours — les
+  // Un nom d école, d employeur ou de ville identifie un parcours - les
   // blanchir rouvrirait le trou fermé ailleurs (P12).
   const interdits = [
     'Sorbonne', 'IUT', 'Harvard', 'Polytechnique', 'CAF', 'URSSAF',
@@ -241,11 +241,11 @@ test('les cinq langues sont représentées dans le profil CV', async () => {
 // trouve dans une vraie entité la démasquerait.
 //
 // CE QUE CE TEST PROUVE, ET CE QU'IL NE PROUVE PAS. Il vérifie que les mots de
-// forme n'ouvrent pas les entités PLAUSIBLES — noms d'école, d'employeur, de
+// forme n'ouvrent pas les entités PLAUSIBLES - noms d'école, d'employeur, de
 // personne, de ville, y compris ceux qui ont réellement fui dans ce projet. Il
 // ne prouve pas l'absence totale de risque : « Cabinet Introduction & Associés »
 // serait bel et bien démasqué par « introduction ». Ce mot est admis quand même,
-// et le compromis est explicite — il est déjà dans STRUCTURE_KEEP depuis des
+// et le compromis est explicite - il est déjà dans STRUCTURE_KEEP depuis des
 // mois, la détection de type en a besoin, et masquer chaque intitulé
 // « INTRODUCTION » coûterait bien plus qu'une raison sociale improbable.
 test('aucun mot de forme ne démasque une entité plausible', async () => {
@@ -260,12 +260,12 @@ test('aucun mot de forme ne démasque une entité plausible', async () => {
     'un mot de forme a démasqué une entité plausible');
 });
 
-// ⚠️ NE PAS PROPOSER UN RECUL — la règle qui empêche la suggestion de nuire.
+// ⚠️ NE PAS PROPOSER UN RECUL - la règle qui empêche la suggestion de nuire.
 //
 // Comparer les NOMS ne suffit pas : les profils de MÉTIER portent eux aussi le
 // vocabulaire de leur format. « Développeur / Tech » contient tout le
 // vocabulaire CV, donc proposer « CV / Résumé » à quelqu'un déjà dessus lui
-// ferait PERDRE sa liste de technos — et remasquerait « Ollama », « JaCoCo »,
+// ferait PERDRE sa liste de technos - et remasquerait « Ollama », « JaCoCo »,
 // « BDD », constaté sur un vrai CV. La bonne question n'est pas « le profil
 // est-il différent ? » mais « couvre-t-il déjà ce format ? ».
 test('un profil qui couvre déjà le format ne doit pas recevoir de suggestion', async () => {

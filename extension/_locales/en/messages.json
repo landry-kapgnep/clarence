@@ -1,6 +1,6 @@
 {
   "aide_pdf_reconstruit_depuis_des_pages_neuves_aucu": {
-    "message": "PDF rebuilt from <strong>blank</strong> pages — no original text survives underneath. Images kept.<br> Approximate fidelity: single font, fragment-level positioning."
+    "message": "PDF rebuilt from <strong>blank</strong> pages: no original text survives underneath. Images kept.<br> Approximate fidelity: single font, fragment-level positioning."
   },
   "aide_remplace_par_des_noms_plausibles_plutot_que": {
     "message": "Replaces names with <strong>plausible</strong> ones instead of <code>[PERSON_1]</code>. The same person keeps the same pseudonym throughout. <br><br>Job title, nationality and health keep their label: inventing a plausible fake there would mislead the AI."
@@ -12,7 +12,7 @@
     "message": "<strong>.md</strong> output: text only, no images. Paste it straight into the chat."
   },
   "aide_supprime_les_mots_peu_porteurs_la_prose_est": {
-    "message": "Drops low-value words. <strong>The prose is impoverished</strong> and can no longer be proofread — masked data and negations are preserved.<br> For \"summarise\", \"which dates?\" — not for \"proofread\", \"rewrite\", \"translate\".<br> First use: ~170 MB, once."
+    "message": "Drops low-value words. <strong>The prose is impoverished</strong> and can no longer be proofread, but masked data and negations are preserved.<br> For \"summarise\", \"which dates?\", not for \"proofread\", \"rewrite\", \"translate\".<br> First use: ~170 MB, once."
   },
   "analyser": {
     "message": "Analyse"
@@ -36,7 +36,7 @@
     "message": "No text to analyse."
   },
   "aucune_donnee_sensible": {
-    "message": "No sensitive data found — metadata cleaned."
+    "message": "No sensitive data found. Metadata cleaned."
   },
   "changer_de_fichier": {
     "message": "Change file"
@@ -48,7 +48,7 @@
     "message": "Copied."
   },
   "copie_relis": {
-    "message": "Copied — read it over before pasting."
+    "message": "Copied. Read it over before pasting."
   },
   "copier": {
     "message": "Copy"
@@ -117,7 +117,7 @@
     "message": "Anonymises sensitive data before you paste it into ChatGPT, Claude or Gemini. Everything stays in your browser."
   },
   "extName": {
-    "message": "Clarence — local anonymiser"
+    "message": "Clarence - local anonymiser"
   },
   "fermer": {
     "message": "Close"
@@ -207,7 +207,7 @@
     "message": "Result"
   },
   "rien_detecte": {
-    "message": "Nothing detected — add a manual mask if needed."
+    "message": "Nothing detected. Add a manual mask if needed."
   },
   "selectionne_un_passage_puis_clique_ici": {
     "message": "Select a passage, then click here"
@@ -249,7 +249,7 @@
     "message": "Erase everything"
   },
   "traitement_annule": {
-    "message": "Cancelled — no file produced."
+    "message": "Cancelled. No file produced."
   },
   "type_adresse": {
     "message": "Addresses"
@@ -323,7 +323,7 @@
     }
   },
   "profil_applique": {
-    "message": "“$PROFIL$” profile applied — run the analysis again.",
+    "message": "“$PROFIL$” profile applied. Run the analysis again.",
     "placeholders": {
       "profil": {
         "content": "$1"
@@ -373,10 +373,10 @@
     "message": "Response to de-anonymise"
   },
   "exemple_texte_a_coller": {
-    "message": "Hi, I’m Sarah Whitfield (sarah.whitfield@example.com) — could you review this contract?"
+    "message": "Hi, I’m Sarah Whitfield (sarah.whitfield@example.com), could you review this contract?"
   },
   "relis_avant_de_coller": {
-    "message": "Read it over before pasting — detection is not infallible."
+    "message": "Read it over before pasting: detection is not infallible."
   },
   "glisse_un_fichier_ici": {
     "message": "Drop a file here, or click to choose one"
@@ -385,7 +385,7 @@
     "message": "Add emails, schools, employers, handles…"
   },
   "deja_couverts_sans_rien_declarer": {
-    "message": "Emails, phone numbers and IBANs are already caught without declaring anything. Your name depends on a model — and models miss."
+    "message": "Emails, phone numbers and IBANs are already caught without declaring anything. Your name depends on a model, and models miss."
   },
   "appliquer_profil": {
     "message": "Apply “$PROFIL$”",

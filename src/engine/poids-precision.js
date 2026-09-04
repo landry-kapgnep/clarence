@@ -1,4 +1,4 @@
-// FICHIER GÉNÉRÉ — ne pas modifier à la main.
+// FICHIER GÉNÉRÉ - ne pas modifier à la main.
 //
 //     ECRIRE=1 node tools/filtre/entrainer.mjs tools/filtre/jeu.jsonl
 //

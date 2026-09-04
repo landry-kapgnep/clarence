@@ -1,4 +1,4 @@
-# tools/ — conversion des poids LLMLingua-2
+# tools/ - conversion des poids LLMLingua-2
 
 Outils **hors runtime** : rien ici n'est embarqué dans l'extension. Ils servent
 à produire, une fois, les poids que l'extension téléchargera ensuite.
@@ -7,7 +7,7 @@ Outils **hors runtime** : rien ici n'est embarqué dans l'extension. Ils servent
 
 Le navigateur ne sait exécuter que de l'**ONNX**. Or Microsoft ne publie
 LLMLingua-2 qu'en `.safetensors` (le format PyTorch). Le développement s'est
-donc appuyé sur une conversion communautaire trouvée sur HuggingFace —
+donc appuyé sur une conversion communautaire trouvée sur HuggingFace -
 pratique, mais dont la fiche **ne déclare aucune licence**.
 
 En droit d'auteur, l'absence de licence n'est pas une permission : par défaut,
@@ -17,7 +17,7 @@ ne peut pas justifier les droits. S'y ajoute un risque concret : le dépôt
 appartient à un particulier et peut disparaître, emportant la fonction avec lui.
 
 En convertissant nous-mêmes depuis l'original **Apache 2.0**, on hérite des
-mêmes droits — cette licence autorise explicitement les travaux dérivés et leur
+mêmes droits - cette licence autorise explicitement les travaux dérivés et leur
 redistribution, moyennant attribution (le fichier `NOTICE` produit par le
 script).
 
@@ -61,14 +61,14 @@ node tools/verifier-conversion.mjs
 Fait tourner le **vrai moteur** (`src/engine/compression.js`) avec chaque modèle
 et compare les textes produits. Une différence sur un nom commun au taux
 agressif est bénigne ; **un placeholder ou un opérateur logique perdu ne l'est
-pas** — ce serait une erreur silencieuse et irrattrapable, puisqu'on ne relit
+pas** - ce serait une erreur silencieuse et irrattrapable, puisqu'on ne relit
 jamais un texte compressé.
 
 ## L'étape qui reste, et qui demande ton compte
 
 L'extension charge le modèle **par son identifiant HuggingFace**. Tant que le
 dossier converti n'est pas publié, `COMPRESSION_MODEL` pointe encore sur la
-conversion communautaire — **c'est le bloquant de publication**.
+conversion communautaire - **c'est le bloquant de publication**.
 
 Il faut donc un dépôt sur **ton** compte HuggingFace. Ce choix t'appartient
 (sous quel compte, sous quel nom), et la publication n'a rien d'automatique.
@@ -89,7 +89,7 @@ Deux pièges, tous deux rencontrés :
 
 `--exclude "onnx/model.onnx"` écarte le **fp32 de 710 Mo**, dont l'extension ne
 se sert jamais : elle ne charge que `model_quantized.onnx`. Sans ça on
-téléverse 890 Mo au lieu de 183, pour aucun bénéfice au runtime — et le fp32 se
+téléverse 890 Mo au lieu de 183, pour aucun bénéfice au runtime - et le fp32 se
 régénère en une commande. Le garder en ligne pour la traçabilité reste un choix
 défendable ; il suffit de retirer l'option.
 

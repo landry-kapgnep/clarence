@@ -175,14 +175,14 @@ function resultat(avant, segments, motsAvant, motsApres, motsSansScore = 0) {
     motsAvant,
     motsApres,
     // NOMBRE DE MOTS SANS SCORE, remonté exprès. Un mot non aligné est
-    // conservé — c'est le bon sens de l'échec — mais si le flux de tokens
+    // conservé - c'est le bon sens de l'échec - mais si le flux de tokens
     // s'épuise (pipeline qui tronque au-delà de 512 positions, par exemple),
     // TOUT est conservé et la compression ne mord plus, en silence. Sans ce
     // compteur, l'appelant croit compresser et ne compresse rien : exactement
     // le cas rencontré au spike sur un document de 328 mots.
     motsSansScore,
     // Estimation prudente et assumée : ~4 caractères par token. Le cadrage §10
-    // impose un ordre de grandeur, jamais un chiffre garanti — le vrai compte
+    // impose un ordre de grandeur, jamais un chiffre garanti - le vrai compte
     // dépend du tokeniseur du modèle destinataire, qu'on ne connaît pas.
     tokensAvant: Math.round(avant.length / 4),
     tokensApres: Math.round(apres.length / 4)

@@ -1,4 +1,4 @@
-// Caractéristiques du filtre de précision : fonctions PURES, donc testables —
+// Caractéristiques du filtre de précision : fonctions PURES, donc testables -
 // c'est tout l'intérêt de les avoir sorties de la décision (leçon d'encodeImage,
 // dont le bug de fond noir a vécu parce que la décision était noyée dans du code
 // dépendant du navigateur).
@@ -10,7 +10,7 @@ import {
 
 // ⚠️ LE TEST LE PLUS IMPORTANT DU FICHIER. Les poids appris sont un tableau
 // aligné sur cet ordre. Réordonner l'objet `caracteristiques` sans réentraîner
-// appliquerait le poids du lexique à la casse, celui du score aux occurrences —
+// appliquerait le poids du lexique à la casse, celui du score aux occurrences -
 // SANS AUCUNE ERREUR, juste des décisions fausses. Si ce test casse, il faut
 // réentraîner, pas mettre la liste à jour.
 test('l’ordre des caractéristiques est verrouillé', () => {
@@ -47,7 +47,7 @@ test('lexique et suffixes sont comptés SÉPARÉMENT', () => {
   const ctx = contexteDocument('');
   // « données » est au lexique multilingue ; « conteneurisée » n'y est pas mais
   // porte un suffixe français. La distinction est ce qui permettra de mesurer
-  // si les suffixes — la seule pièce liée à une langue — servent encore.
+  // si les suffixes - la seule pièce liée à une langue - servent encore.
   const donnees = caracteristiques({ value: 'données' }, ctx);
   assert.equal(donnees.partLexique, 1);
   assert.equal(donnees.partSuffixe, 0);
@@ -62,7 +62,7 @@ test('lexique et suffixes sont comptés SÉPARÉMENT', () => {
 
 // --- Ce que dit le document -----------------------------------------------
 
-test('« le même mot ailleurs en minuscules » — le document se sert de dictionnaire', () => {
+test('« le même mot ailleurs en minuscules » - le document se sert de dictionnaire', () => {
   // AUCUNE langue n'intervient ici : si le document écrit lui-même le mot en
   // minuscules ailleurs, c'est un nom commun, quelle que soit la langue.
   const ctx = contexteDocument('COMPÉTENCES Développement Web\nJe fais du développement web depuis 2019.');
@@ -130,11 +130,11 @@ test('un candidat vide ne produit ni NaN ni division par zéro', () => {
   assert.equal(caracteristiques({}, ctx).partLexique, 0);
 });
 
-test('la fragmentation ne doit PAS mesurer la casse — piège allemand', () => {
+test('la fragmentation ne doit PAS mesurer la casse - piège allemand', () => {
   // Le vocabulaire est CASED : « Unternehmen » y figure, « unternehmen » non.
   // Une première version minusculisait avant de segmenter et rendait donc 2
   // morceaux pour le mot allemand le plus banal qui soit. Elle mesurait la
-  // casse au lieu de la rareté — et se trompait précisément sur la famille que
+  // casse au lieu de la rareté - et se trompait précisément sur la famille que
   // le lexique en minuscules ne peut PAS couvrir : en allemand tout nom commun
   // porte une capitale, donc aucun n'entre au lexique.
   const vocab = new Set(['Unternehmen', 'terrain', 'kap', '##gne', '##p']);

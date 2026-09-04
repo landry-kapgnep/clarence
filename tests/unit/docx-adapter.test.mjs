@@ -13,7 +13,7 @@ const fxBuffer = () => new Uint8Array(readFileSync(fixturePath)).buffer;
 const domOpts = { DOMParser, XMLSerializer };
 
 // Faux pipeline NER déterministe : reconnaît "Jean Dupont" comme PER, comme
-// les autres tests unitaires (ner-chunk.test.mjs) — pas de vrai modèle ici.
+// les autres tests unitaires (ner-chunk.test.mjs) - pas de vrai modèle ici.
 const fakePipe = async chunk => chunk.includes('Jean Dupont')
   ? [{ entity: 'B-PER', word: 'Jean', score: 0.99 }, { entity: 'I-PER', word: 'Dupont', score: 0.98 }]
   : [];
@@ -48,7 +48,7 @@ test('pipeline complet : le nom coupé sur 2 runs est masqué sans laisser de r�
   const docXml = strFromU8(zip['word/document.xml']);
 
   // zéro fuite : ni "Jean" ni "Dupont" nulle part dans la partie XML entière
-  // (pas seulement le premier run — c'est le test qui détecterait un résidu
+  // (pas seulement le premier run - c'est le test qui détecterait un résidu
   // laissé dans le run "Dupont" en gras par une redistribution incorrecte).
   assert.equal(docXml.includes('Jean'), false, 'fuite : "Jean"');
   assert.equal(docXml.includes('Dupont'), false, 'fuite : "Dupont"');

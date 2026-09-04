@@ -49,7 +49,7 @@ test('MONTANT avec € détecté (régression du fix prototype)', () => {
 test('un nom plus large qu\'un faux positif regex n\'est pas annulé', () => {
   // Le patronyme « ROUSSEAU » matche le motif BIC (8 majuscules, « SE » en
   // position 5-6). Avant correctif, il supprimait « Amandine ROUSSEAU » et la
-  // sortie disait « Amandine [BIC_1] » — prénom en clair à côté du placeholder.
+  // sortie disait « Amandine [BIC_1] » - prénom en clair à côté du placeholder.
   const text = 'RAPPORT DE STAGE\nAmandine ROUSSEAU\nBUT 2';
   const per = {
     type: 'PER', value: 'Amandine ROUSSEAU',

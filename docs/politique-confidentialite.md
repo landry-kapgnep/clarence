@@ -1,4 +1,4 @@
-# Politique de confidentialité — Clarence
+# Politique de confidentialité - Clarence
 
 **Dernière mise à jour : 4 septembre 2026**
 
@@ -14,7 +14,7 @@ local**, par du code qui s'exécute dans votre navigateur. Ils ne sont envoyés
 nulle part : ni à nous, ni à un service tiers, ni à un modèle d'IA distant.
 
 Il n'existe aucun serveur derrière Clarence. Il n'y a donc rien où vos données
-pourraient être copiées, mises en cache ou consultées — pas même par erreur.
+pourraient être copiées, mises en cache ou consultées - pas même par erreur.
 
 **Vous pouvez le vérifier vous-même**, et c'est la seule preuve qui compte :
 ouvrez les outils de développement de votre navigateur (F12), onglet
@@ -26,7 +26,7 @@ décrites ci-dessous.
 
 | Quand | Vers quoi | Ce qui part | Ce qui revient |
 |---|---|---|---|
-| Au premier lancement | `huggingface.co` et ses miroirs de fichiers (`cdn-lfs.huggingface.co`, `cdn-lfs-us-1.hf.co`, `us.aws.cdn.hf.co`, `cas-bridge.xethub.hf.co`) | rien de vous — une simple demande de fichier | le modèle de détection, mis en cache ensuite |
+| Au premier lancement | `huggingface.co` et ses miroirs de fichiers (`cdn-lfs.huggingface.co`, `cdn-lfs-us-1.hf.co`, `us.aws.cdn.hf.co`, `cas-bridge.xethub.hf.co`) | rien de vous - une simple demande de fichier | le modèle de détection, mis en cache ensuite |
 
 Ces cinq domaines sont les seuls que l'extension est autorisée à contacter ; ils
 sont déclarés dans son manifeste et le navigateur lui interdit tout le reste.
@@ -59,15 +59,15 @@ Google, ce qui contredirait la promesse de cette page.
 | `clipboardWrite` | le bouton « Copier », qui place le texte anonymisé dans votre presse-papier |
 | Accès à `huggingface.co` et ses quatre miroirs | télécharger le modèle de détection, une seule fois |
 
-L'extension installe par ailleurs un script sur quatre sites — `chatgpt.com`,
-`chat.openai.com`, `claude.ai`, `gemini.google.com` — et **uniquement** sur
+L'extension installe par ailleurs un script sur quatre sites - `chatgpt.com`,
+`chat.openai.com`, `claude.ai`, `gemini.google.com` - et **uniquement** sur
 ceux-là. Son unique rôle est de déposer le contenu anonymisé dans le champ de
 saisie quand vous cliquez sur « Dans la page ». Il ne lit pas vos conversations,
 n'observe pas votre navigation et n'envoie rien nulle part.
 
 ## Ce que Clarence ne fait pas
 
-- Aucune analytique, aucune télémétrie, aucun traceur — pas même anonymisé.
+- Aucune analytique, aucune télémétrie, aucun traceur - pas même anonymisé.
 - Aucun compte, aucune inscription, aucune adresse e-mail demandée.
 - Aucun cookie.
 - Aucune publicité, aucune revente de données. Il n'y a pas de données à
@@ -89,7 +89,7 @@ l'avoir relu.
 ## Modifications
 
 Toute modification de cette politique sera datée en tête de page. Comme Clarence
-n'a pas votre adresse e-mail, il ne peut pas vous prévenir autrement — la page
+n'a pas votre adresse e-mail, il ne peut pas vous prévenir autrement - la page
 publiée fait foi.
 
 ## Contact

@@ -72,7 +72,7 @@ test('téléphone pseudo au format FR mobile', () => {
 });
 
 // --- Locale des pseudonymes (constaté : toujours franco-français, même sur
-// un document rédigé en anglais — ça casse l'illusion de cohérence).
+// un document rédigé en anglais - ça casse l'illusion de cohérence).
 test('locale par défaut = fr (non-régression)', () => {
   const p = createPseudonymizer({ seed: 's1' });
   assert.match(p('TELEPHONE', '06 12 34 56 78'), /^0[67](?: \d{2}){4}$/);
@@ -154,7 +154,7 @@ test('AUCUN composant réel ne subsiste dans le pseudo (anti-fuite)', () => {
 // --- Civilité incluse dans l'entité par le modèle contextuel.
 // Cas réel : « Priya Deva » → « Clément Faure » mais « miss Deva » →
 // « Amélie Faure ». Deux personnes de genres différents pour la même, dans
-// le même texte — le titre était traité comme un prénom.
+// le même texte - le titre était traité comme un prénom.
 test('la civilité est conservée, jamais transformée en prénom', () => {
   const p = createPseudonymizer({ seed: 's1', locale: 'en' });
   const complet = p('PER', 'Priya Deva');
@@ -194,7 +194,7 @@ test('une date numérique reste numérique (non-régression)', () => {
 // --- ÉTABLISSEMENT, et le REFUS des trois autres types (P13) ---------------
 // La ligne de partage est « identifiant ou attribut ? ». Un nom d'établissement
 // s'échange comme un nom d'entreprise ; un poste, une nationalité ou une donnée
-// de santé sont ce sur quoi le LLM RAISONNE — les remplacer par du plausible
+// de santé sont ce sur quoi le LLM RAISONNE - les remplacer par du plausible
 // produit une réponse confiante et fausse.
 
 test('un poste, une nationalité et une donnée de santé restent en placeholder', () => {
@@ -212,7 +212,7 @@ test('établissement : PAS de pseudonyme, parce que sa détection est peu fiable
   // Ajouté le 15/08 comme identifiant, retiré le 18/08 après mesure sur un
   // vrai CV : « LLM local » avait été pris pour un établissement et remplacé
   // par « École Morel ». Le lecteur croit à une école qui n existe pas, et
-  // rien ne le signale — alors qu un placeholder posé au même endroit saute
+  // rien ne le signale - alors qu un placeholder posé au même endroit saute
   // aux yeux.
   const p = createPseudonymizer({ seed: 's1' });
   assert.equal(p('ETABLISSEMENT', 'Lycée Camille-Claudel'), null);
@@ -221,7 +221,7 @@ test('établissement : PAS de pseudonyme, parce que sa détection est peu fiable
 
 test('aucun type PEU FIABLE ne reçoit de pseudonyme réaliste', () => {
   // La règle en DEUX conditions : identifiant ET détection fiable. Ce test
-  // relie les deux modules — si un type rejoint TYPES_PEU_FIABLES un jour, il
+  // relie les deux modules - si un type rejoint TYPES_PEU_FIABLES un jour, il
   // doit cesser d être pseudonymisé, sans quoi ses erreurs deviennent
   // invisibles.
   const p = createPseudonymizer({ seed: 's1' });
@@ -233,7 +233,7 @@ test('aucun type PEU FIABLE ne reçoit de pseudonyme réaliste', () => {
 // --- COHÉRENCE ENTRE LE NOM, L EMAIL ET LE HANDLE -------------------------
 // Signalé sur un vrai CV : la personne devenait « ROMAIN MOREAU » et son email
 // « thomas.simon@… ». Deux identités pour quelqu un dont l adresse porte
-// justement son nom — la cohérence promise s arrêtait aux frontières du type.
+// justement son nom - la cohérence promise s arrêtait aux frontières du type.
 
 test("l email reprend les composants du nom de la personne", () => {
   const p = createPseudonymizer({ seed: "s1" });

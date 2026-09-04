@@ -4,7 +4,7 @@
 // (changement de fichier, relance, bouton Annuler) continue à tourner : il
 // occupe le modèle et le run suivant fait la queue derrière des centaines
 // d'inférences dont plus personne ne veut. C'est ce qui donnait l'impression
-// d'un blocage sur « Reconstruction du PDF… » — rien n'était bloqué, tout était
+// d'un blocage sur « Reconstruction du PDF… » - rien n'était bloqué, tout était
 // en file d'attente derrière un mort.
 //
 // On s'appuie sur `AbortSignal`, le standard du web : il est déjà compris par
@@ -13,7 +13,7 @@
 
 // Erreur DÉDIÉE, distincte d'un vrai échec. La différence n'est pas cosmétique :
 // un traitement annulé par l'utilisateur ne doit PAS afficher « Traitement
-// échoué — le fichier n'a pas été anonymisé », qui laisserait croire à un bug.
+// échoué - le fichier n'a pas été anonymisé », qui laisserait croire à un bug.
 export class OperationAnnulee extends Error {
   constructor(message = 'traitement annulé') {
     super(message);

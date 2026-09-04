@@ -1,5 +1,5 @@
 // Moteur de compression : pipeline SIMULÉ, aucun modèle chargé.
-// Les trois règles dures sont ici — placeholders intacts, opérateurs logiques
+// Les trois règles dures sont ici - placeholders intacts, opérateurs logiques
 // conservés, et échec d'alignement qui garde au lieu de supprimer.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -89,7 +89,7 @@ test('un mot ordinaire n\'est PAS un opérateur logique', () => {
 });
 
 test('la classe reste FERMÉE : pas de mot « important » glissé dedans', () => {
-  // Garde-fou contre l'élargissement — la règle du projet n'autorise une liste
+  // Garde-fou contre l'élargissement - la règle du projet n'autorise une liste
   // statique QUE pour une classe fermée (cf. honorifics.js).
   for (const mot of ['important', 'urgent', 'confidentiel', 'attention', 'clause']) {
     assert.equal(OPERATEURS_LOGIQUES.has(mot), false,
@@ -217,7 +217,7 @@ test('recollerScores : le flux rendu couvre TOUS les tokens du texte', () => {
 // --- SEGMENTS (mise en page préservée) ------------------------------------
 // DOCX et PDF « Préserver » ne réécrivent pas un texte : ils redessinent des
 // FRAGMENTS à leurs positions. Sans restitution par segment, l'option ne
-// pouvait exister que sur les sorties texte — ce qui la vide de son intérêt,
+// pouvait exister que sur les sorties texte - ce qui la vide de son intérêt,
 // puisque l'utilisateur veut moins de tokens dans le fichier qu'il ENVOIE.
 
 test('compresserSegments : chaque mot retourne dans SON segment', async () => {
@@ -234,7 +234,7 @@ test('compresserSegments : un segment entièrement supprimé rend une chaîne vi
 });
 
 test('compresserSegments : le nombre de segments rendus est TOUJOURS celui reçu', async () => {
-  // Un décalage ici collerait le texte d'un fragment sur un autre — donc du
+  // Un décalage ici collerait le texte d'un fragment sur un autre - donc du
   // texte à la mauvaise position dans le document reconstruit.
   const entree = ['un', '', 'deux trois', 'quatre'];
   const r = await compresserSegments(entree, fauxPipe(), { taux: 1 });

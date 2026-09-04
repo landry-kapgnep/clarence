@@ -28,7 +28,7 @@ test('champs multi-lignes : un terme par ligne, vides retirés, tableaux accept�
   assert.deepEqual(id.champs.pseudos, ['landry-kapgnep', 'lkap']);
 });
 
-test('identityTerms : GARDE-FOU — un terme trop court ne sort JAMAIS', () => {
+test('identityTerms : GARDE-FOU - un terme trop court ne sort JAMAIS', () => {
   // Une initiale (« L ») en recherche littérale masquerait une lettre sur
   // deux du document entier. Ce test protège ce garde-fou.
   const terms = identityTerms({ status: 'configuré', champs: {
@@ -64,7 +64,7 @@ test('bout en bout : identité → forcedMasks → toutes les occurrences masqu�
 
 test('identitySearchTerms : les variantes de casse couvrent le CV en MAJUSCULES', () => {
   // LE cas qui a motivé ce module : l'utilisateur déclare « Landry Kapgnep »,
-  // son CV titre « LANDRY KAPGNEP ». forcedMasks est littéral — sans les
+  // son CV titre « LANDRY KAPGNEP ». forcedMasks est littéral - sans les
   // variantes générées, le nom fuirait.
   const texte = 'LANDRY KAPGNEP — Landry Kapgnep — landry kapgnep.';
   const terms = identitySearchTerms({ status: 'configuré', champs: { prenom: 'Landry', nom: 'Kapgnep' } });
@@ -110,7 +110,7 @@ test('les particules et civilités ne deviennent PAS des termes isolés', () => 
   }
   assert.ok(terms.includes('Charles'));
   // DERNIER composant : « Fontaine » est un vrai patronyme, jamais une
-  // particule — c'est la règle de POSITION, pas la seule appartenance.
+  // particule - c'est la règle de POSITION, pas la seule appartenance.
   assert.ok(terms.includes('Fontaine'));
 });
 

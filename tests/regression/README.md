@@ -9,19 +9,19 @@ le moteur. C'est un biais structurel, et le banc l'admet lui-même en pied de
 page : « 7 documents synthétiques ne prédisent PAS le fichier d'un inconnu ».
 
 Le fait est vérifiable sur la session du 07-08/08/2026 : **tous** les défauts
-réels ont été trouvés sur de VRAIS documents — un mémoire français de 75 pages,
-un mémoire anglais de 21 pages — et **aucun** sur le corpus synthétique. Parmi
+réels ont été trouvés sur de VRAIS documents - un mémoire français de 75 pages,
+un mémoire anglais de 21 pages - et **aucun** sur le corpus synthétique. Parmi
 eux : le sur-masquage massif de `ChatGPT` (41 occurrences), la règle
 « ne jamais masquer » qui ne fonctionnait qu'à l'égalité stricte, et les
 9 fuites de la couche déterministe hors du français.
 
-## Ce que ce harnais mesure — et ce qu'il ne mesure pas
+## Ce que ce harnais mesure - et ce qu'il ne mesure pas
 
 Il ne mesure **pas la justesse**. Sur un document quelconque, personne ne
 connaît la vérité terrain : impossible de dire si un masque est mérité.
 
 Il mesure la **stabilité** : la sortie a-t-elle changé depuis la dernière fois ?
-Beaucoup moins ambitieux, et beaucoup plus utile qu'il n'y paraît — c'est ce qui
+Beaucoup moins ambitieux, et beaucoup plus utile qu'il n'y paraît - c'est ce qui
 attrape la régression silencieuse, celle qui passe les 360 tests unitaires **et**
 le banc sans laisser de trace.
 
@@ -36,8 +36,8 @@ masque 1 valeur(s) EN PLUS
 
 | | Committé ? |
 |---|---|
-| `corpus/` — les documents | **Non.** Ignoré par git : ce sont de vrais fichiers, parfois personnels |
-| `instantanes/*.json` | Oui — mais **uniquement des empreintes** des valeurs masquées |
+| `corpus/` - les documents | **Non.** Ignoré par git : ce sont de vrais fichiers, parfois personnels |
+| `instantanes/*.json` | Oui - mais **uniquement des empreintes** des valeurs masquées |
 
 Les instantanés ne contiennent jamais les valeurs en clair. Sinon ils
 deviendraient exactement ce que la règle du projet interdit : une liste de noms,
@@ -73,5 +73,5 @@ modifié en profondeur.
 
 ## Limite connue
 
-Un écart n'est **pas** forcément un bug — un correctif volontaire en produit un
+Un écart n'est **pas** forcément un bug - un correctif volontaire en produit un
 aussi. Le harnais ne tranche pas, il **oblige à expliquer**. C'est son rôle.

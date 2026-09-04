@@ -10,7 +10,7 @@ import { maskText } from '../../src/engine/masking.js';
 
 const fx = f => readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', f), 'utf8');
 
-test('texte 1 — toutes les catégories structurées, sans doublon ni chevauchement', () => {
+test('texte 1 - toutes les catégories structurées, sans doublon ni chevauchement', () => {
   const merged = mergeEntities(detectRegex(fx('texte1-cas-complet.txt')), []);
   assert.deepEqual(merged.map(e => e.type).sort(), [
     'ADRESSE', 'CARTE_BANCAIRE', 'CODE_POSTAL_VILLE', 'EMAIL', 'IBAN',
@@ -21,7 +21,7 @@ test('texte 1 — toutes les catégories structurées, sans doublon ni chevauche
   }
 });
 
-test('texte 1 — le masquage ne laisse fuir aucune valeur structurée', () => {
+test('texte 1 - le masquage ne laisse fuir aucune valeur structurée', () => {
   const text = fx('texte1-cas-complet.txt');
   const { masked, mapping } = maskText(text, mergeEntities(detectRegex(text), []));
   for (const { value } of mapping) {
@@ -29,12 +29,12 @@ test('texte 1 — le masquage ne laisse fuir aucune valeur structurée', () => {
   }
 });
 
-test('texte 2 — email, téléphone, code postal ; piège Luhn rejeté', () => {
+test('texte 2 - email, téléphone, code postal ; piège Luhn rejeté', () => {
   const merged = mergeEntities(detectRegex(fx('texte2-noms-difficiles.txt')), []);
   assert.deepEqual(merged.map(e => e.type).sort(), ['ADRESSE', 'CODE_POSTAL_VILLE', 'EMAIL', 'TELEPHONE']);
   assert.equal(merged.some(e => e.value.includes('483 921 657')), false);
 });
 
-test('texte 3 — zéro détection', () => {
+test('texte 3 - zéro détection', () => {
   assert.equal(detectRegex(fx('texte3-zero-faux-positif.txt')).length, 0);
 });

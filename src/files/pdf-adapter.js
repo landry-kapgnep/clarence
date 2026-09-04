@@ -1,11 +1,11 @@
 // Adaptateur PDF → Markdown. Contrairement à CSV/XLSX/DOCX, la sortie n'est
 // JAMAIS une réécriture du fichier d'origine : c'est un nouveau document texte
 // (.md). Pas de problème de réinjection dans un format contraint (aucune
-// redistribution sur des runs nécessaire) — le seul vrai risque est la
+// redistribution sur des runs nécessaire) - le seul vrai risque est la
 // fidélité de l'extraction, pas la réécriture.
 //
 // Worker pdfjs : en NAVIGATEUR, la v6 exige GlobalWorkerOptions.workerSrc
-// (aucun repli automatique — vérifié en vrai Chrome, l'extension plantait) ;
+// (aucun repli automatique - vérifié en vrai Chrome, l'extension plantait) ;
 // en Node (tests), elle s'en passe toute seule. On pointe donc vers le worker
 // embarqué dans vendor/ (copié par build.mjs, comme les .wasm du NER)
 // uniquement quand l'API d'extension existe. Local, CSP 'self', zéro code
@@ -39,16 +39,16 @@ configurerPdfjs();
 // en navigateur. `workerSrc` est la seule qui plante bruyamment ; les autres
 // dégradent en silence, ce qui est pire.
 //
-// ⚠️ ELLES NE VONT PAS SUR `GlobalWorkerOptions` — qui n'accepte que
+// ⚠️ ELLES NE VONT PAS SUR `GlobalWorkerOptions` - qui n'accepte que
 // `workerSrc` et `workerPort`. Ce sont des paramètres de `getDocument()`.
 // Erreur commise ici même : le réglage semblait posé, la console continuait
 // d'avertir, et rien ne signalait que la valeur partait à la poubelle.
 //
 //   standard_fonts/  les 14 polices standard (Helvetica, Times…). Sans elles,
-//                    pdfjs mesure mal la LARGEUR des glyphes — exactement ce
+//                    pdfjs mesure mal la LARGEUR des glyphes - exactement ce
 //                    dont dépendent `tailleQuiTient` et `calculerBornes` pour
 //                    décider qu'un fragment rentre ou en chevauche un autre.
-//   cmaps/           encodages CID (PDF asiatiques) — texte sinon illisible.
+//   cmaps/           encodages CID (PDF asiatiques) - texte sinon illisible.
 //   iccs/            profils colorimétriques.
 //   wasm/            décodeurs JBIG2 / JPEG2000. Sans eux, une image d'un PDF
 //                    scanné ne se décode pas, et la reconstruction la perd.
@@ -57,7 +57,7 @@ configurerPdfjs();
 // largeur du banc doivent être les MÊMES que celles du navigateur, sinon on
 // règle la mise en page sur des chiffres qui n'existent que chez nous.
 // En Node, pdfjs LIT LE DISQUE : il lui faut un chemin de fichier, pas une URL
-// `file://` (essayé — « Unable to load font data at: file:///… »). On repasse
+// `file://` (essayé - « Unable to load font data at: file:///… »). On repasse
 // donc du href au chemin, en retirant la barre oblique que `pathname` ajoute
 // devant une lettre de lecteur Windows (`/C:/…`), sans toucher aux chemins
 // POSIX qui, eux, commencent légitimement par `/`.
@@ -105,7 +105,7 @@ export const HEADING_SIZE_RATIO = 1.3;
 function fontSizeOf(item) {
   // item.transform = [a,b,c,d,e,f] ; pour du texte non pivoté, |d| donne la
   // taille de police effective. item.height (si fourni par pdfjs) est déjà
-  // ce calcul fait pour nous — préféré quand disponible.
+  // ce calcul fait pour nous - préféré quand disponible.
   return item.height || Math.abs(item.transform?.[3]) || 1;
 }
 
@@ -125,14 +125,14 @@ export function needsSpace(a, b) {
 // ligne suivante, sans quoi le fragment isolé est soumis tel quel au modèle
 // contextuel, qui l'étiquette avec confiance : constaté sur un vrai CV,
 // « matisée » (fin d'« automatisée ») → donnée de santé à 0,70, « plicative »
-// (fin d'« applicative ») → entreprise à 0,70 — AU-DESSUS du score du vrai nom
+// (fin d'« applicative ») → entreprise à 0,70 - AU-DESSUS du score du vrai nom
 // du candidat sur ce même document (0,47). Ce n'est donc pas cosmétique : ça
 // rend la détection contextuelle non fiable sur le document le plus sensible.
 //
 // Signal fiable pour distinguer ce cas d'un tiret de séparation ordinaire : un
 // trait d'union COLLÉ à la dernière lettre, sans espace avant lui. Un tiret de
 // séparation réel en français est toujours entouré d'espaces (« Anglais - C1 »,
-// « Concours d'éloquence - Double lauréat ») — il ne déclenche donc jamais ce
+// « Concours d'éloquence - Double lauréat ») - il ne déclenche donc jamais ce
 // motif. On exige en plus que la ligne suivante commence par une minuscule :
 // une vraie coupure de mot continue toujours en minuscule ; une nouvelle
 // phrase ou un titre commencerait par une majuscule.
@@ -216,12 +216,12 @@ export function median(nums) {
 }
 
 // Seuil d'écart vertical au-delà duquel deux lignes appartiennent à des
-// paragraphes DIFFÉRENTS — calibré sur le document lui-même.
+// paragraphes DIFFÉRENTS - calibré sur le document lui-même.
 //
 // POURQUOI. Le seuil historique (`taille de police × 1.6`) mesurait la mauvaise
 // grandeur : l'interligne dépend de la mise en page, pas du corps du texte. Sur
-// un vrai mémoire en interligne 1,5 — police 11, écart réel 19,0 contre un
-// seuil à 17,7 — CHAQUE LIGNE devenait un paragraphe. Conséquences mesurées sur
+// un vrai mémoire en interligne 1,5 - police 11, écart réel 19,0 contre un
+// seuil à 17,7 - CHAQUE LIGNE devenait un paragraphe. Conséquences mesurées sur
 // 75 pages : 1 782 « paragraphes » de 91 caractères médians dont 52 % coupaient
 // une phrase en cours, 8 088 placeholders (39 % du document masqué, articles
 // compris) et 11 minutes de traitement. Le modèle recevait des demi-phrases
@@ -283,7 +283,7 @@ export function splitIntoColumns(items) {
   const right = columnItems.filter(g => g.x + g.w / 2 >= gutter);
 
   // 2 colonnes seulement si la gouttière est nette (peu de franchissements) et
-  // les deux côtés substantiels — sinon c'est du mono-colonne mal aligné.
+  // les deux côtés substantiels - sinon c'est du mono-colonne mal aligné.
   const isTwoColumn = columnItems.length >= 8 &&
     crossing.length / columnItems.length < 0.1 &&
     left.length >= 4 && right.length >= 4;
@@ -297,11 +297,11 @@ export function splitIntoColumns(items) {
 }
 
 // Ré-extrait tout depuis les octets bruts à chaque appel (aucun état partagé
-// entre extractTextUnits et applyMask — même convention que les 3 autres
+// entre extractTextUnits et applyMask - même convention que les 3 autres
 // adaptateurs). Retourne une structure ordonnée par page puis paragraphe.
 async function parseStructure(buffer) {
   // pdfjs-dist détache l'ArrayBuffer sous-jacent après le parsing (transfert
-  // interne) — sans copie ici, un 2e appel sur le même buffer (extractTextUnits
+  // interne) - sans copie ici, un 2e appel sur le même buffer (extractTextUnits
   // PUIS applyMask, convention stateless commune aux 4 adaptateurs) plante
   // avec "Cannot perform Construct on a detached ArrayBuffer". slice(0) donne
   // à pdfjs une copie jetable, jamais l'original du caller.
@@ -315,7 +315,7 @@ async function parseStructure(buffer) {
 
   const units = [];
   // Intitulés repérés AU NIVEAU DE LA LIGNE, avant le regroupement en
-  // paragraphes — voir `relevesDesIntitules` pour le pourquoi.
+  // paragraphes - voir `relevesDesIntitules` pour le pourquoi.
   const intitules = new Set();
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
@@ -329,7 +329,7 @@ async function parseStructure(buffer) {
 
     // Chaque groupe de colonnes est regroupé en lignes PUIS paragraphes
     // séparément, et concaténé dans l'ordre de lecture (bande titre, gauche,
-    // droite) — jamais de fusion d'une colonne à l'autre.
+    // droite) - jamais de fusion d'une colonne à l'autre.
     let paraIndex = 0;
     for (const columnItems of splitIntoColumns(textContent.items)) {
       const lines = groupIntoLines(columnItems);
@@ -345,31 +345,31 @@ async function parseStructure(buffer) {
   return units;
 }
 
-// INTITULÉS DE SECTION — reconnus à leur PLACE, jamais à leur sens.
+// INTITULÉS DE SECTION - reconnus à leur PLACE, jamais à leur sens.
 //
 // LE PROBLÈME. Soumis seuls, « SOMMAIRE », « COMPÉTENCES », « LANGUES »
 // sortent du modèle en ENTREPRISE ou LIEU avec des scores élevés (0,50 à 0,79
-// mesurés) — au-dessus de vraies entités. Résultat : un CV dont les titres de
+// mesurés) - au-dessus de vraies entités. Résultat : un CV dont les titres de
 // rubrique sont maquillés en placeholders, illisible pour le LLM.
 //
 // CE QUI NE MARCHE PAS, et qui a été mesuré avant d'en arriver ici :
 //  - monter le seuil : les faux positifs sortent AU-DESSUS des vrais ;
 //  - des labels leurres (« titre de section », « métier ») : 6 cas sur 21 ;
 //  - reposer la question en « nom propre / nom commun » : GLiNER EXTRAIT des
-//    entités, il ne CLASSE pas — il répond « nom propre » à tout, et son score
+//    entités, il ne CLASSE pas - il répond « nom propre » à tout, et son score
 //    est même anti-corrélé (les faux positifs sortent plus haut que les vrais) ;
 //  - la fertilité du tokenizer : fuit sur Ali, Kim, Anna, Rose, Petit, Lille.
 // Les quatre jugent le mot ISOLÉ. Or un humain reconnaît un intitulé à sa
 // position dans la page, pas au mot lui-même.
 //
 // LA RÈGLE. Cinq conditions, toutes déterministes :
-//  (1) PAS un titre en gros corps — c'est le garde-fou essentiel : le nom en
+//  (1) PAS un titre en gros corps - c'est le garde-fou essentiel : le nom en
 //      tête d'un CV en est un (« ÉLÉONORE VASSEUR » corps 21 contre corps 8
 //      des rubriques), et il DOIT rester masqué ;
 //  (2) court : 3 mots au plus ;
 //  (3) aucune ponctuation de phrase ;
 //  (4) entièrement en capitales ;
-//  (5) le document en contient AU MOINS DEUX — un motif de mise en page, pas
+//  (5) le document en contient AU MOINS DEUX - un motif de mise en page, pas
 //      un mot isolé qu'on écarterait par accident.
 //
 // CE QUE ÇA NE DÉSACTIVE PAS. `structurel` ne saute que la passe CONTEXTUELLE :
@@ -382,7 +382,7 @@ async function parseStructure(buffer) {
 // forcent toujours, eux.
 // Le deux-points est INCLUS : c'est le séparateur libellé/valeur. Sans lui,
 // « BIC : AGRIFRPP882 », « SSN: 123-45-6789 » et « DNI: 12345678Z » passaient
-// pour des intitulés de rubrique — or ce sont des identifiants, et les classer
+// pour des intitulés de rubrique - or ce sont des identifiants, et les classer
 // ainsi ouvrait la porte à leur DÉMASQUAGE. Trou trouvé en relisant la liste
 // produite, pas en théorie.
 const PONCTUATION_PHRASE = /[.!?,;:]/;
@@ -418,7 +418,7 @@ export function ressembleAUnIntitule(texte) {
 //
 // PISTE ÉVIDENTE, MESURÉE ET REJETÉE : couper le paragraphe sur un intitulé.
 // Ça porte bien les unités épargnées de 6 à 16, mais le total masqué REMONTE
-// (69 → 70) et la composition empire — « Éléonore » et « Vaquier » ressortent
+// (69 → 70) et la composition empire - « Éléonore » et « Vaquier » ressortent
 // seuls, « IBAN » et « Montant » deviennent des lieux. Découper davantage
 // fragmente le document, et la fragmentation PDF fait monter le bruit au-dessus
 // du signal (P1bis). Voir le commentaire dans `groupIntoParagraphs`.
@@ -435,30 +435,30 @@ export function ressembleAUnIntitule(texte) {
 // MOT DE RUBRIQUE d'une ligne qui EST typographiquement un titre.
 //
 // Les intitulés collés à leur paragraphe sont déjà couverts. Restait le cas
-// inverse : une ligne en gros corps, seule, du genre « ANNEXE — DOSSIER
+// inverse : une ligne en gros corps, seule, du genre « ANNEXE - DOSSIER
 // ADMINISTRATIF ». Le modèle y étiquette « ANNEXE » comme entreprise, et rien
-// ne l'épargnait — `ressembleAUnIntitule` plafonne à 3 mots (le tiret compte
+// ne l'épargnait - `ressembleAUnIntitule` plafonne à 3 mots (le tiret compte
 // pour un), et la valeur détectée n'est de toute façon qu'un FRAGMENT de la
 // ligne, jamais son égal.
 //
 // POURQUOI PAS SIMPLEMENT « épargner les unités-titres ». Parce que le titre
 // d'un CV est une unité-titre : « ÉLÉONORE VASSEUR », seule, en capitales, sans
 // ponctuation ni chiffre, est FORMELLEMENT INDISCERNABLE de « COMPÉTENCES ».
-// Exempter les titres ferait fuir le nom de la personne — le garde `!titre` du
+// Exempter les titres ferait fuir le nom de la personne - le garde `!titre` du
 // relevé n'est pas un oubli, il est porteur. C'est mesuré : la vérité terrain
 // du document piégé porte ce contre-exemple exprès.
 //
 // LA DISCRIMINATION RETENUE est donc positionnelle, jamais lexicale : UN SEUL
 // mot en capitales, éventuellement suivi d'un numéro de rubrique, puis un tiret,
 // puis autre chose. « ÉLÉONORE VASSEUR » n'a pas de tiret ; « ÉLÉONORE VASSEUR
-// — DÉVELOPPEUSE » en a un mais DEUX mots avant lui, donc ne matche pas non plus.
+// - DÉVELOPPEUSE » en a un mais DEUX mots avant lui, donc ne matche pas non plus.
 //
-// RISQUE RÉSIDUEL, assumé et mesuré : un titre de la forme « DUPONT — RAPPORT
+// RISQUE RÉSIDUEL, assumé et mesuré : un titre de la forme « DUPONT - RAPPORT
 // ANNUEL », où le mot unique est un patronyme. Le mot serait épargné s'il est
 // détecté SEUL et en tête. Cas réel mais rare ; à revoir s'il se présente.
 // DEUX FORMES sont relevées, et la seconde n'est pas un détail : le modèle
 // rend « ANEXO 5 » et « ANLAGE 6 » d'un seul tenant, numéro compris. Ne relever
-// que le mot nu laissait donc ces deux-là masqués — mesuré. Le numéro relève du
+// que le mot nu laissait donc ces deux-là masqués - mesuré. Le numéro relève du
 // même motif positionnel, il n'ajoute aucun risque.
 const RUBRIQUE_TITRE = /^(\p{Lu}{3,})(\s+\d{1,2})?\s*[—–-]\s+\p{L}/u;
 
@@ -469,7 +469,7 @@ export function formesDeRubrique(texte) {
 }
 
 // LE RELEVÉ, EN UN SEUL ENDROIT. Les deux chemins PDF (Markdown et
-// reconstruction) le faisaient chacun de leur côté, à l'identique — et ont
+// reconstruction) le faisaient chacun de leur côté, à l'identique - et ont
 // aussitôt divergé dès qu'on a touché à la règle : le mot de rubrique n'existait
 // que du côté Markdown, donc le mode « Préserver » continuait de masquer
 // « ANNEXE » pendant que l'autre l'épargnait. Même leçon que P1bis, deuxième
@@ -482,7 +482,7 @@ export function releverIntitules(lines, dominantSize, dans = new Set()) {
       continue;
     }
     // Ligne qui EST un titre : on ne relève que son mot de rubrique, jamais la
-    // ligne entière — voir formesDeRubrique pour le contre-exemple qui interdit
+    // ligne entière - voir formesDeRubrique pour le contre-exemple qui interdit
     // d'épargner les titres en bloc.
     for (const forme of formesDeRubrique(l.text)) dans.add(forme);
   }
@@ -505,7 +505,7 @@ export function marquerIntitules(units) {
   return units;
 }
 
-// { units: [{id, text, structurel?}] } — `isHeading` n'est pas exposé (interface
+// { units: [{id, text, structurel?}] } - `isHeading` n'est pas exposé (interface
 // commune aux 4 adaptateurs), applyMask le re-dérive via parseStructure.
 export async function extractTextUnits(buffer) {
   const structured = await parseStructure(buffer);
@@ -520,7 +520,7 @@ export async function extractTextUnits(buffer) {
 
 // resultsById : Map<id, { maskedText }>. Ignore le buffer PDF d'origine pour
 // la RÉÉCRITURE (jamais réutilisé comme contenant) mais le ré-analyse pour
-// retrouver la structure (ordre, titres) — repli sur le texte original si une
+// retrouver la structure (ordre, titres) - repli sur le texte original si une
 // unité est absente de resultsById (ne devrait pas arriver en usage normal).
 export async function applyMask(buffer, resultsById) {
   const structured = await parseStructure(buffer);

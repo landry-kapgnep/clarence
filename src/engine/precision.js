@@ -1,9 +1,9 @@
-// FILTRE DE PRÉCISION — « ce candidat mérite-t-il d'être masqué ? »
+// FILTRE DE PRÉCISION - « ce candidat mérite-t-il d'être masqué ? »
 //
 // CE QU'IL REMPLACE. `vocabulaire.js` répond à cette question avec UNE
 // caractéristique et un seuil binaire : « tous les mots sont-ils au
 // dictionnaire ? ». Il a fallu lui retirer cinq suffixes parce qu'ils
-// mordaient sur des noms de lieux (Sarcelles, Provence, Belgique) — le signe
+// mordaient sur des noms de lieux (Sarcelles, Provence, Belgique) - le signe
 // qu'une règle écrite à la main avait atteint sa limite. Ici, une douzaine de
 // signaux FAIBLES sont pesés ensemble, ce qu'un classifieur fait bien mieux
 // qu'une suite de `if`.
@@ -18,7 +18,7 @@
 // TROIS GARDE-FOUS NON NÉGOCIABLES, dans le code et pas seulement dans ce
 // commentaire :
 //   1. il ne peut QUE RETIRER des candidats, jamais en ajouter ;
-//   2. il ne touche JAMAIS le déterministe (`source !== 'ner'` passe intact) —
+//   2. il ne touche JAMAIS le déterministe (`source !== 'ner'` passe intact) -
 //      un IBAN validé mod-97 ne se discute pas avec un modèle statistique ;
 //   3. il ne touche JAMAIS les PERSONNES. Beaucoup de patronymes sont des mots
 //      courants (Blanc, Petit, Roux) et notre propre vivier de pseudonymes en
@@ -32,7 +32,7 @@ export { POIDS };
 
 // Types soumis au filtre. Même périmètre que le filtre de vocabulaire qu'il
 // prolonge, et pour la même raison : ORG et LOC portent le gros du bruit ET la
-// donnée la moins sensible — une raison sociale ou une ville ne sont pas des
+// donnée la moins sensible - une raison sociale ou une ville ne sont pas des
 // données personnelles au sens du RGPD, alors que le bruit qu'on retire rendait
 // le document inexploitable.
 export const TYPES_FILTRES = new Set(['ORG', 'LOC']);
@@ -42,7 +42,7 @@ export const TYPES_FILTRES = new Set(['ORG', 'LOC']);
 // commentaires de ce module sans faire défiler des nombres, et on régénère les
 // nombres sans risquer de toucher à la logique ni aux garde-fous.
 //
-// `POIDS === null` rend le filtre INERTE — ne rien retirer est toujours sûr.
+// `POIDS === null` rend le filtre INERTE - ne rien retirer est toujours sûr.
 
 const sigmoide = (z) => 1 / (1 + Math.exp(-z));
 
@@ -60,7 +60,7 @@ export function scorePrecision(candidat, ctx, modele = POIDS) {
 //
 // ⚠️ ON NE PEUT PAS SE CONTENTER DES APPORTS NÉGATIFS. Une caractéristique à
 // poids POSITIF dont la valeur est basse (un score faible, aucune majuscule)
-// n'apporte rien du tout — son apport vaut 0, pas moins — alors qu'elle est
+// n'apporte rien du tout - son apport vaut 0, pas moins - alors qu'elle est
 // souvent LA raison pour laquelle le total reste bas. La comparer à 0 la
 // rendrait donc invisible dans l'explication.
 //
@@ -81,22 +81,22 @@ export function expliquer(candidat, ctx, modele = POIDS) {
   return pire?.nom ?? null;
 }
 
-// GARDE-FOU 4 — UN SEUL MOT NE SE JUGE PAS. Mesuré au banc, pas supposé.
+// GARDE-FOU 4 - UN SEUL MOT NE SE JUGE PAS. Mesuré au banc, pas supposé.
 //
 // Le filtre faisait perdre deux patronymes : « Vaquier », seul dans une cellule
-// de tableau, et « Fontaine » (de « Rose Fontaine ») — tous deux étiquetés
+// de tableau, et « Fontaine » (de « Rose Fontaine ») - tous deux étiquetés
 // ENTREPRISE par le modèle, donc hors de portée du garde-fou 3 qui, lui,
 // raisonne par TYPE. **Un patronyme mal étiqueté reste un patronyme.**
 //
 // LE MÉCANISME. Un candidat d'un seul mot n'offre presque aucune prise : le
 // lexique n'y voit rien, `nbMots` ne rapporte qu'un cinquième de son poids, et
-// il ne reste que le score du modèle — dont on a mesuré qu'il ne sépare rien.
+// il ne reste que le score du modèle - dont on a mesuré qu'il ne sépare rien.
 // Or les candidats d'un seul mot sont massivement des PATRONYMES et des VILLES,
 // c'est-à-dire ce qu'il y a de plus sensible ; « Calahorra », l'unique perte de
 // l'évaluation, en est un.
 //
 // SYMÉTRIQUEMENT, on ne perd rien : les faux positifs que le filtre attrape
-// réellement sont TOUS des groupes de plusieurs mots — « Modélisation
+// réellement sont TOUS des groupes de plusieurs mots - « Modélisation
 // applicative », « Relevé de notes », « Analyse statistique des écarts »,
 // « Portugais bilingue ». Les seuls candidats d'un mot qu'il retirait étaient
 // « JaCoCo » et « BDD », des technologies, que les profils traitent déjà mieux.
@@ -106,12 +106,12 @@ export function expliquer(candidat, ctx, modele = POIDS) {
 // les chiffres annoncés doivent être ceux du filtre réellement livré.
 export const MOTS_MINIMUM = 2;
 
-// GARDE-FOU 5 — LA FORME D'UN NOM PROTÈGE, PAS SEULEMENT L'ÉTIQUETTE.
+// GARDE-FOU 5 - LA FORME D'UN NOM PROTÈGE, PAS SEULEMENT L'ÉTIQUETTE.
 //
 // LA FUITE QUI L'A IMPOSÉ, mesurée sur tests/manuel/tous-defauts.pdf, dans une
 // phrase écrite exprès pour ce piège :
 //     « Rose Fontaine cultive une rose ancienne dans son jardin. »
-// Le modèle étiquette « Rose Fontaine » en ENTREPRISE — donc le garde-fou 3,
+// Le modèle étiquette « Rose Fontaine » en ENTREPRISE - donc le garde-fou 3,
 // qui raisonne par TYPE, ne la voit pas. Et le filtre la retire à 0,177 :
 // « rose » est au dictionnaire (partLexique 0,50) et le document l'écrit
 // lui-même en minuscules plus loin (minusculeAilleurs 0,50). Les deux signaux
@@ -120,13 +120,13 @@ export const MOTS_MINIMUM = 2;
 // Ce n'est pas un cas tordu, c'est LA doctrine du projet qu'on contournait :
 // vocabulaire.js documente déjà qu'on n'applique jamais un raisonnement de
 // vocabulaire à une personne, « beaucoup de patronymes français SONT des mots
-// courants — Blanc, Petit, Bernard, Roux ». L'erreur était de s'appuyer sur
+// courants - Blanc, Petit, Bernard, Roux ». L'erreur était de s'appuyer sur
 // l'étiquette du modèle, qu'il peut se tromper à donner, plutôt que sur la
 // FORME de la valeur, qui, elle, ne ment pas.
 //
 // LE COÛT EST MESURÉ, et il est dérisoire : sur le jeu d'évaluation, ce
 // garde-fou protège 458 vraies entités sur 706 et ne coûte que 7 faux positifs
-// sur 418 — quatre valeurs distinctes (« Développeur Linux », « Développeur
+// sur 418 - quatre valeurs distinctes (« Développeur Linux », « Développeur
 // Pandas », « Développeur Ollama », « Baccalauréat Général »).
 //
 // Deux à trois mots seulement : au-delà, ce n'est plus un nom mais une raison
@@ -147,7 +147,7 @@ export const filtrable = (e) =>
 
 // Filtre une liste d'entités. `texte` est le DOCUMENT ENTIER : deux des
 // caractéristiques (occurrences, minuscules ailleurs) n'existent qu'à cette
-// échelle — c'est la raison pour laquelle ce filtre se branche au niveau de
+// échelle - c'est la raison pour laquelle ce filtre se branche au niveau de
 // `anonymizeUnits` et non dans `detectGliner`, qui ne voit qu'une unité.
 export function filtrerParPrecision(entities, texte, { modele = POIDS, sousMots, journal } = {}) {
   if (!modele || !entities?.length) return entities || [];
@@ -167,7 +167,7 @@ export function filtrerParPrecision(entities, texte, { modele = POIDS, sousMots,
 // LA COMPOSITION DES DEUX PASSES, À UN SEUL ENDROIT.
 //
 // POURQUOI ELLE EST ICI ET PAS CHEZ CHAQUE APPELANT. Elle vivait dans main.js ;
-// le banc, lui, se fabriquait son propre arbitre — sans le filtre. Résultat
+// le banc, lui, se fabriquait son propre arbitre - sans le filtre. Résultat
 // mesuré : le filtre livré ne changeait RIEN aux chiffres du banc, non parce
 // qu'il était inefficace mais parce que le banc ne l'exécutait pas. C'est
 // exactement le défaut que docs/notes-techniques.md documente (« le banc mesurait `quantized`

@@ -17,7 +17,7 @@ import {
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-5TJ2JTOZ.js";
+} from "./chunk-YCX7A7IX.js";
 import {
   createBatchedPipeline
 } from "./chunk-IT5BP6N7.js";
@@ -25,7 +25,7 @@ import {
   COMPRESSION_MODEL,
   compresser,
   compresserSegments
-} from "./chunk-VTU65RIR.js";
+} from "./chunk-ZCCQBMVJ.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/engine/lexique.js
@@ -55,7 +55,7 @@ var VARIANTES_MODELE = {
   quantized: "model_quantized.onnx",
   // 175 Mo, int8
   fp16: "model_fp16.onnx",
-  // 292 Mo — défaut
+  // 292 Mo - défaut
   fp32: "model.onnx"
   // 583 Mo
 };
@@ -68,7 +68,7 @@ var GROUPES = [
     // isolées.
     //
     // Seuil ABAISSÉ à 0,45 une première fois (nom de CV isolé, 0,47), puis à
-    // 0,38 le 05/08/2026 — trouvé sur un vrai rapport (`rapport-fr.txt`) : le
+    // 0,38 le 05/08/2026 - trouvé sur un vrai rapport (`rapport-fr.txt`) : le
     // patronyme « ROUSSEAU » matche le motif BIC et annule « Amandine
     // ROUSSEAU » dans la fusion (voir merge.js), mais le nom lui-même ne
     // dépassait le seuil sur AUCUNE de ses 3 occurrences (0,364 / 0,398).
@@ -87,7 +87,7 @@ var GROUPES = [
     // RECALIBRÉ à 0,46 le 06/08/2026 en passant les poids de int8 à fp16.
     // LEÇON GÉNÉRALE : **un seuil appartient à une variante de poids.** Le fp16
     // est numériquement plus précis, tous les scores remontent, et le 0,38
-    // calibré sur l'int8 devenait trop bas — préservé 98 % → 93 %
+    // calibré sur l'int8 devenait trop bas - préservé 98 % → 93 %
     // (« SOMMAIRE » et « Docker » sur-masqués en plus). Changer de variante
     // SANS rebalayer, c'est troquer de la qualité contre de la vitesse sans
     // s'en apercevoir.
@@ -97,7 +97,7 @@ var GROUPES = [
     //   0,45 → 83 % / 96 %      0,46 → 83 % / **98 %**  ← retenu
     //   0,47 / 0,48 → identiques à 0,46 (plateau)
     //   0,50 → casse le STRUCTURÉ (19/20) : rédhibitoire, non négociable
-    // 0,46 est le plus BAS du plateau — donc le plus détectant à qualité égale,
+    // 0,46 est le plus BAS du plateau - donc le plus détectant à qualité égale,
     // conformément à « zéro-fuite > faux positifs ».
     seuil: 0.46,
     labels: ["person", "company", "location"],
@@ -113,7 +113,7 @@ var GROUPES = [
     labels: ["date of birth"],
     types: { "date of birth": "DATE_NAISSANCE" },
     // Une date porte toujours au moins l'année : sans chiffre, rien à trouver.
-    // 65 % des unités d'un vrai mémoire sont dans ce cas — 54 % du texte.
+    // 65 % des unités d'un vrai mémoire sont dans ce cas - 54 % du texte.
     pertinent: (t) => /\d/.test(t)
   },
   {
@@ -398,11 +398,11 @@ function caracteristiques(candidat, ctx) {
   const occ = Math.max(...mots.map((m) => ctx.comptes.get(m.toLowerCase()) || 1), 1);
   const morceauxMoyens = ctx.sousMots && n ? mots.reduce((s, m) => s + morceaux(m, ctx.sousMots), 0) / n : 1;
   return {
-    // — ce que dit le vocabulaire —
+    // - ce que dit le vocabulaire -
     partLexique: part(nbLexique, n),
     partSuffixe: part(nbSuffixe, n),
     aucunCourant: n && nbLexique + nbSuffixe === 0 ? 1 : 0,
-    // — ce que dit la forme —
+    // - ce que dit la forme -
     toutCapitales: valeur === valeur.toUpperCase() && new RegExp("\\p{Lu}", "u").test(valeur) ? 1 : 0,
     casseDeTitre: n && mots.every((m) => new RegExp("^\\p{Lu}", "u").test(m)) ? 1 : 0,
     aChiffre: /\d/.test(valeur) ? 1 : 0,
@@ -410,10 +410,10 @@ function caracteristiques(candidat, ctx) {
     nbMots: borne(n, 5),
     longueur: borne(valeur.length, 40),
     fragmentation: borne(morceauxMoyens - 1, 3),
-    // — ce que dit le document —
+    // - ce que dit le document -
     occurrences: borne(Math.log1p(occ - 1), Math.log1p(19)),
     minusculeAilleurs: part(nbMinusculeAilleurs, n),
-    // — ce que dit le modèle —
+    // - ce que dit le modèle -
     // En dernier, et volontairement : mesuré sur un vrai CV, le score seul ne
     // sépare RIEN (vraies 0,738 · fausses 0,648, et le meilleur score du
     // document est un faux positif). Il n'a sa place qu'en compagnie des autres.
@@ -822,7 +822,7 @@ var TECH_KEEP = [
   "Gemini",
   "Transformers.js",
   "WebAssembly",
-  // Tests, qualité, build — absents du premier jet, et masqués sur un vrai CV.
+  // Tests, qualité, build - absents du premier jet, et masqués sur un vrai CV.
   "JUnit",
   "JaCoCo",
   "Pytest",
@@ -864,12 +864,12 @@ var TECH_KEEP = [
   "Seaborn",
   // Relevés sur un vrai CV le 01/09/2026 : masqués tous les deux, et absents
   // de cette liste alors que tout le reste de la même rubrique y était.
-  // « IA » sortait en LIEU trois fois, « NSI » en PERSONNE — deux types que le
+  // « IA » sortait en LIEU trois fois, « NSI » en PERSONNE - deux types que le
   // filtre de précision ne touche jamais (garde-fous 3 et 4), donc la liste
   // éditable est bien le seul mécanisme qui les traite.
   //
   // Un terme de deux lettres est sans danger ici : la correspondance est
-  // MOT À MOT (voir filterByRules). Vérifié — « IA » démasque « IA » et
+  // MOT À MOT (voir filterByRules). Vérifié - « IA » démasque « IA » et
   // « Data & IA », mais laisse « Julia Roberts » et « Sofia » masqués.
   "IA",
   "NSI"
@@ -1064,14 +1064,14 @@ function defaultProfiles() {
     // besoin de sa liste de frameworks, il a besoin des mots d'un relevé.
     //
     // Leur vocabulaire vient de `vocabulaire-formats.js`, la même source que la
-    // reconnaissance de type — c'est ce qui permet de les PROPOSER
+    // reconnaissance de type - c'est ce qui permet de les PROPOSER
     // automatiquement (voir PROFIL_POUR_TYPE), et ce qui garantit qu'ajouter
     // une langue serve les deux d'un coup.
     { name: "CV / R\xE9sum\xE9", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("cv")], alwaysMask: [], disabledTypes: [], realistic: false },
     { name: "Relev\xE9 bancaire", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...motsDeForme("bancaire")], alwaysMask: [], disabledTypes: [], realistic: false },
     // Un document qui PARLE d'IA ou de plateformes n'est pas forcément un
     // document technique : ce profil sert le rédacteur, l'étudiant, le
-    // chercheur — sans leur imposer la liste des frameworks.
+    // chercheur - sans leur imposer la liste des frameworks.
     { name: "R\xE9daction / Recherche", alwaysKeep: [...STRUCTURE_KEEP, ...PARCOURS_KEEP, ...PUBLIC_KEEP, ...motsDeForme("scolaire")], alwaysMask: [], disabledTypes: [], realistic: false }
   ];
 }
@@ -1680,16 +1680,16 @@ function createPseudonymizer({ seed = "clarence", avoid = () => false, locale = 
     },
     ORG: (h) => unique((h2, i) => pick(L.orgs, h2, i), h),
     // Un générateur ETABLISSEMENT vivait ici (15/08 → 18/08). Il conservait le
-    // mot d'institution d'origine — « Lycée Camille-Claudel » → « Lycée
-    // Rousseau » — pour qu'un lycée ne devienne pas une université, et
+    // mot d'institution d'origine - « Lycée Camille-Claudel » → « Lycée
+    // Rousseau » - pour qu'un lycée ne devienne pas une université, et
     // reprenait la position du mot sur l'original plutôt que sur la locale
     // (« Westfield College » → « Boyer College »). Retiré avec le type
     // lui-même : voir REALISTIC_TYPES. Récupérable tel quel dans l'historique
     // si la détection des établissements devient un jour fiable.
     LOC: (h) => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: (h) => unique((h2, i) => `${(h2 + i * 7) % 98 + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
-    // La partie locale reprend les composants du nom quand elle en porte —
-    // c'est le cas courant — et l'unicité se joue alors sur le domaine.
+    // La partie locale reprend les composants du nom quand elle en porte -
+    // c'est le cas courant - et l'unicité se joue alors sur le domaine.
     EMAIL: (h, original) => unique((h2, i) => {
       const local = composeIdentifiant(String(original).split("@")[0]);
       const repli = `${stripAccents(pick(L.prenoms, h2, i))}.${stripAccents(pick(L.noms, (h2 >>> 7) + i, i))}`;
@@ -1940,7 +1940,7 @@ function annotateHTML(text, entities) {
   let cursor = 0;
   for (const e of entities) {
     html += esc(text.slice(cursor, e.start));
-    html += `<mark class="src-${e.source}" data-key="${keyOf(e)}" title="${e.type} \u2014 clic pour retirer">${esc(e.value)}</mark>`;
+    html += `<mark class="src-${e.source}" data-key="${keyOf(e)}" title="${e.type}, clic pour retirer">${esc(e.value)}</mark>`;
     cursor = e.end;
   }
   html += esc(text.slice(cursor));
@@ -2226,7 +2226,7 @@ async function analyze() {
   } catch (err) {
     console.error("[clarence]", err);
     $("results").hidden = true;
-    setStatus("Analyse \xE9chou\xE9e \u2014 rien n\u2019a \xE9t\xE9 masqu\xE9, ne colle pas ce texte. D\xE9tail dans la console.", "error");
+    setStatus("Analyse \xE9chou\xE9e. Rien n\u2019a \xE9t\xE9 masqu\xE9, ne colle pas ce texte. D\xE9tail dans la console.", "error");
   } finally {
     setProcessing(false);
     setTextProgress(null);
@@ -2273,11 +2273,11 @@ function setStatus(msg2, cls = "") {
 var ENGINE_MESSAGES = {
   bert: {
     cls: "fallback",
-    texte: "D\xE9tection de secours active \u2014 le moteur principal n'a pas pu d\xE9marrer. Les noms isol\xE9s sans phrase autour (titre de CV, cellule de tableau) risquent d'\xEAtre manqu\xE9s. Relis attentivement."
+    texte: "D\xE9tection de secours active : le moteur principal n'a pas pu d\xE9marrer. Les noms isol\xE9s sans phrase autour (titre de CV, cellule de tableau) risquent d'\xEAtre manqu\xE9s. Relis attentivement."
   },
   none: {
     cls: "none",
-    texte: "D\xE9tection des noms INDISPONIBLE \u2014 seules les donn\xE9es structur\xE9es (emails, IBAN, t\xE9l\xE9phones\u2026) ont \xE9t\xE9 rep\xE9r\xE9es. Relis attentivement avant de coller."
+    texte: "D\xE9tection des noms INDISPONIBLE : seules les donn\xE9es structur\xE9es (emails, IBAN, t\xE9l\xE9phones\u2026) ont \xE9t\xE9 rep\xE9r\xE9es. Relis attentivement avant de coller."
   }
 };
 function renderEngineBadge(id) {
@@ -2323,7 +2323,7 @@ $("reinjectBtn").addEventListener("click", () => {
   if (!txt.trim()) return;
   const st = $("reinjectStatus");
   if (!lastMapping.length) {
-    st.textContent = "Aucune correspondance en m\xE9moire \u2014 analyse un texte d\u2019abord.";
+    st.textContent = "Aucune correspondance en m\xE9moire. Analyse un texte d\u2019abord.";
     st.className = "status error";
     return;
   }
@@ -2389,7 +2389,7 @@ var FILE_TYPES = {
   xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", text: false, load: () => import("./xlsx-adapter-6GL77ULE.js") },
   docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", text: false, load: () => import("./docx-adapter-DOKUCGU6.js") },
   // PDF : seul format dont la sortie n'est pas une réécriture du fichier
-  // d'origine mais un nouveau document (.md) — outExt gère ce cas particulier
+  // d'origine mais un nouveau document (.md) - outExt gère ce cas particulier
   // dans processFile() (nom de fichier ET extension de sortie changent).
   pdf: { mime: "text/markdown;charset=utf-8", text: false, load: () => import("./pdf-adapter-AJNLKGKK.js"), outExt: ".md" },
   // Images : metadataOnly → processFile() court-circuite le pipeline de
@@ -2415,7 +2415,7 @@ $("fileTypeToggles")?.addEventListener("change", (ev) => {
   invalidateFileResult();
 });
 function invalidateFileResult() {
-  if (annulerRunFichier("Options modifi\xE9es \u2014 relance l\u2019anonymisation.")) return;
+  if (annulerRunFichier("Options modifi\xE9es. Relance de l\u2019anonymisation.")) return;
   if (!fileOutBlob) return;
   fileOutBlob = null;
   compressionInfo = null;
@@ -2423,7 +2423,7 @@ function invalidateFileResult() {
   fileOutName = "";
   $("fileResults").hidden = true;
   $("dragCard").hidden = true;
-  fileSetStatus("Options modifi\xE9es \u2014 relance.");
+  fileSetStatus("Options modifi\xE9es. Relance.");
 }
 for (const id of ["pdfModeLight", "pdfModePreserve", "fileRealisticToggle", "filePseudoLocale"]) {
   $(id)?.addEventListener("change", invalidateFileResult);
@@ -2561,7 +2561,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-FDMDYSJT.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-KILMF6ZF.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -2574,7 +2574,7 @@ async function retirerDuMasquage(valeur) {
       fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
       mapping = res.mapping;
     } else {
-      const { anonymizeUnits } = await import("./anonymize-units-DABIJPJR.js");
+      const { anonymizeUnits } = await import("./anonymize-units-B25Y2LNC.js");
       const { results, mapping: m } = await anonymizeUnits(r.units, {
         entitesConnues: r.entites,
         intitules: r.intitules,
@@ -3153,7 +3153,7 @@ async function processFile() {
       fileSetStatus(msg("etat_lecture_pdf"));
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-FDMDYSJT.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-KILMF6ZF.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -3165,7 +3165,7 @@ async function processFile() {
         // Manquait entièrement : le PDF reconstruit ignorait la case
         // Pseudonymes, contrairement aux autres formats. Toujours [TYPE_N].
         // SANS argument : `units` n'existe pas encore sur ce chemin (il est
-        // déclaré plus bas, pour l'autre branche) — le lui passer plantait en
+        // déclaré plus bas, pour l'autre branche) - le lui passer plantait en
         // « Cannot access 'units' before initialization ». reconstructPdf
         // extrait ses propres unités en interne.
         maskOpts: fileMaskOptions(),
@@ -3184,7 +3184,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-DABIJPJR.js");
+    const { anonymizeUnits } = await import("./anonymize-units-B25Y2LNC.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {
@@ -3266,7 +3266,7 @@ async function processFile() {
     compressionEchouee = null;
     $("fileResults").hidden = true;
     $("dragCard").hidden = true;
-    fileSetStatus("\xC9chec \u2014 fichier non anonymis\xE9. D\xE9tail en console.", "error");
+    fileSetStatus("\xC9chec : fichier non anonymis\xE9. D\xE9tail en console.", "error");
   } finally {
     if (courant()) {
       fileRun = null;
@@ -3401,7 +3401,7 @@ window.addEventListener("message", (ev) => {
   const result = ev.data && ev.data.clarenceDeliverResult;
   if (!result) return;
   fileSetStatus(
-    result.delivered ? "Fichier transmis \xE0 la page \u2014 v\xE9rifie qu'il appara\xEEt bien avant d'envoyer." : "Aucun champ de fichier d\xE9tect\xE9 sur la page. Ouvre d'abord le menu \xAB joindre \xBB du site, ou utilise le t\xE9l\xE9chargement.",
+    result.delivered ? "Fichier transmis \xE0 la page. V\xE9rifie qu'il appara\xEEt bien avant d'envoyer." : "Aucun champ de fichier d\xE9tect\xE9 sur la page. Ouvre d'abord le menu \xAB joindre \xBB du site, ou utilise le t\xE9l\xE9chargement.",
     result.delivered ? "active" : "error"
   );
 });

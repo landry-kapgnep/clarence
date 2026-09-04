@@ -1,4 +1,4 @@
-// Démo en ligne — le MÊME moteur que l'extension, importé depuis src/engine/.
+// Démo en ligne - le MÊME moteur que l'extension, importé depuis src/engine/.
 // Aucune copie, aucune réimplémentation : si le moteur progresse, la démo aussi.
 import { detectRegex } from '../../src/engine/regex-detect.js';
 import { detectPhonesIntl } from '../../src/engine/phone-intl.js';
@@ -77,7 +77,7 @@ $('copier').addEventListener('click', async () => {
 
 // Compteur de requêtes réseau : la promesse du produit, rendue vérifiable à
 // l'écran. PerformanceObserver voit TOUTE requête sortante de la page, y
-// compris celles qu'on n'aurait pas voulues — donc le chiffre ne peut pas
+// compris celles qu'on n'aurait pas voulues - donc le chiffre ne peut pas
 // mentir en notre faveur. Les ressources de la page elle-même (polices, css,
 // js) sont comptées à part et affichées telles quelles.
 const ressourcesDeLaPage = new Set();

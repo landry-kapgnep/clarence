@@ -1,14 +1,14 @@
-// Pseudonymes réalistes (option) — port JS du PseudonymGenerator Python :
+// Pseudonymes réalistes (option) - port JS du PseudonymGenerator Python :
 // listes curées + choix déterministe par hachage de la valeur d'origine.
 // 100% local, zéro dépendance. Les types structurés critiques (IBAN, carte,
 // NIR, SIRET…) ne sont JAMAIS pseudonymisés en réaliste : générer de faux
-// numéros plausibles risque de collisionner avec de vrais — ils restent en
+// numéros plausibles risque de collisionner avec de vrais - ils restent en
 // placeholders [TYPE_N], honnêtes et sans ambiguïté.
 //
 // Deux locales (FR par défaut, EN) : un document rédigé en anglais recevait
 // jusqu'ici des pseudonymes français (« Julien Marchand » dans un texte 100%
 // anglophone), ce qui casse l'illusion de cohérence que l'option promet.
-// `locale` est un paramètre du moteur, pas encore choisi automatiquement —
+// `locale` est un paramètre du moteur, pas encore choisi automatiquement -
 // il faut le brancher explicitement (voir main.js) tant qu'il n'y a pas de
 // détection de langue du document.
 
@@ -109,7 +109,7 @@ const LOCALES = {
 // LA LIGNE DE PARTAGE EST « IDENTIFIANT OU ATTRIBUT ? », pas « type connu ou
 // pas ». Tous ceux d'ici sont des IDENTIFIANTS : échanger un nom contre un
 // autre nom, une ville contre une autre ville, préserve le RÔLE de la valeur
-// dans le texte sans toucher à ce sur quoi le LLM raisonne — une personne
+// dans le texte sans toucher à ce sur quoi le LLM raisonne - une personne
 // reste une personne.
 //
 // POSTE, NATIONALITE et SANTE sont volontairement ABSENTS, et ce n'est pas un
@@ -121,7 +121,7 @@ const LOCALES = {
 //   « portugaise » → « italienne »                démarche administrative faussée
 //
 // Un placeholder annonce qu'on a retiré quelque chose ; un faux attribut
-// plausible n'annonce rien et induit en erreur — exactement ce que l'UX
+// plausible n'annonce rien et induit en erreur - exactement ce que l'UX
 // anti-fausse-confiance du cadrage §5 refuse. Le silence vaut mieux que le
 // vraisemblable quand l'utilisateur ne peut pas vérifier.
 //
@@ -133,7 +133,7 @@ const LOCALES = {
 // DÉTECTION figure dans TYPES_PEU_FIABLES (gliner.js), et c'est ça qui décide :
 // sur ce CV, « LLM local » a été pris pour un établissement et remplacé par
 // « École Morel ». Le lecteur croit à une école qui n'a jamais existé, et rien
-// ne le lui signale — alors qu'un « [ETABLISSEMENT_1] » posé sur « LLM local »
+// ne le lui signale - alors qu'un « [ETABLISSEMENT_1] » posé sur « LLM local »
 // saute aux yeux et se retire d'un clic.
 //
 // D'OÙ LA RÈGLE COMPLÈTE, en DEUX conditions. Un type reçoit un pseudonyme
@@ -143,8 +143,8 @@ const LOCALES = {
 //   - la seconde écarte tout type de TYPES_PEU_FIABLES, parce qu'un faux
 //     plausible y devient indétectable.
 //
-// C'est le principe déjà consigné du projet — « un pseudonyme rend un faux
-// positif invisible » — appliqué là où il avait été manqué.
+// C'est le principe déjà consigné du projet - « un pseudonyme rend un faux
+// positif invisible » - appliqué là où il avait été manqué.
 const REALISTIC_TYPES = new Set([
   'PER', 'ORG', 'LOC', 'ADRESSE', 'EMAIL', 'TELEPHONE', 'DATE_NAISSANCE',
   // Handle : identifiant, détecté par regex donc de façon déterministe.
@@ -158,7 +158,7 @@ const stripAccents = s =>
 // - seed : stabilité au sein d'une session d'analyse ;
 // - avoid(v) : refuse un pseudo présent dans le texte d'origine (collision
 //   avec une vraie valeur) ;
-// - locale : 'fr' (défaut) ou 'en' — locale inconnue retombe sur 'fr' ;
+// - locale : 'fr' (défaut) ou 'en' - locale inconnue retombe sur 'fr' ;
 // - unicité garantie entre pseudos d'une même session.
 export function createPseudonymizer({ seed = 'clarence', avoid = () => false, locale = 'fr' } = {}) {
   const L = LOCALES[locale] || LOCALES.fr;
@@ -187,7 +187,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   // l'identique redonnait bien le même pseudo, mais « Priya » seule était
   // traitée comme une personne distincte et recevait un nom sans aucun
   // rapport. Sur un document réel, la même personne se retrouvait sous trois
-  // identités — ce qui détruit la cohérence que l'option promet, et rend le
+  // identités - ce qui détruit la cohérence que l'option promet, et rend le
   // texte incompréhensible pour le LLM à qui on le donne.
   //
   // On mémorise donc chaque COMPOSANT : « Priya » → « Chloé », « Deva » →
@@ -197,14 +197,14 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   const tokenMap = new Map(); // composant réel (minuscule) → composant pseudo
 
   // Composants gardés tels quels : ils n'identifient personne, et les
-  // substituer produit soit du charabia, soit — bien pire — une SECONDE
+  // substituer produit soit du charabia, soit - bien pire - une SECONDE
   // identité pour la même personne.
   //
   // Particules nobiliaires : « de La Villardière » doit rester lisible.
   //
   // Civilités (liste partagée, honorifics.js) : le modèle contextuel inclut
   // souvent le titre dans l'entité (« miss Deva » détecté d'un bloc). Traité
-  // comme un prénom, « miss » devenait « Amélie » — si bien que
+  // comme un prénom, « miss » devenait « Amélie » - si bien que
   // « Priya Deva » → « Clément Faure » et « miss Deva » → « Amélie Faure »
   // désignaient deux personnes de genres différents dans le même texte.
   //
@@ -212,7 +212,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   // appartenance à une liste : un composant n'est une particule ou une
   // civilité que s'il précède un autre composant. Sinon « Miss » ou « Le »
   // employés comme vrais patronymes fuiraient tels quels.
-  // Liste et règle de position partagées avec identity.js — voir honorifics.js.
+  // Liste et règle de position partagées avec identity.js - voir honorifics.js.
   const estConserve = estComposantNonIdentifiant;
 
   // Reproduit la casse de l'original : un patronyme en TOUT-MAJUSCULE (usage
@@ -231,7 +231,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
     // Choix du vivier : dans un nom composé, le premier mot est un prénom et
     // le dernier un patronyme. Pour un composant VU SEUL on ne peut pas
     // savoir : le tout-majuscule signale un patronyme (convention CV FR),
-    // sinon on suppose un prénom. Le choix est arbitraire mais définitif —
+    // sinon on suppose un prénom. Le choix est arbitraire mais définitif -
     // c'est la stabilité qui compte, pas la justesse du vivier.
     const estPatronyme = total > 1
       ? isLast
@@ -249,7 +249,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   //
   // LE DÉFAUT QUE ÇA CORRIGE, signalé sur un vrai CV : la personne devenait
   // « ROMAIN MOREAU » et son email « thomas.simon@… ». Deux identités pour
-  // quelqu'un dont l'adresse porte justement son nom — la cohérence que
+  // quelqu'un dont l'adresse porte justement son nom - la cohérence que
   // l'option promet s'arrêtait aux frontières du type.
   //
   // Le mécanisme est celui qui existe déjà : `pseudoToken` consulte `tokenMap`,
@@ -259,7 +259,7 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   //
   // TOUS les composants sont substitués, y compris ceux qui ne sont pas des
   // noms (« pro », « dev ») : les épargner supposerait une liste de mots
-  // « non identifiants », classe ouverte qu'on refuse partout ailleurs — et
+  // « non identifiants », classe ouverte qu'on refuse partout ailleurs - et
   // un fragment du vrai handle survivrait.
   const composeIdentifiant = (brut) => {
     const parts = String(brut).split(/([._\-]+)/);
@@ -301,16 +301,16 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
     },
     ORG: h => unique((h2, i) => pick(L.orgs, h2, i), h),
     // Un générateur ETABLISSEMENT vivait ici (15/08 → 18/08). Il conservait le
-    // mot d'institution d'origine — « Lycée Camille-Claudel » → « Lycée
-    // Rousseau » — pour qu'un lycée ne devienne pas une université, et
+    // mot d'institution d'origine - « Lycée Camille-Claudel » → « Lycée
+    // Rousseau » - pour qu'un lycée ne devienne pas une université, et
     // reprenait la position du mot sur l'original plutôt que sur la locale
     // (« Westfield College » → « Boyer College »). Retiré avec le type
     // lui-même : voir REALISTIC_TYPES. Récupérable tel quel dans l'historique
     // si la détection des établissements devient un jour fiable.
     LOC: h => unique((h2, i) => pick(L.villes, h2, i), h),
     ADRESSE: h => unique((h2, i) => `${((h2 + i * 7) % 98) + 1} ${pick(L.rues, h2 >>> 3, i)}`, h),
-    // La partie locale reprend les composants du nom quand elle en porte —
-    // c'est le cas courant — et l'unicité se joue alors sur le domaine.
+    // La partie locale reprend les composants du nom quand elle en porte -
+    // c'est le cas courant - et l'unicité se joue alors sur le domaine.
     EMAIL: (h, original) => unique((h2, i) => {
       const local = composeIdentifiant(String(original).split('@')[0]);
       const repli = `${stripAccents(pick(L.prenoms, h2, i))}.${stripAccents(pick(L.noms, (h2 >>> 7) + i, i))}`;

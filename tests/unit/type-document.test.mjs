@@ -1,6 +1,6 @@
 // Reconnaissance du TYPE de document, pour proposer le bon profil.
 //
-// Mesuré sur les VRAIS documents du banc, dont on connaît le type — pas sur des
+// Mesuré sur les VRAIS documents du banc, dont on connaît le type - pas sur des
 // exemples fabriqués pour l'occasion, qui ne prouveraient que la capacité du
 // module à reconnaître ce qu'on vient d'écrire pour lui.
 import { test } from 'node:test';
@@ -30,7 +30,7 @@ test('reconnaît le type des documents réels du banc', () => {
 
 // ⚠️ LE COMPORTEMENT LE PLUS IMPORTANT DU MODULE. Une suggestion fausse envoie
 // l'utilisateur vers le mauvais vocabulaire, donc vers du sur-masquage ou une
-// fuite. « Je ne sais pas » est toujours préférable — l'utilisateur choisit
+// fuite. « Je ne sais pas » est toujours préférable - l'utilisateur choisit
 // alors lui-même, ce qu'il sait très bien faire, les profils étant peu nombreux.
 test('rend null plutôt que de deviner quand rien ne se détache', () => {
   for (const texte of [
@@ -89,7 +89,7 @@ test('les en-têtes d’e-mail ne comptent qu’en tête du document', () => {
 //
 // ⚠️ HONNÊTETÉ SUR CE QUE CES CAS PROUVENT. Pour le français et l'anglais, les
 // tests plus haut portent sur de VRAIS documents du banc. Pour l'espagnol,
-// l'allemand et le portugais, on n'en a pas — ce sont des échantillons
+// l'allemand et le portugais, on n'en a pas - ce sont des échantillons
 // construits. Ils valent comme test de FUMÉE (les marqueurs sont bien câblés,
 // la structure porte le verdict) et surtout comme non-régression sur les
 // collisions entre langues ; ils ne mesurent pas une exactitude sur le terrain.
@@ -116,7 +116,7 @@ test('reconnaît les types en espagnol, allemand et portugais', () => {
 
 // ⚠️ LE DÉFAUT QUE CE TEST FERME, et qui empire à chaque langue ajoutée. La
 // première version comparait par SOUS-CHAÎNE : le marqueur bancaire « rib »
-// matchait « contribuer », « distribution », « attribué » — 0,8 point de
+// matchait « contribuer », « distribution », « attribué » - 0,8 point de
 // « bancaire » sur une note de service qui n'a rien de bancaire. Le verdict
 // n'était sauvé que par l'écart minimal, c'est-à-dire par chance.
 test('les marqueurs se comparent MOT À MOT, pas par sous-chaîne', () => {

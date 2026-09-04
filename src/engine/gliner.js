@@ -3,8 +3,8 @@
 // Différence de fond avec ner.js : le modèle BERT a 4 catégories FIGÉES
 // (PER/ORG/LOC/MISC) apprises à l'entraînement. GLiNER reçoit les catégories
 // cherchées AU MOMENT DE L'APPEL, en langage courant. Conséquence directe :
-// il sait qualifier une valeur ISOLÉE, sans phrase autour — une cellule de
-// tableau, un nom en tête de CV — ce qu'aucune catégorie figée ni aucun motif
+// il sait qualifier une valeur ISOLÉE, sans phrase autour - une cellule de
+// tableau, un nom en tête de CV - ce qu'aucune catégorie figée ni aucun motif
 // à mot-clé de contexte ne peut faire (mesuré : « Kowalski » seul → 0,93 ;
 // « 1988-03-14 » seul → date de naissance 0,59).
 //
@@ -15,7 +15,7 @@ import { estVocabulaireCourant } from './vocabulaire.js';
 
 export const GLINER_MODEL = 'onnx-community/gliner_small-v2';
 
-// VARIANTE DE POIDS — ici et nulle part ailleurs, parce que le banc DOIT noter
+// VARIANTE DE POIDS - ici et nulle part ailleurs, parce que le banc DOIT noter
 // le modèle réellement livré. Tant que la variante vivait dans main.js, le banc
 // mesurait `quantized` pendant que la popup chargeait autre chose : la porte de
 // qualité notait un modèle qu'on n'expédiait pas.
@@ -26,13 +26,13 @@ export const GLINER_MODEL = 'onnx-community/gliner_small-v2';
 //   quantized (int8) + webgpu → 5 min 36  (aucun gain : le fournisseur WebGPU
 //                                          d'ORT supporte mal l'int8, la
 //                                          plupart des nœuds retombent en CPU)
-//   fp16 + webgpu             → 2 min 01  (×2,8 — le GPU sert enfin)
+//   fp16 + webgpu             → 2 min 01  (×2,8 - le GPU sert enfin)
 //
 // Le fp16 pèse 292 Mo au lieu de 175 : le surcoût est payé UNE fois (Cache
 // API), le gain à chaque document. Arbitrage tranché par la mesure.
 export const VARIANTES_MODELE = {
   quantized: 'model_quantized.onnx',  // 175 Mo, int8
-  fp16: 'model_fp16.onnx',            // 292 Mo — défaut
+  fp16: 'model_fp16.onnx',            // 292 Mo - défaut
   fp32: 'model.onnx'                  // 583 Mo
 };
 export const GLINER_VARIANTE = 'fp16';
@@ -42,17 +42,17 @@ export const glinerModelUrl = (variante = GLINER_VARIANTE) =>
 
 // Seuil par défaut, calé sur les fixtures propres : au-dessus du pire faux
 // positif observé et sous la plus faible vraie valeur à conserver (la cellule
-// de date nue, 0,59). Chaque groupe peut le surcharger — voir GROUPES.
+// de date nue, 0,59). Chaque groupe peut le surcharger - voir GROUPES.
 export const GLINER_THRESHOLD = 0.5;
 
-// GROUPES DE LABELS DISJOINTS — le point le moins intuitif de ce module.
+// GROUPES DE LABELS DISJOINTS - le point le moins intuitif de ce module.
 //
 // Les labels se CONCURRENCENT à l'intérieur d'un même appel : mesuré sur nos
 // fixtures, passer de 3 à 10 labels fait tomber « Semantikmatch » de 0,85 à
 // 0,45 et « Rose Fontaine » de 0,61 à 0,25, tout en faisant MONTER le bruit
 // (le garde-fou « zéro faux positif » sortait alors « point » à 0,43 et
 // « roadmap technique » à 0,40). Un jeu large en une passe dégrade donc
-// activement la détection — contre-intuitif, mais reproductible.
+// activement la détection - contre-intuitif, mais reproductible.
 //
 // D'où trois passes à groupes disjoints, qui conservent chacune leurs scores
 // hauts ET laissent le garde-fou à zéro. Le surcoût est celui de l'encodage du
@@ -65,7 +65,7 @@ export const GROUPES = [
     // isolées.
     //
     // Seuil ABAISSÉ à 0,45 une première fois (nom de CV isolé, 0,47), puis à
-    // 0,38 le 05/08/2026 — trouvé sur un vrai rapport (`rapport-fr.txt`) : le
+    // 0,38 le 05/08/2026 - trouvé sur un vrai rapport (`rapport-fr.txt`) : le
     // patronyme « ROUSSEAU » matche le motif BIC et annule « Amandine
     // ROUSSEAU » dans la fusion (voir merge.js), mais le nom lui-même ne
     // dépassait le seuil sur AUCUNE de ses 3 occurrences (0,364 / 0,398).
@@ -84,7 +84,7 @@ export const GROUPES = [
     // RECALIBRÉ à 0,46 le 06/08/2026 en passant les poids de int8 à fp16.
     // LEÇON GÉNÉRALE : **un seuil appartient à une variante de poids.** Le fp16
     // est numériquement plus précis, tous les scores remontent, et le 0,38
-    // calibré sur l'int8 devenait trop bas — préservé 98 % → 93 %
+    // calibré sur l'int8 devenait trop bas - préservé 98 % → 93 %
     // (« SOMMAIRE » et « Docker » sur-masqués en plus). Changer de variante
     // SANS rebalayer, c'est troquer de la qualité contre de la vitesse sans
     // s'en apercevoir.
@@ -94,7 +94,7 @@ export const GROUPES = [
     //   0,45 → 83 % / 96 %      0,46 → 83 % / **98 %**  ← retenu
     //   0,47 / 0,48 → identiques à 0,46 (plateau)
     //   0,50 → casse le STRUCTURÉ (19/20) : rédhibitoire, non négociable
-    // 0,46 est le plus BAS du plateau — donc le plus détectant à qualité égale,
+    // 0,46 est le plus BAS du plateau - donc le plus détectant à qualité égale,
     // conformément à « zéro-fuite > faux positifs ».
     seuil: 0.46,
     labels: ['person', 'company', 'location'],
@@ -110,7 +110,7 @@ export const GROUPES = [
     labels: ['date of birth'],
     types: { 'date of birth': 'DATE_NAISSANCE' },
     // Une date porte toujours au moins l'année : sans chiffre, rien à trouver.
-    // 65 % des unités d'un vrai mémoire sont dans ce cas — 54 % du texte.
+    // 65 % des unités d'un vrai mémoire sont dans ce cas - 54 % du texte.
     pertinent: t => /\d/.test(t)
   },
   {
@@ -127,12 +127,12 @@ export const GROUPES = [
   }
 ];
 
-// Types que le modèle ne détecte PAS de façon fiable — proposés dans l'UI mais
+// Types que le modèle ne détecte PAS de façon fiable - proposés dans l'UI mais
 // DÉCOCHÉS par défaut. Mesuré, pas supposé.
 //
 // Le banc ne contenait longtemps aucun document portant réellement ces
 // données, donc le groupe ne pouvait être jugé que sur son bruit. Un compte
-// rendu RH (`dossier-rh.txt`) a levé le doute — et le verdict est sans appel :
+// rendu RH (`dossier-rh.txt`) a levé le doute - et le verdict est sans appel :
 //
 //   « diabète de type 2 »   → étiqueté JOB TITLE          à 0,04
 //   « aide-soignante »      → étiqueté MEDICAL CONDITION  à 0,08
@@ -141,20 +141,20 @@ export const GROUPES = [
 //   « Camille-Claudel »     → établissement               à 0,31
 //
 // Le modèle INVERSE poste et donnée de santé en français, et place les vraies
-// valeurs entre 0,02 et 0,31 — très en dessous du plancher de bruit mesuré à
+// valeurs entre 0,02 et 0,31 - très en dessous du plancher de bruit mesuré à
 // 0,4-0,7 sur du texte fragmenté. Aucun seuil ne peut les séparer.
 //
 // Effet mesuré au banc en les désactivant : rappel contextuel INCHANGÉ (75 %,
 // zéro vrai positif perdu sur 7 documents), termes préservés 93 % → 96 %.
 // Autrement dit ce groupe ne rapportait que du sur-masquage.
 //
-// Les laisser actifs serait de la FAUSSE CONFIANCE — précisément ce que le
+// Les laisser actifs serait de la FAUSSE CONFIANCE - précisément ce que le
 // cadrage §5 interdit : l'utilisateur croirait ses données de santé protégées
 // alors qu'elles ne le sont pas. Décochés, l'UI le montre, et il peut les
 // activer en connaissance de cause.
 export const TYPES_PEU_FIABLES = ['POSTE', 'NATIONALITE', 'ETABLISSEMENT', 'SANTE'];
 
-// Types qu'un groupe peut produire — sert à sauter entièrement une passe dont
+// Types qu'un groupe peut produire - sert à sauter entièrement une passe dont
 // l'utilisateur a désactivé tous les types (on ne paie que ce qu'on demande).
 const typesDuGroupe = g => Object.values(g.types);
 
@@ -181,7 +181,7 @@ const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
 // (c) « toujours masquer » reste disponible, et (d) le sur-masquage mesuré
 // rendait les documents inexploitables, ce qui est l'autre façon de perdre
 // l'utilisateur. Réévaluer si un cas réel de nom en minuscules apparaît.
-// Une DATE DE NAISSANCE porte toujours au moins un chiffre — au minimum
+// Une DATE DE NAISSANCE porte toujours au moins un chiffre - au minimum
 // l'année. Sans cette garde, le modèle sortait « trimestre » à 0,74 et
 // « Sept. 2024 - Aout 2025 » comme dates de naissance. Même raisonnement que
 // pour les noms propres : une exigence de FORME propre au type, déterministe,
@@ -192,7 +192,7 @@ const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
 //
 // Deux formes acceptées, et AUCUNE liste de mois : le projet doit rester
 // multilingue, or un nom de mois est propre à une langue. On se contente de la
-// STRUCTURE — une date numérique, ou une année accompagnée d'un autre nombre
+// STRUCTURE - une date numérique, ou une année accompagnée d'un autre nombre
 // (le quantième), quelle que soit la langue qui les sépare :
 //   « March 14, 1988 », « 16 octobre 2004 », « 14. März 1988 » → acceptés
 //   « 2021 » (année seule), « ANNEXE 2 », « 12 mars » (sans année) → refusés
@@ -207,7 +207,7 @@ const ANNEE = /(?:1[89]|20)\d{2}/;
 // une fausse date de naissance à la place d'une période d'expérience, ce qui
 // altère le sens du document pour le LLM.
 //
-// Le test reste sans aucune liste de mois — c'est la STRUCTURE qui parle, donc
+// Le test reste sans aucune liste de mois - c'est la STRUCTURE qui parle, donc
 // il vaut dans toutes les langues.
 const ANNEES = /(?:1[89]|20)\d{2}/g;
 
@@ -220,17 +220,17 @@ function estUneDate(valeur) {
   return /\d/.test(String(valeur).replace(annees[0], ''));
 }
 
-// PRONOMS — jamais un nom propre, quelle que soit la confiance du modèle.
+// PRONOMS - jamais un nom propre, quelle que soit la confiance du modèle.
 //
 // Mesuré sur un vrai mémoire : « I've » sort en PERSONNE, quatre fois. Le
 // modèle voit un pronom en tête de phrase, donc en majuscule, et le prend pour
-// un nom. Aucun seuil ne sépare ce cas — c'est une question de nature, pas de
+// un nom. Aucun seuil ne sépare ce cas - c'est une question de nature, pas de
 // score.
 //
 // UNE LISTE STATIQUE EST ADMISSIBLE ICI, et seulement parce que la classe est
 // FERMÉE : même règle que honorifics.js et que les opérateurs logiques de
 // compression.js. Une langue compte une poignée de pronoms et n'en invente pas,
-// contrairement aux noms, aux entreprises ou aux sigles — qu'on refuse
+// contrairement aux noms, aux entreprises ou aux sigles - qu'on refuse
 // catégoriquement de lister.
 //
 // NE PAS Y GLISSER de noms communs (« Universities », « Contents »…) : ce sont
@@ -257,8 +257,8 @@ export function estPronom(valeur) {
 }
 
 // Types soumis au filtre de VOCABULAIRE (P14). PER en est EXCLU volontairement :
-// beaucoup de patronymes français sont des mots courants — Blanc, Petit,
-// Bernard, Roux — et « Pierre Blanc » serait jugé « vocabulaire », donc laissé
+// beaucoup de patronymes français sont des mots courants - Blanc, Petit,
+// Bernard, Roux - et « Pierre Blanc » serait jugé « vocabulaire », donc laissé
 // en clair. Le filtre y produirait des fuites, pas du confort.
 //
 // ORG et LOC, eux, portent le gros du bruit ET la donnée la moins sensible :
@@ -290,10 +290,10 @@ function estPlausiblePourLeType(type, valeur) {
 //
 // POURQUOI. Le checkpoint est un `deberta-v3-small` ANGLOPHONE (choisi à la
 // mesure : il bat le multilingue sur nos fixtures FR, voir Gotchas). Les
-// accents lui coûtent cher — mesuré sur le MÊME nom, en capitales :
+// accents lui coûtent cher - mesuré sur le MÊME nom, en capitales :
 // « ELEONORE VASSEUR » sort à 0,618, « ÉLÉONORE VASSEUR » à 0,418, pour un
 // seuil à 0,46. Le nom fuyait donc en clair (P10). Ce n'est pas « les
-// capitales accentuées ne marchent pas » — « MÉLANIE THÉVENOT » sort à 0,507 —
+// capitales accentuées ne marchent pas » - « MÉLANIE THÉVENOT » sort à 0,507 -
 // c'est que l'accentuation retire ~0,20 et que certains cas atterrissent juste
 // sous la barre.
 //
@@ -315,10 +315,10 @@ export function desaccentuer(texte) {
   return sortie;
 }
 
-// COPIE À CASSE ADOUCIE, À LONGUEUR STRICTEMENT ÉGALE — l'autre moitié du même
+// COPIE À CASSE ADOUCIE, À LONGUEUR STRICTEMENT ÉGALE - l'autre moitié du même
 // axe que `desaccentuer`, et celle qui porte le plus.
 //
-// POURQUOI. Mesuré sur un vrai casier judiciaire — un FORMULAIRE, dont les
+// POURQUOI. Mesuré sur un vrai casier judiciaire - un FORMULAIRE, dont les
 // valeurs sont en capitales, classe de document absente du corpus (fait de CV
 // et de mémoires), ce qui explique que le défaut ait survécu si longtemps :
 //
@@ -328,24 +328,24 @@ export function desaccentuer(texte) {
 //
 // Le nom de l'utilisateur sortait donc en ENTREPRISE : il recevait un
 // pseudonyme tiré du vivier des sociétés, et surtout la décomposition par
-// composant (réservée aux PER) ne s'appliquait pas — le prénom isolé après
+// composant (réservée aux PER) ne s'appliquait pas - le prénom isolé après
 // « Prénom(s) » n'était jamais masqué. Une fuite, pas un défaut cosmétique.
 //
 // ⚠️ CE N'EST PAS LA MINUSCULISATION, mesurée et REJETÉE au spike POS
-// (+7 démasquages mais 3 FUITES). On garde l'initiale majuscule — le signal
-// dont un modèle « cased » se sert pour délimiter un nom propre — et on
+// (+7 démasquages mais 3 FUITES). On garde l'initiale majuscule - le signal
+// dont un modèle « cased » se sert pour délimiter un nom propre - et on
 // n'enlève que l'anomalie TOUT-MAJUSCULE. Retirer la majuscule initiale
 // brouille la frontière ; retirer les capitales de suite ne la touche pas.
 //
 // LONGUEUR PRÉSERVÉE, même exigence que ci-dessus, et elle n'est pas
 // gratuite : `toLowerCase()` peut ALLONGER (le « İ » turc donne deux points de
 // code). On ne remplace donc un caractère que si sa minuscule fait exactement
-// la même longueur — c'est ce que la passe `boostCase` de `ner.js` ne pouvait
+// la même longueur - c'est ce que la passe `boostCase` de `ner.js` ne pouvait
 // pas garantir (« ß » → « SS »).
 //
 // TROIS LETTRES AU MOINS : en dessous, ce sont des sigles (BIC, RIB, TVA) que
 // le déterministe traite déjà et qu'il ne sert à rien de brouiller. La passe
-// est de toute façon ADDITIVE — elle ne peut qu'ajouter des candidats, jamais
+// est de toute façon ADDITIVE - elle ne peut qu'ajouter des candidats, jamais
 // en retirer à la passe naturelle.
 //
 // CORRECTIF PARTIEL, ASSUMÉ : « SARCELLES » reste à 0,43, sous le seuil, avant
@@ -396,19 +396,19 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
       // `estPlausiblePourLeType` écarte déjà, APRÈS coup, les spans sans
       // majuscule (noms propres) ou sans chiffre (date de naissance). Si le
       // texte entier n'en contient aucun, la passe ne peut RIEN produire qui
-      // survive à ce filtre : on la saute. Zéro perte par construction — c'est
+      // survive à ce filtre : on la saute. Zéro perte par construction - c'est
       // la même règle, appliquée avant la dépense au lieu d'après.
       //
       // Mesuré sur un mémoire de 75 pages : le groupe « date de naissance »
       // coûte AUTANT que le groupe identité (25,0 contre 25,4 ms/unité) alors
-      // qu'il n'a qu'un label — le coût suit la longueur du texte, pas le
+      // qu'il n'a qu'un label - le coût suit la longueur du texte, pas le
       // nombre de labels. Or 65 % des unités n'ont aucun chiffre.
       if (groupe.pertinent && !groupe.pertinent(chunk)) continue;
       const seuil = groupe.seuil ?? GLINER_THRESHOLD;
       // Passes supplémentaires sur les copies désaccentuée (P10) et à casse
       // adoucie (P12). La longueur étant préservée dans les deux cas, toutes
       // partagent le même repère d'offsets et la valeur se relit sur
-      // l'original — c'est ce qui rend l'axe utilisable.
+      // l'original - c'est ce qui rend l'axe utilisable.
       for (const variante of variantes) {
         const spans = await glinerPipeline(variante, groupe.labels);
         for (const s of spans || []) {
@@ -421,7 +421,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
           //
           // Le saut de groupe ci-dessus n'écarte une passe que si TOUS ses types
           // sont désactivés. Un groupe partiellement actif produit donc encore
-          // des entités de types désactivés — et celles-ci ENTRENT dans la
+          // des entités de types désactivés - et celles-ci ENTRENT dans la
           // résolution des chevauchements, où « le plus long gagne ». Elles y
           // battent une détection d'un type ACTIF portant sur le même texte…
           // avant d'être jetées tout à la fin par filterByRules. Résultat : la
@@ -431,7 +431,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
           // mais laissé SANTE : le groupe tournait donc encore, sortait
           // « ETABLISSEMENT : Sorbonne Paris Nord » trois fois, ce span évinçait
           // le « LIEU : Sorbonne Paris Nord » du groupe identité, puis
-          // disparaissait — et le nom de l'université partait EN CLAIR.
+          // disparaissait - et le nom de l'université partait EN CLAIR.
           if (!type || desactives.has(type) || s.score < seuil) continue;
           // La valeur se relit TOUJOURS sur le texte d'origine : c'est le texte
           // accentué qu'il faudra masquer, pas la copie de travail.
@@ -452,7 +452,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
     }
 
     // Chevauchements ENTRE groupes (ex. « Université de Bordeaux » vu comme
-    // ETABLISSEMENT et comme ORG) : même règle que partout dans ce projet —
+    // ETABLISSEMENT et comme ORG) : même règle que partout dans ce projet -
     // le span le plus long gagne, le score ne départage qu'à égalité.
     duChunk.sort((a, b) =>
       a.start - b.start ||
@@ -473,7 +473,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
   snapToWordBoundaries(text, all);
 
   // Recollage des noms détectés EN DEUX MORCEAUX. Cas réel : sur un CV,
-  // « LANDRY KAPGNEP » sort en deux spans distincts (0,47 et 0,36) — sans
+  // « LANDRY KAPGNEP » sort en deux spans distincts (0,47 et 0,36) - sans
   // pontage, seul le prénom passerait le seuil et le patronyme fuirait en
   // clair à côté du placeholder. Mécanisme partagé avec le moteur BERT.
   bridgeNameParts(text, all);
@@ -496,7 +496,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
 // RÉFÈRE à une personne, pas seulement un nom : le modèle sort donc
 // « Analyste », « Ingénieure », « Second candidat », « Poste occupé ». Il a
 // raison linguistiquement, c'est notre besoin qui porte sur les entités
-// NOMMÉES. Aucun seuil ne les écarte — mesuré, ces faux positifs sortent
+// NOMMÉES. Aucun seuil ne les écarte - mesuré, ces faux positifs sortent
 // AU-DESSUS de vraies entités (« Réunion » 0,961 contre « Villetaneuse »
 // 0,699).
 //
@@ -516,7 +516,7 @@ export const LABELS_LEURRE = ['job title', 'section heading', 'common noun', 'sk
 
 // Mesuré sur 21 faux positifs et 15 vraies entités du document piégé :
 // 6 faux positifs écartés, AUCUNE vraie entité perdue. Le gain est modeste
-// mais il est gratuit en risque — c'est ce qui l'a fait retenir.
+// mais il est gratuit en risque - c'est ce qui l'a fait retenir.
 export async function arbitrerFauxPositifs(entities, glinerPipeline) {
   if (!glinerPipeline || !entities?.length) return entities || [];
   const labelsPII = GROUPES[0].labels;

@@ -9,7 +9,7 @@ import {
 import {
   decouperEnLots,
   recollerScores
-} from "./chunk-VTU65RIR.js";
+} from "./chunk-ZCCQBMVJ.js";
 import {
   __require
 } from "./chunk-PIRHQTI4.js";
@@ -37142,7 +37142,7 @@ async function construireGliner({ wasmPath, model, modelBytes, provider }) {
     transformersSettings: { allowLocalModels: false, useBrowserCache: true },
     // Imposés par gliner_config.json du checkpoint : span_mode "markerV0",
     // max_width 12. Le mode 'token-level' de la lib est listé comme TODO dans
-    // son propre README tout en s'acceptant silencieusement — ne pas l'utiliser.
+    // son propre README tout en s'acceptant silencieusement - ne pas l'utiliser.
     modelType: "span-level",
     maxWidth: 12
   });

@@ -1,11 +1,11 @@
-// Le SEUL test qui touche src/popup/main.js — et il ne l'exécute pas.
+// Le SEUL test qui touche src/popup/main.js - et il ne l'exécute pas.
 //
 // main.js dépend de `chrome.*` : il n'est pas testable en Node, et c'est
 // précisément là qu'un plantage a déjà cassé tout le mode PDF « Préserver »
 // avec 230 tests au vert (voir docs/verification-chrome.md). On ne peut pas
 // tout couvrir, mais UNE classe de bug est vérifiable sans navigateur : un
 // `$('idQuiNExistePas')` renvoie null, et le premier accès à `.hidden` ou
-// `.addEventListener` fait planter la popup — en Chrome uniquement.
+// `.addEventListener` fait planter la popup - en Chrome uniquement.
 //
 // C'est arrivé à chaque ajout d'élément (le bouton Annuler en est un). Ce test
 // coûte quelques millisecondes et ferme la porte.
@@ -31,7 +31,7 @@ test('tout id référencé par la popup existe dans popup.html', () => {
 
 test('le test lui-même voit bien quelque chose (garde anti-faux-vert)', () => {
   // Si le motif d'extraction cassait, la liste deviendrait vide et le test
-  // ci-dessus passerait toujours — un vert qui ne vérifie rien est pire que
+  // ci-dessus passerait toujours - un vert qui ne vérifie rien est pire que
   // pas de test du tout.
   assert.ok(idsUtilises.length > 40, `trop peu d'ids extraits (${idsUtilises.length})`);
   assert.ok(idsUtilises.includes('fileCancelBtn'), 'le bouton Annuler doit être vu');

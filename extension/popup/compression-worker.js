@@ -5,7 +5,7 @@ import {
 import {
   decouperEnLots,
   recollerScores
-} from "./chunk-VTU65RIR.js";
+} from "./chunk-ZCCQBMVJ.js";
 import "./chunk-PIRHQTI4.js";
 
 // src/worker/compression-worker.js

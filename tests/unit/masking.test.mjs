@@ -85,7 +85,7 @@ test('reinject en un seul passage : une valeur restituée contenant un motif [TY
 
 // --- Fuite trouvée par le banc : la propagation ne travaillait que sur la
 // valeur ENTIÈRE. « Marcus Whitfield » masqué à sa première occurrence, mais
-// « Marcus » réutilisé seul plus loin restait EN CLAIR — forme d'usage très
+// « Marcus » réutilisé seul plus loin restait EN CLAIR - forme d'usage très
 // courante dans un mail ou un rapport.
 test('un prénom réutilisé SEUL plus loin est masqué aussi', () => {
   const texte = 'Please welcome Marcus Whitfield to the team.\n'
@@ -98,7 +98,7 @@ test('un prénom réutilisé SEUL plus loin est masqué aussi', () => {
 
 test('la propagation par composant est SENSIBLE À LA CASSE', () => {
   // Sans cette garde, « Rose Fontaine » ferait disparaître toutes les « rose »
-  // du document — le sur-masquage qu'on passe la session à combattre.
+  // du document - le sur-masquage qu'on passe la session à combattre.
   const texte = 'Rose Fontaine cultive une rose ancienne dans son jardin.';
   const per = { type: 'PER', value: 'Rose Fontaine', start: 0, end: 13, source: 'ner' };
   const { masked } = maskText(texte, [per]);
@@ -148,7 +148,7 @@ test('le compteur distingue bien les valeurs entre elles', () => {
 
 test('un pseudonyme réaliste est compté comme un placeholder', () => {
   // Le pseudonyme n'est pas entre crochets et peut contenir des caractères que
-  // le compteur ne doit pas interpréter — d'où la recherche littérale.
+  // le compteur ne doit pas interpréter - d'où la recherche littérale.
   const texte = 'Paul écrit. Paul répond.';
   const { mapping } = maskText(texte, [e('PER', 'Paul', 0)], {
     pseudonymize: () => 'Noémie R. (a+b)'

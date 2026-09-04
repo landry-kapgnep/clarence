@@ -78,7 +78,7 @@ test('XLSX : stripMetadata sans commentaires ni docProps personnalisés ne plant
   assert.equal(XLSX.read(out, { type: 'array' }).Sheets.Feuille1.A1.v, 'texte');
 });
 
-test('XLSX : nom de feuille contenant un "!" — l\'id reste résoluble', () => {
+test('XLSX : nom de feuille contenant un "!" - l\'id reste résoluble', () => {
   const buf = makeWorkbookBuffer([['jean@ex.fr']], { sheetName: 'Ventes!2026' });
   const { units } = xlsx.extractTextUnits(buf);
   assert.equal(units[0].id, 'Ventes!2026!A1');
@@ -125,7 +125,7 @@ test('DOCX sans docProps ni commentaires : stripMetadata ne plante pas', () => {
   assert.ok(strFromU8(zip['word/document.xml']).includes('Bonjour.'));
 });
 
-test('DOCX : paragraphe vide et partie sans texte — aucune unité, pas de plantage', async () => {
+test('DOCX : paragraphe vide et partie sans texte - aucune unité, pas de plantage', async () => {
   const buf = makeDocxBuffer({
     'word/document.xml': `${prolog}<w:document ${W}><w:body><w:p></w:p><w:p><w:r><w:tab/><w:br/></w:r></w:p></w:body></w:document>`
   });

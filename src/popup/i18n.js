@@ -1,4 +1,4 @@
-// Traduction de l'interface — mécanisme natif de Chrome, aucune dépendance.
+// Traduction de l'interface - mécanisme natif de Chrome, aucune dépendance.
 //
 // POURQUOI `chrome.i18n` ET PAS UNE LIBRAIRIE. Les catalogues sont empaquetés
 // dans l'extension (`_locales/<langue>/messages.json`), Chrome choisit d'après
@@ -6,7 +6,7 @@
 // réseau, donc rien à arbitrer avec le principe du projet.
 //
 // CE QUE ÇA NE TRADUIT PAS, et il faut le savoir : seulement l'INTERFACE. Le
-// MOTEUR reste largement francophone — les regex NIR/SIRET/téléphone FR, les
+// MOTEUR reste largement francophone - les regex NIR/SIRET/téléphone FR, les
 // civilités, les particules, les viviers de pseudonymes (fr/en seulement) et
 // le vocabulaire des profils livrés. Traduire l'UI vers une langue que le
 // moteur ne couvre pas promettrait une protection qu'on n'assure pas ; d'où
@@ -17,7 +17,7 @@
 // Hors extension (tests, page d'atelier), on rend la clé : rien ne plante, et
 // une clé qui s'affiche telle quelle se repère immédiatement.
 // `sub` : substitutions ($1, $2…) telles que chrome.i18n les attend. Sans ce
-// second argument, un message paramétré ressortait avec ses « $1 » en clair —
+// second argument, un message paramétré ressortait avec ses « $1 » en clair -
 // ou pire, la clé brute affichée à l'écran.
 export const msg = (cle, sub) =>
   (typeof chrome !== 'undefined' && chrome.i18n?.getMessage
@@ -35,7 +35,7 @@ const ATTRIBUTS = [
   ['i18nAlt', 'alt']
 ];
 
-// Applique les traductions à une racine — le document au chargement, ou un
+// Applique les traductions à une racine - le document au chargement, ou un
 // fragment fraîchement inséré. Idempotent : on peut la rappeler sans risque.
 export function appliquerTraductions(racine = document) {
   for (const el of racine.querySelectorAll('[data-i18n]')) {

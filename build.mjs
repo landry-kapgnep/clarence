@@ -12,7 +12,7 @@ for (const f of readdirSync('extension/popup')) {
 
 // splitting : les adaptateurs de fichiers (CSV/XLSX/DOCX + xlsx ~980 Ko) sont
 // importés dynamiquement par la popup et sortent donc en chunks séparés,
-// chargés seulement au passage en mode Fichier — le mode texte (gratuit) reste
+// chargés seulement au passage en mode Fichier - le mode texte (gratuit) reste
 // léger. entryPoints en objet pour forcer le nom de sortie « popup.js ».
 await build({
   // ner-worker : entry séparé, chargé via new Worker(). Transformers.js n'est
@@ -54,7 +54,7 @@ const WASM = [
     'node_modules/onnxruntime-web/dist'], 'ort-wasm-simd-threaded.wasm'],
   // Binaire JSEP : c'est LUI qui porte l'accélération WebGPU d'ORT 1.19. Sans
   // lui, `executionProvider: 'webgpu'` échoue au démarrage et on retombe en
-  // WASM — donc silencieusement lent, sans que rien ne le signale.
+  // WASM - donc silencieusement lent, sans que rien ne le signale.
   [['node_modules/gliner/node_modules/onnxruntime-web/dist',
     'node_modules/onnxruntime-web/dist'], 'ort-wasm-simd-threaded.jsep.wasm']
 ];
@@ -66,7 +66,7 @@ for (const [dirs, f] of WASM) {
   }
   cpSync(source, `extension/vendor/${f}`);
 }
-// Worker pdfjs : exigé en navigateur (v6 refuse de démarrer sans workerSrc —
+// Worker pdfjs : exigé en navigateur (v6 refuse de démarrer sans workerSrc -
 // pas de repli automatique, contrairement à Node). Servi depuis vendor/ comme
 // les .wasm : local, CSP 'self', jamais de code distant (MV3).
 cpSync('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs', 'extension/vendor/pdf.worker.min.mjs');
@@ -74,13 +74,13 @@ cpSync('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs', 'extension/ven
 // Ressources externes de pdfjs (3,8 Mo). MÊME PIÈGE QUE workerSrc : pdfjs va
 // les chercher par URL et n'a AUCUN repli en navigateur, or MV3 interdit le
 // CDN. Différence cruciale : workerSrc plante bruyamment, celles-ci dégradent
-// EN SILENCE — c'est pour ça qu'elles sont restées absentes si longtemps.
+// EN SILENCE - c'est pour ça qu'elles sont restées absentes si longtemps.
 //
 //   standard_fonts  les 14 polices standard. Sans elles, pdfjs mesure mal la
 //                   largeur des glyphes, dont dépendent tailleQuiTient et
 //                   calculerBornes : la mise en page se réglerait sur des
 //                   chiffres faux, donc deux fois.
-//   cmaps           encodages CID (PDF asiatiques) — texte sinon illisible.
+//   cmaps           encodages CID (PDF asiatiques) - texte sinon illisible.
 //   iccs            profils colorimétriques.
 //   wasm            décodeurs JBIG2 / JPEG2000 : sans eux une image de PDF
 //                   scanné ne se décode pas, et la reconstruction la perd.

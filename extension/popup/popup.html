@@ -89,7 +89,7 @@
       <div class="engine-badge" id="engineBadge" hidden></div>
       <div class="status" id="status"></div>
       <!-- Suggestion de profil : PROPOSE, n'applique jamais tout seul. Voir
-           src/engine/type-document.js — un masquage changé en silence casserait
+           src/engine/type-document.js - un masquage changé en silence casserait
            l'UX de relecture, qui est la colonne vertébrale du produit. -->
       <div class="suggestion" id="profileSuggest" hidden>
         <span class="suggestion-txt" id="profileSuggestTxt"></span>
@@ -129,7 +129,7 @@
         <div id="fileOptions" class="bloc" hidden>
         <!-- Chaque option porte un « ? » : le libellé reste court, le détail
              vit dans l'infobulle. -->
-        <!-- CHOIX DE FORMAT — volontairement en radios empilées, PAS dans la
+        <!-- CHOIX DE FORMAT - volontairement en radios empilées, PAS dans la
              grille de boutons. Ce n'est pas une fonction qu'on ajoute mais une
              destination qu'on choisit : lui donner la même forme que
              « Pseudonymes » ou « Économiser des tokens » brouillait les deux
@@ -150,14 +150,14 @@
             <span class="radio-label-text" data-i18n="format_original">Format original</span>
             <span class="info-tip" tabindex="0" role="note"
                   aria-label="PDF reconstruit depuis des pages neuves, images conservées. Fidélité visuelle approximative." data-i18n-aria="pdf_reconstruit_depuis_des_pages_neuves_imag">?
-              <span class="info-tip-box" data-i18n-html="aide_pdf_reconstruit_depuis_des_pages_neuves_aucu">PDF reconstruit depuis des pages <strong>neuves</strong> — aucun texte d'origine ne subsiste dessous. Images conservées.<br> Fidélité approximative : police unique, positions au fragment.</span>
+              <span class="info-tip-box" data-i18n-html="aide_pdf_reconstruit_depuis_des_pages_neuves_aucu">PDF reconstruit depuis des pages <strong>neuves</strong> : aucun texte d'origine ne subsiste dessous. Images conservées.<br> Fidélité approximative : police unique, positions au fragment.</span>
           </span>
           </label>
         </div>
 
         <!-- GRILLE D'OPTIONS. Deux colonnes de largeur égale : les boutons ont
              la même proportion sans qu'on la règle à la main. Les sous-options
-             occupent la RANGÉE DU DESSOUS, chacune épinglée sous son bouton —
+             occupent la RANGÉE DU DESSOUS, chacune épinglée sous son bouton -
              celle qui apparaît ne déplace donc pas l'autre. -->
         <div class="options-grille" id="fileOptionsGrille">
           <label class="option-btn teinte-pseudo" id="fileRealisticBtn">
@@ -182,7 +182,7 @@
             <span class="option-texte" data-i18n="economiser_des_tokens">Économiser des tokens</span>
             <span class="info-tip" tabindex="0" role="note"
                   aria-label="Supprime les mots peu porteurs. La prose est appauvrie et ne peut plus être relue. Données masquées et négations préservées. Premier usage : 170 Mo à télécharger." data-i18n-aria="supprime_les_mots_peu_porteurs_la_prose_est">?
-              <span class="info-tip-box" data-i18n-html="aide_supprime_les_mots_peu_porteurs_la_prose_est">Supprime les mots peu porteurs. <strong>La prose est appauvrie</strong> et ne peut plus être relue — données masquées et négations préservées.<br> Pour « résume », « quelles dates ? » — pas pour « corrige », « reformule », « traduis ».<br> Premier usage : ~170 Mo, une fois.</span>
+              <span class="info-tip-box" data-i18n-html="aide_supprime_les_mots_peu_porteurs_la_prose_est">Supprime les mots peu porteurs. <strong>La prose est appauvrie</strong> et ne peut plus être relue, mais les données masquées et les négations sont préservées.<br> Pour « résume », « quelles dates ? », pas pour « corrige », « reformule », « traduis ».<br> Premier usage : ~170 Mo, une fois.</span>
           </span>
           </label>
 
@@ -216,8 +216,8 @@
                  laissait le lecteur deviner à quoi il s'opposait, et portait la
                  même classe `.field-label` que les étiquettes qu'il gouverne :
                  une portée avec le poids visuel de son propre contenu.
-                 Les titres nomment donc le contraste — la PERSISTANCE, seule
-                 différence réelle — et `.groupe-titre` leur donne le rang qui va
+                 Les titres nomment donc le contraste - la PERSISTANCE, seule
+                 différence réelle - et `.groupe-titre` leur donne le rang qui va
                  avec. -->
             <div class="groupe-titre" data-i18n="pour_ce_document">Pour ce document</div>
             <div id="docTerms">
@@ -261,7 +261,7 @@
           </div>
         </div>
 
-        <!-- ÉTAPES DU TRAITEMENT — liste pilotée par les données (voir
+        <!-- ÉTAPES DU TRAITEMENT - liste pilotée par les données (voir
              main.js). Vide tant que rien n'est lancé ; une étape en cours
              affiche sa jauge, une étape finie devient une puce « terminé ✓ ».
              Ajouter une étape optionnelle plus tard = une ligne de déclaration,
@@ -270,7 +270,7 @@
         <div class="engine-badge" id="fileEngineBadge" hidden></div>
         <div class="status" id="fileStatus"></div>
         <!-- Suggestion de profil : PROPOSE, n'applique jamais tout seul. Voir
-           src/engine/type-document.js — un masquage changé en silence casserait
+           src/engine/type-document.js - un masquage changé en silence casserait
            l'UX de relecture, qui est la colonne vertébrale du produit. -->
         <div class="suggestion" id="fileProfileSuggest" hidden>
           <span class="suggestion-txt" id="fileProfileSuggestTxt"></span>
@@ -317,7 +317,7 @@
 
       <footer>
         <p class="avertissement"><span aria-hidden="true">⚠</span>
-          <span data-i18n="relis_avant_de_coller">Relis avant de coller — la détection n’est pas infaillible.</span></p>
+          <span data-i18n="relis_avant_de_coller">Relis avant de coller : la détection n’est pas infaillible.</span></p>
         <button class="link-btn" id="identityOpenBtn" data-i18n="mon_identite">Mon identité</button>
       </footer>
     </div>
@@ -327,7 +327,7 @@
        Ces deux-là sont peints par le navigateur : impossibles à habiller, et
        les plus dissonants de l'interface. Celui-ci porte role="dialog" +
        aria-modal, piège le focus, le rend à son déclencheur en sortant, et
-       accepte Échap — un dialogue maison mal fait serait MOINS accessible que
+       accepte Échap - un dialogue maison mal fait serait MOINS accessible que
        le natif, pas plus. -->
   <div class="overlay" id="dialogue" hidden role="dialog" aria-modal="true" aria-labelledby="dialogueTitre">
     <div class="overlay-card dialogue-card">
@@ -373,11 +373,11 @@
         <!-- CE QUI EST DÉJÀ ACQUIS, dit avant ce qui manque.
              L'effet de progrès doté (Nunes & Drèze) : une tâche présentée comme
              déjà entamée est bien plus souvent terminée qu'une tâche à zéro. La
-             différence ici, c'est que le progrès est VRAI — la couche
+             différence ici, c'est que le progrès est VRAI - la couche
              déterministe couvre réellement emails, téléphones et IBAN sans
              qu'on déclare quoi que ce soit. On ne fabrique pas une jauge, on
              dit une chose exacte qu'on ne disait pas. -->
-        <p class="hint identity-acquis" data-i18n="deja_couverts_sans_rien_declarer">Emails, téléphones, IBAN : déjà repérés sans rien déclarer. Ton nom, lui, dépend d’un modèle — et un modèle rate parfois.</p>
+        <p class="hint identity-acquis" data-i18n="deja_couverts_sans_rien_declarer">Emails, téléphones, IBAN : déjà repérés sans rien déclarer. Ton nom, lui, dépend d’un modèle, et un modèle rate parfois.</p>
         <div id="identityFields"></div>
         <div class="controls identity-actions">
           <button class="btn-primary" id="identitySaveBtn" data-i18n="enregistrer">Enregistrer</button>

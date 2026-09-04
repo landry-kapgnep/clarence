@@ -1,4 +1,4 @@
-// Build du site vitrine — PROTOTYPE, rien n'est publié.
+// Build du site vitrine - PROTOTYPE, rien n'est publié.
 //
 // Le site réutilise le MÊME moteur que l'extension (src/engine/), sans copie :
 // c'est tout l'intérêt de la démo en ligne. Aucune API chrome.* n'est touchée,
@@ -6,7 +6,7 @@
 //
 // Seule la couche DÉTERMINISTE tourne ici (regex + validateurs) : elle est
 // instantanée et ne télécharge rien. La couche contextuelle demande 183 Mo de
-// modèle — c'est ce que l'extension apporte, et le site le dit au lieu de le
+// modèle - c'est ce que l'extension apporte, et le site le dit au lieu de le
 // masquer.
 import { build } from 'esbuild';
 import { cpSync, mkdirSync, rmSync, existsSync } from 'node:fs';
@@ -17,7 +17,7 @@ mkdirSync(`${OUT}/fonts`, { recursive: true });
 mkdirSync(`${OUT}/img`, { recursive: true });
 
 // Polices du projet, pas de CDN : le site doit pouvoir tourner hors-ligne et
-// ne charger AUCUNE ressource tierce — cohérent avec ce qu'il promet.
+// ne charger AUCUNE ressource tierce - cohérent avec ce qu'il promet.
 // Les fichiers variables portent des crochets dans leur nom ([wght]), illisibles
 // dans une url() CSS : on les renomme à la copie.
 const POLICES = [

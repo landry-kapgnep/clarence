@@ -1,10 +1,10 @@
-// Ce qu'on peut dire d'un candidat SANS le modèle — la matière première du
+// Ce qu'on peut dire d'un candidat SANS le modèle - la matière première du
 // filtre de précision.
 //
 // POURQUOI CE MODULE EXISTE. `vocabulaire.js` est un filtre à UNE
 // caractéristique et à seuil binaire : « tous les mots sont-ils au
 // dictionnaire ? ». Il attrape 6 faux positifs sur 9 et il a fallu lui retirer
-// cinq suffixes parce qu'ils mordaient sur des noms de lieux — signe qu'une
+// cinq suffixes parce qu'ils mordaient sur des noms de lieux - signe qu'une
 // règle écrite à la main atteint sa limite. Les signaux qui restent sont
 // individuellement FAIBLES (mesuré : « acoustique » se fragmente en 3 morceaux
 // comme « Kapgnep », et « Sorbonne » n'en fait qu'un) ; les combiner est
@@ -15,7 +15,7 @@
 // C'est la leçon d'`encodeImage` (fond des PNG rendu noir) : la décision sortie
 // en fonction pure est celle qu'on peut tester.
 //
-// INDÉPENDANCE DE LA LANGUE — c'est le critère qui a présidé au choix de chaque
+// INDÉPENDANCE DE LA LANGUE - c'est le critère qui a présidé au choix de chaque
 // caractéristique, parce que des listes statiques par langue ne passent pas
 // l'échelle :
 //   · le lexique est déjà multilingue (104 langues, vocabulaire mBERT) ;
@@ -25,7 +25,7 @@
 //     auto-calibré : le document sert de dictionnaire à lui-même ;
 //   · la fragmentation en sous-mots se mesure sur un vocabulaire multilingue ;
 //   · seuls les SUFFIXES sont propres au français, et ils sont isolés dans leur
-//     propre caractéristique pour qu'on puisse mesurer ce qu'ils apportent — et
+//     propre caractéristique pour qu'on puisse mesurer ce qu'ils apportent - et
 //     s'en passer le jour où la mesure dit qu'ils ne servent plus.
 import { auLexique, aSuffixeCommun, motsSignificatifs } from './vocabulaire.js';
 
@@ -49,7 +49,7 @@ const LIAISON = /[&·•/|—–+]/;
 // unité à la fois.
 //
 // `sousMots` (optionnel) : vocabulaire de sous-mots (WordPiece) permettant de
-// mesurer la fragmentation. Injecté plutôt qu'importé — il pèse ~1 Mo, et on ne
+// mesurer la fragmentation. Injecté plutôt qu'importé - il pèse ~1 Mo, et on ne
 // paie ce poids que si la mesure prouve qu'il gagne sa place.
 export function contexteDocument(texte, { sousMots } = {}) {
   const brut = String(texte || '');
@@ -65,13 +65,13 @@ export function contexteDocument(texte, { sousMots } = {}) {
   return { enMinuscules, comptes, sousMots };
 }
 
-// Nombre de morceaux WordPiece d'un mot, par segmentation gloutonne — le même
+// Nombre de morceaux WordPiece d'un mot, par segmentation gloutonne - le même
 // algorithme que le tokenizer du modèle. Un mot connu du vocabulaire fait 1
 // morceau ; un mot inventé se casse en plusieurs.
 //
 // ⚠️ SIGNAL FAIBLE, MESURÉ COMME TEL, et c'est pour ça qu'il est ici plutôt que
 // dans une règle : « Semantikmatch » 5 morceaux et « SafePrompt » 4 contre
-// « terrain » 1 — mais aussi « acoustique » 3 et « bénévole » 3 (noms communs)
+// « terrain » 1 - mais aussi « acoustique » 3 et « bénévole » 3 (noms communs)
 // contre « Sorbonne » 1 (nom propre). Il informe, il ne tranche pas.
 // ⚠️ NE PAS MINUSCULISER, et c'est un piège qui a été commis puis mesuré. Le
 // vocabulaire est CASED : « Unternehmen » y figure, « unternehmen » non. Une
@@ -79,11 +79,11 @@ export function contexteDocument(texte, { sousMots } = {}) {
 // pour le mot allemand le plus banal qui soit, alors qu'il est présent en une
 // seule pièce. La caractéristique mesurait la casse au lieu de la rareté.
 //
-// On segmente TROIS formes — surface, minuscule, et capitale initiale — et on
+// On segmente TROIS formes - surface, minuscule, et capitale initiale - et on
 // garde le MINIMUM. La troisième n'est pas un luxe : « SPRACHEN » en capitales
 // ne retrouve ni « SPRACHEN » ni « sprachen » au vocabulaire, seulement
 // « Sprachen ». Or les capitales d'un intitulé sont une convention de mise en
-// page, pas un mot différent — et les intitulés en capitales sont justement
+// page, pas un mot différent - et les intitulés en capitales sont justement
 // l'endroit où le sur-masquage se concentre.
 function segmenter(mot, sousMots) {
   let i = 0, n = 0;
@@ -133,7 +133,7 @@ export function caracteristiques(candidat, ctx) {
   const nbMinusculeAilleurs = mots.filter(m => ctx.enMinuscules.has(m.toLowerCase())).length;
 
   // Occurrences : la valeur la plus répétée d'un document est presque toujours
-  // un intitulé de rubrique, pas une identité. Échelle logarithmique — passer
+  // un intitulé de rubrique, pas une identité. Échelle logarithmique - passer
   // de 1 à 3 occurrences en dit bien plus que de 30 à 32.
   const occ = Math.max(...mots.map(m => ctx.comptes.get(m.toLowerCase()) || 1), 1);
 
@@ -142,11 +142,11 @@ export function caracteristiques(candidat, ctx) {
     : 1;
 
   return {
-    // — ce que dit le vocabulaire —
+    // - ce que dit le vocabulaire -
     partLexique: part(nbLexique, n),
     partSuffixe: part(nbSuffixe, n),
     aucunCourant: n && nbLexique + nbSuffixe === 0 ? 1 : 0,
-    // — ce que dit la forme —
+    // - ce que dit la forme -
     toutCapitales: valeur === valeur.toUpperCase() && /\p{Lu}/u.test(valeur) ? 1 : 0,
     casseDeTitre: n && mots.every(m => /^\p{Lu}/u.test(m)) ? 1 : 0,
     aChiffre: /\d/.test(valeur) ? 1 : 0,
@@ -154,10 +154,10 @@ export function caracteristiques(candidat, ctx) {
     nbMots: borne(n, 5),
     longueur: borne(valeur.length, 40),
     fragmentation: borne(morceauxMoyens - 1, 3),
-    // — ce que dit le document —
+    // - ce que dit le document -
     occurrences: borne(Math.log1p(occ - 1), Math.log1p(19)),
     minusculeAilleurs: part(nbMinusculeAilleurs, n),
-    // — ce que dit le modèle —
+    // - ce que dit le modèle -
     // En dernier, et volontairement : mesuré sur un vrai CV, le score seul ne
     // sépare RIEN (vraies 0,738 · fausses 0,648, et le meilleur score du
     // document est un faux positif). Il n'a sa place qu'en compagnie des autres.

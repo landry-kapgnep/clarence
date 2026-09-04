@@ -1,4 +1,4 @@
-// Adaptateur DOCX — Phase 3, la vraie difficulté : Word coupe une phrase sur
+// Adaptateur DOCX - Phase 3, la vraie difficulté : Word coupe une phrase sur
 // plusieurs <w:r> (runs) de façon arbitraire (correcteur, mise en forme,
 // suivi des modifications), donc "Jean Dupont" est souvent scindé entre deux
 // runs. Voir distributeEntitiesOverRuns (text-units.js) pour la redistribution.
@@ -23,7 +23,7 @@ import { stripCoreProps, stripAppProps, stripCommentParts } from './ooxml-metada
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 // footnotes/endnotes inclus : leurs <w:p> sont des paragraphes normaux (même
-// traitement), et les exclure serait une fuite SILENCIEUSE — une PII en note
+// traitement), et les exclure serait une fuite SILENCIEUSE - une PII en note
 // de bas de page ressortirait en clair sans que rien ne le signale.
 const PART_RE = /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/;
 
@@ -50,7 +50,7 @@ function removeCommentAnchors(doc) {
 // entier), pour pouvoir réécrire finement. <w:tab>/<w:br> comptent comme des
 // caractères atomiques '\t'/'\n' dans le texte reconstitué mais ne portent
 // jamais de nouveau texte en sortie (voir applyMask) : une entité PII ne
-// s'étend jamais sur une tabulation/un saut de ligne en pratique — le texte
+// s'étend jamais sur une tabulation/un saut de ligne en pratique - le texte
 // alentour serait de toute façon rompu comme signal de détection avant ça.
 function collectRuns(paragraphEl) {
   const runs = [];
@@ -107,7 +107,7 @@ function partNamesOf(zipLikeKeys) {
   return zipLikeKeys.filter(p => PART_RE.test(p));
 }
 
-// { units: [{ id: 'word/document.xml#p{i}', text }] } — paragraphes vides ignorés.
+// { units: [{ id: 'word/document.xml#p{i}', text }] } - paragraphes vides ignorés.
 export function extractTextUnits(buffer, opts = {}) {
   const DP = opts.DOMParser || globalThis.DOMParser;
   const zip = unzipSync(new Uint8Array(buffer));
@@ -123,7 +123,7 @@ export function extractTextUnits(buffer, opts = {}) {
 }
 
 // resultsById : Map<id, { entities }> (entities : offsets locaux + placeholder,
-// tels que retournés par anonymizeUnits — maskedText n'est pas utilisé ici,
+// tels que retournés par anonymizeUnits - maskedText n'est pas utilisé ici,
 // c'est la redistribution par run qui reconstruit le texte final).
 export async function applyMask(buffer, resultsById, opts = {}) {
   const DP = opts.DOMParser || globalThis.DOMParser;
@@ -151,7 +151,7 @@ export async function applyMask(buffer, resultsById, opts = {}) {
       // worker, cet adaptateur reste testable). Appliquée APRÈS le masquage et
       // AVANT la réécriture : c'est le seul point où l'on connaît à la fois le
       // texte final et le fragment dont il provient. Le paragraphe ENTIER est
-      // soumis d'un coup — fragment par fragment, le modèle n'aurait aucun
+      // soumis d'un coup - fragment par fragment, le modèle n'aurait aucun
       // contexte pour décider.
       let textes = newRuns.map(r => r.text);
       if (opts.compresserUnite) {

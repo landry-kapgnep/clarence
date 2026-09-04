@@ -3,7 +3,7 @@
 // détectées (offsets dans le texte reconstitué) sur ces runs d'origine.
 //
 // Cas d'usage : pour CSV/XLSX, runs = [{ id, text: uniteEntière }] (dégénère
-// en simple découpe). Pour DOCX, runs = les <w:r> réels d'un paragraphe —
+// en simple découpe). Pour DOCX, runs = les <w:r> réels d'un paragraphe -
 // Word coupe souvent un nom sur plusieurs runs de mise en forme différente.
 
 // runs: [{ id, text }] → { text, ranges: [{ id, start, end }] }

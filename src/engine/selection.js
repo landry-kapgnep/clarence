@@ -1,5 +1,5 @@
 // Sélection finale des entités à masquer : détections automatiques + masques
-// manuels + retraits utilisateur. Cette logique décide de ce qui est masqué —
+// manuels + retraits utilisateur. Cette logique décide de ce qui est masqué -
 // zéro tolérance, donc pure et testée (voir tests/unit/selection.test.mjs).
 import { resolveOverlaps } from './merge.js';
 import { estPlaceholder } from './masking.js';
@@ -22,7 +22,7 @@ export const entityKey = e => `${e.start}:${e.end}:${e.type}`;
 //     sans profil : [EMAIL_1]
 //     avec profil : landry.[PERSONNALISE_1].pro@gmail.com
 //
-// Déclarer son identité rendait donc son e-mail MOINS masqué — la
+// Déclarer son identité rendait donc son e-mail MOINS masqué - la
 // fonctionnalité censée mieux protéger protégeait moins, et précisément pour
 // l'utilisateur le plus prudent.
 //
@@ -47,11 +47,11 @@ export function selectActive(autoEntities, manualEntities, removedKeys) {
 }
 
 // ===== Masquage personnalisé (feature premium « choix des données à
-// masquer/conserver ») — logique pure, partagée par le mode texte et le mode
+// masquer/conserver ») - logique pure, partagée par le mode texte et le mode
 // fichier. Trois leviers : forcer des termes, en épargner, désactiver des types.
 
 // « Toujours masquer » : chaque terme devient une (des) entité(s) manuelle(s)
-// générée(s) par recherche littérale — rattrape les ratés du moteur (nom rare,
+// générée(s) par recherche littérale - rattrape les ratés du moteur (nom rare,
 // nom de code projet…). Une entité par occurrence ; le masquage propage ensuite.
 export function forcedMasks(text, terms) {
   const out = [];
@@ -91,7 +91,7 @@ function contientLesMots(botte, aiguille) {
 // que 6 appliqués. Cause : le modèle détecte « Joss Moorkens », « Rivas
 // Ginel », « Google Translate » comme entités ENTIÈRES, tandis que
 // l'utilisateur saisit le patronyme ou la marque seuls. Aucune égalité stricte
-// ne pouvait donc matcher, et la règle restait sans effet — sans que rien ne
+// ne pouvait donc matcher, et la règle restait sans effet - sans que rien ne
 // le signale, ce qui est le pire cas : on croit sa consigne appliquée.
 //
 // La comparaison se fait donc par SUITE DE MOTS ENTIERS, dans les deux sens :

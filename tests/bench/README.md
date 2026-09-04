@@ -1,4 +1,4 @@
-# Banc d'essai — à quelle distance sommes-nous d'une version publiable ?
+# Banc d'essai - à quelle distance sommes-nous d'une version publiable ?
 
 ```bash
 npm run bench            # moteur complet (GLiNER réellement chargé)
@@ -61,14 +61,14 @@ rappel structuré de 100 % à 76 %, en nommant les trois emails fuités.
 
 À noter : neutraliser `propagatedSpans` dans `anonymize-units.js` ne change
 **rien** au résultat. Ce n'est pas une faiblesse du banc mais un constat
-intéressant — GLiNER détecte si bien les valeurs isolées que la propagation
+intéressant - GLiNER détecte si bien les valeurs isolées que la propagation
 n'est plus le filet de sécurité qu'elle était avec le NER BERT.
 
 ## Ajouter un document
 
 1. déposer le document dans `corpus/` (ou un script `gen-*.mjs` s'il est
-   binaire — reproductible et committé, jamais un blob opaque) ;
+   binaire - reproductible et committé, jamais un blob opaque) ;
 2. l'annoter dans `verite-terrain.mjs` : `aMasquer` (par valeur, pas par
    position) et `aGarder` ;
 3. **valeurs fictives obligatoires** et reconnaissables comme telles (carte
-   `4242…`, domaines `.example`) — règle du projet.
+   `4242…`, domaines `.example`) - règle du projet.

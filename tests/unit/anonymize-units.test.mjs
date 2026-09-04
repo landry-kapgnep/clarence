@@ -142,7 +142,7 @@ test('une occurrence rattrapée par propagation est présente dans les ENTITÉS'
 
 test('la propagation ignore la casse (même entité écrite différemment)', async () => {
   // Cas réel : « meteojob » détecté dans une URL était masqué, « Meteojob »
-  // en début de ligne restait en clair — la même valeur, dans le même document.
+  // en début de ligne restait en clair - la même valeur, dans le même document.
   const pipe = async (t) => t.includes('www.meteojob.com')
     ? [{ entity: 'B-ORG', word: 'meteojob', score: 0.95 }]
     : [];
@@ -172,7 +172,7 @@ test('la propagation ne double JAMAIS une entité déjà détectée', async () =
 // caractéristiques (occurrences, « le mot apparaît-il ailleurs en minuscules
 // dans ce document ? ») n'existent qu'à l'échelle du document : si
 // l'orchestrateur oubliait ce second argument, le filtre continuerait de
-// tourner mais sur un contexte VIDE — il déciderait donc sur des chiffres
+// tourner mais sur un contexte VIDE - il déciderait donc sur des chiffres
 // faux, sans la moindre erreur pour le signaler. Exactement le genre de
 // dégradation silencieuse que ce projet paie cher.
 test('l’arbitre reçoit le texte COMBINÉ de toutes les unités', async () => {

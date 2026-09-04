@@ -1,15 +1,15 @@
-// « À quoi ressemble ce document ? » — pour PROPOSER le bon profil.
+// « À quoi ressemble ce document ? » - pour PROPOSER le bon profil.
 //
 // D'OÙ ÇA VIENT. L'idée d'origine était d'entraîner un modèle PAR FORMAT (un
 // pour les CV, un pour l'administratif, un pour le scolaire), parce qu'un même
 // mot doit être masqué ici et ignoré là. L'intuition est juste ; le modèle
 // n'est pas la bonne pièce pour la porter. Mesuré sur un vrai CV : les faux
-// positifs qui restent sont `IA`, `Ollama`, `BDD`, `NSI` — des acronymes d'un
+// positifs qui restent sont `IA`, `Ollama`, `BDD`, `NSI` - des acronymes d'un
 // seul mot qu'AUCUN signal contextuel ne distingue de `UNODC` ou `Twini`, qui
 // sont de vraies entités. Un modèle entraîné là-dessus apprendrait à jeter les
 // vraies, donc à fuir.
 //
-// Ce qui les traite déjà, et bien, c'est la liste éditable d'un PROFIL —
+// Ce qui les traite déjà, et bien, c'est la liste éditable d'un PROFIL -
 // c'est-à-dire exactement « masqué dans un CV, ignoré dans un dossier admin ».
 // La pièce qui manquait n'était donc pas un modèle : c'était de savoir QUEL
 // profil proposer. Ce module répond à ça, sans ML, en quelques signaux.
@@ -17,15 +17,15 @@
 // ⚠️ RÈGLE NON NÉGOCIABLE : CE MODULE NE DÉCIDE JAMAIS D'UN MASQUAGE. Il
 // propose un profil, que l'utilisateur accepte ou non. Une suggestion fausse
 // coûte un clic ; un masquage changé en silence casserait l'UX de relecture qui
-// est la colonne vertébrale du produit (cadrage §5). Il rend `null` — « je ne
-// sais pas » — plutôt que de deviner : une mauvaise suggestion est pire que pas
+// est la colonne vertébrale du produit (cadrage §5). Il rend `null` - « je ne
+// sais pas » - plutôt que de deviner : une mauvaise suggestion est pire que pas
 // de suggestion du tout.
 //
 // STRUCTURE D'ABORD, MOTS ENSUITE. Les signaux structurels (points de suite
 // d'un sommaire, paires libellé/valeur, densité de puces, plages de dates,
 // en-têtes d'e-mail) ne dépendent d'aucune langue et portent l'essentiel du
 // verdict. Les mots-clés complètent, et ils sont regroupés PAR LANGUE, déclarés
-// comme tels — ajouter une langue est alors un geste explicite et localisé, pas
+// comme tels - ajouter une langue est alors un geste explicite et localisé, pas
 // une réécriture.
 
 import { FORMATS, motsDeForme } from './vocabulaire-formats.js';
@@ -48,7 +48,7 @@ const PAIRE_LIBELLE = /^\s*[^\s:][^:\n]{1,28}(?::\s+|\s{2,})\S/;
 const PUCE = /^\s*[•·▪◦‣*·]|(?:\s[•·▪◦‣]\s)/;
 
 // Plage de dates « Janv. 2025 - Mars 2026 » : un CV en est fait, un formulaire
-// n'en a pas. Sans nom de mois — c'est la STRUCTURE année-tiret-année qui parle.
+// n'en a pas. Sans nom de mois - c'est la STRUCTURE année-tiret-année qui parle.
 const PLAGE_DE_DATES = /(?:1[89]|20)\d{2}\s*[-–—à]\s*(?:(?:1[89]|20)\d{2}|en cours|présent|aujourd)/i;
 
 // --- Marqueurs LEXICAUX : DÉRIVÉS de la source unique ---------------------
@@ -56,13 +56,13 @@ const PLAGE_DE_DATES = /(?:1[89]|20)\d{2}\s*[-–—à]\s*(?:(?:1[89]|20)\d{2}|e
 // Ils ne sont plus déclarés ici. Les mots qui reconnaissent un format sont
 // exactement ceux qu'il ne faut pas y masquer, donc ils vivent dans
 // `vocabulaire-formats.js`, d'où les profils les tirent aussi. Deux listes
-// auraient divergé — le motif que ce projet a déjà payé plusieurs fois.
+// auraient divergé - le motif que ce projet a déjà payé plusieurs fois.
 
 // NORMALISATION, et pourquoi elle n'est pas cosmétique.
 //
 // ⚠️ LE DÉFAUT QU'ELLE FERME. La première version testait `texte.includes(mot)`,
 // une SOUS-CHAÎNE sans frontière de mot. Le marqueur bancaire « rib » matchait
-// donc « contribuer », « distribution », « attribué » — mesuré : 0,8 point de
+// donc « contribuer », « distribution », « attribué » - mesuré : 0,8 point de
 // « bancaire » sur une note de service qui n'a rien de bancaire. Le verdict
 // n'était sauvé que par l'écart minimal, c'est-à-dire par chance.
 //
@@ -85,7 +85,7 @@ export const TYPES = ['cv', 'administratif', 'scolaire', 'bancaire', 'email'];
 // Écart minimal entre le premier et le second type pour oser proposer.
 //
 // POURQUOI UN ÉCART ET PAS UN SEUIL ABSOLU. Un document peut cocher beaucoup de
-// cases sans être caractéristique — un rapport de stage porte des mots de CV
+// cases sans être caractéristique - un rapport de stage porte des mots de CV
 // (« stage », « tuteur ») ET des mots de rapport. Ce qui autorise à proposer,
 // ce n'est pas « j'ai beaucoup de points » mais « un type se détache ». Sous
 // cet écart, on rend `null`, et l'utilisateur choisit lui-même.
@@ -94,7 +94,7 @@ export const ECART_MINIMAL = 1.5;
 const compterLignes = (lignes, motif) => lignes.filter(l => motif.test(l)).length;
 
 // `entites` (optionnel) : la liste déjà détectée. Sert UNIQUEMENT au type
-// bancaire, où la densité d'IBAN et de montants est le signal décisif — et il
+// bancaire, où la densité d'IBAN et de montants est le signal décisif - et il
 // est déterministe, validé mod-97, donc bien plus sûr que n'importe quel mot.
 export function analyserTypeDocument(texte, { entites = [] } = {}) {
   const brut = String(texte || '');

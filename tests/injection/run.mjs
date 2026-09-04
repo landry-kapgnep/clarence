@@ -1,26 +1,26 @@
-// Rappel mesuré par INJECTION CONTRÔLÉE — de la vraie prose, une vérité
+// Rappel mesuré par INJECTION CONTRÔLÉE - de la vraie prose, une vérité
 // terrain parfaite.
 //
 // LE PROBLÈME QUE ÇA RÉSOUT. Le banc mesure sur des documents que j'ai écrits :
 // biais structurel. Le harnais de non-régression mesure sur de vrais documents,
-// mais sans vérité terrain — il dit si la sortie BOUGE, jamais si elle est
+// mais sans vérité terrain - il dit si la sortie BOUGE, jamais si elle est
 // JUSTE. Il manquait une mesure de justesse sur de la langue authentique.
 //
 // LE PRINCIPE. On prend de la vraie prose (les documents de
 // tests/regression/corpus, déjà en place et ignorés par git), on y INJECTE des
 // PII synthétiques à des positions connues, et on vérifie qu'elles ressortent
-// masquées. La prose est authentique — ses tournures, sa ponctuation, ses
-// fragments d'extraction PDF — mais on sait exactement ce qui doit disparaître.
+// masquées. La prose est authentique - ses tournures, sa ponctuation, ses
+// fragments d'extraction PDF - mais on sait exactement ce qui doit disparaître.
 //
 // CE QUE ÇA NE MESURE PAS, et il faut le dire : le SUR-masquage. On ne connaît
 // la vérité que sur ce qu'on a injecté ; le reste du document garde son statut
 // inconnu. C'est donc une mesure de RAPPEL, pas de précision. Le sur-masquage
-// se mesure ailleurs — sur tests/manuel/tous-defauts.pdf, où la vérité terrain
+// se mesure ailleurs - sur tests/manuel/tous-defauts.pdf, où la vérité terrain
 // est écrite à la main dans les deux sens.
 //
 // POURQUOI DES PII SYNTHÉTIQUES ET RECONNAISSABLES. Règle du projet : jamais de
 // données de test qui ressemblent à du réel. Les valeurs ci-dessous sont
-// fabriquées — carte 4242…, domaines en .example, IBAN et NIR à structure
+// fabriquées - carte 4242…, domaines en .example, IBAN et NIR à structure
 // valide mais sans titulaire.
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

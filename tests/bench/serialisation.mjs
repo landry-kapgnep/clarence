@@ -1,4 +1,4 @@
-// PHASE 1 — Quelle forme de texte donner au modèle ?
+// PHASE 1 - Quelle forme de texte donner au modèle ?
 //
 //     node tests/bench/serialisation.mjs <document.pdf>
 //
@@ -6,13 +6,13 @@
 // dans un document, c'est la MISE EN PAGE : la section où l'on se trouve, le
 // libellé qui précède une valeur. Rien de tout ça n'est dans la suite de
 // tokens. Si on veut un jour l'entraîner à s'en servir, il faut d'abord décider
-// SOUS QUELLE FORME le lui écrire — et le générateur de la phase 2 devra
+// SOUS QUELLE FORME le lui écrire - et le générateur de la phase 2 devra
 // produire cette forme-là.
 //
 // ⚠️ CE QUE CE BANC NE DIT PAS. Ajouter du contexte DÉGRADE un modèle non
 // entraîné : mesuré sur une cellule de tableau, le libellé capte l'attention à
 // la place de la valeur (0,74 contre 0,15). Ce script mesure donc l'état
-// AVANT entraînement. Son but n'est pas d'élire la meilleure forme — c'est
+// AVANT entraînement. Son but n'est pas d'élire la meilleure forme - c'est
 // d'écarter celles qui cassent tout, et de chiffrer le point de départ.
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -49,7 +49,7 @@ const o = readFileSync(process.argv[2]);
 const { units } = await extractTextUnits(o.buffer.slice(o.byteOffset, o.byteOffset + o.byteLength));
 
 // Section courante : la dernière unité qui EST un intitulé. Approximation
-// assumée — dans un document à colonnes, l'ordre de lecture n'est pas toujours
+// assumée - dans un document à colonnes, l'ordre de lecture n'est pas toujours
 // celui des sections. C'est justement ce que le générateur, lui, saura poser
 // exactement.
 const avecSection = [];

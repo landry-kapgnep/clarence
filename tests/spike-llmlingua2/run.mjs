@@ -1,4 +1,4 @@
-// SPIKE LLMLingua-2 — compression de prompt par modèle, exécutée côté client.
+// SPIKE LLMLingua-2 - compression de prompt par modèle, exécutée côté client.
 //
 // `npm run spike:llmlingua2`
 //
@@ -8,14 +8,14 @@
 // d'un ordre de grandeur supérieur qu'ait donné la recherche.
 //
 // LE MODÈLE. `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`,
-// Apache 2.0 — MÊME architecture et MÊME tâche (classification de tokens) que
+// Apache 2.0 - MÊME architecture et MÊME tâche (classification de tokens) que
 // notre moteur BERT de repli, donc le worker existant saurait l'héberger. Il est
 // EXTRACTIF : il ne peut que supprimer des mots, jamais en écrire, donc aucune
 // hallucination possible (contrairement à un résumé par LLM).
 //
 // ⚠️ Le dépôt officiel n'a PAS de poids ONNX ; on passe par une conversion
 // communautaire dont la fiche ne déclare aucune licence. Développer avec, oui ;
-// publier avec, non — voir docs/spike-llmlingua2.md.
+// publier avec, non - voir docs/spike-llmlingua2.md.
 //
 // LABEL_1 = « garder ». La config n'a pas d'id2label : identifié par sonde, en
 // vérifiant que les mots pleins reçoivent LABEL_1 et les mots outils LABEL_0.
@@ -47,12 +47,12 @@ const pGarder = o => (o.entity === 'LABEL_1' ? o.score : 1 - o.score);
 // 1. Le modèle plafonne à 512 POSITIONS, pas 512 mots. En français un mot pèse
 //    souvent 2 à 3 sous-mots : au-delà, le pipeline TRONQUE sans rien dire.
 //
-// 2. Le pipeline OMET des tokens de sa sortie — vérifié sur le champ `index`,
+// 2. Le pipeline OMET des tokens de sa sortie - vérifié sur le champ `index`,
 //    qui saute (…6, 7, 9, 10…) : les tirets cadratins et quelques symboles
 //    disparaissent. Un alignement par curseur sur ce flux troué se désynchronise
 //    et ne s'en remet jamais. Conséquence observée avant correction : la moitié
 //    des mots d'un document sans score, donc conservés par sécurité, donc AUCUNE
-//    compression — en silence.
+//    compression - en silence.
 //
 // On retokenise donc soi-même pour obtenir le flux COMPLET, et on y recolle les
 // scores par `index`. Les tokens absents reçoivent 0 : s'ils accompagnent
@@ -107,7 +107,7 @@ const attendus = [...MASQUE.matchAll(/\[[A-Z_]+_\d+\]/g)].map(m => m[0]);
 const sansProtection = await brute(MASQUE);
 console.log(`  modèle SEUL          ${attendus.filter(p => sansProtection.includes(p)).length}/${attendus.length} placeholders intacts`);
 // Taux 0,1 : on demande la compression la plus agressive possible. Les
-// placeholders doivent survivre QUAND MÊME — c'est tout l'objet de la garde.
+// placeholders doivent survivre QUAND MÊME - c'est tout l'objet de la garde.
 const viaMoteur = await compresser(MASQUE, adapte, { taux: 0.1 });
 console.log(`  moteur, taux 0,1     ${attendus.filter(p => viaMoteur.texte.includes(p)).length}/${attendus.length} placeholders intacts`);
 console.log(`\n  sortie : ${viaMoteur.texte}`);

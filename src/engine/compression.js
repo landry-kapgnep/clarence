@@ -1,18 +1,18 @@
-// Compression de prompt — supprime les mots peu porteurs pour réduire le coût
+// Compression de prompt - supprime les mots peu porteurs pour réduire le coût
 // en tokens du texte collé dans un LLM.
 //
 // POURQUOI. Mesuré le 09/08 : il n'y a AUCUN gain en tokens du côté du texte
 // (conversion Markdown −1 %, en-têtes répétés 1 %, sommaire 1 %). Un modèle de
-// compression est le seul levier d'un ordre de grandeur supérieur — ×1,5 à ×5,9
+// compression est le seul levier d'un ordre de grandeur supérieur - ×1,5 à ×5,9
 // mesurés au spike (docs/spike-llmlingua2.md).
 //
 // EXTRACTIF, jamais génératif : on ne peut que SUPPRIMER des mots, jamais en
-// écrire. Aucune hallucination possible, contrairement à un résumé par LLM —
+// écrire. Aucune hallucination possible, contrairement à un résumé par LLM -
 // c'est ce qui rend l'idée compatible avec le principe du cadrage §8.
 //
 // TROIS CONTRAINTES PRODUIT (docs/notes-techniques.md, posées avant tout code) : option
 // explicite jamais par défaut, prose appauvrie annoncée, et transformation
-// d'EXPORT — on relit le texte masqué, lisible, et la compression ne touche que
+// d'EXPORT - on relit le texte masqué, lisible, et la compression ne touche que
 // ce qui part au presse-papiers. Ce module ne fait que la transformation ; c'est
 // à l'appelant de respecter les deux autres.
 //
@@ -20,12 +20,12 @@
 // testable en Node sans charger 170 Mo.
 
 // NOTRE PROPRE CONVERSION des poids Apache 2.0 de Microsoft, sous une licence
-// explicite — bloquant de publication levé le 15/08/2026.
+// explicite - bloquant de publication levé le 15/08/2026.
 //
 // Le dépôt officiel `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`
 // n'expose que du PyTorch, or le navigateur ne sait exécuter que de l'ONNX. Le
 // développement s'appuyait sur une conversion communautaire dont la fiche ne
-// déclarait AUCUNE licence — donc « tous droits réservés » par défaut, et
+// déclarait AUCUNE licence - donc « tous droits réservés » par défaut, et
 // impossible à redistribuer sur le Chrome Web Store.
 //
 // La nôtre est MESURÉE meilleure, pas simplement conforme : écart nul en fp32
@@ -35,7 +35,7 @@
 // reproduire, docs/spike-llmlingua2.md pour les chiffres.
 //
 // Rappel : télécharger un modèle est une requête ENTRANTE. Rien du texte de
-// l'utilisateur ne sort jamais du navigateur — le principe du projet tient.
+// l'utilisateur ne sort jamais du navigateur - le principe du projet tient.
 export const COMPRESSION_MODEL = 'clarenceorg/llmlingua-2-onnx';
 
 // ── Découpage en MOTS, et pourquoi pas en tokens ───────────────────────────
@@ -44,8 +44,8 @@ export const COMPRESSION_MODEL = 'clarenceorg/llmlingua-2-onnx';
 // espaces transforme « [PERSONNE_1] » en « [ PERSONNE _ 1 ] », ce qui détruit
 // le placeholder qu'on venait justement de conserver.
 //
-// En décidant au niveau du MOT — une suite de caractères non blancs du texte
-// d'origine — un placeholder est UN mot : le garder le garde entier, sans
+// En décidant au niveau du MOT - une suite de caractères non blancs du texte
+// d'origine - un placeholder est UN mot : le garder le garde entier, sans
 // aucun recollage. La ponctuation attachée suit le mot, ce qui est le
 // comportement voulu (« acceptée. » se garde avec son point).
 export function motsDuTexte(texte) {
@@ -58,12 +58,12 @@ export function motsDuTexte(texte) {
   return mots;
 }
 
-// ── Opérateurs logiques — conservation FORCÉE ──────────────────────────────
+// ── Opérateurs logiques - conservation FORCÉE ──────────────────────────────
 //
 // LE DÉFAUT QUE ÇA CORRIGE, et il est disqualifiant sans ça : le modèle
 // supprime des mots qui portent toute la polarité de la phrase. Mesuré au
 // spike, « Le patient n'est pas allergique à la pénicilline mais l'est aux
-// sulfamides » ressortait « patient allergique à pénicilline sulfamides » —
+// sulfamides » ressortait « patient allergique à pénicilline sulfamides » -
 // le LLM lit exactement l'inverse.
 //
 // C'est le pire cas possible pour cet outil : l'erreur est SILENCIEUSE et
@@ -71,7 +71,7 @@ export function motsDuTexte(texte) {
 // compressé. Une fuite se voit à la relecture ; une négation retournée, non.
 //
 // UNE LISTE STATIQUE EST ADMISSIBLE ICI, et seulement parce que la classe est
-// FERMÉE — même règle que honorifics.js : une langue compte une poignée de
+// FERMÉE - même règle que honorifics.js : une langue compte une poignée de
 // négations et de connecteurs et n'en invente pas, contrairement aux noms, aux
 // entreprises ou aux technos qu'on refuse catégoriquement de lister.
 // NE PAS ÉTENDRE cette liste à des mots « importants » : ce serait rouvrir la
@@ -140,11 +140,11 @@ export function scoresParMot(mots, tokens) {
 // ── Adaptation du modèle : deux pièges SILENCIEUX ──────────────────────────
 //
 // Ces deux fonctions sont pures et testées ici parce que le reste de
-// l'adaptation vit dans le worker, hors de portée des tests — et que les deux
+// l'adaptation vit dans le worker, hors de portée des tests - et que les deux
 // pannes qu'elles évitent ne lèvent AUCUNE erreur : elles produisent simplement
 // un texte non compressé, en silence.
 
-// PIÈGE 1 — le modèle plafonne à 512 POSITIONS, pas 512 mots. En français un mot
+// PIÈGE 1 - le modèle plafonne à 512 POSITIONS, pas 512 mots. En français un mot
 // pèse souvent 2 à 3 sous-mots : au-delà, le pipeline TRONQUE sans rien dire, le
 // flux de tokens s'épuise, et tout mot non aligné est conservé par sécurité.
 // Résultat : aucune compression, aucun message.
@@ -156,10 +156,10 @@ export function decouperEnLots(mots, taille = MOTS_PAR_LOT) {
   return lots;
 }
 
-// PIÈGE 2 — le pipeline OMET des tokens de sa sortie. Vérifié sur le champ
+// PIÈGE 2 - le pipeline OMET des tokens de sa sortie. Vérifié sur le champ
 // `index`, qui saute (…6, 7, 9, 10…) : tirets cadratins et quelques symboles
 // disparaissent. Un curseur qui avance sur ce flux troué se désynchronise et ne
-// s'en remet jamais — la moitié des mots d'un document se retrouvait sans score.
+// s'en remet jamais - la moitié des mots d'un document se retrouvait sans score.
 //
 // On reconstruit donc le flux COMPLET à partir de la tokenisation faite
 // soi-même, et on y recolle les scores par `index`. Un token absent reçoit 0 :
@@ -181,7 +181,7 @@ export function recollerScores(tokens, sorties) {
 //
 // `taux` est un taux de CONSERVATION visé (0,3 = garder ~30 % des mots), pas un
 // seuil brut. Le spike a montré pourquoi : au seuil naturel du modèle, le taux
-// est SUBI et varie de ×1,25 à ×5,89 selon le document — sur l'un d'eux il ne
+// est SUBI et varie de ×1,25 à ×5,89 selon le document - sur l'un d'eux il ne
 // restait que 47 mots sur 515, ce qui est intenable. L'utilisateur doit choisir
 // son compromis, pas le découvrir.
 //
@@ -197,7 +197,7 @@ export async function compresser(texte, pipeline, options = {}) {
 // POURQUOI CETTE FORME. Les formats qui préservent la mise en page (DOCX, PDF
 // reconstruit) ne réécrivent pas un texte : ils redessinent des FRAGMENTS à
 // leurs positions d'origine. Compresser « le texte du document » ne leur sert à
-// rien — il leur faut savoir, pour chaque fragment, quels mots survivent.
+// rien - il leur faut savoir, pour chaque fragment, quels mots survivent.
 //
 // Sans ça, l'option ne pouvait exister que sur les sorties texte, ce qui la
 // vide de son intérêt : l'utilisateur veut moins de tokens dans le fichier
@@ -236,7 +236,7 @@ export async function compresserSegments(segments, pipeline, { taux = 0.5 } = {}
   for (const c of candidats.slice(0, budget)) garde[c.i] = true;
 
   // Chaque mot retenu retourne dans SON segment, retrouvé par sa position. Un
-  // segment dont tous les mots sont tombés rend une chaîne vide — le fragment
+  // segment dont tous les mots sont tombés rend une chaîne vide - le fragment
   // ne sera simplement pas dessiné.
   const sortie = segments.map(() => []);
   let retenus = 0;
@@ -258,14 +258,14 @@ function resultat(avant, segments, motsAvant, motsApres, motsSansScore = 0) {
     motsAvant,
     motsApres,
     // NOMBRE DE MOTS SANS SCORE, remonté exprès. Un mot non aligné est
-    // conservé — c'est le bon sens de l'échec — mais si le flux de tokens
+    // conservé - c'est le bon sens de l'échec - mais si le flux de tokens
     // s'épuise (pipeline qui tronque au-delà de 512 positions, par exemple),
     // TOUT est conservé et la compression ne mord plus, en silence. Sans ce
     // compteur, l'appelant croit compresser et ne compresse rien : exactement
     // le cas rencontré au spike sur un document de 328 mots.
     motsSansScore,
     // Estimation prudente et assumée : ~4 caractères par token. Le cadrage §10
-    // impose un ordre de grandeur, jamais un chiffre garanti — le vrai compte
+    // impose un ordre de grandeur, jamais un chiffre garanti - le vrai compte
     // dépend du tokeniseur du modèle destinataire, qu'on ne connaît pas.
     tokensAvant: Math.round(avant.length / 4),
     tokensApres: Math.round(apres.length / 4)

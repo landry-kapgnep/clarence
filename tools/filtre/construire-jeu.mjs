@@ -1,4 +1,4 @@
-// FILTRE DE PRÉCISION, étape 1 — fabriquer le jeu d'entraînement.
+// FILTRE DE PRÉCISION, étape 1 - fabriquer le jeu d'entraînement.
 //
 //     node tools/filtre/construire-jeu.mjs [nbDocuments] > jeu.jsonl
 //
@@ -10,7 +10,7 @@
 // reconnaître LES ERREURS DE NOTRE PROPRE DÉTECTEUR.
 //
 // D'où trois exigences de fidélité, qui font la valeur de ce script :
-//   1. le vrai modèle, la vraie variante de poids, le vrai découpeur corrigé —
+//   1. le vrai modèle, la vraie variante de poids, le vrai découpeur corrigé -
 //      exactement comme le banc (un pipeline simulé ne mesurerait rien) ;
 //   2. la détection UNITÉ PAR UNITÉ, comme `anonymizeUnits` en production, et
 //      pas sur le document entier (mesuré : le texte combiné perd les noms) ;
@@ -18,9 +18,9 @@
 //      apprendrait à écarter des faux positifs que l'arbitre a déjà retirés,
 //      et surestimerait son propre apport.
 //
-// DES DOCUMENTS, PAS DES LIGNES. Deux des caractéristiques les plus utiles —
+// DES DOCUMENTS, PAS DES LIGNES. Deux des caractéristiques les plus utiles -
 // combien de fois la valeur revient, et si ses mots apparaissent ailleurs en
-// minuscules — n'existent qu'à l'échelle du document. Une ligne isolée les
+// minuscules - n'existent qu'à l'échelle du document. Une ligne isolée les
 // rendrait toutes les deux nulles, et le filtre s'entraînerait sur un signal
 // qu'il ne verrait jamais en production.
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
@@ -42,7 +42,7 @@ const DECOUPEUR_UNICODE = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
 // Le vocabulaire de sous-mots sert à mesurer la fragmentation. Il est OPTIONNEL
 // et hors dépôt : s'il manque, la caractéristique vaut 0 partout et
 // l'entraînement le dira (poids nul). C'est justement la question qu'on veut
-// trancher — vaut-elle le mégaoctet qu'elle coûterait à embarquer ?
+// trancher - vaut-elle le mégaoctet qu'elle coûterait à embarquer ?
 function chargerSousMots() {
   const chemin = join(RACINE, 'tools', 'llmlingua2-onnx', 'vocab.txt');
   if (!existsSync(chemin)) {
@@ -107,7 +107,7 @@ const tirer = (a) => a[Math.floor(Math.random() * a.length)];
 
 // ⚠️ LE PRÉFIXE « [SECTION] » EST RETIRÉ, et c'est un point de fidélité, pas un
 // détail. Le générateur le pose parce que l'affinage de GLiNER (phase 3) en a
-// besoin — forme choisie par mesure. Mais l'inférence D'AUJOURD'HUI ne préfixe
+// besoin - forme choisie par mesure. Mais l'inférence D'AUJOURD'HUI ne préfixe
 // rien : un intitulé y est une unité à part, marquée `structurel` et épargnée
 // par la passe contextuelle. Le garder ferait apprendre au filtre des faux
 // positifs que l'utilisateur ne rencontre jamais (« EXPÉRIENCES
@@ -127,7 +127,7 @@ function document() {
     });
   }
   // Garde-fou : après décalage, chaque span doit encore se relire EXACTEMENT.
-  // Un décalage silencieux étiquetterait le jeu à côté, et rien ne le dirait —
+  // Un décalage silencieux étiquetterait le jeu à côté, et rien ne le dirait -
   // même raisonnement que le garde-fou d'alignement du générateur.
   for (const u of unites) {
     for (const sp of u.spans) {
@@ -145,7 +145,7 @@ function document() {
 // Un candidat est VRAI s'il recouvre une entité réellement placée par le
 // générateur. On accepte le recouvrement partiel : « Fontaine » proposé sur
 // « Rose Fontaine » reste une vraie détection (frontière imparfaite, pas faux
-// positif) — un critère d'égalité stricte compterait comme erreurs des cas où
+// positif) - un critère d'égalité stricte compterait comme erreurs des cas où
 // le masquage protège bel et bien la donnée.
 //
 // ⚠️ N'IMPORTE QUEL TYPE D'ENTITÉ COMPTE, pas seulement celui du candidat. Ce
@@ -153,7 +153,7 @@ function document() {
 // « faut-il masquer ici ? ». Un nom vu comme ENTREPRISE reste masqué, donc
 // protégé ; le filtre ne doit surtout pas apprendre à le retirer. Une première
 // version ne retenait que PER/ORG/LOC et étiquetait donc « faux » un candidat
-// posé sur un e-mail ou une date de naissance — lui apprenant à démasquer.
+// posé sur un e-mail ou une date de naissance - lui apprenant à démasquer.
 const TYPES_CANDIDATS = new Set(['PER', 'ORG', 'LOC']);
 
 function estVrai(candidat, spans) {

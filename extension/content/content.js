@@ -1,13 +1,13 @@
 // Content script : badge + bouton flottant ouvrant Clarence dans un panneau
 // iframe. Ne lit RIEN de la page. Deux messages acceptés depuis l'iframe :
 // sa hauteur de contenu (dimensionnement sans scroll) et une demande de
-// livraison du fichier anonymisé DANS la page (voir deliverFileToPage — le
+// livraison du fichier anonymisé DANS la page (voir deliverFileToPage - le
 // glisser-déposer natif cross-frame vers un site tiers s'est avéré peu fiable
 // après deux tentatives, cette méthode contourne le glisser entièrement).
 chrome.runtime.sendMessage({ clarence: 'ai-site' });
 
 // Injecte un fichier (déjà anonymisé, reçu de l'iframe) directement dans la
-// page hôte — sans passer par un geste de glisser natif, peu fiable entre
+// page hôte - sans passer par un geste de glisser natif, peu fiable entre
 // une iframe d'extension et le JS propriétaire d'un site tiers.
 // Deux méthodes, dans l'ordre de fiabilité :
 //  1. Assigner directement .files d'un <input type="file"> trouvé sur la
@@ -15,7 +15,7 @@ chrome.runtime.sendMessage({ clarence: 'ai-site' });
 //     utilisateur ni d'un événement "trusted"). On NE filtre PAS sur la
 //     visibilité : beaucoup de sites cachent leur input natif (display:none)
 //     derrière un bouton stylé, c'est justement la cible qu'on veut.
-//  2. Repli : un événement 'drop' synthétique sur le corps de la page — best
+//  2. Repli : un événement 'drop' synthétique sur le corps de la page - best
 //     effort, certains sites l'ignorent s'ils vérifient event.isTrusted.
 // Limite assumée : si le site ne rend son input qu'après ouverture de son
 // propre menu "joindre un fichier", rien n'est trouvable tant que l'utilisateur
@@ -25,7 +25,7 @@ function deliverFileToPage(blob, name) {
   const dt = new DataTransfer();
   dt.items.add(file);
 
-  // Tous les <input type=file> de la page (visibles ou cachés — les sites
+  // Tous les <input type=file> de la page (visibles ou cachés - les sites
   // cachent souvent le vrai input derrière un bouton stylé). On préfère celui
   // dont l'attribut accept correspond au type du fichier, sinon le dernier
   // (souvent le plus récemment monté = l'actif), sinon n'importe lequel.
@@ -42,7 +42,7 @@ function deliverFileToPage(blob, name) {
     return { delivered: true, method: 'input', inputs: inputs.length };
   }
 
-  // Repli : drop synthétique. Best effort — beaucoup de sites l'ignorent
+  // Repli : drop synthétique. Best effort - beaucoup de sites l'ignorent
   // (event.isTrusted === false). Signalé comme non fiable dans le résultat.
   document.body.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
   return { delivered: false, method: 'drop-fallback', inputs: 0 };
@@ -147,7 +147,7 @@ btn.style.cursor = 'pointer';
   // L'extension avait DEUX entrées qui n'affichaient pas la même chose : ce
   // panneau, et une popup native ouverte par l'icône de la barre d'outils. La
   // même page, mais l'une contrainte par la fenêtre de Chrome (plafonnée à
-  // 600 px de haut, non redimensionnable) et l'autre libre — donc deux mises en
+  // 600 px de haut, non redimensionnable) et l'autre libre - donc deux mises en
   // page pour un même outil, et un utilisateur qui se demande laquelle est la
   // vraie. `default_popup` a été retiré du manifeste : l'icône passe désormais
   // par ici.

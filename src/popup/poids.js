@@ -1,4 +1,4 @@
-// Poids de TRAITEMENT d'un fichier — « Léger / Moyen / Lourd / Très lourd ».
+// Poids de TRAITEMENT d'un fichier - « Léger / Moyen / Lourd / Très lourd ».
 //
 // POURQUOI PAS UNE ESTIMATION DE TEMPS. Un temps annoncé est une PROMESSE, et
 // on ne peut pas la tenir : il dépend de la machine, de la présence de WebGPU,
@@ -9,7 +9,7 @@
 // démenti, et il déplace utilement la responsabilité : l'utilisateur voit ce
 // qu'il soumet et sait à quoi s'attendre avant de cliquer.
 //
-// POURQUOI PAS LA TAILLE EN OCTETS — le piège principal. Ce qui coûte, c'est la
+// POURQUOI PAS LA TAILLE EN OCTETS - le piège principal. Ce qui coûte, c'est la
 // quantité de TEXTE à soumettre au modèle (« ~37 ms fixes + k × longueur », par
 // unité et par groupe de labels). Or :
 //   - un PDF de 5 Mo rempli d'images se traite en quelques secondes ;
@@ -43,7 +43,7 @@ const SEUILS_CARACTERES = [
   [150000, 'lourd']
 ];
 
-// Seuils en OCTETS — repli le moins fiable, réservé aux formats compressés
+// Seuils en OCTETS - repli le moins fiable, réservé aux formats compressés
 // (DOCX, XLSX) dont on ne connaît pas le volume de texte sans les ouvrir.
 const SEUILS_OCTETS = [
   [40 * 1024, 'leger'],

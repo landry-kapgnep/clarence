@@ -1,5 +1,5 @@
 // Moteur GLiNER : contrat de sortie, groupes disjoints, seuil, chevauchements.
-// Pipeline SIMULÉ (comme ner-chunk.test.mjs) — aucun modèle chargé ici.
+// Pipeline SIMULÉ (comme ner-chunk.test.mjs) - aucun modèle chargé ici.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { detectGliner, GROUPES, GLINER_THRESHOLD, arbitrerFauxPositifs, desaccentuer, adoucirCasse, estPronom } from '../../src/engine/gliner.js';
@@ -41,7 +41,7 @@ test('les labels des trois groupes sont mappés vers les bons types', async () =
   ];
   // La valeur factice doit être plausible pour TOUS les types testés (voir
   // estPlausiblePourLeType) : une majuscule pour PER/ORG/LIEU, et une vraie
-  // FORME DE DATE pour DATE_NAISSANCE — « un chiffre » ne suffit plus depuis
+  // FORME DE DATE pour DATE_NAISSANCE - « un chiffre » ne suffit plus depuis
   // que « ANNEXE 2 » et « 2021 » passaient pour des dates de naissance.
   // Ce test porte sur le mapping label→type, pas sur la forme.
   const factice = 'C1988-03-14';
@@ -54,7 +54,7 @@ test('les labels des trois groupes sont mappés vers les bons types', async () =
 });
 
 // --- Forme d'une DATE DE NAISSANCE. « Contient un chiffre » laissait passer
-// « ANNEXE 2 », « 2021 » et « 12 mars » sur tous-defauts.pdf — du sur-masquage
+// « ANNEXE 2 », « 2021 » et « 12 mars » sur tous-defauts.pdf - du sur-masquage
 // qui abîme le texte sans rien protéger.
 //
 // Le contrôle est STRUCTUREL et sans liste de mois : le projet doit rester
@@ -76,7 +76,7 @@ for (const [valeur, garde] of [
   });
 }
 
-test('chaque label déclaré possède un type — aucun placeholder [undefined_N] possible', () => {
+test('chaque label déclaré possède un type - aucun placeholder [undefined_N] possible', () => {
   for (const g of GROUPES) {
     for (const label of g.labels) {
       assert.ok(g.types[label], `label sans type : ${label}`);
@@ -111,7 +111,7 @@ test('un label inconnu du groupe est ignoré (jamais d\'entité sans type)', asy
 });
 
 test('valeur ISOLÉE sans contexte : le cas que le pipeline figé ne sait pas traiter', async () => {
-  // Cellule de tableau nue — mesuré à 0,59 sur le vrai modèle.
+  // Cellule de tableau nue - mesuré à 0,59 sur le vrai modèle.
   const pipe = fakePipe({ '1988-03-14': [{ label: 'date of birth', len: 10, score: 0.59 }] });
   const [e] = await detectGliner('1988-03-14', pipe);
   assert.equal(e.type, 'DATE_NAISSANCE');
@@ -209,7 +209,7 @@ test('progression : un tick par passe RÉELLEMENT exécutée', async () => {
 
 test('progression : le total EXCLUT les passes sautées par le pré-filtre', async () => {
   // Sans ce calcul exact, `total` compterait chunks × groupes et la barre
-  // n'atteindrait jamais 100 % — défaut introduit par le pré-filtre lui-même.
+  // n'atteindrait jamais 100 % - défaut introduit par le pré-filtre lui-même.
   const ticks = [];
   await detectGliner('texte sans majuscule ni chiffre', async () => [], { onProgress: p => ticks.push(p) });
   assert.ok(ticks.length > 0, 'au moins une passe doit tourner');
@@ -245,7 +245,7 @@ test('le groupe identité a un seuil PROPRE, plus bas que le défaut', () => {
   const identite = GROUPES.find(g => g.labels.includes('person'));
   assert.ok(identite.seuil < GLINER_THRESHOLD, 'le groupe identité doit surcharger le seuil');
   // Borne HAUTE, re-mesurée sur les poids fp16 le 06/08/2026 : le titre de CV
-  // isolé « LANDRY KAPGNEP » sort à 0,494 (contre 0,47 + 0,36 en int8 — le fp16
+  // isolé « LANDRY KAPGNEP » sort à 0,494 (contre 0,47 + 0,36 en int8 - le fp16
   // relève le score ET fusionne les deux spans en un seul). C'est la plus basse
   // vraie valeur du corpus : le seuil doit rester dessous, sinon le nom fuit.
   assert.ok(identite.seuil < 0.494,
@@ -350,7 +350,7 @@ test('une vraie date nue reste détectée', async () => {
 });
 
 // --- « Amandine ROUSSEAU » (rapport-fr.txt) : le cas qui avait fait descendre
-// le seuil à 0,38 en int8, où il ne sortait qu'à 0,364 / 0,398 — jamais
+// le seuil à 0,38 en int8, où il ne sortait qu'à 0,364 / 0,398 - jamais
 // proposé comme PER, donc fuite (et non un défaut de fusion : merge.js gère
 // déjà le cas où « ROUSSEAU » matche le motif BIC).
 //
@@ -369,7 +369,7 @@ test('un nom réel qu\'un seuil trop haut avait déjà fait fuir est masqué', a
 
 // --- Borne BASSE, re-mesurée en fp16 : « CERTIFICAT DE SCOLARITE » (titre en
 // capitales de certificat-fr.txt) sort à 0,469 en ORG quand on le soumet SEUL,
-// contre 0,36 en PER sous int8. En contexte réel il reste sous le seuil — le
+// contre 0,36 en PER sous int8. En contexte réel il reste sous le seuil - le
 // banc donne 100 % de termes préservés sur ce document à 0,46.
 //
 // La marge est donc MINCE (0,469 isolé contre un seuil à 0,46) : ce test fige
@@ -461,7 +461,7 @@ test('arbitrage : une valeur n\'est jugée QU\'UNE fois même répétée', async
 // --- PASSE DÉSACCENTUÉE (P10) --------------------------------------------
 // L'invariant porteur est la LONGUEUR. Les deux passes partagent un seul
 // repère d'offsets : si desaccentuer décalait d'un caractère, on masquerait la
-// mauvaise sous-chaîne — corruption silencieuse, la pire classe de bug ici.
+// mauvaise sous-chaîne - corruption silencieuse, la pire classe de bug ici.
 
 test('desaccentuer : longueur strictement préservée', () => {
   for (const s of [
@@ -543,7 +543,7 @@ test('adoucirCasse : garde l\'initiale, n\'adoucit que la suite', () => {
   assert.equal(adoucirCasse('Sébastien PIEVE'), 'Sébastien Pieve');
   assert.equal(adoucirCasse('BIC AGRIFRPP882'), 'Bic Agrifrpp882');
   // MOINS DE TROIS LETTRES : épargné. « IL » et « A » restent intacts, seul
-  // « DIT » est adouci — la borne évite de brouiller les sigles courts, que le
+  // « DIT » est adouci - la borne évite de brouiller les sigles courts, que le
   // déterministe traite déjà.
   assert.equal(adoucirCasse('IL A DIT'), 'IL A Dit');
   assert.equal(adoucirCasse('rien à faire ici'), 'rien à faire ici');
@@ -641,7 +641,7 @@ test('une vraie date de naissance passe toujours', async () => {
 // --- UN TYPE DÉSACTIVÉ NE DOIT PAS ÉVINCER UN TYPE ACTIF ------------------
 //
 // FUITE MESURÉE SUR UN VRAI CV (02/09/2026). L'utilisateur avait décoché
-// ETABLISSEMENT mais laissé SANTE — or les deux vivent dans le MÊME groupe de
+// ETABLISSEMENT mais laissé SANTE - or les deux vivent dans le MÊME groupe de
 // labels, et le saut de groupe n'écarte une passe que si TOUS ses types sont
 // désactivés. Le groupe tournait donc, sortait « ETABLISSEMENT : Sorbonne Paris
 // Nord », ce span évinçait le « LIEU : Sorbonne Paris Nord » du groupe identité

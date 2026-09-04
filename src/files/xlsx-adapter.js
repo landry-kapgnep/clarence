@@ -1,10 +1,10 @@
-// Adaptateur XLSX — Phase 2. Lecture/écriture des cellules via SheetJS
-// (Community Edition, installée depuis cdn.sheetjs.com — la version publiée
+// Adaptateur XLSX - Phase 2. Lecture/écriture des cellules via SheetJS
+// (Community Edition, installée depuis cdn.sheetjs.com - la version publiée
 // sur le registre npm porte des vulnérabilités connues sans correctif).
 // Nettoyage des métadonnées via ooxml-metadata.js (partagé avec DOCX).
 //
 // Limite assumée : le texte enrichi (plusieurs styles dans une même cellule)
-// est aplati en un seul remplacement — pas de découpage par run comme pour
+// est aplati en un seul remplacement - pas de découpage par run comme pour
 // DOCX, où c'est le cas courant plutôt que l'exception.
 import * as XLSX from 'xlsx';
 import { unzipSync, zipSync, strToU8, strFromU8 } from 'fflate';
@@ -15,7 +15,7 @@ function splitId(id) {
   return [id.slice(0, idx), id.slice(idx + 1)];
 }
 
-// { units: [{ id: 'Feuille!A1', text }] } — seules les cellules de type
+// { units: [{ id: 'Feuille!A1', text }] } - seules les cellules de type
 // chaîne (t === 's'), sans formule, non vides, sont retenues. Nombres, dates,
 // booléens et formules ne sont jamais touchés (risque de corruption sinon).
 // Numéro de ligne d'une adresse de cellule (« B12 » → 12).
@@ -59,7 +59,7 @@ export function extractTextUnits(arrayBuffer) {
   return { units };
 }
 
-// resultsById : Map<id, { maskedText }> — ré-analyse le classeur depuis zéro.
+// resultsById : Map<id, { maskedText }> - ré-analyse le classeur depuis zéro.
 export function applyMask(arrayBuffer, resultsById) {
   const wb = XLSX.read(arrayBuffer, { type: 'array' });
   for (const [id, { maskedText }] of resultsById) {

@@ -90,7 +90,7 @@ test('les noms de famille à trait d\'union sont étendus au-delà du tiret (rat
 
 test('un fragment PER tronqué en plein mot est recalé au début du mot (pas de « A[PERSONNE] »)', async () => {
   // Simule la reconstruction WordPiece qui démarre au milieu ("mandine" pour
-  // "Amandine") — le recalage doit récupérer le "A" initial.
+  // "Amandine") - le recalage doit récupérer le "A" initial.
   const fakePipe = async () => [{ entity: 'B-PER', word: 'mandine', score: 0.9 }];
   const out = await detectNER('Mme Amandine arrive.', fakePipe);
   assert.equal(out[0].value, 'Amandine');

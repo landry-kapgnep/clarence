@@ -1,10 +1,10 @@
-// Civilités (M., Mrs, Herr, Sr.…) — source de vérité UNIQUE, partagée par la
+// Civilités (M., Mrs, Herr, Sr.…) - source de vérité UNIQUE, partagée par la
 // détection déterministe (regex-detect.js) et la pseudonymisation
 // (pseudonyms.js). Sans ça les deux divergeaient : le motif regex ne
 // connaissait que le français, si bien que « Mr Smith » n'était pas détecté
 // en déterministe, pendant que pseudonyms.js avait sa propre liste bricolée.
 //
-// POURQUOI UNE LISTE STATIQUE EST ACCEPTABLE ICI — et seulement ici.
+// POURQUOI UNE LISTE STATIQUE EST ACCEPTABLE ICI - et seulement ici.
 // Les civilités forment une classe FERMÉE : une langue en compte une poignée
 // et n'en invente pas. C'est l'inverse d'une liste de noms, d'entreprises ou
 // de technos, qui sont des classes ouvertes et périment aussitôt écrites
@@ -16,7 +16,7 @@
 // « Miss », « Frau », « Don » sont aussi de vrais patronymes. Traiter un
 // composant comme une civilité au seul motif qu'il est dans la liste
 // laisserait fuir le nom de quelqu'un qui s'appelle réellement Miss.
-// D'où `isHonorificAt` : la POSITION tranche, pas la seule appartenance —
+// D'où `isHonorificAt` : la POSITION tranche, pas la seule appartenance -
 // une civilité précède un nom, elle n'est jamais le dernier composant ni le
 // seul. « miss Deva » → civilité ; « John Miss » et « Miss » seul →
 // patronyme, donc pseudonymisé. En cas de doute, on masque (zéro-fuite).
@@ -28,7 +28,7 @@
 //  - `don`, `dame`, `lord`, `lady`, `pan`, `pani`, `bey`, `sri` : trop souvent
 //    de vrais prénoms ;
 //  - `fr`, `hr`, `ing`, `rev` : collisions bêtes et fréquentes. `fr` a été
-//    essayé et retiré aussitôt — il faisait passer le « .fr » de
+//    essayé et retiré aussitôt - il faisait passer le « .fr » de
 //    « monentreprise.fr » pour une civilité, et « Mon IBAN » juste après
 //    devenait un nom de personne sur la fixture de référence.
 const TERMES = [
@@ -68,7 +68,7 @@ export const normalizeHonorific = token =>
 // rang / total : position du composant dans le nom complet (0-indexé).
 // Une civilité précède toujours un nom : elle n'est ni le dernier composant,
 // ni le seul. Cette règle est ce qui protège « Miss » employé comme vrai
-// patronyme — voir l'en-tête du fichier.
+// patronyme - voir l'en-tête du fichier.
 export function isHonorificAt(token, rang, total) {
   if (total < 2 || rang >= total - 1) return false;
   return HONORIFICS.has(normalizeHonorific(token));
@@ -88,7 +88,7 @@ export const PARTICULES = new Set([
   'de', 'du', 'des', 'la', 'le', 'von', 'van', 'da', 'di', "d'", "l'", 'del', 'bin', 'ben'
 ]);
 
-// Un composant de nom est-il NON IDENTIFIANT à cette position ? — civilité ou
+// Un composant de nom est-il NON IDENTIFIANT à cette position ? - civilité ou
 // particule. C'est la question que se posent `pseudonyms.js` (quel composant
 // remplacer) et `identity.js` (quel composant masquer isolément) ; poser la
 // même question deux fois, c'est risquer deux réponses.
@@ -100,7 +100,7 @@ export function estComposantNonIdentifiant(token, rang, total) {
 // --- Fragment de regex pour la détection déterministe ----------------------
 // Chaque lettre devient une classe [Xx] : la civilité doit matcher quelle que
 // soit sa casse (« miss Deva », « Miss Deva », « MISS DEVA »), alors que le
-// NOM qui suit doit rester sensible à la casse dans le motif appelant — un
+// NOM qui suit doit rester sensible à la casse dans le motif appelant - un
 // simple flag `i` sur tout le motif ferait matcher « monsieur bonjour ».
 const anyCase = terme => terme
   .split('')

@@ -1,6 +1,6 @@
-/* Clarence — site vitrine (prototype).
+/* Clarence - site vitrine (prototype).
    Mêmes jetons de couleur que la popup : le site et l'outil doivent se lire
-   comme un seul objet. Angles droits partout, aucune bordure — le contraste
+   comme un seul objet. Angles droits partout, aucune bordure - le contraste
    passe par les fonds seuls, exactement comme dans l'extension. */
 
 @font-face {
@@ -59,7 +59,7 @@
 
 *, *::before, *::after { box-sizing: border-box; border-radius: 0; }
 
-/* L'attribut `hidden` vaut `display: none` dans la feuille du navigateur —
+/* L'attribut `hidden` vaut `display: none` dans la feuille du navigateur -
    donc n'importe quelle règle d'auteur (`display: flex`…) le neutralise. */
 [hidden] { display: none !important; }
 
@@ -76,7 +76,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Lueurs du fond — mêmes teintes et mêmes proportions que #letterBgBlur dans
+/* Lueurs du fond - mêmes teintes et mêmes proportions que #letterBgBlur dans
    popup.css (220/260/180 px pour une popup de 520), remises à l'échelle d'une
    page. Sans elles le noir est un aplat mort : c'est ce que j'avais livré. */
 .lueurs {
@@ -94,7 +94,7 @@ body {
 }
 
 /* La fée de la popup, en veilleuse : présente, jamais lisible comme une
-   illustration. Fixe, hors flux, décalée à droite — pas centrée. */
+   illustration. Fixe, hors flux, décalée à droite - pas centrée. */
 .fee {
   position: fixed;
   right: -60px;
@@ -120,7 +120,7 @@ body {
   gap: 24px;
 }
 /* Recadrage du logo. Le PNG est un carré de 2000 px dont le dessin n'occupe
-   qu'une bande utile de 1590×342 à partir de (202, 868) — mesurée sur les
+   qu'une bande utile de 1590×342 à partir de (202, 868) - mesurée sur les
    pixels non transparents. On l'affiche donc dans une fenêtre au bon rapport,
    l'image agrandie et décalée pour que seule cette bande soit visible. */
 .marque {
@@ -304,11 +304,11 @@ h2 {
 }
 #source::selection { background: rgba(141, 147, 214, 0.32); }
 
-/* Surlignage — deux familles, distinction sémantique et non décorative :
+/* Surlignage - deux familles, distinction sémantique et non décorative :
    ce qui identifie la personne / ce qui relève du financier ou de
    l'administratif. */
 /* Traitement repris tel quel de popup.css (mark.src-regex) : fond teinté ET
-   soulignement. Le violet est la couleur du DÉTERMINISTE dans l'extension —
+   soulignement. Le violet est la couleur du DÉTERMINISTE dans l'extension -
    et tout ce que cette page détecte l'est. Le vert-mousse y désigne le modèle
    contextuel : il n'apparaît donc nulle part ici, et c'est exact. */
 .miroir mark {

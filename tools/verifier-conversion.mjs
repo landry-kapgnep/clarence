@@ -4,7 +4,7 @@
 //
 // POURQUOI CE SCRIPT EXISTE. Une conversion qui CHARGE ne prouve rien : si elle
 // notait les mots différemment, la compression changerait de comportement en
-// silence — et personne ne le verrait, puisqu'on ne relit jamais un texte
+// silence - et personne ne le verrait, puisqu'on ne relit jamais un texte
 // compressé (c'est la contrepartie assumée de la fonction).
 //
 // CE QU'ON MESURE, ET POURQUOI PAS AUTRE CHOSE. Une première version comparait
