@@ -197,9 +197,6 @@
   "pseudonymes": {
     "message": "Pseudonyms"
   },
-  "relis_avant_d_utiliser_la_detection_n_est_pa": {
-    "message": "⚠ Read it over before using — detection is not infallible"
-  },
   "remplace_par_des_noms_plausibles_au_lieu_de": {
     "message": "Replaces names with plausible ones instead of PERSON_1. The same person keeps the same pseudonym. Job title, nationality and health keep their label: a plausible fake there would mislead the AI."
   },
@@ -452,5 +449,11 @@
   },
   "action_irreversible": {
     "message": "This cannot be undone."
+  },
+  "ce_document_seulement": {
+    "message": "This document only"
+  },
+  "reglages_du_profil": {
+    "message": "Profile settings"
   }
 }

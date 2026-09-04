@@ -203,27 +203,29 @@
           </label>
         </div>
 
-        <!-- Termes propres à CE document, hors profil. Volontairement à
-             l'extérieur de « Personnaliser le masquage » : les champs qui s'y
-             trouvent sont ÉCRASÉS au chargement d'un profil, et « Enregistrer »
-             y pousserait des termes qui ne valent que pour un fichier.
-             Sans titre de section : les deux libellés suffisent. -->
-        <div id="docTerms">
-          <div class="doc-terms-grid">
-            <label class="hint" for="docKeep">Ne jamais masquer
-              <textarea id="docKeep" class="mini" placeholder="ChatGPT, MT, OpenAI"></textarea>
-              <span class="termes-lus" id="docKeepLus"></span>
-            </label>
-            <label class="hint" for="docMask">Toujours masquer
-              <textarea id="docMask" class="mini" placeholder="nom du client, nom de code" data-i18n-placeholder="nom_du_client_nom_de_code"></textarea>
-              <span class="termes-lus" id="docMaskLus"></span>
-            </label>
-          </div>
-        </div>
-
         <details id="fileCustomRules">
           <summary data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
           <div class="custom-body">
+            <!-- Termes propres à CE document, hors profil. Volontairement à
+                 l'extérieur de « Personnaliser le masquage » : les champs qui s'y
+                 trouvent sont ÉCRASÉS au chargement d'un profil, et « Enregistrer »
+                 y pousserait des termes qui ne valent que pour un fichier.
+                 Sans titre de section : les deux libellés suffisent. -->
+            <div class="field-label" data-i18n="ce_document_seulement">Ce document seulement</div>
+            <div id="docTerms">
+              <div class="doc-terms-grid">
+                <label class="hint" for="docKeep">Ne jamais masquer
+                  <textarea id="docKeep" class="mini" placeholder="ChatGPT, MT, OpenAI"></textarea>
+                  <span class="termes-lus" id="docKeepLus"></span>
+                </label>
+                <label class="hint" for="docMask">Toujours masquer
+                  <textarea id="docMask" class="mini" placeholder="nom du client, nom de code" data-i18n-placeholder="nom_du_client_nom_de_code"></textarea>
+                  <span class="termes-lus" id="docMaskLus"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="field-label" data-i18n="reglages_du_profil">Réglages du profil</div>
             <div class="profile-bar">
               <select id="fileProfileSelect" aria-label="Profil d’anonymisation" data-i18n-aria="profil_danonymisation" class="profile-select"></select>
               <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer dans ce profil" data-i18n-title="enregistrer_dans_ce_profil" data-i18n="enregistrer">Enregistrer</button>
@@ -271,8 +273,8 @@
         <section id="fileResults" hidden>
           <h2 data-i18n="resultat">Résultat</h2>
           <div class="controls">
-            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png" alt="" aria-hidden="true"><span data-i18n="telecharger">Télécharger</span></button>
-            <button class="btn-ghost" id="fileCopyBtn" hidden data-i18n="copier">Copier</button>
+            <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png" alt="Télécharger" data-i18n-alt="telecharger"></button>
+            <button class="btn-ghost" id="fileCopyBtn" hidden><img class="cpbtn" src="img/ClarenceCpButtonW.png" alt="Copier" data-i18n-alt="copier"></button>
             <button id="dragCard" class="drag-card" hidden>
               <span class="drag-card-icon">⇢</span>
               <span data-i18n="dans_la_page">Dans la page</span>
@@ -285,7 +287,6 @@
             <div class="mapping-titre" data-i18n="corrections">Corrections</div>
             <div id="fileMappingWrap"></div>
           </div>
-          <p class="hint" data-i18n="relis_avant_d_utiliser_la_detection_n_est_pa">⚠ Relis avant d'utiliser — la détection n'est pas infaillible</p>
         </section>
       </div>
 

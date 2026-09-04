@@ -1585,7 +1585,10 @@ select option { background: var(--bg-raised); color: var(--paper); }
   margin-top: 0;
   box-sizing: border-box;
 }
-#fileResults .dlbtn { width: 15px; }
+/* Icône seule : le bouton devient carré, et les trois gardent leur hauteur.
+   « Dans la page » garde son libellé — c'est le seul geste qui ne va pas de soi. */
+#fileResults .dlbtn, #fileResults .cpbtn { width: 16px; }
+#fileResults > .controls > button:has(> img:only-child) { padding: 0 9px; }
 
 /* Les deux légendes d'action se touchaient. Le « × » se lisant seul, le mot
    « fois » est retiré de l'écran (gardé pour les lecteurs d'écran), et il reste

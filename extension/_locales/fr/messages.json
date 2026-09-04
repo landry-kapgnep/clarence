@@ -197,9 +197,6 @@
   "pseudonymes": {
     "message": "Pseudonymes"
   },
-  "relis_avant_d_utiliser_la_detection_n_est_pa": {
-    "message": "⚠ Relis avant d'utiliser — la détection n'est pas infaillible"
-  },
   "remplace_par_des_noms_plausibles_au_lieu_de": {
     "message": "Remplace par des noms plausibles au lieu de PERSONNE_1. La même personne garde le même pseudonyme. Poste, nationalité et santé gardent leur étiquette : un faux plausible y tromperait l'IA."
   },
@@ -452,5 +449,11 @@
   },
   "action_irreversible": {
     "message": "Cette action ne peut pas être annulée."
+  },
+  "ce_document_seulement": {
+    "message": "Ce document seulement"
+  },
+  "reglages_du_profil": {
+    "message": "Réglages du profil"
   }
 }
