@@ -53,24 +53,20 @@ export function motsDuTexte(texte) {
   return mots;
 }
 
-// ── Opérateurs logiques - conservation FORCÉE ──────────────────────────────
+// ── Opérateurs logiques, conservation forcée ───────────────────────────────
 //
-// Le défaut que ça corrige, et il est disqualifiant sans ça : le modèle
-// supprime des mots qui portent toute la polarité de la phrase. Mesuré au
-// spike, « Le patient n'est pas allergique à la pénicilline mais l'est aux
-// sulfamides » ressortait « patient allergique à pénicilline sulfamides » -
-// le LLM lit exactement l'inverse.
+// Sans ça le modèle supprime les mots qui portent la polarité de la phrase.
+// Mesuré au spike : « Le patient n'est pas allergique à la pénicilline mais
+// l'est aux sulfamides » ressortait « patient allergique à pénicilline
+// sulfamides ». Le LLM lit l'inverse.
 //
-// C'est le pire cas possible pour cet outil : l'erreur est silencieuse et
+// Pire cas possible pour cet outil : l'erreur est silencieuse et
 // l'utilisateur ne peut pas la rattraper, puisqu'on ne relit pas un texte
-// compressé. Une fuite se voit à la relecture ; une négation retournée, non.
+// compressé. Une fuite se voit à la relecture, une négation retournée non.
 //
-// UNE LISTE STATIQUE EST ADMISSIBLE ICI, et seulement parce que la classe est
-// Fermée - même règle que honorifics.js : une langue compte une poignée de
-// négations et de connecteurs et n'en invente pas, contrairement aux noms, aux
-// entreprises ou aux technos qu'on refuse catégoriquement de lister.
-// NE PAS ÉTENDRE cette liste à des mots « importants » : ce serait rouvrir la
-// classe et refaire l'erreur qu'on évite partout ailleurs.
+// Une liste statique est admissible ici parce que la classe est FERMÉE, même
+// règle que honorifics.js. NE PAS l'étendre à des mots « importants » : ce
+// serait rouvrir la classe.
 export const OPERATEURS_LOGIQUES = new Set([
   // français
   'ne', 'n', 'pas', 'plus', 'jamais', 'aucun', 'aucune', 'ni', 'sans', 'sauf',

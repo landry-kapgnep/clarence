@@ -138,26 +138,22 @@ const typesDuGroupe = g => Object.values(g.types);
 // « diabète », « française ») et ne peuvent pas être filtrés ainsi.
 const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
 
-// Écarte les spans sans la moindre majuscule quand le type exige un nom propre.
+// Écarte les spans sans majuscule quand le type exige un nom propre.
 //
-// Le label « person » désigne toute expression qui RÉFÈRE à une personne, pas
-// seulement un nom : le modèle sort donc « vendor », « candidate », « dossier »,
-// « leadership ». Il a raison linguistiquement, mais notre besoin porte sur les
+// « person » désigne toute expression qui RÉFÈRE à une personne : le modèle
+// sort « vendor », « candidate », « leadership ». Notre besoin porte sur les
 // entités nommées.
 //
-// Limite assumée : un nom écrit tout en minuscules n'est plus détecté par cette
-// couche. Accepté parce que le déterministe n'est pas concerné, que le profil
-// d'identité masque le nom de l'utilisateur quoi qu'il arrive, et que le
-// sur-masquage mesuré rendait les documents inexploitables.
+// Limite assumée : un nom tout en minuscules n'est plus détecté par cette
+// couche. Le déterministe n'est pas concerné, le profil d'identité masque le
+// nom de l'utilisateur, et le sur-masquage rendait les documents inexploitables.
 // Une date de naissance est un jour situé dans une année. « Contient un
-// chiffre » était trop faible : sur tous-defauts.pdf ça laissait passer
-// « ANNEXE 2 », « 2021 » et « 12 mars ».
+// chiffre » laissait passer « ANNEXE 2 », « 2021 » et « 12 mars ».
 //
-// Deux formes, aucune liste de mois, le projet devant rester multilingue. On se
-// contente de la structure : une date numérique, ou une année accompagnée d'un
-// autre nombre, quelle que soit la langue qui les sépare.
-//   « March 14, 1988 », « 16 octobre 2004 », « 14. März 1988 » → acceptés
-//   « 2021 », « ANNEXE 2 », « 12 mars » → refusés
+// Aucune liste de mois, le projet devant rester multilingue : on se contente de
+// la structure, une date numérique ou une année accompagnée d'un quantième.
+//   « March 14, 1988 », « 14. März 1988 » → acceptés
+//   « 2021 », « ANNEXE 2 », « 12 mars »   → refusés
 const DATE_NUMERIQUE = /\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}/;
 const ANNEE = /(?:1[89]|20)\d{2}/;
 
@@ -341,25 +337,21 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
         const spans = await glinerPipeline(variante, groupe.labels);
         for (const s of spans || []) {
           const type = groupe.types[s.label];
-          // Un label inconnu ne doit jamais devenir une entité sans type : mieux
-          // vaut l'ignorer que produire un placeholder [undefined_1].
+          // Un label inconnu ne doit jamais devenir une entité sans type, et un
+          // type désactivé ne doit pas sortir d'ici non plus. Ce n'est pas une
+          // optimisation, c'est une correction de fuite.
           //
-          // Et un type désactivé ne doit pas non plus sortir d'ici, sous
-          // peine de fuite. Ce n'est pas une optimisation, c'est une correction.
+          // Le saut de groupe plus haut n'écarte une passe que si TOUS ses
+          // types sont désactivés. Un groupe partiellement actif produit donc
+          // encore des entités de types désactivés, qui entrent dans la
+          // résolution des chevauchements où « le plus long gagne », y battent
+          // une détection d'un type actif, puis sont jetées par filterByRules.
+          // La valeur n'est alors plus masquée par personne.
           //
-          // Le saut de groupe ci-dessus n'écarte une passe que si tous ses types
-          // sont désactivés. Un groupe partiellement actif produit donc encore
-          // des entités de types désactivés - et celles-ci ENTRENT dans la
-          // résolution des chevauchements, où « le plus long gagne ». Elles y
-          // battent une détection d'un type actif portant sur le même texte…
-          // avant d'être jetées tout à la fin par filterByRules. Résultat : la
-          // valeur n'est plus masquée par personne.
-          //
-          // Mesuré sur un vrai CV. L'utilisateur avait décoché ETABLISSEMENT
-          // mais laissé SANTE : le groupe tournait donc encore, sortait
-          // « ETABLISSEMENT : Sorbonne Paris Nord » trois fois, ce span évinçait
-          // le « LIEU : Sorbonne Paris Nord » du groupe identité, puis
-          // disparaissait - et le nom de l'université partait en clair.
+          // Mesuré : l'utilisateur avait décoché ETABLISSEMENT en laissant
+          // SANTE, « ETABLISSEMENT : Sorbonne Paris Nord » évinçait le
+          // « LIEU : Sorbonne Paris Nord », puis disparaissait. Le nom de
+          // l'université partait en clair.
           if (!type || desactives.has(type) || s.score < seuil) continue;
           // La valeur se relit toujours sur le texte d'origine : c'est le texte
           // accentué qu'il faudra masquer, pas la copie de travail.

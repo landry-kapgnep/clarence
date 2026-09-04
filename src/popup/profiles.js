@@ -250,23 +250,19 @@ const EMPREINTES_HISTORIQUES = {
   'Vierge': ['1727123c']
 };
 
-// Complète une liste existante avec les profils par défaut manquants, ET met à
-// jour ceux que l'utilisateur n'a jamais touchés.
+// Complète une liste avec les profils livrés manquants, et met à jour ceux que
+// l'utilisateur n'a jamais touchés.
 //
-// Le défaut que ça corrige. L'ancienne version n'ajoutait un profil que si son
-// nom était absent. Conséquence : enrichir une liste livrée n'atteignait
-// personne d'installé, et c'était silencieux - on voit un profil au bon nom,
-// rien ne dit qu'il date de la première installation. Mesuré sur un vrai CV :
-// « BDD », « LAMP » et « JaCoCo » restaient masqués malgré leur ajout.
+// L'ancienne version n'ajoutait un profil que si son nom était absent :
+// enrichir une liste livrée n'atteignait personne d'installé, en silence. On
+// voit un profil au bon nom, rien ne dit qu'il date de la première
+// installation. Mesuré sur un CV, « BDD » et « JaCoCo » restaient masqués.
 //
-// La règle : on ne remplace un profil livré que si son contenu correspond
-// encore exactement à une version qu'on a expédiée. Une seule différence, et
-// on n'y touche plus - l'édition de l'utilisateur prime toujours.
+// On ne remplace un profil que si son contenu correspond encore exactement à
+// une version expédiée. Une seule différence et on n'y touche plus.
 //
-// Ce qu'on ne fait surtout pas : fusionner les listes. Ce serait plus simple,
-// mais ça ressusciterait les termes que l'utilisateur a volontairement retirés
-// d'un « ne jamais masquer » - donc ça conserverait en clair ce qu'il voulait
-// masquer. Mauvais sens, au regard de « zéro-fuite d'abord ».
+// Surtout pas de fusion des listes : ça ressusciterait les termes retirés d'un
+// « ne jamais masquer », donc ça conserverait en clair ce qu'il voulait masquer.
 export function seedDefaults(existing, ecartes = []) {
   const list = (Array.isArray(existing) ? existing : []).map(normalizeProfile);
   const parNom = new Map(list.map(p => [p.name, p]));
