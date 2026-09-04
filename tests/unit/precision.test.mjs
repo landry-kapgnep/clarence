@@ -1,5 +1,5 @@
 // Garde-fous du filtre de précision. Zéro tolérance : ce module DÉMASQUE, donc
-// une erreur ici est une fuite silencieuse — la catégorie que CLAUDE.md classe
+// une erreur ici est une fuite silencieuse — la catégorie que docs/notes-techniques.md classe
 // en priorité stricte, au même titre que les validateurs et le masquage.
 //
 // Les tests utilisent un modèle SYNTHÉTIQUE plutôt que les poids appris : les

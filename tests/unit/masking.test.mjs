@@ -1,4 +1,4 @@
-// Zéro tolérance : la cohérence du masquage/mapping est critique (CLAUDE.md §Tests).
+// Zéro tolérance : la cohérence du masquage/mapping est critique (docs/notes-techniques.md §Tests).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { maskText, reinject } from '../../src/engine/masking.js';

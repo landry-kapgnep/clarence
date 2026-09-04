@@ -10,7 +10,7 @@
 // écrire. Aucune hallucination possible, contrairement à un résumé par LLM —
 // c'est ce qui rend l'idée compatible avec le principe du cadrage §8.
 //
-// TROIS CONTRAINTES PRODUIT (CLAUDE.md, posées avant tout code) : option
+// TROIS CONTRAINTES PRODUIT (docs/notes-techniques.md, posées avant tout code) : option
 // explicite jamais par défaut, prose appauvrie annoncée, et transformation
 // d'EXPORT — on relit le texte masqué, lisible, et la compression ne touche que
 // ce qui part au presse-papiers. Ce module ne fait que la transformation ; c'est

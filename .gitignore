@@ -38,3 +38,10 @@ tools/filtre/*.txt
 .env
 .env.*
 !.env.example
+
+# Notes de travail et brief produit : restent en local, hors du dépôt public.
+# Ils contiennent le positionnement, le pricing et la stratégie — rien qui doive
+# être lisible par un concurrent ou un recruteur.
+CLAUDE.md
+docs/cadrage-mvp.md
+.claude/

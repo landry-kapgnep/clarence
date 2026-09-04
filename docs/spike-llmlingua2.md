@@ -11,7 +11,7 @@ disqualifiant en l'état. Une parade existe, mesurée, et elle coûte +13 %.
 ## Pourquoi ce spike
 
 Mesure du 09/08 : il n'y a **aucun gain en tokens du côté du texte**. Conversion
-Markdown −1 %, en-têtes répétés 1 %, sommaire 1 % (voir CLAUDE.md). LLMLingua-2
+Markdown −1 %, en-têtes répétés 1 %, sommaire 1 % (voir docs/notes-techniques.md). LLMLingua-2
 est le seul levier d'un ordre de grandeur supérieur qu'ait donné la recherche.
 
 ## Le modèle
@@ -148,7 +148,7 @@ Ils ne viennent pas du modèle mais de son enveloppe, et tous deux produisent
    recoller les scores par `index`.** À reproduire tel quel dans le worker.
 
 Note : `start`/`end` sont à `null`, exactement comme sur le modèle NER — même
-gotcha déjà consigné dans CLAUDE.md, donc pas d'alignement par offsets.
+gotcha déjà consigné dans docs/notes-techniques.md, donc pas d'alignement par offsets.
 
 Le moteur remonte `motsSansScore` précisément pour que ce genre de panne ne
 puisse plus être silencieuse.
@@ -223,7 +223,7 @@ conservée, zéro mot sans score.
 1. **Préserver l'espacement d'origine** à la reconstruction — sinon les
    placeholders conservés sont cassés à l'écriture.
 2. **Exposer un taux cible**, pas le seuil brut.
-3. Respecter les **trois contraintes produit** déjà consignées dans CLAUDE.md :
+3. Respecter les **trois contraintes produit** déjà consignées dans docs/notes-techniques.md :
    option explicite, prose appauvrie annoncée, transformation d'**export** et
    non étape du pipeline.
 4. Trancher les **+179 Mo** en plus des 183 Mo de GLiNER.

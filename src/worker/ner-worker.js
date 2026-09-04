@@ -196,7 +196,7 @@ async function init(msg) {
 // CHARGÉ À LA DEMANDE, et c'est non négociable : 170 Mo de plus ne doivent
 // jamais être téléchargés par quelqu'un qui n'active pas l'option. La détection
 // (183 Mo) est le chemin nominal ; ceci est un supplément que l'utilisateur
-// choisit, conformément à la première des trois contraintes produit (CLAUDE.md).
+// choisit, conformément à la première des trois contraintes produit (docs/notes-techniques.md).
 async function initCompression({ wasmPath, model }) {
   if (compresseur) return;
   env.allowLocalModels = false;

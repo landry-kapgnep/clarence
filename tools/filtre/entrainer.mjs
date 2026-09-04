@@ -211,7 +211,7 @@ for (const [nom, colonnes] of Object.entries(variantes)) {
 //     apprendrait au filtre à jeter les vraies entités qui leur ressemblent —
 //     donc à FUIR. Le produit a déjà une réponse à ce problème, et elle est
 //     meilleure : le profil « Développeur / Tech » et sa liste « ne jamais
-//     masquer », éditable et propriété de l'utilisateur (voir CLAUDE.md, le
+//     masquer », éditable et propriété de l'utilisateur (voir docs/notes-techniques.md, le
 //     refus explicite d'une liste de technos cachée dans le moteur).
 //
 // On mesure donc les deux familles SÉPARÉMENT. Les confondre donnerait un

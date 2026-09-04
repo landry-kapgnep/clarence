@@ -170,7 +170,7 @@ export function filtrerParPrecision(entities, texte, { modele = POIDS, sousMots,
 // le banc, lui, se fabriquait son propre arbitre — sans le filtre. Résultat
 // mesuré : le filtre livré ne changeait RIEN aux chiffres du banc, non parce
 // qu'il était inefficace mais parce que le banc ne l'exécutait pas. C'est
-// exactement le défaut que CLAUDE.md documente (« le banc mesurait `quantized`
+// exactement le défaut que docs/notes-techniques.md documente (« le banc mesurait `quantized`
 // pendant que la popup chargeait autre chose ») : une porte de qualité qui note
 // autre chose que ce qu'on expédie ne garantit rien.
 //

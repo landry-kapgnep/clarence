@@ -433,7 +433,7 @@ async function ensureNER() {
 //
 // Le modèle (170 Mo) n'est demandé QUE si l'utilisateur active l'option — il
 // s'ajoute aux 183 Mo de la détection, et personne ne doit les payer sans
-// l'avoir choisi. Première des trois contraintes produit (CLAUDE.md).
+// l'avoir choisi. Première des trois contraintes produit (docs/notes-techniques.md).
 //
 // Il vit dans le MÊME worker que la détection : ORT n'exécute qu'une inférence
 // à la fois de toute façon, et un second worker ne ferait que dupliquer le

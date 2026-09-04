@@ -313,7 +313,7 @@ export function calculerBornes(runs, textes, largeurPage) {
 }
 
 // Ré-extrait la structure géométrique page par page (convention stateless ;
-// buffer.slice(0) car pdfjs détache — cf. gotcha CLAUDE.md).
+// buffer.slice(0) car pdfjs détache — cf. gotcha docs/notes-techniques.md).
 async function parsePages(buffer, signal) {
   const pdf = await pdfjsLib.getDocument({
     data: new Uint8Array(buffer.slice(0)),

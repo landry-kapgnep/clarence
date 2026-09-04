@@ -1,4 +1,4 @@
-// Zéro tolérance : un bug ici = fuite silencieuse (CLAUDE.md §Tests).
+// Zéro tolérance : un bug ici = fuite silencieuse (docs/notes-techniques.md §Tests).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { luhnCheck, ibanCheck, nirCheck, dniCheck } from '../../src/engine/validators.js';

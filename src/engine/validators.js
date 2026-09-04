@@ -1,4 +1,4 @@
-// Validateurs mathématiques — zéro tolérance (voir CLAUDE.md §Tests)
+// Validateurs mathématiques — zéro tolérance (voir docs/notes-techniques.md §Tests)
 
 export function luhnCheck(numStr) {
   let sum = 0, alt = false;

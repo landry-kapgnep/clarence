@@ -50,7 +50,7 @@ const TYPES_STRUCTURES = new Set([
 // Un banc qui tournerait sur un pipeline simulé ne mesurerait rien. On charge
 // le modèle réellement embarqué, avec le MÊME correctif de découpeur que le
 // worker de production (sans lui, la détection FR est silencieusement dégradée
-// — voir le gotcha « GLiNER.js est cassé sur le français » dans CLAUDE.md).
+// — voir le gotcha « GLiNER.js est cassé sur le français » dans docs/notes-techniques.md).
 const DECOUPEUR_UNICODE = /[\p{L}\p{N}_]+(?:[-_][\p{L}\p{N}_]+)*|\S/gu;
 
 async function chargerGliner() {

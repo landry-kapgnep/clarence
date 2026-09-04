@@ -18,7 +18,7 @@ export const CHUNK_OVERLAP = 120; // évite de trancher une entité à la fronti
 // — sinon toute la phrase serait capitalisée et le signal casse deviendrait
 // inutile. Sur-capitaliser un mot commun (absent de cette liste) peut produire
 // un faux positif, mais un faux positif se retire d'un clic ; un nom raté est
-// une fuite silencieuse — voir cadrage-mvp.md §5.
+// une fuite silencieuse — la relecture humaine est la contrepartie assumée.
 const STOPWORDS_FR = new Set([
   'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'ce', 'cet', 'cette', 'ces',
   'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son', 'sa', 'ses',

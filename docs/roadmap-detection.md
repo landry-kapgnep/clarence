@@ -138,7 +138,7 @@ garde-fou de performance pour ne pas payer une inférence sur les milliers de
 cellules numériques d'un CSV. Angle mort : une cellule ne contenant qu'une
 **date de naissance** n'a aucune lettre, donc n'était **jamais soumise au
 modèle**. C'est précisément le cas que le zero-shot est censé débloquer, et
-l'exemple de référence de `CLAUDE.md` (« 1988-03-14 » seul → 0,59, au-dessus du
+l'exemple de référence de `docs/notes-techniques.md` (« 1988-03-14 » seul → 0,59, au-dessus du
 seuil). Le modèle savait le faire ; on ne le lui demandait pas — et le banc
 comptait ça comme un raté du modèle.
 
@@ -1076,7 +1076,7 @@ le temps d'autant. **Un seul changement pour les deux symptômes.**
 ### La nuance à ne PAS écraser
 
 Le projet a mesuré l'inverse pour les **cellules** de tableau : l'isolement y
-est un ATOUT (CLAUDE.md, « donner du contexte à une cellule DÉGRADE la
+est un ATOUT (docs/notes-techniques.md, « donner du contexte à une cellule DÉGRADE la
 détection »). Il n'y a pas contradiction : une cellule CSV est une unité
 sémantiquement complète, un fragment de paragraphe est une coupe arbitraire.
 Le regroupement doit donc viser les chemins de **prose** (PDF, DOCX), jamais
@@ -1805,7 +1805,7 @@ appliqué le modèle hors de son domaine, sans erreur ni signal. Un test l'inter
 
 Premier passage après câblage : **chiffres rigoureusement identiques**. J'ai
 failli y lire un résultat. En réalité le banc se fabriquait son propre arbitre,
-sans le filtre — le défaut exact que CLAUDE.md documente déjà pour la variante
+sans le filtre — le défaut exact que docs/notes-techniques.md documente déjà pour la variante
 de poids. La composition des deux passes vit désormais dans `composerArbitre`,
 **un seul endroit**, utilisé par la popup, le banc, l'injection et la régression.
 

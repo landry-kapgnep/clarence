@@ -1,8 +1,9 @@
 // Orchestrateur partagé par les 3 adaptateurs (CSV/XLSX/DOCX) : traite tout
 // un fichier comme UN document virtuel pour que maskText assigne des
-// placeholders cohérents partout (voir docs/cadrage-mvp.md §4) — jamais un
-// appel par cellule/paragraphe isolé, qui numéroterait les placeholders au
-// hasard d'une unité à l'autre pour une même valeur répétée.
+// placeholders cohérents partout — le LLM doit pouvoir suivre la même personne
+// d'un bout à l'autre du fichier. Jamais un appel par cellule/paragraphe
+// isolé, qui numéroterait les placeholders au hasard d'une unité à l'autre
+// pour une même valeur répétée.
 import { detectRegex } from '../engine/regex-detect.js';
 import { detectPhonesIntl } from '../engine/phone-intl.js';
 import { detectNER } from '../engine/ner.js';
@@ -71,7 +72,7 @@ const DATE_NUE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/
 // naissance n'a aucune lettre, donc elle n'était JAMAIS soumise au modèle.
 //
 // C'est précisément le cas que le zero-shot est censé débloquer, et qui sert
-// d'exemple de référence dans CLAUDE.md : « 1988-03-14 » seul sort à 0,59,
+// d'exemple de référence dans docs/notes-techniques.md : « 1988-03-14 » seul sort à 0,59,
 // au-dessus du seuil. Le modèle savait le faire ; on ne le lui demandait pas.
 // Le banc le comptait comme un raté du modèle — c'était un raté du filtre.
 function meriteUnePasseContextuelle(text) {

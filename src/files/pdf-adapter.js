@@ -192,7 +192,7 @@ function groupIntoParagraphs(lines, dominantSize) {
     // (69 → 70) et la composition empire : « Éléonore » et « Vaquier »
     // ressortent SEULS, « IBAN » et « Montant » deviennent des lieux. Découper
     // davantage fragmente le document, et la fragmentation PDF fait monter le
-    // bruit au-dessus du signal (gotcha P1bis de CLAUDE.md). Ne pas retenter
+    // bruit au-dessus du signal (gotcha P1bis de docs/notes-techniques.md). Ne pas retenter
     // sans re-mesurer CE chiffre.
     const isNewParagraph = isHeading || !current ||
       current.isHeading !== isHeading ||

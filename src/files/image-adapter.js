@@ -1,5 +1,5 @@
 // Adaptateur Image (JPEG/PNG) — nettoyage de métadonnées uniquement, pas
-// d'anonymisation de contenu (voir CLAUDE.md "Idées explorées" : la détection
+// d'anonymisation de contenu (voir docs/notes-techniques.md "Idées explorées" : la détection
 // visuelle par OCR/vision est un chantier à part, hors de portée ici).
 //
 // L'EXIF (GPS, modèle d'appareil, date) et les chunks texte PNG (tEXt/iTXt/
@@ -13,7 +13,7 @@
 // 0.92) ; le PNG reste sans perte de pixels (juste une redéfinition d'octets).
 //
 // Non testable en Node (pas de createImageBitmap/OffscreenCanvas) : vérifié
-// manuellement en navigateur réel (règle du projet), voir CLAUDE.md.
+// manuellement en navigateur réel (règle du projet), voir docs/notes-techniques.md.
 
 export async function stripMetadata(buffer, opts = {}) {
   const mime = opts.mime === 'image/jpeg' || opts.mime === 'image/jpg' ? 'image/jpeg' : 'image/png';

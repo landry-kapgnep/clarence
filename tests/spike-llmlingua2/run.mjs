@@ -4,7 +4,7 @@
 //
 // POURQUOI CE SPIKE. La mesure du 09/08 a montré qu'il n'y a AUCUN gain en
 // tokens du côté du texte : la conversion Markdown rend −1 %, les en-têtes
-// répétés 1 %, le sommaire 1 % (voir CLAUDE.md). LLMLingua-2 est le seul levier
+// répétés 1 %, le sommaire 1 % (voir docs/notes-techniques.md). LLMLingua-2 est le seul levier
 // d'un ordre de grandeur supérieur qu'ait donné la recherche.
 //
 // LE MODÈLE. `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`,

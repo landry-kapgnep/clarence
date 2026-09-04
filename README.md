@@ -2,7 +2,7 @@
 
 Extension Chrome (Manifest V3) qui anonymise le texte sensible avant collage
 dans ChatGPT / Claude / Gemini. **Aucune donnée utilisateur ne quitte le
-navigateur** (voir CLAUDE.md, principe non négociable).
+navigateur** (voir docs/notes-techniques.md, principe non négociable).
 
 ## Arborescence
 
@@ -16,7 +16,7 @@ navigateur** (voir CLAUDE.md, principe non négociable).
 
 ```bash
 npm install        # esbuild + @xenova/transformers (dev uniquement)
-npm test           # 31 tests
+npm test           # 518 tests
 npm run build      # bundle src/popup → extension/popup/popup.js + vendor/*.wasm
 ```
 
