@@ -106,45 +106,20 @@ const LOCALES = {
 
 // Types éligibles au réalisme ; tout le reste garde son placeholder [type_N].
 //
-// La ligne de partage est « identifiant ou attribut ? », pas « type connu ou
-// pas ». Tous ceux d'ici sont des identifiants : échanger un nom contre un
-// autre nom, une ville contre une autre ville, préserve le rôle de la valeur
-// dans le texte sans toucher à ce sur quoi le LLM raisonne - une personne
-// reste une personne.
+// Deux conditions : le type doit être un IDENTIFIANT, et sa détection doit être
+// FIABLE.
 //
-// POSTE, NATIONALITE et SANTE sont volontairement absents, et ce n'est pas un
-// oubli (question posée le 15/08 : « il manque des pseudonymes »). Ce sont des
-// ATTRIBUTS : leur valeur EST le sujet du raisonnement.
+// POSTE, NATIONALITE et SANTE sont des attributs, pas des identifiants : leur
+// valeur est le sujet du raisonnement. « diabète de type 2 » → « asthme »
+// donne une réponse médicale fausse, et rien ne le signale. Un placeholder
+// annonce qu'on a retiré quelque chose ; un faux attribut plausible n'annonce
+// rien.
 //
-//   « diabète de type 2 » → « asthme »            réponse médicale fausse
-//   « aide-soignante de nuit » → « comptable »    contrat de travail faussé
-//   « portugaise » → « italienne »                démarche administrative faussée
-//
-// Un placeholder annonce qu'on a retiré quelque chose ; un faux attribut
-// plausible n'annonce rien et induit en erreur - exactement ce que l'UX
-// anti-fausse-confiance du cadrage §5 refuse. Le silence vaut mieux que le
-// vraisemblable quand l'utilisateur ne peut pas vérifier.
-//
-// ETABLISSEMENT a été ajouté ici le 15/08 puis retiré le 18/08 : la mesure sur
-// un vrai CV a montré qu'il manquait une seconde condition au raisonnement
-// ci-dessus.
-//
-// Un nom d'établissement EST un identifiant, ce qui reste vrai. Mais sa
-// Détection figure dans TYPES_PEU_fiables (gliner.js), et c'est ça qui décide :
-// sur ce CV, « LLM local » a été pris pour un établissement et remplacé par
-// « École Morel ». Le lecteur croit à une école qui n'a jamais existé, et rien
-// ne le lui signale - alors qu'un « [ETABLISSEMENT_1] » posé sur « LLM local »
-// saute aux yeux et se retire d'un clic.
-//
-// D'où la règle complète, en deux conditions. Un type reçoit un pseudonyme
-// réaliste s'il est un identifiant **et** si sa détection est fiable :
-//   - la première écarte poste, nationalité et santé (leur valeur est le sujet
-//     du raisonnement) ;
-//   - la seconde écarte tout type de TYPES_PEU_fiables, parce qu'un faux
-//     plausible y devient indétectable.
-//
-// C'est le principe déjà consigné du projet - « un pseudonyme rend un faux
-// positif invisible » - appliqué là où il avait été manqué.
+// ETABLISSEMENT est bien un identifiant mais figure dans TYPES_PEU_FIABLES
+// (gliner.js), et c'est la seconde condition qui tranche : sur un vrai CV,
+// « LLM local » a été pris pour un établissement et remplacé par « École
+// Morel ». Un « [ETABLISSEMENT_1] » posé au même endroit saute aux yeux et se
+// retire d'un clic.
 const REALISTIC_TYPES = new Set([
   'PER', 'ORG', 'LOC', 'ADRESSE', 'EMAIL', 'TELEPHONE', 'DATE_NAISSANCE',
   // Handle : identifiant, détecté par regex donc de façon déterministe.

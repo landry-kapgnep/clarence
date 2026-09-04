@@ -345,46 +345,30 @@ async function parseStructure(buffer) {
   return units;
 }
 
-// Intitulés de section - reconnus à leur place, jamais à leur sens.
+// Intitulés de section, reconnus à leur PLACE et jamais à leur sens.
 //
-// Le problème. Soumis seuls, « SOMMAIRE », « COMPÉTENCES », « LANGUES »
-// sortent du modèle en ENTREPRISE ou LIEU avec des scores élevés (0,50 à 0,79
-// mesurés) - au-dessus de vraies entités. Résultat : un CV dont les titres de
-// rubrique sont maquillés en placeholders, illisible pour le LLM.
+// Soumis seuls, « SOMMAIRE », « COMPÉTENCES », « LANGUES » sortent en
+// ENTREPRISE ou LIEU entre 0,50 et 0,79, au-dessus de vraies entités. Quatre
+// approches lexicales ont été mesurées et échouent toutes (seuil plus haut,
+// labels leurres, question « nom propre / nom commun », fertilité du
+// tokenizer) : elles jugent le mot isolé, alors qu'un humain reconnaît un
+// intitulé à sa position dans la page.
 //
-// Ce qui ne marche pas, et qui a été mesuré avant d'en arriver ici :
-//  - monter le seuil : les faux positifs sortent au-dessus des vrais ;
-//  - des labels leurres (« titre de section », « métier ») : 6 cas sur 21 ;
-//  - reposer la question en « nom propre / nom commun » : GLiNER EXTRAIT des
-//    entités, il ne classe pas - il répond « nom propre » à tout, et son score
-//    est même anti-corrélé (les faux positifs sortent plus haut que les vrais) ;
-//  - la fertilité du tokenizer : fuit sur Ali, Kim, Anna, Rose, Petit, Lille.
-// Les quatre jugent le mot isolé. Or un humain reconnaît un intitulé à sa
-// position dans la page, pas au mot lui-même.
-//
-// La règle. Cinq conditions, toutes déterministes :
-//  (1) PAS un titre en gros corps - c'est le garde-fou essentiel : le nom en
-//      tête d'un CV en est un (« ÉLÉONORE VASSEUR » corps 21 contre corps 8
-//      des rubriques), et il doit rester masqué ;
-//  (2) court : 3 mots au plus ;
+// Cinq conditions, toutes déterministes :
+//  (1) PAS un titre en gros corps. Garde-fou essentiel : le nom en tête d'un CV
+//      en est un (corps 21 contre 8 pour les rubriques) et doit rester masqué ;
+//  (2) trois mots au plus ;
 //  (3) aucune ponctuation de phrase ;
 //  (4) entièrement en capitales ;
-//  (5) le document en contient au moins deux - un motif de mise en page, pas
-//      un mot isolé qu'on écarterait par accident.
+//  (5) le document en contient au moins deux, donc c'est un motif de mise en
+//      page et pas un mot isolé écarté par accident.
 //
-// CE QUE ÇA NE DÉSACTIVE PAS. `structurel` ne saute que la passe contextuelle :
-// `detectRegex` tourne sur le document combiné entier. Une ligne « BIC :
-// AGRIFRPP882 » attrapée par la règle reste donc protégée par le déterministe.
+// `structurel` ne saute que la passe contextuelle : `detectRegex` tourne sur le
+// document entier, donc « BIC : AGRIFRPP882 » reste protégé.
 //
-// Risque assumé, mesuré nul sur tout le corpus mais réel : un nom en capitales
-// dans le corps du texte (bloc de signature, liste d'auteurs) ne serait plus
-// masqué automatiquement. Le profil d'identité et « toujours masquer » le
-// forcent toujours, eux.
-// Le deux-points est inclus : c'est le séparateur libellé/valeur. Sans lui,
-// « BIC : AGRIFRPP882 », « SSN: 123-45-6789 » et « DNI: 12345678Z » passaient
-// pour des intitulés de rubrique - or ce sont des identifiants, et les classer
-// ainsi ouvrait la porte à leur démasquage. Trou trouvé en relisant la liste
-// produite, pas en théorie.
+// Risque assumé, mesuré nul sur le corpus : un nom en capitales dans le corps
+// du texte (signature, liste d'auteurs) ne serait plus masqué automatiquement.
+// Le profil d'identité et « toujours masquer » le forcent toujours.
 const PONCTUATION_PHRASE = /[.!?,;:]/;
 
 // Un numéro de rubrique final est légitime (« ANNEXE 2 ») ; des chiffres
@@ -407,59 +391,25 @@ export function ressembleAUnIntitule(texte) {
   return t === t.toUpperCase();
 }
 
-// Le problème que `marquerIntitules` NE PEUT PAS RÉSOUDRE SEUL.
+// Ce que `marquerIntitules` ne peut pas résoudre seul.
 //
-// `marquerIntitules` n'épargne une unité que si l'unité entière est un
-// intitulé. Or `groupIntoParagraphs` recolle très souvent l'intitulé au texte
-// qui le suit : « SOMMAIRE » devient le début du paragraphe « SOMMAIRE
-// Introduction et contexte… », et la règle ne le voit plus. Mesuré : 6 unités
-// épargnées seulement, et `SOMMAIRE`, `ANNEXE`, `COORDONNÉES`, `INTERLIGNE`,
-// `CELLULES NUES`, `SPRACHEN` restaient tous masqués.
+// Il n'épargne une unité que si l'unité ENTIÈRE est un intitulé. Or
+// `groupIntoParagraphs` recolle souvent l'intitulé au texte suivant :
+// « SOMMAIRE » devient le début de « SOMMAIRE Introduction et contexte… ».
+// Mesure : 6 unités épargnées, et SOMMAIRE, ANNEXE, COORDONNÉES, SPRACHEN
+// restaient masqués.
 //
-// PISTE ÉVIDENTE, mesurée et rejetée : couper le paragraphe sur un intitulé.
-// Ça porte bien les unités épargnées de 6 à 16, mais le total masqué remonte
-// (69 → 70) et la composition empire - « Éléonore » et « Vaquier » ressortent
-// seuls, « IBAN » et « Montant » deviennent des lieux. Découper davantage
-// fragmente le document, et la fragmentation PDF fait monter le bruit au-dessus
-// du signal (P1bis). Voir le commentaire dans `groupIntoParagraphs`.
+// Couper le paragraphe sur un intitulé a été essayé et rejeté : 6 → 16 unités
+// épargnées, mais le total masqué remonte (69 → 70) et la composition empire
+// (« Éléonore » et « Vaquier » ressortent seuls). Fragmenter davantage fait
+// monter le bruit au-dessus du signal (P1bis).
 //
-// La voie retenue : ne pas toucher au découpage du tout. On relève les lignes
-// qui ressemblent à un intitulé avant le regroupement, et on transmet cette
-// liste à l'aval. Les unités gardent exactement le contexte qu'elles avaient ;
-// seules les entités qui tombent exactement sur un intitulé, en tête de leur
-// unité, sont écartées (voir anonymize-units.js).
-//
-// La double condition est le garde-fou : « en tête de l'unité » interdit
-// d'écarter un nom qui apparaîtrait en plein texte, et « exactement » interdit
-// d'emporter les mots voisins.
-// Mot de rubrique d'une ligne qui EST typographiquement un titre.
-//
-// Les intitulés collés à leur paragraphe sont déjà couverts. Restait le cas
-// inverse : une ligne en gros corps, seule, du genre « ANNEXE - dossier
-// Administratif ». Le modèle y étiquette « ANNEXE » comme entreprise, et rien
-// ne l'épargnait - `ressembleAUnIntitule` plafonne à 3 mots (le tiret compte
-// pour un), et la valeur détectée n'est de toute façon qu'un fragment de la
-// ligne, jamais son égal.
-//
-// Pourquoi pas simplement « épargner les unités-titres ». Parce que le titre
-// d'un CV est une unité-titre : « ÉLÉONORE VASSEUR », seule, en capitales, sans
-// ponctuation ni chiffre, est FORMELLEMENT INDISCERNABLE de « COMPÉTENCES ».
-// Exempter les titres ferait fuir le nom de la personne - le garde `!titre` du
-// relevé n'est pas un oubli, il est porteur. C'est mesuré : la vérité terrain
-// du document piégé porte ce contre-exemple exprès.
-//
-// La discrimination retenue est donc positionnelle, jamais lexicale : Un seul
-// mot en capitales, éventuellement suivi d'un numéro de rubrique, puis un tiret,
-// puis autre chose. « ÉLÉONORE VASSEUR » n'a pas de tiret ; « ÉLÉONORE VASSEUR
-// - DÉVELOPPEUSE » en a un mais deux mots avant lui, donc ne matche pas non plus.
-//
-// Risque résiduel, assumé et mesuré : un titre de la forme « dupont - rapport
-// ANNUEL », où le mot unique est un patronyme. Le mot serait épargné s'il est
-// détecté seul et en tête. Cas réel mais rare ; à revoir s'il se présente.
-// Deux formes sont relevées, et la seconde n'est pas un détail : le modèle
-// rend « ANEXO 5 » et « ANLAGE 6 » d'un seul tenant, numéro compris. Ne relever
-// que le mot nu laissait donc ces deux-là masqués - mesuré. Le numéro relève du
-// même motif positionnel, il n'ajoute aucun risque.
+// On relève donc les lignes qui ressemblent à un intitulé AVANT le
+// regroupement, sans toucher au découpage, et on transmet la liste à l'aval.
+// Seules les entités qui tombent exactement sur un intitulé, en tête de leur
+// unité, sont écartées. La double condition est le garde-fou : « en tête »
+// interdit d'écarter un nom en plein texte, « exactement » interdit d'emporter
+// les mots voisins.
 const RUBRIQUE_TITRE = /^(\p{Lu}{3,})(\s+\d{1,2})?\s*[—–-]\s+\p{L}/u;
 
 export function formesDeRubrique(texte) {
