@@ -59,9 +59,23 @@
   --t-etiquette: 12px;         /* étiquettes, indices, état, tables */
   --t-meta: 11px;              /* badges, compteurs, en-têtes de colonne */
 
-  /* Filet vertical des sections de premier rang. Assez présent pour tenir sur
-     toute la hauteur d'une section, assez sourd pour ne pas devenir un motif. */
-  --rail: color-mix(in srgb, var(--seal-lit) 40%, transparent);
+  /* TRAME D'ESPACEMENT — quatre pas, tous multiples de 4.
+     Il y avait DIX-SEPT valeurs verticales distinctes (1, 2, 3, 4, 5, 6, 7, 8,
+     9, 10, 12, 14, 16, 18, 20, 22, 26), dont 5/6/7 et 8/9/10 indiscernables à
+     l'œil. Aucun rythme ne peut émerger d'une suite qui n'a pas de pas : on
+     lisait une bouillie régulière au lieu de groupes.
+
+     L'ESPACE EST LE MÉCANISME DE SECTIONNEMENT, et le seul qui ne coûte pas un
+     pixel de largeur — précieux dans un panneau de 420px. Loi de proximité :
+     ce qui est proche est lu ensemble, ce qui est écarté est lu à part.
+     Le rapport compte plus que les valeurs. Un titre appartient à ce qui le
+     SUIT, jamais à ce qui le précède, donc son blanc supérieur doit écraser
+     son blanc inférieur — au moins 3:1. `h2` valait 14 au-dessus et 8 en
+     dessous (1,75:1), assez peu pour flotter entre les deux. */
+  --e-xs: 4px;                 /* étiquette collée à son champ */
+  --e-s: 8px;                  /* entre éléments d'un même groupe */
+  --e-m: 16px;                 /* entre groupes */
+  --e-l: 28px;                 /* entre sections */
 
   --control-weight: 400;
   --control-size: var(--t-corps);
@@ -231,38 +245,44 @@ h1 { font-size: var(--t-titre); margin: 0; font-weight: 400; }
    troisième emploi décoratif viderait de son sens un code que l'utilisateur a
    appris à lire. */
 h2, .section-titre {
+  display: flex;
+  align-items: center;
   font-size: var(--t-etiquette);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 400;
   color: var(--seal-lit);
-  margin: 14px 0 8px;
+  /* 28 au-dessus contre 8 en dessous : 3,5:1. Le titre se lit avec ce qui le
+     suit, et le blanc supérieur sépare de la section précédente. */
+  margin: var(--e-l) 0 var(--e-s);
 }
 .bloc > h2:first-child, .bloc > .section-titre:first-child { margin-top: 0; }
-/* Un dépliant est une section à part entière : son rail tient dès qu'il est
-   replié, ce qui dit « il y a quelque chose ici » avant même de l'ouvrir. */
-details.bloc { margin-top: 16px; }
-details.bloc[open] { padding-bottom: 8px; }
 
-/* Plusieurs titres sous un même rail (« Détections » puis « Texte propre ») :
-   celui qui OUVRE une vue porte le trait, jamais celui qui la ferme. */
-.bloc > h2:not(:first-child) {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line-soft);
+/* Le chevron d'un dépliant est repris à la main : `display: flex` sur un
+   <summary> supprime son ::marker natif, et il faut de toute façon la place
+   du ::after pour le filet. */
+.section-titre { list-style: none; cursor: pointer; }
+.section-titre::-webkit-details-marker { display: none; }
+.section-titre::before {
+  content: "▸";
+  margin-right: 7px;
+  font-size: var(--t-meta);
+  line-height: 1;
 }
+details[open] > .section-titre::before { content: "▾"; }
 
-/* ===== RAIL — le filet vertical d'une section de premier rang =====
-   Ce qui manquait n'était pas l'IDENTITÉ d'une section (« laquelle est-ce ? »)
-   mais son ÉTENDUE (« où commence-t-elle, où finit-elle ? »). Un fond coloré
-   derrière un titre ne marque que le titre ; un filet court du premier au
-   dernier élément et répond, lui, à la vraie question.
-   Un seul niveau : deux rails imbriqués dans un panneau de 420px se lisent
-   comme une arborescence de fichiers. Les sous-groupes gardent le trait fin. */
+/* ===== SECTION — du blanc, pas du trait =====
+   Un filet vertical a d'abord été essayé le long de chaque section. Il marquait
+   bien l'étendue, mais coûtait 14px de largeur sur 420 (bordure + retrait) et
+   donnait à chaque section l'air d'un bloc de code cité.
+   Une section ne se signale donc plus que par ce qui ne coûte AUCUNE largeur :
+   le blanc au-dessus (--e-l, contre --e-m entre groupes), et un filet
+   HORIZONTAL qui prolonge son titre jusqu'au bord — sur la ligne du titre,
+   donc sans un pixel de hauteur en plus. */
 .bloc {
-  border-left: 2px solid var(--rail);
-  padding-left: 12px;
-  margin-top: 16px;
+  margin-top: var(--e-m);
+  padding-top: var(--e-m);
+  border-top: 1px solid var(--line-soft);
 }
 
 .tagline { margin: 0; font-size: var(--t-etiquette); color: var(--paper-dim); }
@@ -273,7 +293,7 @@ details.bloc[open] { padding-bottom: 8px; }
   font-size: var(--t-etiquette);
   letter-spacing: 0.05em;
   color: var(--paper-dim);
-  margin-bottom: 6px;
+  margin-bottom: var(--e-xs);
 }
 
 /* TITRE DE GROUPE — un rang au-dessus de `.field-label`, en dessous de `h2`.
@@ -290,12 +310,11 @@ details.bloc[open] { padding-bottom: 8px; }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--paper-dim);
-  margin: 0 0 8px;
-}
-.groupe-titre:not(:first-child) {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line-soft);
+  /* 16 contre 4 : 4:1. Le premier groupe d'un conteneur avait `margin-top: 0`
+     — c'est ce qui collait « Pour ce document » sous le titre du dépliant. Un
+     groupe garde son blanc où qu'il soit ; c'est le CONTENEUR qui décide de le
+     supprimer, jamais la position du groupe. */
+  margin: var(--e-m) 0 var(--e-xs);
 }
 
 textarea {
@@ -320,7 +339,7 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(141, 147, 214, 0.18);
 }
 
-.controls { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.controls { display: flex; gap: var(--e-s); align-items: center; margin-top: var(--e-s); flex-wrap: wrap; }
 
 button {
   font-family: var(--font-body);
@@ -402,7 +421,7 @@ mark.src-manuel {
 }
 mark:hover { outline: 1px solid var(--seal-lit); }
 
-details { margin-top: 12px; font-size: var(--t-etiquette); }
+details { margin-top: var(--e-m); font-size: var(--t-etiquette); }
 summary { cursor: pointer; color: var(--paper-dim); }
 summary::marker { color: var(--seal-lit); }
 
@@ -676,7 +695,7 @@ body.panel-mode .popup-shell {
 .profile-btn { padding: 5px 8px; font-size: var(--t-etiquette); }
 
 /* ===== Masquage personnalisé ===== */
-#customRules { margin-top: 10px; }
+#customRules { margin-top: var(--e-l); }
 .custom-body { margin-top: 8px; }
 .type-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
 .type-chip {
@@ -843,7 +862,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--paper); }
 /* Les options touchaient la zone de dépôt : rien ne les en séparait, aucune
    marge n'étant définie ici. Un choix de réglage ne doit pas sembler collé à la
    zone qui reçoit le fichier. */
-#fileOptions { margin-top: 16px; }
+#fileOptions { margin-top: var(--e-m); }
 #pdfModeChoice { margin-bottom: 12px; }
 
 /* ===== GRILLE D'OPTIONS =====
@@ -1378,7 +1397,7 @@ td.map-occ {
    fonctionnelle, pas esthétique : ces derniers sont ÉCRASÉS au chargement d'un
    profil, et « Enregistrer » y pousserait des termes qui ne valent que pour un
    fichier. Deux vocabulaires distincts, deux endroits distincts. */
-#docTerms { margin-top: 10px; }
+#docTerms { margin-top: var(--e-s); }
 .doc-terms-grid { display: flex; gap: 8px; }
 .doc-terms-grid label { flex: 1; display: block; }
 .doc-terms-grid textarea.mini {
@@ -1409,7 +1428,7 @@ td.map-occ {
    de quelles valeurs sa question aura besoin (une chronologie a besoin des
    dates, un devoir d'histoire aussi). Le titre le dit dans ces termes-là :
    « Correspondances » décrivait la mécanique, pas l'enjeu. */
-.mapping-bloc { margin-top: 12px; }
+.mapping-bloc { margin-top: var(--e-m); }
 /* « Corrections » n'est pas une section à part : elle appartient au résultat.
    Elle porte donc `.groupe-titre` dans la page — rang 2, trait fin — au lieu
    d'une classe à elle qui la faisait passer pour un pair de « Résultat ». */

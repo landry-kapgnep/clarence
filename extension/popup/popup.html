@@ -41,7 +41,7 @@
         <button class="btn-primary" id="analyzeBtn" data-i18n="analyser">Analyser</button>
         <button class="btn-ghost" id="maskSelBtn" title="Sélectionne un passage, puis clique ici" data-i18n-title="selectionne_un_passage_puis_clique_ici" data-i18n="masquer_la_selection">Masquer la sélection</button>
       </div>
-      <div id="textOptions" hidden>
+      <div id="textOptions" class="bloc" hidden>
       <div class="options-grille">
         <label class="option-btn teinte-pseudo">
           <input type="checkbox" id="realisticToggle">
@@ -64,7 +64,7 @@
         </label>
       </div>
 
-      <details id="customRules" class="bloc">
+      <details id="customRules">
         <summary class="section-titre" data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
         <div class="custom-body">
           <div class="profile-bar">
@@ -126,7 +126,7 @@
           <p class="hint">CSV, XLSX, DOCX, PDF, JPG, PNG</p>
         </div>
 
-        <div id="fileOptions" hidden>
+        <div id="fileOptions" class="bloc" hidden>
         <!-- Chaque option porte un « ? » : le libellé reste court, le détail
              vit dans l'infobulle. -->
         <!-- CHOIX DE FORMAT — volontairement en radios empilées, PAS dans la
@@ -203,7 +203,7 @@
           </label>
         </div>
 
-        <details id="fileCustomRules" class="bloc">
+        <details id="fileCustomRules">
           <summary class="section-titre" data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
           <div class="custom-body">
             <!-- Termes propres à CE document, hors profil : les champs du bloc
@@ -279,7 +279,7 @@
         </div>
 
         <section id="fileResults" class="bloc" hidden>
-          <h2 data-i18n="resultat">Résultat</h2>
+          <h2 class="visuellement-cache" data-i18n="resultat">Résultat</h2>
           <div class="controls">
             <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png" alt="Télécharger" data-i18n-alt="telecharger"></button>
             <button class="btn-ghost" id="fileCopyBtn" hidden><img class="cpbtn" src="img/ClarenceCpButtonW.png" alt="Copier" data-i18n-alt="copier"></button>
