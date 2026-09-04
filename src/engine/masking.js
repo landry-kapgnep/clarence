@@ -117,51 +117,38 @@ export function maskText(text, entities, opts = {}) {
 }
 
 // Propagation : toute occurrence d'une valeur déjà mappée est masquée aussi,
-// même là où la détection l'a ratée (répétition sans contexte, titre de page…).
+// même là où la détection l'a ratée.
 //
 // Partagé entre maskText et anonymizeUnits, et c'est le point critique : les
-// adaptateurs qui réécrivent un fichier (PDF reconstruit, DOCX) ne repartent
-// pas de la chaîne masquée mais de la liste d'entités. Tant que la propagation
-// ne vivait que dans maskText, ces occurrences fuyaient dans le fichier final
-// alors qu'elles étaient bien masquées dans l'aperçu - constaté sur un vrai
-// rapport de stage, où un nom de tuteur détecté page 5 restait en clair
-// page 1. Une seule implémentation, donc, qui ne peut plus diverger.
+// adaptateurs qui réécrivent un fichier repartent de la liste d'entités, pas de
+// la chaîne masquée. Tant que la propagation ne vivait que dans maskText, ces
+// occurrences fuyaient dans le fichier final alors qu'elles étaient masquées
+// dans l'aperçu - un nom de tuteur détecté page 5 restait en clair page 1.
 //
-// - valeurs les plus longues d'abord (« Rose Fontaine » avant « Rose ») ;
-// - frontières Unicode incluant « _ » : jamais de match à l'intérieur d'un
-//   placeholder déjà posé ([NIR_1]) ni en milieu de mot (Lyonnais) ;
-// - insensible à la casse : « Meteojob » et « meteojob » dans une URL sont la
-//   même entité. Sans ça, la seconde était masquée et la première laissée en
-//   clair dans le même document (constaté).
+// Valeurs les plus longues d'abord ; frontières Unicode incluant « _ » pour ne
+// jamais matcher dans un placeholder déjà posé ; insensible à la casse, sinon
+// « Meteojob » et « meteojob » dans la même URL n'étaient pas traités pareil.
 //
-// Particules et titres : jamais identifiants seuls, et propager « de » ou
-// « Monsieur » masquerait la moitié d'un document. Classe fermée, donc une
-// liste est ici légitime (même raisonnement que honorifics.js).
+// Particules et titres écartés : propager « de » masquerait la moitié du
+// document. Classe fermée, donc une liste est légitime ici.
 const PARTICULES = new Set([
   'de', 'du', 'des', 'la', 'le', 'les', 'van', 'von', 'da', 'di', 'bin', 'al', 'ben'
 ]);
 
-// Composants d'un NOM propagés séparément - la fuite que le banc a révélée.
+// Composants d'un nom propagés séparément.
 //
-// La propagation ne travaillait que sur la valeur entière : « Marcus Whitfield »
-// masqué à sa première occurrence, mais « Marcus » réutilisé seul dix lignes
-// plus bas restait en clair. C'est une forme d'usage très courante dans un mail
-// ou un rapport, et un prénom accolé au reste du document désigne la personne
-// aussi sûrement que le nom complet.
+// La propagation ne travaillait que sur la valeur entière : « Marcus
+// Whitfield » masqué à sa première occurrence, mais « Marcus » réutilisé seul
+// dix lignes plus bas restait en clair. Un prénom accolé au reste du document
+// désigne la personne aussi sûrement que le nom complet.
 //
-// Trois garde-fous, chacun contre un sur-masquage identifié :
-//  - sensible à la casse, contrairement à la propagation normale : sans ça,
-//    « Rose Fontaine » ferait disparaître toutes les « rose » du document, et
-//    « Pierre Martin » toutes les « pierre ». Un prénom réel porte sa majuscule.
-//  - composants d'au moins 4 caractères : en dessous, trop de collisions avec
-//    des mots courants.
-//  - particules et civilités écartées (voir PARTICULES / HONORIFICS).
+// Trois garde-fous : sensible à la casse (sinon « Rose Fontaine » ferait
+// disparaître toutes les « rose ») ; quatre caractères minimum (en dessous trop
+// de collisions) ; particules et civilités écartées.
 //
-// Pseudonymes : le substitut est un nom complet (« Noémie Rousseau »), pas un
-// [PERSONNE_n]. On associe alors les composants deux à deux dans l'ordre
-// (« Marcus »→« Noémie »), ce qui est exact puisque pseudonyms.js construit le
-// nom complet À partir de ses composants, dans l'ordre. Si les deux comptes
-// diffèrent, on s'abstient plutôt que de risquer un substitut incohérent.
+// Avec pseudonymes, le substitut est un nom complet : on associe les composants
+// deux à deux dans l'ordre, ce qui est exact puisque pseudonyms.js compose le
+// nom à partir d'eux. Si les comptes diffèrent, on s'abstient.
 function composantsDeNoms(mapping) {
   const out = [];
   for (const m of mapping) {

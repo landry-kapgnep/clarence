@@ -1,23 +1,18 @@
-// Compression de prompt - supprime les mots peu porteurs pour réduire le coût
+// Compression de prompt : supprime les mots peu porteurs pour réduire le coût
 // en tokens du texte collé dans un LLM.
 //
-// Pourquoi. Mesuré le 09/08 : il n'y a aucun gain en tokens du côté du texte
-// (conversion Markdown −1 %, en-têtes répétés 1 %, sommaire 1 %). Un modèle de
-// compression est le seul levier d'un ordre de grandeur supérieur - ×1,5 à ×5,9
-// mesurés au spike (docs/spike-llmlingua2.md).
+// Il n'y a aucun gain du côté du texte (Markdown -1 %, en-têtes répétés 1 %,
+// sommaire 1 %). Un modèle de compression est le seul levier d'un ordre de
+// grandeur supérieur : x1,5 à x5,9 au spike (docs/spike-llmlingua2.md).
 //
-// EXTRACTIF, jamais génératif : on ne peut que supprimer des mots, jamais en
-// écrire. Aucune hallucination possible, contrairement à un résumé par LLM -
-// c'est ce qui rend l'idée compatible avec le principe du cadrage §8.
+// EXTRACTIF, jamais génératif : on ne peut que supprimer des mots. Aucune
+// hallucination possible, contrairement à un résumé par LLM.
 //
-// Trois contraintes produit (docs/notes-techniques.md, posées avant tout code) : option
-// explicite jamais par défaut, prose appauvrie annoncée, et transformation
-// d'export - on relit le texte masqué, lisible, et la compression ne touche que
-// ce qui part au presse-papiers. Ce module ne fait que la transformation ; c'est
-// à l'appelant de respecter les deux autres.
-//
-// Le pipeline est injecté, comme dans gliner.js et ner.js : le moteur reste
-// testable en Node sans charger 170 Mo.
+// Trois contraintes produit : option explicite jamais par défaut, prose
+// appauvrie annoncée, et transformation d'EXPORT - on relit le texte masqué,
+// lisible, et la compression ne touche que ce qui part au presse-papiers. Ce
+// module ne fait que la transformation, c'est à l'appelant de tenir les deux
+// autres.
 
 // Notre propre conversion des poids Apache 2.0 de Microsoft, sous une licence
 // explicite - bloquant de publication levé le 15/08/2026.

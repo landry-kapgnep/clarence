@@ -230,25 +230,19 @@ const MIN_SCORE = 0.6;
 
 // Le pipeline est injecté (bundlé dans l'extension, simulé dans les tests).
 //
-// Double passe par fenêtre : texte naturel (comportement historique, intact)
-// ET texte boosté (boostCase, pour les noms écrits sans majuscule). Aucune
-// des deux passes n'est prioritaire a priori sur l'autre - on a vérifié
-// empiriquement les deux sens de défaillance :
-//  - booster un texte déjà bien casé peut noyer le signal et faire perdre
-//    une entité que le modèle trouvait très bien tout seul (ex. "Lefèvre
-//    Consulting"/"Lyon" disparus une fois tout le paragraphe capitalisé) ;
-//  - à l'inverse, sur un nom à l'orthographe inhabituelle, la passe
-//    naturelle peut ne capturer qu'un fragment tronqué avec une confiance
-//    décente (ex. "lefev" à 92% sur "jean lefevbre") alors que la passe
-//    boostée reconstruit l'entité complète à 100% ("Jean Lefevbre").
-// Sur un chevauchement entre les deux passes, on garde donc le span le plus
-// long (le plus complet), la confiance ne départageant qu'à égalité de
-// longueur - même logique que resolveOverlaps dans merge.js pour le regex.
-// onProgress({ done, total }) (optionnel) : appelé après chaque fenêtre. Le NER
-// tourne sur le thread principal (pas de worker, contrainte CSP MV3) et fait
-// Deux inférences BERT par fenêtre - sur un document de quelques milliers de
-// caractères ça se compte en dizaines de secondes. Sans retour chiffré,
-// l'utilisateur croit à un plantage et interrompt (constaté).
+// Double passe par fenêtre : texte naturel et texte boosté (boostCase, pour les
+// noms sans majuscule). Aucune n'est prioritaire, les deux sens de défaillance
+// ayant été vérifiés : booster un texte déjà bien casé peut noyer le signal et
+// perdre une entité (« Lefèvre Consulting » disparu une fois le paragraphe
+// capitalisé), et à l'inverse la passe naturelle peut ne capturer qu'un
+// fragment (« lefev » à 92 % sur « jean lefevbre ») là où la boostée
+// reconstruit l'entité entière.
+//
+// Sur chevauchement on garde le span le plus long, la confiance ne départageant
+// qu'à égalité - même logique que resolveOverlaps.
+//
+// onProgress est appelé après chaque fenêtre : sans retour chiffré,
+// l'utilisateur croit à un plantage et interrompt.
 export async function detectNER(text, nerPipeline, { onProgress } = {}) {
   if (!nerPipeline) return [];
   const all = [];

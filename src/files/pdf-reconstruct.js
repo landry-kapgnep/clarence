@@ -222,25 +222,19 @@ const REDUCTION_MIN = 0.45;
 
 // Taille de police à laquelle un fragment tient dans la page.
 //
-// P7 - le même bug que « les lignes qui dépassent ». Un placeholder est presque
-// toujours plus long que la valeur qu'il remplace (« Nantes » → « [LIEU_3] »),
-// et chaque fragment est redessiné à SA position d'origine : un fragment en fin
-// de ligne finit donc hors page. Deux conséquences, longtemps prises pour deux
-// bugs distincts :
-//   - visuellement, le texte déborde (constaté à l'usage) ;
-//   - à la relecture, `pdfjs.getTextContent()` ne retourne pas les glyphes
-//     situés hors du cadre de page. D'où les « placeholders tronqués »
-//     ([PERSONN, [NATIONALIT) comptés à 422/4118 sur un mémoire réel : ils
-//     n'étaient pas coupés dans le fichier, ils étaient hors page.
+// P7. Un placeholder est presque toujours plus long que la valeur qu'il
+// remplace, et chaque fragment est redessiné à SA position d'origine : un
+// fragment en fin de ligne finit hors page. Deux conséquences longtemps prises
+// pour deux bugs : le texte déborde visuellement, et `getTextContent()` ne
+// retourne pas les glyphes hors cadre - d'où les « placeholders tronqués »
+// comptés à 422/4118 sur un mémoire, qui n'étaient pas coupés mais hors page.
 //
-// Vérifié en isolant pdf-lib et pdfjs : le même texte de 393 pt dessiné à x=40
-// ressort tronqué sur une page de 420 pt, et intact sur une page de 600 pt.
+// Vérifié en isolant pdf-lib et pdfjs : le même texte de 393 pt à x=40 ressort
+// tronqué sur une page de 420 pt, intact sur 600.
 //
-// Réduire la taille du fragment le fait rentrer, donc le rend à la fois visible
-// et de nouveau extractible - ce qui restaure la réversibilité, l'enjeu réel
-// pour un document destiné à être recollé dans un LLM.
-// Le 5e argument est une borne droite absolue, pas nécessairement le bord de
-// page : sur une ligne partagée, c'est le début du fragment suivant.
+// Réduire la taille le rend visible ET de nouveau extractible, donc restaure la
+// réversibilité. Le 5e argument est une borne droite absolue, pas forcément le
+// bord de page.
 export function tailleQuiTient(font, texte, taille, x, borne) {
   const dispo = borne - x - MARGE_DROITE;
   if (dispo <= 0) return taille;
@@ -252,30 +246,22 @@ export function tailleQuiTient(font, texte, taille, x, borne) {
 // Écart en points sous lequel deux fragments sont réputés à la même hauteur.
 const MEME_LIGNE = 2;
 
-// Borne droite d'un fragment : le début du prochain fragment dessiné à la même
-// hauteur, à défaut le bord de page.
+// Borne droite d'un fragment : le début du prochain fragment à la même hauteur,
+// à défaut le bord de page.
 //
-// `tailleQuiTient` ne bornait qu'au bord de page. Un placeholder plus long que
-// la valeur remplacée (« Ana » → « [PERSONNE_1] ») restait dans la page mais
-// mordait sur le fragment voisin.
+// `tailleQuiTient` ne bornait qu'au bord de page, donc un placeholder plus long
+// que la valeur remplacée restait dans la page mais mordait sur le voisin.
 //
-// La portée est la PAGE, pas le paragraphe. Deux fragments à la même hauteur
-// appartiennent souvent à des unités différentes : deux colonnes, deux cellules,
-// un titre courant et un numéro de page. Une première version ne comparait qu'à
+// La portée est la PAGE, pas le paragraphe : deux fragments à la même hauteur
+// appartiennent souvent à des unités différentes (deux colonnes, un titre
+// courant et un numéro de page). Une première version ne comparait qu'à
 // l'intérieur d'une unité et laissait la colonne gauche mordre sur la droite.
 //
-// On ne cherche pas à reconstituer les « lignes » logiques, ce qui est
-// indécidable dans un PDF, et on n'en a pas besoin : deux fragments à la même
-// hauteur dont les plages horizontales se recoupent se superposent à l'écran,
-// quelle que soit leur parenté structurelle.
+// On ne cherche pas à reconstituer les lignes logiques, indécidable dans un
+// PDF, et on n'en a pas besoin : seule compte la superposition géométrique.
 //
-// ON RÉTRÉCIT, on ne déplace pas. Repousser le fragment suivant en cascade
-// résout un chevauchement en en créant un autre plus loin. Rétrécir reste dans
-// la place déjà occupée, donc ne peut rien casser ailleurs.
-//
-// Indexé par bande : comparer chaque fragment à tous les autres est
-// quadratique, et une page dense en compte des milliers. On ne compare qu'aux
-// bandes voisines, la tolérance pouvant enjamber une frontière.
+// ON RÉTRÉCIT, on ne déplace pas : repousser le fragment suivant crée un autre
+// chevauchement plus loin. Indexé par bande, sinon c'est quadratique.
 export function calculerBornes(runs, textes, largeurPage) {
   const bandes = new Map();
   for (let i = 0; i < runs.length; i++) {
