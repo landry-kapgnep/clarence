@@ -56,8 +56,8 @@
   "corrections": {
     "message": "Corrections"
   },
-  "dans_la_page": {
-    "message": "Into the page"
+  "vers_la_page": {
+    "message": "To the page"
   },
   "desanonymiser": {
     "message": "De-anonymise"
@@ -450,10 +450,10 @@
   "action_irreversible": {
     "message": "This cannot be undone."
   },
-  "ce_document_seulement": {
-    "message": "This document only"
+  "pour_ce_document": {
+    "message": "For this document"
   },
-  "reglages_du_profil": {
-    "message": "Profile settings"
+  "pour_tous_les_documents": {
+    "message": "For all documents"
   }
 }

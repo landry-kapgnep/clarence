@@ -211,6 +211,28 @@ h2 { font-size: 14px; margin: 14px 0 6px; font-weight: 400; color: var(--paper);
   margin-bottom: 6px;
 }
 
+/* TITRE DE GROUPE — un rang au-dessus de `.field-label`, en dessous de `h2`.
+   Il manquait, et son absence était la cause directe d'une confusion signalée
+   à l'usage : « Ce document seulement » gouvernait deux champs mais portait la
+   même classe qu'eux. Une portée ne peut pas se distinguer de son contenu si
+   elle en a le poids visuel.
+   Le trait est porté par le titre qui OUVRE un groupe, jamais par celui qui le
+   ferme : ainsi un groupe ne flotte jamais sans en-tête, et le premier d'un
+   conteneur n'hérite pas d'une séparation d'avec rien. */
+.groupe-titre {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--seal-lit);
+  margin: 0 0 8px;
+}
+.groupe-titre:not(:first-child) {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
 textarea {
   width: 100%;
   min-height: 110px;
@@ -540,27 +562,22 @@ body.panel-mode .popup-shell {
 .file-name-ext--jpg { background: #f59e0b; }
 .file-name-ext--png { background: #ec4899; }
 
-/* Carte glissable (mode panneau) */
+/* Envoi direct dans la page (mode panneau).
+   PORTAIT UNE BORDURE EN TIRETS ET UNE TEINTE VERTE PROPRES — deux signaux
+   pour rien. Le tireté annonce un glisser-déposer alors que l'élément écoute
+   un `click` (son nom `dragCard` vient d'une version antérieure), et le vert
+   est déjà pris : c'est la teinte de « Économiser des tokens ». Un troisième
+   emploi de la même couleur la vide de son sens.
+   Il porte donc `.btn-ghost` et n'ajoute plus que sa flèche : c'est le même
+   geste que Copier — livrer le résultat — vers une destination différente. */
 .drag-card {
-  margin-top: 10px;
   width: auto;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1.5px dashed #8CA882;
-  background: #8ca88236;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(#8CA882);
+  gap: 6px;
   text-align: left;
 }
-.controls .drag-card {
-  margin-top: 0;
-}
-.drag-card:hover:not(:disabled) { background: #dcdfdb57; transform: none; }
-.drag-card-icon { font-size: 16px; flex-shrink: 0; }
+.drag-card-icon { flex-shrink: 0; }
 
 /* Loader « vaguelettes » */
 .btn-primary.loading { cursor: progress; opacity: 1; }

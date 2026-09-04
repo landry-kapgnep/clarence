@@ -206,12 +206,20 @@
         <details id="fileCustomRules">
           <summary data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
           <div class="custom-body">
-            <!-- Termes propres à CE document, hors profil. Volontairement à
-                 l'extérieur de « Personnaliser le masquage » : les champs qui s'y
-                 trouvent sont ÉCRASÉS au chargement d'un profil, et « Enregistrer »
+            <!-- Termes propres à CE document, hors profil : les champs du bloc
+                 suivant sont ÉCRASÉS au chargement d'un profil, et « Enregistrer »
                  y pousserait des termes qui ne valent que pour un fichier.
-                 Sans titre de section : les deux libellés suffisent. -->
-            <div class="field-label" data-i18n="ce_document_seulement">Ce document seulement</div>
+
+                 LES DEUX BLOCS PORTENT LES MÊMES LIBELLÉS DE CHAMP (« Toujours
+                 masquer », « Ne jamais masquer »), ce qui est déroutant tant que
+                 rien ne dit en quoi ils diffèrent. « Ce document seulement »
+                 laissait le lecteur deviner à quoi il s'opposait, et portait la
+                 même classe `.field-label` que les étiquettes qu'il gouverne :
+                 une portée avec le poids visuel de son propre contenu.
+                 Les titres nomment donc le contraste — la PERSISTANCE, seule
+                 différence réelle — et `.groupe-titre` leur donne le rang qui va
+                 avec. -->
+            <div class="groupe-titre" data-i18n="pour_ce_document">Pour ce document</div>
             <div id="docTerms">
               <div class="doc-terms-grid">
                 <label class="hint" for="docKeep">Ne jamais masquer
@@ -225,7 +233,7 @@
               </div>
             </div>
 
-            <div class="field-label" data-i18n="reglages_du_profil">Réglages du profil</div>
+            <div class="groupe-titre" data-i18n="pour_tous_les_documents">Pour tous les documents</div>
             <div class="profile-bar">
               <select id="fileProfileSelect" aria-label="Profil d’anonymisation" data-i18n-aria="profil_danonymisation" class="profile-select"></select>
               <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer dans ce profil" data-i18n-title="enregistrer_dans_ce_profil" data-i18n="enregistrer">Enregistrer</button>
@@ -275,9 +283,9 @@
           <div class="controls">
             <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png" alt="Télécharger" data-i18n-alt="telecharger"></button>
             <button class="btn-ghost" id="fileCopyBtn" hidden><img class="cpbtn" src="img/ClarenceCpButtonW.png" alt="Copier" data-i18n-alt="copier"></button>
-            <button id="dragCard" class="drag-card" hidden>
-              <span class="drag-card-icon">⇢</span>
-              <span data-i18n="dans_la_page">Dans la page</span>
+            <button id="dragCard" class="btn-ghost drag-card" hidden>
+              <span class="drag-card-icon" aria-hidden="true">⇠</span>
+              <span data-i18n="vers_la_page">Vers la page</span>
             </button>
             <span class="status" id="fileCopyStatus"></span>
           </div>
