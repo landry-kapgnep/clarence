@@ -6,23 +6,17 @@ import { estPlaceholder } from './masking.js';
 
 export const entityKey = e => `${e.start}:${e.end}:${e.type}`;
 
-// Règles :
-// - un retrait (removedKeys) s'applique à n'importe quelle entité ;
-// - un masque manuel a priorité sur toute détection automatique qu'il couvre ;
-// - le résultat est sans chevauchement et trié.
+// Règles : un retrait s'applique à n'importe quelle entité ; un masque manuel a
+// priorité sur toute détection qu'il COUVRE ; le résultat est sans
+// chevauchement et trié.
 //
-// UN MASQUE MANUEL CONTENU DANS UNE DÉTECTION NE LA DÉCOUPE PAS. L'utilisateur
-// déclare son patronyme dans son profil ; le terme est cherché littéralement,
-// donc il matche aussi à l'intérieur de son adresse e-mail. La règle d'origine
-// jetait toute détection chevauchant un masque manuel :
+// UN MASQUE MANUEL CONTENU DANS UNE DÉTECTION NE LA DÉCOUPE PAS. Sans cette
+// distinction, déclarer son patronyme dans son profil rendait sa propre adresse
+// e-mail moins masquée - le terme matchant à l'intérieur de l'adresse et
+// écartant la détection EMAIL entière.
 //
-//     sans profil : [EMAIL_1]
-//     avec profil : adrien.[PERSONNALISE_1].pro@gmail.com
-//
-// Déclarer son identité rendait donc son e-mail moins masqué. On distingue
-// maintenant les deux sens : le manuel gagne s'il couvre la détection, la
-// détection gagne si elle contient le manuel. Le masquage ne peut jamais
-// diminuer, le span conservé couvrant celui qu'on écarte.
+// Le masquage ne peut jamais diminuer : le span conservé couvre celui qu'on
+// écarte. Détail et sortie mesurée : roadmap-detection.md, annexe.
 const contient = (grand, petit) => grand.start <= petit.start && grand.end >= petit.end;
 
 export function selectActive(autoEntities, manualEntities, removedKeys) {

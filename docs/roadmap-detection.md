@@ -2215,3 +2215,70 @@ On segmente trois formes (surface, minuscule, capitale initiale) et on garde le
 minimum. La troisième n'est pas un luxe : « SPRACHEN » ne retrouve ni
 « SPRACHEN » ni « sprachen », seulement « Sprachen », et les intitulés en
 capitales sont justement là où le sur-masquage se concentre.
+
+## Détection par unité contre texte combiné (`src/files/anonymize-units.js`)
+
+Mesuré sur un CV de 38 unités :
+
+| | entités trouvées | nom de la personne | temps |
+|---|---|---|---|
+| texte combiné | 7 | **non trouvé** | référence |
+| unité par unité | 22 | trouvé | +24 % |
+
+Des lots intermédiaires de 150, 300 et 600 caractères échouaient tous à trouver
+le nom. Un contexte propre vaut mieux qu'une grande fenêtre.
+
+Le masquage, lui, reste fait sur le texte combiné : c'est de là que vient la
+cohérence des placeholders, indépendamment de la détection.
+
+### Unités structurelles épargnées
+
+Sans le marquage `structurel`, le modèle confond « la case QUI S'APPELLE date de
+naissance » avec « une case qui CONTIENT une date de naissance » : le libellé
+ressemble presque mot pour mot à la catégorie cherchée, donc il sort haut.
+Mesuré sur un export RH : **43 masques pour 62 mots**, en-têtes (Matricule,
+Service, Salaire) masqués - fichier « sûr » et illisible.
+
+### Piste rejetée : donner le libellé de colonne comme contexte
+
+Contre-intuitif et pourtant reproductible - ça dégrade la détection, le libellé
+captant l'attention du modèle à la place de la valeur.
+
+| soumis au modèle | résultat |
+|---|---|
+| « EMP-0012 » seul | entreprise 0,57 → masqué |
+| « Matricule : EMP-0012 » | entreprise 0,32 → **fuite** |
+| « 1988-03-14 » seul | date de naissance 0,59 → masqué |
+| « Date de naissance : 1988-03-14 » | 0,74 sur le libellé, **0,15 sur la date** → fuite |
+
+L'isolement d'une cellule est donc un ATOUT du zero-shot, pas un manque.
+
+## Un masque manuel contenu dans une détection (`src/engine/selection.js`)
+
+L'utilisateur déclare son patronyme dans son profil d'identité ; le terme est
+cherché littéralement, donc il matche aussi à l'intérieur de son adresse
+e-mail. La règle d'origine jetait toute détection chevauchant un masque manuel :
+
+| | sortie livrée |
+|---|---|
+| sans profil d'identité | `[EMAIL_1]` |
+| avec profil d'identité | `adrien.[PERSONNALISE_1].pro@gmail.com` |
+
+Déclarer son identité rendait donc son e-mail **moins** masqué, et précisément
+pour l'utilisateur le plus prudent.
+
+La règle corrigée distingue les deux sens du chevauchement : le manuel gagne
+s'il COUVRE la détection, la détection gagne si elle CONTIENT le manuel. Le
+masquage ne peut jamais diminuer, le span conservé couvrant celui qu'on écarte.
+
+## Pourquoi pas un modèle par format (`src/engine/type-document.js`)
+
+L'idée d'origine était d'entraîner un modèle par format, un même mot devant être
+masqué ici et ignoré là. L'intuition est juste, le modèle n'est pas la bonne
+pièce : sur un vrai CV, les faux positifs restants sont `IA`, `Ollama`, `BDD`,
+`NSI` - des acronymes d'un seul mot qu'aucun signal contextuel ne distingue de
+`UNODC` ou `Twini`, qui sont de vraies entités. Un modèle entraîné là-dessus
+apprendrait à jeter les vraies, donc à fuir.
+
+Ce qui les traite déjà, c'est la liste éditable d'un profil. La pièce qui
+manquait était de savoir lequel proposer.

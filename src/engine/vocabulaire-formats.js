@@ -2,21 +2,12 @@
 //
 // Les mots qui permettent de reconnaître un format sont exactement ceux qui ne
 // doivent jamais y être masqués : « SOMMAIRE » dit « ceci est un rapport » ET
-// doit survivre, sinon le LLM ne sait plus lire la structure. Deux besoins, un
-// seul vocabulaire, donc un seul endroit.
+// doit survivre. Deux besoins, un seul vocabulaire, donc un seul endroit.
 //
-// Consommé par type-document.js (proposer un profil) et profiles.js (remplir
-// « ne jamais masquer »).
-//
-// Y entrent des mots de mise en forme : intitulés de rubrique, formules
-// consacrées, en-têtes normalisés. Jamais un mot de contenu, un nom
-// d'entreprise ou de personne.
-//
-// N'y entre pas un mot trop générique : la correspondance de « ne jamais
-// masquer » est bidirectionnelle et mot à mot, donc inscrire « formations »
-// démasquerait « Formations Dupont SARL ». Dans le doute on n'inscrit rien, un
-// mot de forme oublié coûtant un masque de trop quand un mot de trop coûte une
-// fuite.
+// Y entrent des mots de mise en forme, jamais un mot de contenu ni un nom
+// d'entreprise. N'y entre pas non plus un mot trop générique : la
+// correspondance est bidirectionnelle et mot à mot, donc « formations »
+// démasquerait « Formations Dupont SARL ». Dans le doute, on n'inscrit rien.
 
 export const FORMATS = ['cv', 'administratif', 'scolaire', 'bancaire'];
 export const LANGUES = ['fr', 'en', 'es', 'de', 'pt'];

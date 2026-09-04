@@ -23,29 +23,20 @@ import { verifierAnnulation } from '../engine/annulation.js';
 // voir detectNerPerUnit ci-dessous.
 export const UNIT_SEP = '\n\u{E000}\u{E004}\u{E000}\n';
 
-// Détection unité par unité, jamais sur le texte combiné.
-//
-// Sur un CV de 38 unités, le texte combiné donnait 7 entités et aucun nom de
-// personne, là où le même modèle trouve le nom sur l'unité isolée : 22 entités
-// pour +24 % de temps. Des lots de 150, 300 et 600 caractères échouaient tous.
+// Détection unité par unité, jamais sur le texte combiné : sur un CV, le texte
+// combiné ne trouvait aucun nom de personne là où l'unité isolée le trouve.
 // Le masquage, lui, reste fait sur le texte combiné, d'où vient la cohérence
 // des placeholders.
 //
 // Deux garde-fous pour les fichiers à nombreuses cellules : les unités sans
 // suite de deux lettres sont ignorées, les textes identiques détectés une fois.
 //
-// `structurel` : un adaptateur peut marquer une unité qui décrit la structure
-// plutôt que le contenu, et elle est épargnée par la passe contextuelle. Sans
-// ça le modèle confond « la case QUI S'APPELLE date de naissance » avec « une
-// case qui CONTIENT une date de naissance » : sur un export RH, 43 masques
-// pour 62 mots. Le déterministe continue de tourner partout.
+// `structurel` : un adaptateur marque une unité qui décrit la structure plutôt
+// que le contenu, et elle est épargnée par la passe contextuelle. Le
+// déterministe continue de tourner partout.
 //
-// PISTE REJETÉE : donner le libellé de colonne comme contexte dégrade la
-// détection, le libellé captant l'attention à la place de la valeur.
-//     « EMP-0012 » seul                  → entreprise 0,57  (masqué)
-//     « Matricule : EMP-0012 »           → entreprise 0,32  (fuite)
-//     « Date de naissance : 1988-03-14 » → 0,74 sur le libellé, 0,15 sur la
-//                                          date (fuite)
+// Chiffres, et la piste rejetée du libellé de colonne comme contexte :
+// docs/roadmap-detection.md, annexe.
 const DATE_NUE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/;
 
 // Faut-il payer une inférence sur cette unité ?
@@ -146,20 +137,16 @@ function joinWithSentinel(units) {
 
 // units : [{ id, text }] → { results, mapping }.
 //
-// results : [{ id, text, maskedText, entities }] dans l'ordre d'entrée.
 // `entities` porte des offsets locaux à l'unité, utile à DOCX qui redistribue
 // sur des runs ; CSV et XLSX n'utilisent que `maskedText`.
 //
-// Limite assumée : `entities` ne couvre que les valeurs explicitement
-// détectées, pas les répétitions rattrapées par la propagation de maskText
-// (celles-ci sont bien dans `maskedText`). Sans impact pour CSV/XLSX ; pour
-// DOCX une répétition non détectée dans son propre paragraphe pourrait ne pas
-// être masquée dans le fichier réécrit.
+// Limite assumée : `entities` ne couvre pas les répétitions rattrapées par la
+// propagation de maskText (elles sont bien dans `maskedText`). Pour DOCX, une
+// répétition non détectée dans son propre paragraphe pourrait ne pas être
+// masquée dans le fichier réécrit.
 //
-// Options : forceTerms, disabledTypes, keepValues - mêmes primitives que le
-// mode texte (selection.js), jamais dupliquées. onProgress remonte l'avancement
-// du NER. signal est un AbortSignal : un traitement abandonné doit s'arrêter,
-// sinon il occupe le modèle et le run suivant attend derrière.
+// `signal` est un AbortSignal : un traitement abandonné doit s'arrêter, sinon
+// il occupe le modèle et le run suivant attend derrière.
 export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre, intitules, entitesConnues } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);

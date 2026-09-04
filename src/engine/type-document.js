@@ -1,21 +1,14 @@
 // « À quoi ressemble ce document ? », pour proposer le bon profil.
 //
-// L'idée d'origine était d'entraîner un modèle par format, un même mot devant
-// être masqué ici et ignoré là. L'intuition est juste, le modèle n'est pas la
-// bonne pièce : sur un vrai CV, les faux positifs restants sont `IA`,
-// `Ollama`, `BDD`, `NSI`, des acronymes d'un seul mot qu'aucun signal
-// contextuel ne distingue de `UNODC` ou `Twini`, qui sont de vraies entités.
-// Un modèle entraîné là-dessus apprendrait à jeter les vraies.
+// Sans ML : entraîner un modèle par format a été envisagé puis écarté, il
+// apprendrait à jeter de vraies entités (voir roadmap-detection.md, annexe).
+// Ce qui traite déjà le problème, c'est la liste éditable d'un profil ; il
+// manquait seulement de savoir lequel proposer.
 //
-// Ce qui les traite déjà, c'est la liste éditable d'un profil. Il manquait
-// seulement de savoir lequel proposer, et ce module y répond sans ML.
+// Règle non négociable : il ne décide jamais d'un masquage, il propose, et il
+// rend `null` plutôt que de deviner.
 //
-// Règle non négociable : il ne décide jamais d'un masquage, il propose. Il rend
-// `null` plutôt que de deviner, une mauvaise suggestion étant pire que pas de
-// suggestion.
-//
-// Structure d'abord, mots ensuite. Les signaux structurels (points de suite,
-// paires libellé/valeur, densité de puces, en-têtes d'e-mail) ne dépendent
+// Structure d'abord, mots ensuite : les signaux structurels ne dépendent
 // d'aucune langue et portent l'essentiel du verdict.
 
 import { FORMATS, motsDeForme } from './vocabulaire-formats.js';

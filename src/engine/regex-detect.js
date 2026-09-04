@@ -267,23 +267,17 @@ export const REGEX_PATTERNS = [
     validate: null
   },
   {
-    // Identifiants nationaux annoncés par un libellé (formats sans tirets, ou
-    // non-US). Le libellé lève l'ambiguïté d'une suite de chiffres banale.
+    // Identifiants nationaux annoncés par un libellé, qui lève l'ambiguïté
+    // d'une suite de chiffres banale.
     //
     // Libellés espagnols et allemands ajoutés parce que le motif était
-    // anglophone : « Seguridad Social : 28 1234567840 » et « Steuer-ID :
-    // 12345678901 » fuyaient. Ces deux-là n'ont pas de clé de contrôle
-    // vérifiable, et « 11 chiffres » nu est trop banal pour être masqué sans
-    // contexte. Le libellé est donc indispensable, contrairement au DNI.
+    // anglophone. Ces deux-là n'ont pas de clé de contrôle vérifiable et
+    // « 11 chiffres » nu est trop banal pour être masqué sans contexte : le
+    // libellé est indispensable ici, contrairement au DNI.
     //
-    // Un VERBE DE LIAISON peut séparer le libellé de la valeur (« Die
-    // Steuer-ID LAUTET 12345678901 »). Sans lui le motif n'attrapait que les
-    // libellés suivis de deux-points : il marchait sur une fiche et échouait
-    // sur une phrase rédigée. Défaut déjà corrigé sur REFERENCE plus bas et
-    // pas répliqué ici ; trouvé par le harnais d'injection.
-    //
-    // Un seul mot, comme pour REFERENCE : au-delà on relierait un libellé à une
-    // valeur trop lointaine.
+    // Un VERBE de liaison peut séparer le libellé de la valeur, sinon le motif
+    // marche sur une fiche et échoue sur une phrase rédigée. Un seul mot :
+    // au-delà on relierait un libellé à une valeur trop lointaine.
     type: 'ID_NATIONAL',
     // Le préfixe `[A-Z]{0,2}` sert aux identifiants qui commencent par des
     // lettres (le NI britannique, « AB 123456 C »). Mais sous le drapeau `i`
