@@ -453,7 +453,7 @@
   "pour_ce_document": {
     "message": "For this document"
   },
-  "pour_tous_les_documents": {
-    "message": "For all documents"
+  "profil_tous_les_documents": {
+    "message": "Profile: for all documents"
   }
 }

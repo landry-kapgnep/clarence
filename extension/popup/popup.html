@@ -64,8 +64,8 @@
         </label>
       </div>
 
-      <details id="customRules">
-        <summary data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
+      <details id="customRules" class="bloc">
+        <summary class="section-titre" data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
         <div class="custom-body">
           <div class="profile-bar">
             <select id="profileSelect" aria-label="Profil d’anonymisation" data-i18n-aria="profil_danonymisation" class="profile-select"></select>
@@ -97,7 +97,7 @@
         <button class="btn-ghost profile-btn" id="profileSuggestDismiss" title="Ignorer" data-i18n-title="ignorer">×</button>
       </div>
 
-      <section id="results" hidden>
+      <section id="results" class="bloc" hidden>
         <h2 data-i18n="detections">Détections</h2>
         <div class="panel" id="annotated"></div>
         <button class="btn-ghost overlay-trigger" id="annotatedMoreBtn" hidden data-i18n="voir_tout">Voir tout</button>
@@ -111,7 +111,7 @@
         </div>
 
         <div class="mapping-bloc">
-          <div class="mapping-titre" data-i18n="corrections">Corrections</div>
+          <div class="groupe-titre" data-i18n="corrections">Corrections</div>
           <div id="mappingWrap"></div>
         </div>
       </section>
@@ -203,8 +203,8 @@
           </label>
         </div>
 
-        <details id="fileCustomRules">
-          <summary data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
+        <details id="fileCustomRules" class="bloc">
+          <summary class="section-titre" data-i18n="personnaliser_le_masquage">Personnaliser le masquage</summary>
           <div class="custom-body">
             <!-- Termes propres à CE document, hors profil : les champs du bloc
                  suivant sont ÉCRASÉS au chargement d'un profil, et « Enregistrer »
@@ -233,7 +233,7 @@
               </div>
             </div>
 
-            <div class="groupe-titre" data-i18n="pour_tous_les_documents">Pour tous les documents</div>
+            <div class="groupe-titre" data-i18n="profil_tous_les_documents">Profil : pour tous les documents</div>
             <div class="profile-bar">
               <select id="fileProfileSelect" aria-label="Profil d’anonymisation" data-i18n-aria="profil_danonymisation" class="profile-select"></select>
               <button class="btn-ghost profile-btn" id="fileProfileSaveBtn" title="Enregistrer dans ce profil" data-i18n-title="enregistrer_dans_ce_profil" data-i18n="enregistrer">Enregistrer</button>
@@ -278,7 +278,7 @@
           <button class="btn-ghost profile-btn" id="fileProfileSuggestDismiss" title="Ignorer" data-i18n-title="ignorer">×</button>
         </div>
 
-        <section id="fileResults" hidden>
+        <section id="fileResults" class="bloc" hidden>
           <h2 data-i18n="resultat">Résultat</h2>
           <div class="controls">
             <button class="btn-primary" id="fileDownloadBtn"><img class="dlbtn" src="img/ClarenceDlButtonW.png" alt="Télécharger" data-i18n-alt="telecharger"></button>
@@ -292,7 +292,7 @@
           <p class="status" id="fileSummary"></p>
 
         <div class="mapping-bloc">
-            <div class="mapping-titre" data-i18n="corrections">Corrections</div>
+            <div class="groupe-titre" data-i18n="corrections">Corrections</div>
             <div id="fileMappingWrap"></div>
           </div>
         </section>
@@ -302,7 +302,7 @@
         <div class="controls">
           <button class="btn-ghost" id="toggleReinjectBtn" data-i18n="desanonymiser_une_reponse">Désanonymiser une réponse</button>
         </div>
-        <div id="reinjectZone" hidden>
+        <div id="reinjectZone" class="bloc" hidden>
           <h2 data-i18n="desanonymiser">Désanonymiser </h2>
           <textarea id="reinjectInput" aria-label="Réponse à désanonymiser" data-i18n-aria="reponse_a_desanonymiser" placeholder="Colle la réponse contenant [PERSONNE_1], [EMAIL_1]…" data-i18n-placeholder="colle_la_reponse_contenant_personne_1_email"></textarea>
           <div class="controls">
