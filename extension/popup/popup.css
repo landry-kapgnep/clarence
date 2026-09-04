@@ -77,6 +77,21 @@
   --e-m: 16px;                 /* entre groupes */
   --e-l: 28px;                 /* entre sections */
 
+  /* LE ROUGE DE LA MARQUE, relevé sur le logo lui-même (#FF2700, identique
+     dans les cinq fichiers source, icône d'extension comprise) plutôt
+     qu'inventé — puis assombri de 6 %, à teinte constante.
+     Raison, mesurée : blanc sur #FF2700 donne 3,79:1. Assez pour une icône
+     (WCAG 1.4.11, seuil 3:1), pas pour le libellé « Vers la page » qui est du
+     texte de 14px (WCAG 1.4.3, seuil 4,5:1). #E62300 monte à 4,56:1 et reste
+     indiscernable du rouge du logo à l'œil. */
+  --rouge-marque: #E62300;
+
+  /* Débord du bandeau de livraison : il doit filer jusqu'aux bords du panneau,
+     donc annuler TOUS les rembourrages qui l'en séparent — .popup-shell (12px)
+     puis .wrap (16px). Une seule constante, sinon les trois valeurs divergent
+     au premier réglage de l'une d'elles. */
+  --debord-panneau: 28px;
+
   --control-weight: 400;
   --control-size: var(--t-corps);
   --control-bg: var(--paper);
@@ -1684,10 +1699,58 @@ select option { background: var(--bg-raised); color: var(--paper); }
   margin-top: 0;
   box-sizing: border-box;
 }
-/* Icône seule : le bouton devient carré, et les trois gardent leur hauteur.
-   « Dans la page » garde son libellé — c'est le seul geste qui ne va pas de soi. */
 #fileResults .dlbtn, #fileResults .cpbtn { width: 16px; }
-#fileResults > .controls > button:has(> img:only-child) { padding: 0 9px; }
+
+/* ===== BANDEAU DE LIVRAISON =====
+   Les trois gestes qui SORTENT le document (télécharger, copier, envoyer dans
+   la page) sont la fin du parcours : ils forment un aplat uni d'un bord à
+   l'autre, à la hauteur exacte des boutons, dans le rouge de la marque.
+   Les boutons n'ont plus de forme propre — même couleur que le bandeau, aucune
+   bordure, aucune ombre : ce sont les pictogrammes blancs qui portent tout.
+   Aucun rembourrage vertical : la hauteur du bandeau EST celle des boutons. */
+/* Le bandeau EST la séparation : le filet de `.bloc` juste au-dessus ne
+   séparait rien qu'un aplat pleine largeur ne sépare déjà. On garde le blanc,
+   on retire le trait. */
+#fileResults { border-top: 0; padding-top: 0; margin-top: var(--e-l); }
+
+#fileResults > .controls {
+  background: var(--rouge-marque);
+  margin-left: calc(-1 * var(--debord-panneau));
+  margin-right: calc(-1 * var(--debord-panneau));
+  padding: 0 var(--debord-panneau);
+  margin-top: var(--e-m);
+  /* Sans écart : deux aplats de même couleur qui se touchent ne montrent
+     aucune couture, et le survol révèle alors la vraie zone cliquable. */
+  gap: 0;
+}
+#fileResults > .controls > button,
+#fileResults > .controls > .drag-card {
+  background: transparent;
+  color: #fff;
+  border: 0;
+  box-shadow: none;
+  padding: 0 14px;
+}
+/* L'inversion des pictos ne vaut que sur un bouton CLAIR (.btn-primary) ; ici
+   le fond est sombre, ils redeviennent blancs — leur couleur d'origine. */
+#fileResults > .controls .dlbtn,
+#fileResults > .controls .cpbtn { filter: none; }
+/* Un aplat sans relief doit quand même répondre. On assombrit le bandeau
+   au lieu d'introduire une couleur : la zone cliquable se révèle, la teinte
+   reste unique. */
+#fileResults > .controls > button:hover:not(:disabled),
+#fileResults > .controls > .drag-card:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.16);
+  filter: none;
+  transform: none;
+}
+#fileResults > .controls > button:focus-visible,
+#fileResults > .controls > .drag-card:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
+}
+/* « Copié ! » s'affiche SUR le bandeau : --paper-dim y serait illisible. */
+#fileResults > .controls > .status { color: #fff; margin-top: 0; padding-left: 8px; }
 
 /* Les deux légendes d'action se touchaient. Le « × » se lisant seul, le mot
    « fois » est retiré de l'écran (gardé pour les lecteurs d'écran), et il reste
