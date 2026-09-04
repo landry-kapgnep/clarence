@@ -172,30 +172,21 @@ export function snapToWordBoundaries(text, entities) {
   return entities;
 }
 
-// Pontage de noms à particules / patronymes ratés - partagé par les deux
-// moteurs contextuels. Deux défauts distincts, tous deux constatés sur de
-// vrais fichiers :
-//  - noms nobiliaires ("Sébastien De La Villardière" : "Villardière" pris pour
-//    un LIEU, le prénom + particules laissés en clair) ;
-//  - patronyme en majuscules séparé du prénom en deux détections distinctes
-//    ("Amandine" + "ROUSSEAU-LEFEBVRE" ; ou, avec GLiNER, "ADRIEN" détecté et
-//    "MESNARD" laissé en clair - le nom en tête d'un vrai CV).
-// Recollage déterministe, toujours ancré sur une détection existante (jamais
-// de nom créé de zéro). Tradeoff assumé (priorité zéro-fuite) : peut
-// sur-masquer un lieu précédé d'un mot capitalisé + particule ("Voyage De La
-// Rochelle").
+// Pontage de noms à particules et de patronymes ratés, partagé par les deux
+// moteurs. Deux défauts vus sur de vrais fichiers : les noms nobiliaires
+// (« Sébastien De La Villardière », où « Villardière » passe pour un LIEU), et
+// le patronyme en majuscules séparé du prénom en deux détections (« ADRIEN »
+// trouvé, « MESNARD » laissé en clair).
 //
-// Ce tradeoff était annoncé « cas rare » - le banc a montré que c'est faux
-// pour une forme précise : « sigle de Ville » est le squelette de la moitié
-// des noms d'établissements français (« IUT de Villetaneuse », « CHU de
-// Nantes », « ENS de Lyon »). Le pontage en faisait des PERSONNE, donc un
-// placeholder [PERSONNE_n] avalait le sigle - l'information « c'est un
-// institut universitaire », que le LLM doit garder, disparaissait avec la
-// ville. Un prénom ne s'écrit pas en sigle : on exige donc du mot absorbé
-// qu'il contienne une minuscule (« Sébastien de … » oui, « IUT de … » non).
-// La ville reste masquée par ailleurs, en LIEU - ce qui est le comportement
-// voulu, identique à « Sarcelles » dans le même document.
-// Modifie les entités en place et les retourne.
+// Recollage déterministe, toujours ancré sur une détection existante : on ne
+// crée jamais un nom de zéro.
+//
+// Le sur-masquage annoncé « rare » ne l'était pas pour une forme : « sigle de
+// Ville » est le squelette de la moitié des établissements français (« IUT de
+// Villetaneuse », « CHU de Nantes »). Le pontage en faisait des PERSONNE et le
+// placeholder avalait le sigle. Un prénom ne s'écrit pas en sigle, donc on
+// exige que le mot absorbé contienne une minuscule. La ville reste masquée en
+// LIEU par ailleurs.
 const PARTICLE = "(?:[Dd]e|[Dd]u|[Dd]es|[Ll]a|[Ll]e|[Dd]['’]|[Ll]['’]|von|van|[Dd]a|[Dd]i)";
 const CAPWORD = "[A-ZÀ-Ü][A-Za-zÀ-ÿ'’-]*";
 // Comme CAPWORD, mais avec au moins une minuscule : exclut les sigles.

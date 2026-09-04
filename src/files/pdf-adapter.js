@@ -35,32 +35,24 @@ configurerPdfjs();
 
 // ── Ressources externes de pdfjs ───────────────────────────────────────────
 //
-// pdfjs va chercher quatre familles de ressources par URL, et n'a aucun repli
-// en navigateur. `workerSrc` est la seule qui plante bruyamment ; les autres
-// dégradent en silence, ce qui est pire.
+// pdfjs va chercher quatre familles de ressources par URL, sans repli en
+// navigateur. `workerSrc` est la seule qui plante bruyamment, les autres
+// dégradent en silence.
 //
-// Elles ne vont pas sur `GlobalWorkerOptions` - qui n'accepte que
-// `workerSrc` et `workerPort`. Ce sont des paramètres de `getDocument()`.
-// Erreur commise ici même : le réglage semblait posé, la console continuait
-// d'avertir, et rien ne signalait que la valeur partait à la poubelle.
+// Elles ne vont PAS sur `GlobalWorkerOptions`, qui n'accepte que `workerSrc` et
+// `workerPort` : ce sont des paramètres de `getDocument()`. Erreur commise ici,
+// et rien ne signalait que la valeur partait à la poubelle.
 //
-//   standard_fonts/  les 14 polices standard (Helvetica, Times…). Sans elles,
-//                    pdfjs mesure mal la largeur des glyphes - exactement ce
-//                    dont dépendent `tailleQuiTient` et `calculerBornes` pour
-//                    décider qu'un fragment rentre ou en chevauche un autre.
-//   cmaps/           encodages CID (PDF asiatiques) - texte sinon illisible.
-//   iccs/            profils colorimétriques.
-//   wasm/            décodeurs JBIG2 / jpeg2000. Sans eux, une image d'un PDF
-//                    scanné ne se décode pas, et la reconstruction la perd.
+//   standard_fonts/  sans elles pdfjs mesure mal la largeur des glyphes, dont
+//                    dépendent `tailleQuiTient` et `calculerBornes`
+//   cmaps/           encodages CID, PDF asiatiques
+//   iccs/            profils colorimétriques
+//   wasm/            décodeurs JBIG2 / jpeg2000, sinon une image de PDF scanné
+//                    ne se décode pas
 //
-// En Node (tests et bancs), on pointe vers node_modules : les mesures de
-// largeur du banc doivent être les mêmes que celles du navigateur, sinon on
-// règle la mise en page sur des chiffres qui n'existent que chez nous.
-// En Node, pdfjs lit le disque : il lui faut un chemin de fichier, pas une URL
-// `file://` (essayé - « Unable to load font data at: file:///… »). On repasse
-// donc du href au chemin, en retirant la barre oblique que `pathname` ajoute
-// devant une lettre de lecteur Windows (`/C:/…`), sans toucher aux chemins
-// POSIX qui, eux, commencent légitimement par `/`.
+// En Node on pointe vers node_modules, pour que le banc mesure les mêmes
+// largeurs que le navigateur. Et pdfjs y lit le disque : il lui faut un chemin
+// de fichier, pas une URL `file://`.
 function racineNode() {
   return decodeURIComponent(new URL('../../node_modules/pdfjs-dist/', import.meta.url).pathname)
     .replace(/^\/([A-Za-z]:)/, '$1');
@@ -215,33 +207,20 @@ export function median(nums) {
   return s[Math.floor(s.length / 2)] || 11;
 }
 
-// Seuil d'écart vertical au-delà duquel deux lignes appartiennent à des
-// paragraphes différents - calibré sur le document lui-même.
+// Seuil d'écart vertical entre deux paragraphes, calibré sur le document.
 //
-// Pourquoi. Le seuil historique (`taille de police × 1.6`) mesurait la mauvaise
-// grandeur : l'interligne dépend de la mise en page, pas du corps du texte. Sur
-// un vrai mémoire en interligne 1,5 - police 11, écart réel 19,0 contre un
-// seuil à 17,7 - chaque ligne devenait un paragraphe. Conséquences mesurées sur
-// 75 pages : 1 782 « paragraphes » de 91 caractères médians dont 52 % coupaient
-// une phrase en cours, 8 088 placeholders (39 % du document masqué, articles
-// compris) et 11 minutes de traitement. Le modèle recevait des demi-phrases
-// sans contexte et étiquetait au hasard. Tout document en interligne 1,5 ou
-// double était touché ; le corpus du banc, en interligne simple, ne pouvait pas
-// le voir.
+// L'ancien seuil (police × 1.6) mesurait la mauvaise grandeur : l'interligne
+// dépend de la mise en page, pas du corps. Sur un mémoire en interligne 1,5,
+// chaque ligne devenait un paragraphe. Mesuré sur 75 pages : 1 782 unités de
+// 91 caractères dont 52 % coupaient une phrase, 8 088 placeholders et 11
+// minutes. Le corpus du banc, en interligne simple, ne pouvait pas le voir.
 //
-// Comment. La médiane des écarts d'une colonne EST son interligne (c'est la
-// valeur la plus fréquente, les sauts de paragraphe étant minoritaires). On
-// compare donc à elle.
+// La médiane des écarts d'une colonne EST son interligne. On compare à elle.
 //
-// Deux garde-fous, chacun issu d'une mesure :
-//  - `Math.max` avec l'ancien seuil : le seuil ne peut que CROÎTRE. Le
-//    changement peut donc uniquement fusionner des lignes, jamais fragmenter
-//    davantage qu'avant. Protège les pages à interligne irrégulier
-//    (bibliographies, tableaux), où la médiane est basse et l'ancien repli
-//    reprend la main.
-//  - `MIN_ECARTS_CALIBRAGE` : sur peu de lignes la médiane tombe sur l'écart de
-//    Paragraphe au lieu de l'interligne. Mesuré sur tests/fixtures/echantillon.pdf
-//    (4 et 2 écarts) : sans cette garde tout fusionnait en une seule unité.
+// Deux garde-fous : `Math.max` avec l'ancien seuil, qui ne peut donc que
+// CROÎTRE (le changement fusionne, il ne fragmente jamais plus qu'avant) ; et
+// `MIN_ECARTS_CALIBRAGE`, parce que sur peu de lignes la médiane tombe sur
+// l'écart de paragraphe et tout fusionnait en une seule unité.
 export function paragraphGapThreshold(lines, dominantSize) {
   const repli = dominantSize * PARAGRAPH_GAP_RATIO;
   const ecarts = [];

@@ -1,27 +1,18 @@
-// Regroupement d'inférences : plusieurs textes en UN seul passage du modèle.
+// Regroupement d'inférences : plusieurs textes en un seul passage du modèle.
 //
-// Pourquoi. Le coût d'une inférence est « ~37 ms fixes + k × longueur » - les
-// 37 ms sont payés à chaque appel, quelle que soit la taille du texte. Sur un
-// mémoire de 75 pages découpé en ~470 unités × 2 groupes de labels, cela fait
-// ~940 appels, soit **~35 s de surcoût fixe pur**, avant le moindre calcul
-// utile. Et un GPU nourri d'une unité de 90 caractères est massivement
-// sous-employé.
+// Le coût est « ~37 ms fixes + k × longueur », et les 37 ms sont payés à chaque
+// appel. Sur un mémoire de 75 pages, ~940 appels font ~35 s de surcoût pur
+// avant le moindre calcul utile. GLiNER.js sait traiter un lot nativement
+// (`inference({ texts })` construit un tenseur et lance un seul run) ; ce
+// module se contente de rassembler les appels concurrents.
 //
-// GLiNER.js sait nativement traiter un lot : `inference({ texts: [...] })`
-// construit UN tenseur et lance UN `onnxWrapper.run()` (voir lib/model.ts). Ce
-// module se contente donc de rassembler les appels concurrents.
+// Ce n'est PAS le regroupement d'unités rejeté dans anonymize-units.js : là on
+// concaténait les textes et le modèle perdait les entités isolées, ici chaque
+// texte reste une entrée distincte du lot.
 //
-// CE QUE CE N'EST PAS. Ce n'est pas le « regroupement d'unités » déjà mesuré et
-// Rejeté (voir anonymize-units.js) : là, on concaténait les textes en un seul,
-// et le modèle perdait les entités isolées. Ici chaque texte reste une entrée
-// distincte du lot, analysée indépendamment ; seul le transport change. La
-// preuve que la qualité est intacte est au banc, pas dans ce commentaire.
-//
-// Piège du rembourrage (padding). `inputLength = Math.max(...textLengths)` :
-// un lot est calculé à la longueur de son plus long texte. Mettre une cellule
-// de 20 caractères avec une fenêtre de 900 fait payer 900 à la cellule. D'où le
-// tri par longueur et le budget ci-dessous - sans quoi le regroupement peut
-// coûter plus cher qu'il ne rapporte.
+// Piège du rembourrage : `inputLength = Math.max(...textLengths)`, donc une
+// cellule de 20 caractères dans un lot à 900 paie 900. D'où le tri par longueur
+// et le budget ci-dessous.
 
 // Taille de lot, choisie par mesure et non au jugé. 240 unités réalistes
 // (longueurs d'un vrai mémoire), même modèle fp16, deux tirages concordants :

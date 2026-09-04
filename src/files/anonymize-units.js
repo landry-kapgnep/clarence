@@ -25,36 +25,27 @@ export const UNIT_SEP = '\n\u{E000}\u{E004}\u{E000}\n';
 
 // Détection unité par unité, jamais sur le texte combiné.
 //
-// Mesuré sur un CV de 38 unités : le texte combiné donnait 7 entités et aucun
-// nom de personne, quand le même modèle trouve le nom sur l'unité isolée. Par
-// unité : 22 entités, nom trouvé, pour +24 % de temps. Des lots de 150, 300 et
-// 600 caractères échouaient tous à trouver le nom.
+// Sur un CV de 38 unités, le texte combiné donnait 7 entités et aucun nom de
+// personne, là où le même modèle trouve le nom sur l'unité isolée : 22 entités
+// pour +24 % de temps. Des lots de 150, 300 et 600 caractères échouaient tous.
+// Le masquage, lui, reste fait sur le texte combiné, d'où vient la cohérence
+// des placeholders.
 //
-// Le masquage, lui, reste fait sur le texte combiné : c'est de là que vient la
-// cohérence des placeholders.
+// Deux garde-fous pour les fichiers à nombreuses cellules : les unités sans
+// suite de deux lettres sont ignorées, les textes identiques détectés une fois.
 //
-// Deux garde-fous pour les fichiers à nombreuses cellules, où un appel par
-// cellule serait prohibitif : les unités sans suite de deux lettres (nombres,
-// dates, codes) sont ignorées, et les textes identiques ne sont détectés
-// qu'une fois.
+// `structurel` : un adaptateur peut marquer une unité qui décrit la structure
+// plutôt que le contenu, et elle est épargnée par la passe contextuelle. Sans
+// ça le modèle confond « la case QUI S'APPELLE date de naissance » avec « une
+// case qui CONTIENT une date de naissance » : sur un export RH, 43 masques
+// pour 62 mots. Le déterministe continue de tourner partout.
 //
-// `structurel` : champ optionnel qu'un adaptateur pose sur une unité décrivant
-// la structure du document plutôt que son contenu. Elle est alors épargnée par
-// la passe contextuelle. Sans ça, le modèle confond « la case QUI S'APPELLE
-// date de naissance » avec « une case qui CONTIENT une date de naissance ».
-// Mesuré sur un export RH : 43 masques pour 62 mots, en-têtes compris, fichier
-// illisible. Le déterministe continue de tourner partout, donc un en-tête qui
-// contiendrait un IBAN reste masqué.
-//
-// PISTE REJETÉE, ne pas la refaire : donner le libellé de colonne comme
-// contexte dégrade la détection, le libellé captant l'attention à la place de
-// la valeur.
+// PISTE REJETÉE : donner le libellé de colonne comme contexte dégrade la
+// détection, le libellé captant l'attention à la place de la valeur.
 //     « EMP-0012 » seul                  → entreprise 0,57  (masqué)
 //     « Matricule : EMP-0012 »           → entreprise 0,32  (fuite)
-//     « 1988-03-14 » seul                → naissance 0,59   (masqué)
 //     « Date de naissance : 1988-03-14 » → 0,74 sur le libellé, 0,15 sur la
 //                                          date (fuite)
-// L'isolement de la cellule est un atout du zero-shot, pas un manque.
 const DATE_NUE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/;
 
 // Faut-il payer une inférence sur cette unité ?

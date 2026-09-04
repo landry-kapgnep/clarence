@@ -110,31 +110,22 @@ export const GROUPES = [
   }
 ];
 
-// Types que le modèle ne détecte PAS de façon fiable - proposés dans l'UI mais
-// Décochés par défaut. Mesuré, pas supposé.
+// Types que le modèle ne détecte PAS de façon fiable : proposés dans l'UI mais
+// décochés par défaut. Mesuré sur un compte rendu RH :
 //
-// Le banc ne contenait longtemps aucun document portant réellement ces
-// données, donc le groupe ne pouvait être jugé que sur son bruit. Un compte
-// rendu RH (`dossier-rh.txt`) a levé le doute - et le verdict est sans appel :
+//   « diabète de type 2 »   → job title          0,04
+//   « aide-soignante »      → medical condition  0,08
+//   « portugaise »          → nationalité        0,02
+//   « suivi psychologique » → donnée de santé    0,28
 //
-//   « diabète de type 2 »   → étiqueté job title          à 0,04
-//   « aide-soignante »      → étiqueté medical condition  à 0,08
-//   « portugaise »          → nationalité                 à 0,02
-//   « suivi psychologique » → donnée de santé             à 0,28
-//   « Camille-Claudel »     → établissement               à 0,31
+// Le modèle inverse poste et santé en français, et place les vraies valeurs
+// entre 0,02 et 0,31, très en dessous du plancher de bruit (0,4 à 0,7). Aucun
+// seuil ne les sépare.
 //
-// Le modèle inverse poste et donnée de santé en français, et place les vraies
-// valeurs entre 0,02 et 0,31 - très en dessous du plancher de bruit mesuré à
-// 0,4-0,7 sur du texte fragmenté. Aucun seuil ne peut les séparer.
-//
-// Effet mesuré au banc en les désactivant : rappel contextuel inchangé (75 %,
-// zéro vrai positif perdu sur 7 documents), termes préservés 93 % → 96 %.
-// Autrement dit ce groupe ne rapportait que du sur-masquage.
-//
-// Les laisser actifs serait de la fausse confiance - précisément ce que le
-// cadrage §5 interdit : l'utilisateur croirait ses données de santé protégées
-// alors qu'elles ne le sont pas. Décochés, l'UI le montre, et il peut les
-// activer en connaissance de cause.
+// Désactivés : rappel inchangé (75 %, zéro vrai positif perdu), préservé
+// 93 → 96 %. Ce groupe ne rapportait que du sur-masquage. Les laisser actifs
+// serait de la fausse confiance : l'utilisateur croirait ses données de santé
+// protégées.
 export const TYPES_PEU_FIABLES = ['POSTE', 'NATIONALITE', 'ETABLISSEMENT', 'SANTE'];
 
 // Types qu'un groupe peut produire - sert à sauter entièrement une passe dont
@@ -250,33 +241,20 @@ function estPlausiblePourLeType(type, valeur) {
   return true;
 }
 
-// glinerPipeline : fonction injectée (text, labels) → [{ spanText, start, end,
-// label, score }]. Injectée pour la même raison que dans ner.js : le moteur
-// reste testable en Node avec un pipeline simulé, sans charger 183 Mo.
-//
-// disabledTypes : Set de types désactivés par l'utilisateur. Utilisé ICI (et
-// pas seulement en aval dans filterByRules) pour éviter une inférence inutile.
-// onProgress({ done, total }) : awaité, permet de rendre la main à l'UI.
+// glinerPipeline : (text, labels) → [{ spanText, start, end, label, score }].
+// Injecté comme dans ner.js pour rester testable en Node sans charger 183 Mo.
+// disabledTypes est utilisé ici, et pas seulement en aval, pour éviter une
+// inférence inutile. onProgress est awaité et rend la main à l'UI.
 // Copie désaccentuée, à longueur strictement égale.
 //
-// Pourquoi. Le checkpoint est un `deberta-v3-small` anglophone (choisi à la
-// mesure : il bat le multilingue sur nos fixtures FR, voir Gotchas). Les
-// accents lui coûtent cher - mesuré sur le même nom, en capitales :
+// Le checkpoint est un deberta anglophone et les accents lui coûtent cher :
 // « ELEONORE VASSEUR » sort à 0,618, « ÉLÉONORE VASSEUR » à 0,418, pour un
-// seuil à 0,46. Le nom fuyait donc en clair (P10). Ce n'est pas « les
-// capitales accentuées ne marchent pas » - « MÉLANIE THÉVENOT » sort à 0,507 -
-// c'est que l'accentuation retire ~0,20 et que certains cas atterrissent juste
-// sous la barre.
+// seuil à 0,46. Le nom fuyait (P10). L'accentuation retire environ 0,20 et
+// certains cas atterrissent juste sous la barre.
 //
-// Longueur préservée, et c'est tout l'intérêt de cet axe. On ne remplace un
-// caractère que si sa forme désaccentuée fait exactement la même longueur :
-// les offsets rendus par le modèle sont alors valides sur les deux textes, et
-// la valeur masquée se relit sur l'original sans le moindre recalage. La passe
-// à casse boostée de `ner.js`, elle, n'a pas cette garantie (« ß » → « SS »).
-//
-// À ne pas confondre avec la minusculisation, mesurée et rejetée au spike POS
-// (+7 démasquages mais 3 fuites) : un modèle « cased » se sert de la majuscule
-// comme signal, la retirer brouille la frontière. Désaccentuer la préserve.
+// Longueur préservée, et c'est l'intérêt : les offsets du modèle restent
+// valides sur les deux textes, sans recalage. À ne pas confondre avec la
+// minusculisation, rejetée au spike POS.
 export function desaccentuer(texte) {
   let sortie = '';
   for (const ch of texte) {
@@ -289,34 +267,17 @@ export function desaccentuer(texte) {
 // Copie à casse adoucie, à longueur strictement égale. Même axe que
 // `desaccentuer`, et celle des deux qui porte le plus.
 //
-// Mesuré sur un casier judiciaire, un formulaire dont les valeurs sont en
-// capitales. Cette classe de document manquait au corpus, fait de CV et de
-// mémoires, d'où la survie du défaut :
-//
+// Mesuré sur un casier judiciaire, un formulaire aux valeurs en capitales,
+// classe de document absente du corpus :
 //   « ADRIEN MESNARD »   company 0,72   →  person   0,99
 //   « FOSSES »           person  0,36   →  location 0,70
-//   « NANTES »           location 0,40  →  location 0,53
+// Le nom sortait en ENTREPRISE, donc pseudonyme de société et pas de
+// décomposition par composant : le prénom isolé n'était jamais masqué.
 //
-// Le nom sortait en ENTREPRISE : pseudonyme tiré du vivier des sociétés, et
-// surtout la décomposition par composant, réservée aux PER, ne s'appliquait
-// pas. Le prénom isolé n'était donc jamais masqué. Une fuite.
-//
-// Pas de minusculisation complète, mesurée et rejetée au spike POS
-// (+7 démasquages mais 3 fuites). On garde l'initiale majuscule, signal dont un
-// modèle « cased » se sert pour délimiter un nom propre, et on n'enlève que
-// l'anomalie tout-majuscule.
-//
-// Longueur préservée : `toLowerCase()` peut allonger (le « İ » turc donne deux
-// points de code), donc on ne remplace un caractère que si sa minuscule fait
-// exactement la même longueur. C'est ce que `boostCase` dans ner.js ne
-// garantissait pas (« ß » → « SS »).
-//
-// Trois lettres au moins : en dessous ce sont des sigles (BIC, RIB, TVA) que le
-// déterministe traite déjà. La passe est additive, elle ne peut qu'ajouter des
-// candidats.
-//
-// Correctif partiel : « SARCELLES » reste à 0,43, sous le seuil, avant comme
-// après.
+// Pas de minusculisation complète (spike POS : +7 démasquages, 3 fuites). On
+// garde l'initiale majuscule, dont un modèle « cased » se sert pour délimiter
+// un nom propre. Longueur préservée, `toLowerCase()` pouvant allonger.
+// Trois lettres au moins, en dessous ce sont des sigles.
 const MOT_TOUT_CAPITALES = /\p{Lu}[\p{Lu}'’-]{2,}/gu;
 
 export function adoucirCasse(texte) {
