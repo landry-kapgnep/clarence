@@ -1,20 +1,14 @@
-// Profil d'identité : les données personnelles de l'utilisateur, déclarées UNE
-// Fois, pour que le masquage de sa propre identité soit déterministe - jamais
-// suspendu au score de confiance d'un modèle (un nom en titre de CV sort à
-// 0,47 : aucun seuil ne rend ça fiable ; une recherche littérale, si).
+// Profil d'identité : les données personnelles déclarées une fois, pour que le
+// masquage de sa propre identité soit déterministe et jamais suspendu au score
+// d'un modèle (un nom en titre de CV sort à 0,47).
 //
-// Les termes alimentent forcedMasks (src/engine/selection.js), le mécanisme
-// « toujours masquer » existant et testé en zéro tolérance. Le moteur de
-// détection ne sait rien de ce module.
+// Les termes alimentent forcedMasks (selection.js), mécanisme déjà testé en
+// zéro tolérance. Le moteur ne sait rien de ce module.
 //
-// ============================ CONFIDENTIALITÉ =============================
-// chrome.storage.Local exclusivement. Jamais chrome.storage.sync : sync
-// téléverse vers les serveurs Google - pour le fichier le plus sensible de
-// toute l'extension (l'identité complète de l'utilisateur), ce serait une
-// violation frontale du principe « aucune donnée ne quitte le navigateur ».
-// Si un jour quelqu'un veut « synchroniser les réglages entre machines »,
-// ce module est exclu d'office de cette synchronisation.
-// ==========================================================================
+// chrome.storage.LOCAL exclusivement, jamais `sync` : sync téléverse vers les
+// serveurs Google, et c'est ici le fichier le plus sensible de l'extension. Si
+// quelqu'un ajoute un jour une synchronisation des réglages, ce module en est
+// exclu d'office.
 
 import { estComposantNonIdentifiant } from '../engine/honorifics.js';
 

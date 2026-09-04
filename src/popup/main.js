@@ -581,21 +581,14 @@ function contextualDetector() {
 }
 
 // Seconde opinion sur les propositions du modèle, en deux temps :
-//   1. `arbitrerFauxPositifs` - le modèle est réinterrogé avec des labels
-//      leurres pour écarter « Analyste », « Poste occupé » et consorts ;
-//   2. `filtrerParPrecision` - un classifieur pèse une douzaine de signaux
-//      (lexique, casse, occurrences, minuscules ailleurs…) pour écarter les
-//      groupes nominaux ordinaires pris pour des organisations ou des lieux.
+//   1. `arbitrerFauxPositifs` réinterroge le modèle avec des labels leurres
+//      pour écarter « Analyste », « Poste occupé » et consorts ;
+//   2. `filtrerParPrecision` pèse une douzaine de signaux pour écarter les
+//      groupes nominaux pris pour des organisations ou des lieux.
 //
-// Cet ordre est celui sur lequel le filtre a été entraîné (voir
-// tools/filtre/construire-jeu.mjs) : l'inverser lui ferait voir une population
-// de candidats différente de celle qu'il connaît.
-//
-// Uniquement avec GLiNER, et pour deux raisons distinctes : l'arbitrage a
-// besoin de labels à interroger, que le moteur BERT de repli n'a pas ; et le
-// filtre a appris sur les erreurs de GLiNER, pas sur celles de BERT - l'y
-// appliquer serait l'utiliser hors de son domaine. On renvoie alors
-// `undefined` et l'orchestrateur passe outre.
+// L'ORDRE COMPTE et ne s'inverse pas : c'est celui sur lequel le filtre a été
+// entraîné. Uniquement avec GLiNER, sinon on renvoie `undefined`.
+// Voir docs/roadmap-detection.md, annexe.
 function arbitreContextuel() {
   if (nerEngine !== 'gliner') return undefined;
   return composerArbitre(nerPipe, arbitrerFauxPositifs);
@@ -2413,23 +2406,16 @@ function montrerSuggestion({ prefixe, texte, entites }) {
 // au milieu d'une direction artistique tenue partout ailleurs.
 //
 // Un dialogue maison mal fait est moins accessible que le natif, pas plus.
-// C'est le seul risque de ce remplacement, et il se paie en quatre obligations,
-// toutes tenues ici :
-//   · role="dialog" + aria-modal, pour que le lecteur d'écran sorte du fond ;
-//   · le focus entre au premier contrôle utile et revient à son déclencheur en
-//     sortant - sans quoi on se retrouve perdu en haut de page ;
-//   · le focus est piégé : Tab tourne dans le dialogue au lieu d'aller
-//     parcourir une interface qu'on ne voit plus ;
-//   · Échap annule, comme partout ailleurs.
+// ===== Dialogue maison, en place de window.prompt / window.confirm ==========
+//
+// Ces deux-là sont peints par le navigateur, aucun CSS ne les atteint.
+//
+// Un dialogue maison mal fait est moins accessible que le natif, pas plus.
+// Quatre obligations, toutes tenues ici : role="dialog" + aria-modal ; le focus
+// entre au premier contrôle utile et revient à son déclencheur ; le focus est
+// piégé, Tab tourne dans le dialogue ; Échap annule.
 //
 // Rend une promesse : la chaîne saisie, `true`, ou `null` si annulé.
-function demander({ titre, texte, valeur, libelleOk, danger }) {
-  const boite = $('dialogue');
-  const champ = $('dialogueChamp');
-  const ok = $('dialogueOk');
-  const annuler = $('dialogueAnnuler');
-  const declencheur = document.activeElement;
-  const saisie = valeur !== undefined;
 
   $('dialogueTitre').textContent = titre;
   $('dialogueTexte').textContent = texte || '';

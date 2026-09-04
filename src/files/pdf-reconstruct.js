@@ -247,21 +247,15 @@ export function tailleQuiTient(font, texte, taille, x, borne) {
 const MEME_LIGNE = 2;
 
 // Borne droite d'un fragment : le début du prochain fragment à la même hauteur,
-// à défaut le bord de page.
-//
-// `tailleQuiTient` ne bornait qu'au bord de page, donc un placeholder plus long
-// que la valeur remplacée restait dans la page mais mordait sur le voisin.
+// à défaut le bord de page. Sans ça un placeholder plus long que la valeur
+// remplacée reste dans la page mais mord sur son voisin.
 //
 // La portée est la PAGE, pas le paragraphe : deux fragments à la même hauteur
-// appartiennent souvent à des unités différentes (deux colonnes, un titre
-// courant et un numéro de page). Une première version ne comparait qu'à
-// l'intérieur d'une unité et laissait la colonne gauche mordre sur la droite.
+// appartiennent souvent à des unités différentes. On ne cherche pas à
+// reconstituer les lignes logiques, indécidable dans un PDF : seule compte la
+// superposition géométrique.
 //
-// On ne cherche pas à reconstituer les lignes logiques, indécidable dans un
-// PDF, et on n'en a pas besoin : seule compte la superposition géométrique.
-//
-// ON RÉTRÉCIT, on ne déplace pas : repousser le fragment suivant crée un autre
-// chevauchement plus loin. Indexé par bande, sinon c'est quadratique.
+// ON RÉTRÉCIT, on ne déplace pas. Indexé par bande, sinon c'est quadratique.
 export function calculerBornes(runs, textes, largeurPage) {
   const bandes = new Map();
   for (let i = 0; i < runs.length; i++) {

@@ -1,21 +1,13 @@
 // Ce qu'on peut dire d'un candidat sans le modèle : la matière première du
 // filtre de précision.
 //
-// Les signaux sont individuellement faibles (« acoustique » se fragmente en
-// trois morceaux comme « Mesnard », « Sorbonne » n'en fait qu'un) ; les
-// combiner est ce qu'un classifieur fait mieux qu'une suite de `if`.
-//
 // Ce module ne décide rien et ne charge rien, il rend des nombres. La décision
 // vit dans precision.js, les poids sont appris hors ligne. C'est la leçon
-// d'`encodeImage` : la décision sortie en fonction pure est celle qu'on peut
-// tester.
+// d'`encodeImage` : une décision sortie en fonction pure est testable.
 //
-// Chaque caractéristique a été choisie pour ne PAS dépendre d'une langue :
-// casse, longueur, nombre de mots, chiffres, ponctuation interne, occurrences.
-// « Le même mot apparaît-il ailleurs en minuscules dans ce document ? » est
-// auto-calibré, le document servant de dictionnaire à lui-même. Seuls les
-// suffixes sont propres au français, isolés dans leur propre caractéristique
-// pour qu'on puisse mesurer ce qu'ils apportent.
+// Chaque caractéristique a été choisie pour ne PAS dépendre d'une langue. Seuls
+// les suffixes sont propres au français, isolés dans leur propre
+// caractéristique pour qu'on puisse mesurer ce qu'ils apportent.
 import { auLexique, aSuffixeCommun, motsSignificatifs } from './vocabulaire.js';
 
 // Bornage : toutes les caractéristiques vivent dans [0, 1]. Sans ça, une
@@ -54,23 +46,15 @@ export function contexteDocument(texte, { sousMots } = {}) {
   return { enMinuscules, comptes, sousMots };
 }
 
-// Nombre de morceaux WordPiece d'un mot, par segmentation gloutonne. Un mot
-// connu du vocabulaire fait 1 morceau, un mot inventé se casse en plusieurs.
+// Nombre de morceaux WordPiece d'un mot, par segmentation gloutonne.
 //
-// Signal faible, et c'est pour ça qu'il est ici plutôt que dans une règle :
-// « Semantikmatch » 5 morceaux contre « terrain » 1, mais aussi « acoustique »
-// 3 (nom commun) contre « Sorbonne » 1 (nom propre). Il informe, il ne tranche
-// pas.
+// Signal faible, les deux populations se recouvrent (« acoustique » 3 morceaux
+// comme un nom propre, « Sorbonne » 1 comme un nom commun) : il informe, il ne
+// tranche pas. D'où le classifieur plutôt qu'une règle.
 //
-// NE PAS MINUSCULISER, piège commis puis mesuré. Le vocabulaire est cased :
-// « Unternehmen » y figure, « unternehmen » non. Minusculiser avant de
-// segmenter rendait 2 morceaux pour le mot allemand le plus banal, donc
-// mesurait la casse au lieu de la rareté.
-//
-// On segmente trois formes (surface, minuscule, capitale initiale) et on garde
-// le minimum. La troisième n'est pas un luxe : « SPRACHEN » ne retrouve que
-// « Sprachen », et les intitulés en capitales sont justement là où le
-// sur-masquage se concentre.
+// NE PAS MINUSCULISER avant de segmenter : le vocabulaire est cased, et une
+// première version mesurait la casse au lieu de la rareté. On essaie trois
+// formes et on garde le minimum. Voir roadmap-detection.md, annexe.
 function segmenter(mot, sousMots) {
   let i = 0, n = 0;
   while (i < mot.length) {

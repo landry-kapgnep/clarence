@@ -15,22 +15,15 @@
 // autres.
 
 // Notre propre conversion des poids Apache 2.0 de Microsoft, sous une licence
-// explicite - bloquant de publication levé le 15/08/2026.
+// explicite. Le dépôt officiel n'expose que du PyTorch, or le navigateur ne
+// sait exécuter que de l'ONNX, et la conversion communautaire utilisée pendant
+// le développement ne déclarait aucune licence - donc non redistribuable.
 //
-// Le dépôt officiel `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`
-// n'expose que du PyTorch, or le navigateur ne sait exécuter que de l'ONNX. Le
-// développement s'appuyait sur une conversion communautaire dont la fiche ne
-// déclarait aucune licence - donc « tous droits réservés » par défaut, et
-// impossible à redistribuer sur le Chrome Web Store.
+// La nôtre est mesurée meilleure, pas seulement conforme : voir
+// docs/roadmap-detection.md, annexe, et tools/README.md pour la reproduire.
 //
-// La nôtre est mesurée meilleure, pas simplement conforme : écart nul en fp32
-// contre le vrai PyTorch (l'export est exact), et en int8 moins de décisions
-// retournées que la communautaire (1 contre 2), grâce à une quantification par
-// canal choisie sur six recettes comparées. Voir tools/README.md pour la
-// reproduire, docs/spike-llmlingua2.md pour les chiffres.
-//
-// Rappel : télécharger un modèle est une requête ENTRANTE. Rien du texte de
-// l'utilisateur ne sort jamais du navigateur - le principe du projet tient.
+// Télécharger un modèle est une requête ENTRANTE : rien du texte de
+// l'utilisateur ne sort du navigateur.
 export const COMPRESSION_MODEL = 'clarenceorg/llmlingua-2-onnx';
 
 // ── Découpage en MOTS, et pourquoi pas en tokens ───────────────────────────

@@ -104,22 +104,17 @@ const LOCALES = {
   }
 };
 
-// Types éligibles au réalisme ; tout le reste garde son placeholder [type_N].
+// Types éligibles au réalisme ; le reste garde son placeholder [type_N].
 //
-// Deux conditions : le type doit être un IDENTIFIANT, et sa détection doit être
-// FIABLE.
+// Deux conditions : être un IDENTIFIANT, et avoir une détection FIABLE.
 //
-// POSTE, NATIONALITE et SANTE sont des attributs, pas des identifiants : leur
-// valeur est le sujet du raisonnement. « diabète de type 2 » → « asthme »
-// donne une réponse médicale fausse, et rien ne le signale. Un placeholder
-// annonce qu'on a retiré quelque chose ; un faux attribut plausible n'annonce
-// rien.
+// POSTE, NATIONALITE et SANTE sont des attributs : leur valeur est le sujet du
+// raisonnement, et « diabète de type 2 » → « asthme » donne une réponse
+// médicale fausse sans que rien ne le signale.
 //
-// ETABLISSEMENT est bien un identifiant mais figure dans TYPES_PEU_FIABLES
-// (gliner.js), et c'est la seconde condition qui tranche : sur un vrai CV,
-// « LLM local » a été pris pour un établissement et remplacé par « École
-// Morel ». Un « [ETABLISSEMENT_1] » posé au même endroit saute aux yeux et se
-// retire d'un clic.
+// ETABLISSEMENT est un identifiant mais figure dans TYPES_PEU_FIABLES, et
+// c'est la seconde condition qui tranche : « LLM local » remplacé par « École
+// Morel » fait croire à une école qui n'existe pas.
 const REALISTIC_TYPES = new Set([
   'PER', 'ORG', 'LOC', 'ADRESSE', 'EMAIL', 'TELEPHONE', 'DATE_NAISSANCE',
   // Handle : identifiant, détecté par regex donc de façon déterministe.
@@ -216,22 +211,15 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   }
 
   // Compose un identifiant technique (partie locale d'un email, handle) à
-  // partir des mêmes composants que le nom de la personne.
+  // partir des mêmes composants que le nom.
   //
-  // Le défaut que ça corrige, signalé sur un vrai CV : la personne devenait
-  // « ROMAIN MOREAU » et son email « thomas.simon@… ». Deux identités pour
-  // quelqu'un dont l'adresse porte justement son nom - la cohérence que
-  // l'option promet s'arrêtait aux frontières du type.
+  // Sans ça la personne devenait « ROMAIN MOREAU » et son email
+  // « thomas.simon@… » : deux identités pour quelqu'un dont l'adresse porte
+  // justement son nom.
   //
-  // Le mécanisme est celui qui existe déjà : `pseudoToken` consulte `tokenMap`,
-  // donc « mesnard » rencontré dans « ADRIEN MESNARD » puis dans
-  // « adrien.mesnard.pro » rend deux fois le même composant. L'ordre de
-  // première rencontre n'importe pas.
-  //
-  // Tous les composants sont substitués, y compris ceux qui ne sont pas des
-  // noms (« pro », « dev ») : les épargner supposerait une liste de mots
-  // « non identifiants », classe ouverte qu'on refuse partout ailleurs - et
-  // un fragment du vrai handle survivrait.
+  // Tous les composants sont substitués, y compris « pro » ou « dev » : les
+  // épargner supposerait une liste de mots non identifiants, classe ouverte
+  // qu'on refuse partout, et un fragment du vrai handle survivrait.
   const composeIdentifiant = (brut) => {
     const parts = String(brut).split(/([._\-]+)/);
     const mots = parts.filter((p, i) => i % 2 === 0 && p);

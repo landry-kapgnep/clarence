@@ -18,22 +18,15 @@
 import { LEXIQUE_COURANT } from './lexique.js';
 
 // Suffixes dérivationnels du français, là où le lexique est mince : issu d'un
-// vocabulaire réparti sur 104 langues, il ignore « bénévole » ou
-// « conteneurisée ». Un nom propre ne porte pratiquement jamais ces
-// terminaisons.
+// vocabulaire sur 104 langues, il ignore « bénévole » ou « conteneurisée ».
 //
 // SIX SUFFIXES ONT ÉTÉ RETIRÉS, NE PAS LES REMETTRE : `-elle`, `-ance`,
-// `-ence`, `-ique`, `-aire`, `-euse`. Ils collident avec des toponymes
-// (Sarcelles, France, Provence, Belgique, Saint-Nazaire, Villetaneuse) et
-// faisaient cesser de masquer ces villes. Le piège s'est refermé trois fois :
-// suffixes du français et toponymes français partagent leurs terminaisons, et
-// on ne découvre chaque collision qu'au moment où un test finit par la couvrir.
-// Coût accepté : « Canal acoustique de données » survit comme faux positif.
+// `-ence`, `-ique`, `-aire`, `-euse`. Ils collident avec des toponymes et
+// faisaient cesser de masquer Sarcelles, Provence ou Villetaneuse. Le piège
+// s'est refermé trois fois.
 //
-// Mesuré le 30/08/2026 : la liste n'apporte plus rien au banc. Neutralisée,
-// les neuf documents rendent des constats identiques. La retirer demande de
-// reconstruire le jeu d'entraînement pour supprimer `partSuffixe`, donc pas
-// ici.
+// La liste restante n'apporte plus rien au banc (mesuré) ; la retirer demande
+// de reconstruire le jeu d'entraînement. Voir roadmap-detection.md, annexe.
 const SUFFIXES_COMMUNS =
   /(?:ment|tion|sion|isme|iste|ateur|eur|trice|able|ible|ité|isée|isé|ifié|logie|graphie)s?$/i;
 

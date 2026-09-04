@@ -2065,3 +2065,153 @@ donc pencher vers des unités plus courtes qu'aujourd'hui.
 
 Rien n'est changé dans le produit sur cette base : la décision demande d'abord
 de savoir ce que devient un mémoire en prose, et le balayage ne l'a pas mesuré.
+
+
+---
+
+# Annexe - mesures sorties des commentaires du code
+
+Ces chiffres justifiaient des règles écrites dans le code. Ils vivaient en tête
+des modules concernés, où ils faisaient des commentaires de vingt lignes. La
+règle reste dans le code, la mesure est ici.
+
+## Conversion des poids de compression (`src/engine/compression.js`)
+
+Le dépôt officiel `microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank`
+n'expose que du PyTorch, or le navigateur ne sait exécuter que de l'ONNX. Le
+développement s'appuyait sur une conversion communautaire dont la fiche ne
+déclarait aucune licence, donc « tous droits réservés » par défaut, et
+impossible à redistribuer sur le Chrome Web Store.
+
+Notre conversion est mesurée meilleure, pas seulement conforme :
+
+| | fp32 contre PyTorch | int8, décisions retournées |
+|---|---|---|
+| conversion communautaire | - | 2 |
+| la nôtre | écart nul (export exact) | **1** |
+
+La quantification par canal a été choisie sur six recettes comparées.
+Reproduction : `tools/README.md`. Chiffres détaillés : `docs/spike-llmlingua2.md`.
+
+## Mots coupés en fin de ligne dans un PDF (`src/files/pdf-adapter.js`)
+
+Un fragment isolé par la césure est soumis tel quel au modèle, qui l'étiquette
+avec confiance. Mesuré sur un vrai CV :
+
+| fragment | origine | étiquette | score |
+|---|---|---|---|
+| `matisée` | « automatisée » | donnée de santé | 0,70 |
+| `plicative` | « applicative » | entreprise | 0,70 |
+| *(le vrai nom du candidat)* | | personne | **0,47** |
+
+Le bruit sort donc au-dessus du signal sur le document le plus sensible. Ce
+n'est pas cosmétique, ça rend la détection contextuelle non fiable.
+
+Signal retenu pour distinguer une césure d'un tiret de séparation : trait
+d'union collé à la dernière lettre, sans espace avant, ET ligne suivante
+commençant par une minuscule. Un tiret de séparation français est toujours
+entouré d'espaces (« Anglais - C1 »).
+
+## Suffixes dérivationnels neutralisés (`src/engine/vocabulaire.js`)
+
+Six suffixes ont été retirés parce qu'ils collident avec des toponymes :
+
+| suffixe | toponyme qui cessait d'être masqué |
+|---|---|
+| `-elle` | Sarcelles |
+| `-ance` | France |
+| `-ence` | Provence |
+| `-ique` | Belgique, Martinique |
+| `-aire` | Saint-Nazaire |
+| `-euse` | Villetaneuse |
+
+Le piège s'est refermé trois fois : suffixes du français et toponymes français
+partagent leurs terminaisons, et chaque collision ne se découvre qu'au moment
+où un test finit par la couvrir.
+
+Mesuré le 30/08/2026 : la liste restante n'apporte plus rien au banc.
+Neutralisée entièrement, les neuf documents rendent des constats identiques.
+La retirer demande de reconstruire le jeu d'entraînement pour supprimer la
+caractéristique `partSuffixe`, ce qui n'est pas fait.
+
+Coût accepté en l'état : « Canal acoustique de données » survit comme faux
+positif, faute de `-ique`.
+
+## Ordre des deux passes d'arbitrage (`src/popup/main.js`)
+
+`arbitrerFauxPositifs` puis `filtrerParPrecision`, et pas l'inverse : c'est
+l'ordre sur lequel le filtre a été entraîné (`tools/filtre/construire-jeu.mjs`).
+L'inverser lui ferait voir une population de candidats différente de celle
+qu'il connaît.
+
+Les deux passes ne tournent qu'avec GLiNER. L'arbitrage a besoin de labels à
+interroger, que le moteur BERT de repli n'a pas ; et le filtre a appris sur les
+erreurs de GLiNER, pas sur celles de BERT.
+
+## Seuil du groupe identité, balayage en fp16 (`src/engine/gliner.js`)
+
+**Un seuil appartient à une variante de poids.** Calibré à 0,38 en int8, il est
+devenu trop bas en fp16, numériquement plus précis : tous les scores remontent
+et le préservé tombait de 98 à 93 % (« SOMMAIRE » et « Docker » sur-masqués).
+Changer de variante sans rebalayer, c'est troquer de la qualité contre de la
+vitesse sans s'en apercevoir.
+
+| seuil | rappel | préservé | |
+|---|---|---|---|
+| 0,38 | 83 % | 93 % | |
+| 0,42 | 83 % | 93 % | |
+| 0,45 | 83 % | 96 % | |
+| **0,46** | **83 %** | **98 %** | retenu |
+| 0,47 - 0,48 | 83 % | 98 % | plateau |
+| 0,50 | - | - | casse le structuré (19/20), rédhibitoire |
+
+0,46 est le plus BAS du plateau, donc le plus détectant à qualité égale,
+conformément à « zéro-fuite avant faux positifs ».
+
+En dessous de 0,36, « CERTIFICAT DE SCOLARITE » devient un faux positif PER et
+le préservé de `certificat-fr.txt` chute de 100 à 67 %. **Ne pas descendre sans
+revérifier ce cas précis.**
+
+## Types peu fiables, décochés par défaut (`src/engine/gliner.js`)
+
+Mesuré sur un compte rendu RH :
+
+| valeur | étiquette rendue | score |
+|---|---|---|
+| « diabète de type 2 » | job title | 0,04 |
+| « aide-soignante » | medical condition | 0,08 |
+| « portugaise » | nationalité | 0,02 |
+| « suivi psychologique » | donnée de santé | 0,28 |
+
+Le modèle inverse poste et donnée de santé en français, et place les vraies
+valeurs entre 0,02 et 0,31 - très en dessous du plancher de bruit mesuré à
+0,4-0,7 sur du texte fragmenté. Aucun seuil ne peut les séparer.
+
+Effet de la désactivation au banc : rappel contextuel inchangé (75 %, zéro vrai
+positif perdu sur 7 documents), termes préservés 93 % → 96 %. Le groupe ne
+rapportait donc que du sur-masquage.
+
+## Fragmentation WordPiece, un signal faible (`src/engine/caracteristiques.js`)
+
+| mot | morceaux | nature |
+|---|---|---|
+| Semantikmatch | 5 | nom propre |
+| SafePrompt | 4 | nom propre |
+| acoustique | 3 | nom commun |
+| bénévole | 3 | nom commun |
+| Sorbonne | 1 | nom propre |
+| terrain | 1 | nom commun |
+
+Les deux populations se recouvrent : la caractéristique informe, elle ne tranche
+pas. C'est la raison pour laquelle elle alimente un classifieur plutôt qu'une
+règle.
+
+**Ne pas minusculiser avant de segmenter**, piège commis puis mesuré. Le
+vocabulaire est cased : « Unternehmen » y figure, « unternehmen » non. Une
+première version rendait donc 2 morceaux pour le mot allemand le plus banal qui
+soit. Elle mesurait la casse au lieu de la rareté.
+
+On segmente trois formes (surface, minuscule, capitale initiale) et on garde le
+minimum. La troisième n'est pas un luxe : « SPRACHEN » ne retrouve ni
+« SPRACHEN » ni « sprachen », seulement « Sprachen », et les intitulés en
+capitales sont justement là où le sur-masquage se concentre.

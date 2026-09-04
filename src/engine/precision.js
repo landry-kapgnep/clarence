@@ -1,21 +1,15 @@
 // Filtre de précision : « ce candidat mérite-t-il d'être masqué ? »
 //
-// `vocabulaire.js` répond avec une seule caractéristique et un seuil binaire.
-// Il a fallu lui retirer cinq suffixes qui mordaient sur des toponymes, signe
-// qu'une règle écrite à la main avait atteint sa limite. Ici une douzaine de
-// signaux faibles sont pesés ensemble.
+// Une douzaine de signaux faibles pesés ensemble, là où `vocabulaire.js` ne
+// répond qu'avec une caractéristique et un seuil binaire.
 //
-// Régression logistique, donc une quinzaine de nombres lisibles :
-// `expliquer()` rend la caractéristique qui a décidé. Dans un produit bâti sur
-// l'anti-fausse-confiance, un mécanisme qui démasque sans dire pourquoi serait
-// un contresens.
+// Régression logistique, donc lisible : `expliquer()` rend la caractéristique
+// qui a décidé.
 //
-// TROIS GARDE-FOUS, dans le code et pas seulement ici :
-//   1. il ne peut que retirer des candidats, jamais en ajouter ;
-//   2. il ne touche jamais le déterministe : un IBAN validé mod-97 ne se
-//      discute pas avec un modèle statistique ;
-//   3. il ne touche jamais les personnes. « Pierre Blanc » est jugé
-//      « vocabulaire » ; un filtre qui démasque des personnes fuit.
+// TROIS GARDE-FOUS, dans le code : il ne peut que retirer, jamais ajouter ; il
+// ne touche jamais le déterministe ; il ne touche jamais les personnes
+// (« Pierre Blanc » est jugé « vocabulaire », un filtre qui démasque des
+// personnes fuit).
 import { contexteDocument, caracteristiques } from './caracteristiques.js';
 import { motsSignificatifs } from './vocabulaire.js';
 import { POIDS } from './poids-precision.js';

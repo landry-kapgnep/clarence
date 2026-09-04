@@ -103,22 +103,14 @@ export function needsSpace(a, b) {
   return gap > Math.max(1, (a.size || 10) * 0.2);
 }
 
-// Une ligne qui se termine par un mot coupé en fin de ligne (typographie
-// justifiée, fréquente dans une colonne étroite de CV) doit être RECOLLÉE à la
-// ligne suivante, sans quoi le fragment isolé est soumis tel quel au modèle
-// contextuel, qui l'étiquette avec confiance : constaté sur un vrai CV,
-// « matisée » (fin d'« automatisée ») → donnée de santé à 0,70, « plicative »
-// (fin d'« applicative ») → entreprise à 0,70 - au-dessus du score du vrai nom
-// du candidat sur ce même document (0,47). Ce n'est donc pas cosmétique : ça
-// rend la détection contextuelle non fiable sur le document le plus sensible.
+// Recolle un mot coupé en fin de ligne. Un fragment isolé par la césure est
+// soumis tel quel au modèle, qui l'étiquette avec confiance AU-DESSUS du vrai
+// nom du candidat. Chiffres : docs/roadmap-detection.md, annexe.
 //
-// Signal fiable pour distinguer ce cas d'un tiret de séparation ordinaire : un
-// trait d'union collé à la dernière lettre, sans espace avant lui. Un tiret de
-// séparation réel en français est toujours entouré d'espaces (« Anglais - C1 »,
-// « Concours d'éloquence - Double lauréat ») - il ne déclenche donc jamais ce
-// motif. On exige en plus que la ligne suivante commence par une minuscule :
-// une vraie coupure de mot continue toujours en minuscule ; une nouvelle
-// phrase ou un titre commencerait par une majuscule.
+// Signal retenu : trait d'union collé à la dernière lettre, sans espace avant,
+// et ligne suivante commençant par une minuscule. Un tiret de séparation
+// français est toujours entouré d'espaces (« Anglais - C1 »), il ne déclenche
+// donc jamais ce motif.
 const FIN_DE_MOT_COUPE = /\p{L}-$/u;
 export function isLineWrapHyphen(texteAvant, texteApres) {
   return FIN_DE_MOT_COUPE.test(texteAvant) && /^\p{Ll}/u.test(texteApres);

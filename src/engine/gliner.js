@@ -63,22 +63,14 @@ export const GROUPES = [
   {
     // Le cœur : ce que le NER BERT couvrait, en mieux sur les valeurs isolées.
     //
-    // UN SEUIL APPARTIENT À UNE VARIANTE DE POIDS. Calibré à 0,38 en int8, il
-    // est devenu trop bas en fp16, numériquement plus précis : tous les scores
-    // remontent et le préservé tombait de 98 à 93 % (« SOMMAIRE » et
-    // « Docker » sur-masqués). Changer de variante sans rebalayer, c'est
-    // troquer de la qualité contre de la vitesse sans s'en apercevoir.
+    // UN SEUIL APPARTIENT À UNE VARIANTE DE POIDS. Le 0,38 calibré en int8
+    // faisait tomber le préservé de 98 à 93 % une fois passé en fp16. Changer
+    // de variante sans rebalayer, c'est troquer de la qualité contre de la
+    // vitesse sans s'en apercevoir.
     //
-    // Balayage sur le banc complet, en fp16 (rappel / préservé) :
-    //   0,38 → 83 % / 93 %      0,42 → 83 % / 93 %
-    //   0,45 → 83 % / 96 %      0,46 → 83 % / 98 %   ← retenu
-    //   0,47 et 0,48 → identiques à 0,46 (plateau)
-    //   0,50 → casse le structuré (19/20), rédhibitoire
-    //
-    // 0,46 est le plus BAS du plateau, donc le plus détectant à qualité égale.
-    // En dessous de 0,36, « CERTIFICAT DE SCOLARITE » devient un faux positif
-    // PER et le préservé de certificat-fr.txt chute de 100 à 67 %. Ne pas
-    // descendre sans revérifier ce cas.
+    // 0,46 est le plus bas d'un plateau, donc le plus détectant à qualité
+    // égale. Balayage complet et le cas à revérifier avant de descendre :
+    // docs/roadmap-detection.md, annexe.
     seuil: 0.46,
     labels: ['person', 'company', 'location'],
     types: { person: 'PER', company: 'ORG', location: 'LOC' },
@@ -118,22 +110,15 @@ export const GROUPES = [
 //   « portugaise »          → nationalité        0,02
 //   « suivi psychologique » → donnée de santé    0,28
 //
-// Le modèle inverse poste et santé en français, et place les vraies valeurs
-// entre 0,02 et 0,31, très en dessous du plancher de bruit (0,4 à 0,7). Aucun
-// seuil ne les sépare.
+// Types que le modèle ne détecte PAS de façon fiable : proposés dans l'UI mais
+// décochés par défaut.
 //
-// Désactivés : rappel inchangé (75 %, zéro vrai positif perdu), préservé
-// 93 → 96 %. Ce groupe ne rapportait que du sur-masquage. Les laisser actifs
-// serait de la fausse confiance : l'utilisateur croirait ses données de santé
-// protégées.
-export const TYPES_PEU_FIABLES = ['POSTE', 'NATIONALITE', 'ETABLISSEMENT', 'SANTE'];
-
-// Types qu'un groupe peut produire - sert à sauter entièrement une passe dont
-// l'utilisateur a désactivé tous les types (on ne paie que ce qu'on demande).
-const typesDuGroupe = g => Object.values(g.types);
-
-// PERSONNE / ENTREPRISE / LIEU sont par définition des noms propres : en
-// français comme en anglais, ils portent une majuscule. Les autres types
+// Il inverse poste et donnée de santé en français, et place les vraies valeurs
+// entre 0,02 et 0,31, très en dessous du plancher de bruit. Aucun seuil ne les
+// sépare. Désactivés, le rappel est inchangé et le préservé monte de 93 à 96 %.
+//
+// Les laisser actifs serait de la fausse confiance : l'utilisateur croirait ses
+// données de santé protégées. Chiffres : roadmap-detection.md, annexe.
 // produits par le modèle sont des noms communs par nature (« développeur »,
 // « diabète », « française ») et ne peuvent pas être filtrés ainsi.
 const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
