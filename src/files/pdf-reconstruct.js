@@ -252,41 +252,30 @@ export function tailleQuiTient(font, texte, taille, x, borne) {
 // Écart en points sous lequel deux fragments sont réputés à la même hauteur.
 const MEME_LIGNE = 2;
 
-// Borne droite de chaque fragment : le début du prochain fragment dessiné à la
-// même hauteur, à défaut le bord de page. Un tableau, dans l'ordre des entrées.
+// Borne droite d'un fragment : le début du prochain fragment dessiné à la même
+// hauteur, à défaut le bord de page.
 //
-// Le problème. `tailleQuiTient` ne bornait qu'au bord de page. Un placeholder
-// plus long que la valeur remplacée (« Ana » → « [PERSONNE_1] ») restait donc
-// dans la page mais mordait sur le fragment voisin : deux textes superposés,
-// illisibles tous les deux.
+// `tailleQuiTient` ne bornait qu'au bord de page. Un placeholder plus long que
+// la valeur remplacée (« Ana » → « [PERSONNE_1] ») restait dans la page mais
+// mordait sur le fragment voisin.
 //
-// Portée : La page entière, pas le paragraphe. Deux fragments à la même hauteur
-// appartiennent très souvent à des unités différentes - deux colonnes, deux
-// cellules d'un tableau, un titre courant et un numéro de page. Une première
-// version ne comparait qu'à l'intérieur d'une unité et laissait donc un
-// placeholder de la colonne gauche mordre sur la colonne droite.
+// La portée est la PAGE, pas le paragraphe. Deux fragments à la même hauteur
+// appartiennent souvent à des unités différentes : deux colonnes, deux cellules,
+// un titre courant et un numéro de page. Une première version ne comparait qu'à
+// l'intérieur d'une unité et laissait la colonne gauche mordre sur la droite.
 //
-// ON NE CHERCHE PAS À RECONSTITUER LES « lignes » logiques, et c'est le point
-// qui lève l'objection : savoir si deux morceaux forment une même ligne est
-// effectivement indécidable dans un PDF. Mais on n'en a pas besoin. Pour un
-// chevauchement, la vérité est géométrique : deux fragments à la même hauteur
-// dont les plages horizontales se recoupent se superposent à l'écran, quelle
-// que soit leur parenté structurelle. C'est la seule question posée ici.
+// On ne cherche pas à reconstituer les « lignes » logiques, ce qui est
+// indécidable dans un PDF, et on n'en a pas besoin : deux fragments à la même
+// hauteur dont les plages horizontales se recoupent se superposent à l'écran,
+// quelle que soit leur parenté structurelle.
 //
-// ON RÉTRÉCIT, on ne déplace pas. Repousser le fragment suivant en cascade est
-// un problème global : on résout un chevauchement en en créant un autre plus
-// loin, et le résultat peut être pire que le défaut. Rétrécir reste dans la
-// place déjà occupée, donc ne peut par construction rien casser ailleurs.
+// ON RÉTRÉCIT, on ne déplace pas. Repousser le fragment suivant en cascade
+// résout un chevauchement en en créant un autre plus loin. Rétrécir reste dans
+// la place déjà occupée, donc ne peut rien casser ailleurs.
 //
-// Le cas fréquent tombe bien : quand une entité couvre plusieurs fragments, le
-// placeholder est émis dans le premier et les suivants ne sont pas dessinés.
-// La place de tous ces fragments lui est rendue, et aucune réduction n'est
-// nécessaire tant que le placeholder y tient.
-//
-// Indexé par bande : comparer chaque fragment à tous les autres est quadratique,
-// et une page dense en compte des milliers. On ne compare qu'aux fragments de
-// sa bande et des deux bandes voisines - la tolérance pouvant enjamber une
-// frontière de bande.
+// Indexé par bande : comparer chaque fragment à tous les autres est
+// quadratique, et une page dense en compte des milliers. On ne compare qu'aux
+// bandes voisines, la tolérance pouvant enjamber une frontière.
 export function calculerBornes(runs, textes, largeurPage) {
   const bandes = new Map();
   for (let i = 0; i < runs.length; i++) {

@@ -23,45 +23,38 @@ import { verifierAnnulation } from '../engine/annulation.js';
 // voir detectNerPerUnit ci-dessous.
 export const UNIT_SEP = '\n\u{E000}\u{E004}\u{E000}\n';
 
-// Détection NER unité par unité, et NON sur le texte combiné.
+// Détection unité par unité, jamais sur le texte combiné.
 //
-// Mesuré sur un vrai CV (38 unités) : le texte combiné donnait 7 entités et
-// Aucun nom de personne, alors que le même modèle détecte parfaitement le nom
-// quand l'unité est isolée. Par unité : 22 entités, nom trouvé, pour seulement
-// +24 % de temps. Un contexte propre vaut mieux qu'une grande fenêtre - testé
-// aussi en lots de 150/300/600 caractères : tous échouaient à trouver le nom.
-// (Le masquage, lui, reste fait sur le texte combiné : c'est de là que vient
-// la cohérence des placeholders, indépendamment de la détection.)
+// Mesuré sur un CV de 38 unités : le texte combiné donnait 7 entités et aucun
+// nom de personne, quand le même modèle trouve le nom sur l'unité isolée. Par
+// unité : 22 entités, nom trouvé, pour +24 % de temps. Des lots de 150, 300 et
+// 600 caractères échouaient tous à trouver le nom.
 //
-// Deux garde-fous pour les fichiers à nombreuses cellules (CSV/XLSX), où un
-// appel par cellule serait prohibitif :
-//  - unités sans aucune suite de 2 lettres (nombres, dates, codes) : ignorées ;
-//  - textes identiques (valeurs répétées d'une colonne) : détectés une seule fois.
-// `structurel` : champ optionnel que les adaptateurs peuvent poser sur une
-// unité qui décrit la structure du document (en-tête de colonne, ligne de
-// sommaire) plutôt que son contenu. Une telle unité est épargnée par la passe
-// contextuelle.
+// Le masquage, lui, reste fait sur le texte combiné : c'est de là que vient la
+// cohérence des placeholders.
 //
-// Sans ça, le modèle confond « la case qui S'appelle date de naissance » avec
-// « une case qui contient une date de naissance » : le libellé ressemble
-// presque mot pour mot à la catégorie cherchée, donc il sort à un score élevé.
-// Mesuré au banc sur un export RH : 43 masques pour 62 mots, en-têtes
-// (Matricule, Service, Salaire) masqués - fichier « sûr » et illisible.
+// Deux garde-fous pour les fichiers à nombreuses cellules, où un appel par
+// cellule serait prohibitif : les unités sans suite de deux lettres (nombres,
+// dates, codes) sont ignorées, et les textes identiques ne sont détectés
+// qu'une fois.
 //
-// La couche déterministe continue de tourner sur tout le document : un en-tête
-// qui contiendrait par accident un email ou un IBAN reste masqué.
+// `structurel` : champ optionnel qu'un adaptateur pose sur une unité décrivant
+// la structure du document plutôt que son contenu. Elle est alors épargnée par
+// la passe contextuelle. Sans ça, le modèle confond « la case QUI S'APPELLE
+// date de naissance » avec « une case qui CONTIENT une date de naissance ».
+// Mesuré sur un export RH : 43 masques pour 62 mots, en-têtes compris, fichier
+// illisible. Le déterministe continue de tourner partout, donc un en-tête qui
+// contiendrait un IBAN reste masqué.
 //
-// ── PISTE TESTÉE ET REJETÉE, ne pas la refaire : donner le libellé de colonne
-// comme contexte à la cellule (« Date de naissance : 1988-03-14 ») dégrade la
-// détection au lieu de l'aider, parce que le libellé capte l'attention du
-// modèle à la place de la valeur. Mesuré :
-//     « EMP-0012 » seul                       → entreprise 0,57  (masqué)
-//     « Matricule : EMP-0012 »                → entreprise 0,32  (fuite)
-//     « 1988-03-14 » seul                     → date de naissance 0,59 (masqué)
-//     « Date de naissance : 1988-03-14 »      → 0,74 sur le libellé, 0,15 sur
-//                                               la vraie date (fuite)
-// L'isolement de la cellule est donc un atout du zero-shot, pas un manque.
-// Date nue, sans le moindre mot autour : 1988-03-14, 14/03/1988, 1988/03/14.
+// PISTE REJETÉE, ne pas la refaire : donner le libellé de colonne comme
+// contexte dégrade la détection, le libellé captant l'attention à la place de
+// la valeur.
+//     « EMP-0012 » seul                  → entreprise 0,57  (masqué)
+//     « Matricule : EMP-0012 »           → entreprise 0,32  (fuite)
+//     « 1988-03-14 » seul                → naissance 0,59   (masqué)
+//     « Date de naissance : 1988-03-14 » → 0,74 sur le libellé, 0,15 sur la
+//                                          date (fuite)
+// L'isolement de la cellule est un atout du zero-shot, pas un manque.
 const DATE_NUE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/;
 
 // Faut-il payer une inférence sur cette unité ?

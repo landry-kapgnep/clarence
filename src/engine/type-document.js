@@ -1,32 +1,22 @@
-// « À quoi ressemble ce document ? » - pour proposer le bon profil.
+// « À quoi ressemble ce document ? », pour proposer le bon profil.
 //
-// D'où ça vient. L'idée d'origine était d'entraîner un modèle par format (un
-// pour les CV, un pour l'administratif, un pour le scolaire), parce qu'un même
-// mot doit être masqué ici et ignoré là. L'intuition est juste ; le modèle
-// n'est pas la bonne pièce pour la porter. Mesuré sur un vrai CV : les faux
-// positifs qui restent sont `IA`, `Ollama`, `BDD`, `NSI` - des acronymes d'un
-// seul mot qu'aucun signal contextuel ne distingue de `UNODC` ou `Twini`, qui
-// sont de vraies entités. Un modèle entraîné là-dessus apprendrait à jeter les
-// vraies, donc à fuir.
+// L'idée d'origine était d'entraîner un modèle par format, un même mot devant
+// être masqué ici et ignoré là. L'intuition est juste, le modèle n'est pas la
+// bonne pièce : sur un vrai CV, les faux positifs restants sont `IA`,
+// `Ollama`, `BDD`, `NSI`, des acronymes d'un seul mot qu'aucun signal
+// contextuel ne distingue de `UNODC` ou `Twini`, qui sont de vraies entités.
+// Un modèle entraîné là-dessus apprendrait à jeter les vraies.
 //
-// Ce qui les traite déjà, et bien, c'est la liste éditable d'un PROFIL -
-// c'est-à-dire exactement « masqué dans un CV, ignoré dans un dossier admin ».
-// La pièce qui manquait n'était donc pas un modèle : c'était de savoir quel
-// profil proposer. Ce module répond à ça, sans ML, en quelques signaux.
+// Ce qui les traite déjà, c'est la liste éditable d'un profil. Il manquait
+// seulement de savoir lequel proposer, et ce module y répond sans ML.
 //
-// Règle non négociable : ce module ne décide jamais d'un masquage. Il
-// propose un profil, que l'utilisateur accepte ou non. Une suggestion fausse
-// coûte un clic ; un masquage changé en silence casserait l'UX de relecture qui
-// est la colonne vertébrale du produit (cadrage §5). Il rend `null` - « je ne
-// sais pas » - plutôt que de deviner : une mauvaise suggestion est pire que pas
-// de suggestion du tout.
+// Règle non négociable : il ne décide jamais d'un masquage, il propose. Il rend
+// `null` plutôt que de deviner, une mauvaise suggestion étant pire que pas de
+// suggestion.
 //
-// Structure d'abord, mots ensuite. Les signaux structurels (points de suite
-// d'un sommaire, paires libellé/valeur, densité de puces, plages de dates,
-// en-têtes d'e-mail) ne dépendent d'aucune langue et portent l'essentiel du
-// verdict. Les mots-clés complètent, et ils sont regroupés par langue, déclarés
-// comme tels - ajouter une langue est alors un geste explicite et localisé, pas
-// une réécriture.
+// Structure d'abord, mots ensuite. Les signaux structurels (points de suite,
+// paires libellé/valeur, densité de puces, en-têtes d'e-mail) ne dépendent
+// d'aucune langue et portent l'essentiel du verdict.
 
 import { FORMATS, motsDeForme } from './vocabulaire-formats.js';
 

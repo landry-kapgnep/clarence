@@ -61,41 +61,24 @@ export const GLINER_THRESHOLD = 0.5;
 // Ne pas fusionner ces groupes « pour aller plus vite » sans re-mesurer.
 export const GROUPES = [
   {
-    // Le cœur : ce que le NER BERT couvrait déjà, en mieux sur les valeurs
-    // isolées.
+    // Le cœur : ce que le NER BERT couvrait, en mieux sur les valeurs isolées.
     //
-    // Seuil ABAISSÉ à 0,45 une première fois (nom de CV isolé, 0,47), puis à
-    // 0,38 le 05/08/2026 - trouvé sur un vrai rapport (`rapport-fr.txt`) : le
-    // patronyme « ROUSSEAU » matche le motif BIC et annule « Amandine
-    // ROUSSEAU » dans la fusion (voir merge.js), mais le nom lui-même ne
-    // dépassait le seuil sur aucune de ses 3 occurrences (0,364 / 0,398).
-    // « Nadia Belkacem » (`dossier-rh.txt`) était dans le même cas.
+    // UN SEUIL APPARTIENT À UNE VARIANTE DE POIDS. Calibré à 0,38 en int8, il
+    // est devenu trop bas en fp16, numériquement plus précis : tous les scores
+    // remontent et le préservé tombait de 98 à 93 % (« SOMMAIRE » et
+    // « Docker » sur-masqués). Changer de variante sans rebalayer, c'est
+    // troquer de la qualité contre de la vitesse sans s'en apercevoir.
     //
-    // Seuil choisi par balayage sur le banc complet, pas par extrapolation :
-    // 0,45 → 0,40 → 0,38 → 0,36 → 0,35. 0,38 est le point pivot exact où les
-    // deux noms sont trouvés sans qu'aucun faux positif n'apparaisse. En
-    // dessous (0,36), « CERTIFICAT DE SCOLARITE » (titre en capitales) devient
-    // un faux positif PER et le préservé de `certificat-fr.txt` chute de
-    // 100 % à 67 %. Ne pas descendre sans re-vérifier CE cas précis.
-    //
-    // Effet mesuré : rappel contextuel 78 → 83 %, préservé inchangé (98 %),
-    // structuré inchangé. Plus aucune fuite partielle sur les 7 documents.
-    //
-    // RECALIBRÉ à 0,46 le 06/08/2026 en passant les poids de int8 à fp16.
-    // LEÇON GÉNÉRALE : **un seuil appartient à une variante de poids.** Le fp16
-    // est numériquement plus précis, tous les scores remontent, et le 0,38
-    // calibré sur l'int8 devenait trop bas - préservé 98 % → 93 %
-    // (« SOMMAIRE » et « Docker » sur-masqués en plus). Changer de variante
-    // Sans rebalayer, c'est troquer de la qualité contre de la vitesse sans
-    // s'en apercevoir.
-    //
-    // Balayage sur le banc complet, en fp16 :
+    // Balayage sur le banc complet, en fp16 (rappel / préservé) :
     //   0,38 → 83 % / 93 %      0,42 → 83 % / 93 %
-    //   0,45 → 83 % / 96 %      0,46 → 83 % / **98 %**  ← retenu
-    //   0,47 / 0,48 → identiques à 0,46 (plateau)
-    //   0,50 → casse le structuré (19/20) : rédhibitoire, non négociable
-    // 0,46 est le plus BAS du plateau - donc le plus détectant à qualité égale,
-    // conformément à « zéro-fuite > faux positifs ».
+    //   0,45 → 83 % / 96 %      0,46 → 83 % / 98 %   ← retenu
+    //   0,47 et 0,48 → identiques à 0,46 (plateau)
+    //   0,50 → casse le structuré (19/20), rédhibitoire
+    //
+    // 0,46 est le plus BAS du plateau, donc le plus détectant à qualité égale.
+    // En dessous de 0,36, « CERTIFICAT DE SCOLARITE » devient un faux positif
+    // PER et le préservé de certificat-fr.txt chute de 100 à 67 %. Ne pas
+    // descendre sans revérifier ce cas.
     seuil: 0.46,
     labels: ['person', 'company', 'location'],
     types: { person: 'PER', company: 'ORG', location: 'LOC' },
@@ -166,36 +149,24 @@ const TYPES_NOMS_PROPRES = new Set(['PER', 'ORG', 'LOC']);
 
 // Écarte les spans sans la moindre majuscule quand le type exige un nom propre.
 //
-// Pourquoi (P6). Le label zero-shot « person » désigne toute expression qui
-// RÉFÈRE à une personne, pas seulement un nom : le modèle sort donc « vendor »,
-// « candidate », « dossier », « adresse », « leadership », « protagoniste ».
-// Il a raison linguistiquement ; c'est notre besoin qui porte sur les entités
-// NOMMÉES. Le filtre traduit cette exigence de la façon la plus simple et la
-// plus déterministe possible.
+// Le label « person » désigne toute expression qui RÉFÈRE à une personne, pas
+// seulement un nom : le modèle sort donc « vendor », « candidate », « dossier »,
+// « leadership ». Il a raison linguistiquement, mais notre besoin porte sur les
+// entités nommées.
 //
-// Limite assumée, à ne pas découvrir plus tard : un nom écrit tout en
-// minuscules (« jean dupont » tapé à la volée) n'est plus détecté par cette
-// couche. C'est un recul sur la priorité zéro-fuite, accepté ici parce que
-// (a) la couche déterministe (email, téléphone, IBAN…) n'est pas concernée,
-// (b) le profil d'identité masque le nom de l'utilisateur quoi qu'il arrive,
-// (c) « toujours masquer » reste disponible, et (d) le sur-masquage mesuré
-// rendait les documents inexploitables, ce qui est l'autre façon de perdre
-// l'utilisateur. Réévaluer si un cas réel de nom en minuscules apparaît.
-// Une DATE DE NAISSANCE porte toujours au moins un chiffre - au minimum
-// l'année. Sans cette garde, le modèle sortait « trimestre » à 0,74 et
-// « Sept. 2024 - Aout 2025 » comme dates de naissance. Même raisonnement que
-// pour les noms propres : une exigence de forme propre au type, déterministe,
-// là où le score ne sépare rien.
-// Une DATE DE NAISSANCE, c'est un jour situé dans une année. « Contient un
-// chiffre » était beaucoup trop faible : mesuré sur tous-defauts.pdf, ça
-// laissait passer « ANNEXE 2 », « 2021 » et « 12 mars ».
+// Limite assumée : un nom écrit tout en minuscules n'est plus détecté par cette
+// couche. Accepté parce que le déterministe n'est pas concerné, que le profil
+// d'identité masque le nom de l'utilisateur quoi qu'il arrive, et que le
+// sur-masquage mesuré rendait les documents inexploitables.
+// Une date de naissance est un jour situé dans une année. « Contient un
+// chiffre » était trop faible : sur tous-defauts.pdf ça laissait passer
+// « ANNEXE 2 », « 2021 » et « 12 mars ».
 //
-// Deux formes acceptées, et aucune liste de mois : le projet doit rester
-// multilingue, or un nom de mois est propre à une langue. On se contente de la
-// Structure - une date numérique, ou une année accompagnée d'un autre nombre
-// (le quantième), quelle que soit la langue qui les sépare :
+// Deux formes, aucune liste de mois, le projet devant rester multilingue. On se
+// contente de la structure : une date numérique, ou une année accompagnée d'un
+// autre nombre, quelle que soit la langue qui les sépare.
 //   « March 14, 1988 », « 16 octobre 2004 », « 14. März 1988 » → acceptés
-//   « 2021 » (année seule), « ANNEXE 2 », « 12 mars » (sans année) → refusés
+//   « 2021 », « ANNEXE 2 », « 12 mars » → refusés
 const DATE_NUMERIQUE = /\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}/;
 const ANNEE = /(?:1[89]|20)\d{2}/;
 
@@ -315,41 +286,37 @@ export function desaccentuer(texte) {
   return sortie;
 }
 
-// Copie à casse adoucie, À longueur strictement égale - l'autre moitié du même
-// axe que `desaccentuer`, et celle qui porte le plus.
+// Copie à casse adoucie, à longueur strictement égale. Même axe que
+// `desaccentuer`, et celle des deux qui porte le plus.
 //
-// Pourquoi. Mesuré sur un vrai casier judiciaire - un FORMULAIRE, dont les
-// valeurs sont en capitales, classe de document absente du corpus (fait de CV
-// et de mémoires), ce qui explique que le défaut ait survécu si longtemps :
+// Mesuré sur un casier judiciaire, un formulaire dont les valeurs sont en
+// capitales. Cette classe de document manquait au corpus, fait de CV et de
+// mémoires, d'où la survie du défaut :
 //
 //   « ADRIEN MESNARD »   company 0,72   →  person   0,99
 //   « FOSSES »           person  0,36   →  location 0,70
-//   « NANTES »           location 0,40  →  location 0,53   (0,40 était sous le seuil)
+//   « NANTES »           location 0,40  →  location 0,53
 //
-// Le nom de l'utilisateur sortait donc en ENTREPRISE : il recevait un
-// pseudonyme tiré du vivier des sociétés, et surtout la décomposition par
-// composant (réservée aux PER) ne s'appliquait pas - le prénom isolé après
-// « Prénom(s) » n'était jamais masqué. Une fuite, pas un défaut cosmétique.
+// Le nom sortait en ENTREPRISE : pseudonyme tiré du vivier des sociétés, et
+// surtout la décomposition par composant, réservée aux PER, ne s'appliquait
+// pas. Le prénom isolé n'était donc jamais masqué. Une fuite.
 //
-// Ce n'est pas la minusculisation, mesurée et rejetée au spike POS
-// (+7 démasquages mais 3 fuites). On garde l'initiale majuscule - le signal
-// dont un modèle « cased » se sert pour délimiter un nom propre - et on
-// n'enlève que l'anomalie tout-majuscule. Retirer la majuscule initiale
-// brouille la frontière ; retirer les capitales de suite ne la touche pas.
+// Pas de minusculisation complète, mesurée et rejetée au spike POS
+// (+7 démasquages mais 3 fuites). On garde l'initiale majuscule, signal dont un
+// modèle « cased » se sert pour délimiter un nom propre, et on n'enlève que
+// l'anomalie tout-majuscule.
 //
-// Longueur préservée, même exigence que ci-dessus, et elle n'est pas
-// gratuite : `toLowerCase()` peut allonger (le « İ » turc donne deux points de
-// code). On ne remplace donc un caractère que si sa minuscule fait exactement
-// la même longueur - c'est ce que la passe `boostCase` de `ner.js` ne pouvait
-// pas garantir (« ß » → « SS »).
+// Longueur préservée : `toLowerCase()` peut allonger (le « İ » turc donne deux
+// points de code), donc on ne remplace un caractère que si sa minuscule fait
+// exactement la même longueur. C'est ce que `boostCase` dans ner.js ne
+// garantissait pas (« ß » → « SS »).
 //
-// Trois lettres au moins : en dessous, ce sont des sigles (BIC, RIB, TVA) que
-// le déterministe traite déjà et qu'il ne sert à rien de brouiller. La passe
-// est de toute façon ADDITIVE - elle ne peut qu'ajouter des candidats, jamais
-// en retirer à la passe naturelle.
+// Trois lettres au moins : en dessous ce sont des sigles (BIC, RIB, TVA) que le
+// déterministe traite déjà. La passe est additive, elle ne peut qu'ajouter des
+// candidats.
 //
-// Correctif partiel, assumé : « SARCELLES » reste à 0,43, sous le seuil, avant
-// comme après. Ne pas le lire comme un rattrapage total des capitales.
+// Correctif partiel : « SARCELLES » reste à 0,43, sous le seuil, avant comme
+// après.
 const MOT_TOUT_CAPITALES = /\p{Lu}[\p{Lu}'’-]{2,}/gu;
 
 export function adoucirCasse(texte) {

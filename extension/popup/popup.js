@@ -64,41 +64,24 @@ var glinerModelUrl = (variante = GLINER_VARIANTE) => `https://huggingface.co/${G
 var GLINER_THRESHOLD = 0.5;
 var GROUPES = [
   {
-    // Le cœur : ce que le NER BERT couvrait déjà, en mieux sur les valeurs
-    // isolées.
+    // Le cœur : ce que le NER BERT couvrait, en mieux sur les valeurs isolées.
     //
-    // Seuil ABAISSÉ à 0,45 une première fois (nom de CV isolé, 0,47), puis à
-    // 0,38 le 05/08/2026 - trouvé sur un vrai rapport (`rapport-fr.txt`) : le
-    // patronyme « ROUSSEAU » matche le motif BIC et annule « Amandine
-    // ROUSSEAU » dans la fusion (voir merge.js), mais le nom lui-même ne
-    // dépassait le seuil sur aucune de ses 3 occurrences (0,364 / 0,398).
-    // « Nadia Belkacem » (`dossier-rh.txt`) était dans le même cas.
+    // UN SEUIL APPARTIENT À UNE VARIANTE DE POIDS. Calibré à 0,38 en int8, il
+    // est devenu trop bas en fp16, numériquement plus précis : tous les scores
+    // remontent et le préservé tombait de 98 à 93 % (« SOMMAIRE » et
+    // « Docker » sur-masqués). Changer de variante sans rebalayer, c'est
+    // troquer de la qualité contre de la vitesse sans s'en apercevoir.
     //
-    // Seuil choisi par balayage sur le banc complet, pas par extrapolation :
-    // 0,45 → 0,40 → 0,38 → 0,36 → 0,35. 0,38 est le point pivot exact où les
-    // deux noms sont trouvés sans qu'aucun faux positif n'apparaisse. En
-    // dessous (0,36), « CERTIFICAT DE SCOLARITE » (titre en capitales) devient
-    // un faux positif PER et le préservé de `certificat-fr.txt` chute de
-    // 100 % à 67 %. Ne pas descendre sans re-vérifier CE cas précis.
-    //
-    // Effet mesuré : rappel contextuel 78 → 83 %, préservé inchangé (98 %),
-    // structuré inchangé. Plus aucune fuite partielle sur les 7 documents.
-    //
-    // RECALIBRÉ à 0,46 le 06/08/2026 en passant les poids de int8 à fp16.
-    // LEÇON GÉNÉRALE : **un seuil appartient à une variante de poids.** Le fp16
-    // est numériquement plus précis, tous les scores remontent, et le 0,38
-    // calibré sur l'int8 devenait trop bas - préservé 98 % → 93 %
-    // (« SOMMAIRE » et « Docker » sur-masqués en plus). Changer de variante
-    // Sans rebalayer, c'est troquer de la qualité contre de la vitesse sans
-    // s'en apercevoir.
-    //
-    // Balayage sur le banc complet, en fp16 :
+    // Balayage sur le banc complet, en fp16 (rappel / préservé) :
     //   0,38 → 83 % / 93 %      0,42 → 83 % / 93 %
-    //   0,45 → 83 % / 96 %      0,46 → 83 % / **98 %**  ← retenu
-    //   0,47 / 0,48 → identiques à 0,46 (plateau)
-    //   0,50 → casse le structuré (19/20) : rédhibitoire, non négociable
-    // 0,46 est le plus BAS du plateau - donc le plus détectant à qualité égale,
-    // conformément à « zéro-fuite > faux positifs ».
+    //   0,45 → 83 % / 96 %      0,46 → 83 % / 98 %   ← retenu
+    //   0,47 et 0,48 → identiques à 0,46 (plateau)
+    //   0,50 → casse le structuré (19/20), rédhibitoire
+    //
+    // 0,46 est le plus BAS du plateau, donc le plus détectant à qualité égale.
+    // En dessous de 0,36, « CERTIFICAT DE SCOLARITE » devient un faux positif
+    // PER et le préservé de certificat-fr.txt chute de 100 à 67 %. Ne pas
+    // descendre sans revérifier ce cas.
     seuil: 0.46,
     labels: ["person", "company", "location"],
     types: { person: "PER", company: "ORG", location: "LOC" },
