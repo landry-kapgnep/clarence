@@ -1,32 +1,21 @@
-// Ce qu'on peut dire d'un candidat sans le modèle - la matière première du
+// Ce qu'on peut dire d'un candidat sans le modèle : la matière première du
 // filtre de précision.
 //
-// Pourquoi ce module existe. `vocabulaire.js` est un filtre à UNE
-// caractéristique et à seuil binaire : « tous les mots sont-ils au
-// dictionnaire ? ». Il attrape 6 faux positifs sur 9 et il a fallu lui retirer
-// cinq suffixes parce qu'ils mordaient sur des noms de lieux - signe qu'une
-// règle écrite à la main atteint sa limite. Les signaux qui restent sont
-// individuellement faibles (mesuré : « acoustique » se fragmente en 3 morceaux
-// comme « Mesnard », et « Sorbonne » n'en fait qu'un) ; les combiner est
-// précisément ce qu'un classifieur fait mieux qu'une suite de `if`.
+// Les signaux sont individuellement faibles (« acoustique » se fragmente en
+// trois morceaux comme « Mesnard », « Sorbonne » n'en fait qu'un) ; les
+// combiner est ce qu'un classifieur fait mieux qu'une suite de `if`.
 //
-// Règle de conception : ce module ne décide rien et ne charge rien. Il rend des
-// nombres. La décision vit dans precision.js, les poids sont appris hors ligne.
-// C'est la leçon d'`encodeImage` (fond des PNG rendu noir) : la décision sortie
-// en fonction pure est celle qu'on peut tester.
+// Ce module ne décide rien et ne charge rien, il rend des nombres. La décision
+// vit dans precision.js, les poids sont appris hors ligne. C'est la leçon
+// d'`encodeImage` : la décision sortie en fonction pure est celle qu'on peut
+// tester.
 //
-// INDÉPENDANCE DE LA LANGUE - c'est le critère qui a présidé au choix de chaque
-// caractéristique, parce que des listes statiques par langue ne passent pas
-// l'échelle :
-//   · le lexique est déjà multilingue (104 langues, vocabulaire mBERT) ;
-//   · la casse, la longueur, le nombre de mots, les chiffres, la ponctuation
-//     interne, les occurrences ne dépendent d'aucune langue ;
-//   · « le même mot apparaît-il ailleurs en minuscules dans ce document ? » est
-//     auto-calibré : le document sert de dictionnaire à lui-même ;
-//   · la fragmentation en sous-mots se mesure sur un vocabulaire multilingue ;
-//   · seuls les suffixes sont propres au français, et ils sont isolés dans leur
-//     propre caractéristique pour qu'on puisse mesurer ce qu'ils apportent - et
-//     s'en passer le jour où la mesure dit qu'ils ne servent plus.
+// Chaque caractéristique a été choisie pour ne PAS dépendre d'une langue :
+// casse, longueur, nombre de mots, chiffres, ponctuation interne, occurrences.
+// « Le même mot apparaît-il ailleurs en minuscules dans ce document ? » est
+// auto-calibré, le document servant de dictionnaire à lui-même. Seuls les
+// suffixes sont propres au français, isolés dans leur propre caractéristique
+// pour qu'on puisse mesurer ce qu'ils apportent.
 import { auLexique, aSuffixeCommun, motsSignificatifs } from './vocabulaire.js';
 
 // Bornage : toutes les caractéristiques vivent dans [0, 1]. Sans ça, une

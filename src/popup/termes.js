@@ -1,28 +1,16 @@
-// Découpage des listes de termes saisies à la main (« toujours masquer » /
-// « ne jamais masquer »).
+// Découpage des listes de termes saisies à la main.
 //
-// La virgule est le séparateur principal, et ce choix corrige le précédent.
+// Quatre séparateurs acceptés : virgule, point-virgule, tabulation, saut de
+// ligne. La tabulation reste utile pour un collage depuis un tableur, le saut
+// de ligne est le format dans lequel les profils sont déjà enregistrés.
 //
-// La tabulation avait d'abord été retenue parce qu'elle ne peut pas apparaître
-// dans un terme. Elle marchait - mesuré sur un vrai document, six termes saisis
-// ainsi ont bien été appliqués - mais elle est invisible : sa largeur varie
-// selon la position, on ne distingue pas une tabulation de deux, et il fallait
-// lancer le traitement pour savoir si la saisie était correcte. Un séparateur
-// qu'on ne voit pas ne permet pas de se relire, et se relire est tout l'objet
-// de ce champ.
+// La tabulation seule avait été essayée : elle marche, mais elle est invisible,
+// et il fallait lancer le traitement pour savoir si la saisie était correcte.
+// Or se relire est tout l'objet de ce champ.
 //
-// Les quatre formes sont acceptées (virgule, point-virgule, tabulation, saut de
-// ligne) : la tabulation reste utile pour un collage depuis un tableur, et le
-// saut de ligne est le format dans lequel les profils sont déjà enregistrés -
-// le casser viderait silencieusement les règles de quelqu'un.
-//
-// Contrepartie assumée : un terme ne peut plus contenir de virgule.
-// « Dupont, Marie » sera lu comme deux termes. Côté « toujours masquer » c'est
-// sans danger (on masque davantage) ; côté « ne jamais masquer » ça peut
-// laisser en clair un fragment qu'on n'avait pas l'intention d'épargner -
-// « Société Générale, Paris » garderait « Paris » visible. Le cas est rare, et
-// la virgule reste visible à la relecture, ce qui le rend rattrapable. C'est
-// l'inverse du défaut de la tabulation, qui était invisible.
+// Contrepartie : un terme ne peut plus contenir de virgule. « Société
+// Générale, Paris » en « ne jamais masquer » laisserait « Paris » visible. Rare,
+// et visible à la relecture, donc rattrapable.
 const SEPARATEURS = /[,;\t\r\n]+/;
 
 export function parseTermes(valeur) {

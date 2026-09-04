@@ -1,29 +1,21 @@
-// Filtre de précision - « ce candidat mérite-t-il d'être masqué ? »
+// Filtre de précision : « ce candidat mérite-t-il d'être masqué ? »
 //
-// Ce qu'il remplace. `vocabulaire.js` répond à cette question avec UNE
-// caractéristique et un seuil binaire : « tous les mots sont-ils au
-// dictionnaire ? ». Il a fallu lui retirer cinq suffixes parce qu'ils
-// mordaient sur des noms de lieux (Sarcelles, Provence, Belgique) - le signe
-// qu'une règle écrite à la main avait atteint sa limite. Ici, une douzaine de
-// signaux faibles sont pesés ensemble, ce qu'un classifieur fait bien mieux
-// qu'une suite de `if`.
+// `vocabulaire.js` répond avec une seule caractéristique et un seuil binaire.
+// Il a fallu lui retirer cinq suffixes qui mordaient sur des toponymes, signe
+// qu'une règle écrite à la main avait atteint sa limite. Ici une douzaine de
+// signaux faibles sont pesés ensemble.
 //
-// Pourquoi ce n'est pas une boîte noire, et pourquoi ça compte. Le modèle est
-// une régression logistique : une quinzaine de nombres, lisibles, qu'on peut
-// afficher. `expliquer()` rend la caractéristique qui a réellement décidé.
-// Dans un produit dont la colonne vertébrale est l'anti-fausse-confiance
-// (cadrage §5), un mécanisme qui démasque sans pouvoir dire pourquoi serait un
-// contresens.
+// Régression logistique, donc une quinzaine de nombres lisibles :
+// `expliquer()` rend la caractéristique qui a décidé. Dans un produit bâti sur
+// l'anti-fausse-confiance, un mécanisme qui démasque sans dire pourquoi serait
+// un contresens.
 //
-// TROIS GARDE-FOUS NON NÉGOCIABLES, dans le code et pas seulement dans ce
-// commentaire :
+// TROIS GARDE-FOUS, dans le code et pas seulement ici :
 //   1. il ne peut que retirer des candidats, jamais en ajouter ;
-//   2. il ne touche jamais le déterministe (`source !== 'ner'` passe intact) -
-//      un IBAN validé mod-97 ne se discute pas avec un modèle statistique ;
-//   3. il ne touche jamais les personnes. Beaucoup de patronymes sont des mots
-//      courants (Blanc, Petit, Roux) et notre propre vivier de pseudonymes en
-//      est plein : « Pierre Blanc » est jugé « vocabulaire ». Un filtre qui
-//      démasque des personnes ne rend pas service, il fuit.
+//   2. il ne touche jamais le déterministe : un IBAN validé mod-97 ne se
+//      discute pas avec un modèle statistique ;
+//   3. il ne touche jamais les personnes. « Pierre Blanc » est jugé
+//      « vocabulaire » ; un filtre qui démasque des personnes fuit.
 import { contexteDocument, caracteristiques } from './caracteristiques.js';
 import { motsSignificatifs } from './vocabulaire.js';
 import { POIDS } from './poids-precision.js';
@@ -106,32 +98,19 @@ export function expliquer(candidat, ctx, modele = POIDS) {
 // les chiffres annoncés doivent être ceux du filtre réellement livré.
 export const MOTS_MINIMUM = 2;
 
-// Garde-fou 5 : la forme d'un nom protège, pas seulement l'étiquette.
+// Garde-fou 5 : la FORME d'un nom protège, pas seulement son étiquette.
 //
-// La fuite qui l'a imposé, mesurée sur tests/manuel/tous-defauts.pdf, dans une
-// phrase écrite exprès pour ce piège :
-//     « Rose Fontaine cultive une rose ancienne dans son jardin. »
-// Le modèle étiquette « Rose Fontaine » en ENTREPRISE - donc le garde-fou 3,
-// qui raisonne par type, ne la voit pas. Et le filtre la retire à 0,177 :
-// « rose » est au dictionnaire (partLexique 0,50) et le document l'écrit
-// lui-même en minuscules plus loin (minusculeAilleurs 0,50). Les deux signaux
+// Sur « Rose Fontaine cultive une rose ancienne dans son jardin », le modèle
+// étiquette « Rose Fontaine » en ENTREPRISE, donc le garde-fou 3, qui raisonne
+// par type, ne la voit pas. Le filtre la retire à 0,177 : « rose » est au
+// dictionnaire et le document l'écrit en minuscules plus loin. Les deux signaux
 // dont ce filtre tire sa valeur se retournent contre un patronyme.
 //
-// Ce n'est pas un cas tordu, c'est LA doctrine du projet qu'on contournait :
-// vocabulaire.js documente déjà qu'on n'applique jamais un raisonnement de
-// vocabulaire à une personne, « beaucoup de patronymes français sont des mots
-// courants - Blanc, Petit, Bernard, Roux ». L'erreur était de s'appuyer sur
-// l'étiquette du modèle, qu'il peut se tromper à donner, plutôt que sur la
-// Forme de la valeur, qui, elle, ne ment pas.
+// L'erreur était de s'appuyer sur l'étiquette, que le modèle peut se tromper à
+// donner, plutôt que sur la forme, qui ne ment pas.
 //
-// Le coût est mesuré, et il est dérisoire : sur le jeu d'évaluation, ce
-// garde-fou protège 458 vraies entités sur 706 et ne coûte que 7 faux positifs
-// sur 418 - quatre valeurs distinctes (« Développeur Linux », « Développeur
-// Pandas », « Développeur Ollama », « Baccalauréat Général »).
-//
-// Deux à trois mots seulement : au-delà, ce n'est plus un nom mais une raison
-// sociale longue (« Institut National des Sciences Appliquées »). Aucun chiffre :
-// un nom de personne n'en porte pas.
+// Coût mesuré : protège 458 vraies entités sur 706 pour 7 faux positifs sur
+// 418. Deux à trois mots, aucun chiffre : au-delà c'est une raison sociale.
 export const formeDeNomPropre = (valeur) => {
   if (/\d/.test(valeur)) return false;
   const mots = motsSignificatifs(valeur);
