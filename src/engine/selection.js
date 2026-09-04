@@ -20,7 +20,7 @@ export const entityKey = e => `${e.start}:${e.end}:${e.type}`;
 // que l'entité EMAIL disparaissait et que le résultat livré était :
 //
 //     sans profil : [EMAIL_1]
-//     avec profil : landry.[PERSONNALISE_1].pro@gmail.com
+//     avec profil : adrien.[PERSONNALISE_1].pro@gmail.com
 //
 // Déclarer son identité rendait donc son e-mail moins masqué - la
 // fonctionnalité censée mieux protéger protégeait moins, et précisément pour

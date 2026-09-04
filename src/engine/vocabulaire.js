@@ -6,7 +6,7 @@
 // `Développeur Data`, `IA`, `Anglais C1`, `Développement & Web`, `Allemand`,
 // `Mars 2026`, `Bénévole terrain`, `Canal acoustique de données`,
 // `Stack conteneurisée`. Toutes composées de mots du dictionnaire. Les vraies
-// - `KAPGNEP`, `Sorbonne`, `Twini`, `UNODC`, `SafePrompt` - n'en contiennent
+// - `MESNARD`, `Sorbonne`, `Twini`, `UNODC`, `SafePrompt` - n'en contiennent
 // aucun.
 //
 // Pourquoi pas un seuil. Mesuré sur le même document : les vraies valeurs

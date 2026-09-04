@@ -558,8 +558,8 @@ Un document sûr et illisible ne se vend pas. Le banc mesure ça
 - [ ] Créer / enregistrer / supprimer un profil d'anonymisation
 - [ ] Décocher un type → l'inférence correspondante est **sautée** (plus rapide)
 - [ ] Profil d'identité : déclarer son nom → masqué de façon **déterministe**,
-      y compris en TOUT-MAJUSCULE (`LANDRY KAPGNEP` quand on a saisi
-      `Landry Kapgnep`) - sans les variantes de casse, le nom fuyait
+      y compris en TOUT-MAJUSCULE (`ADRIEN MESNARD` quand on a saisi
+      `Adrien Mesnard`) - sans les variantes de casse, le nom fuyait
 - [ ] Les données de profil vivent en `chrome.storage.local`, **jamais** `sync`
 
 ### Moteurs contextuels

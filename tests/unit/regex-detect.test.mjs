@@ -87,10 +87,10 @@ test('le téléphone ne matche pas un fragment de 10 chiffres au milieu d\'une c
 // --- PSEUDO : handles de profil (fuite constatée sur un vrai CV, le nom en
 // minuscules dans une URL n'étant jamais vu par le NER).
 test('handle LinkedIn/GitHub détecté, domaine préservé', () => {
-  const [li] = find('linkedin.com/in/landry-kapgnep', 'PSEUDO');
-  assert.equal(li.value, 'landry-kapgnep');
-  const [gh] = find('github.com/landry-kapgnep', 'PSEUDO');
-  assert.equal(gh.value, 'landry-kapgnep');
+  const [li] = find('linkedin.com/in/adrien-mesnard', 'PSEUDO');
+  assert.equal(li.value, 'adrien-mesnard');
+  const [gh] = find('github.com/adrien-mesnard', 'PSEUDO');
+  assert.equal(gh.value, 'adrien-mesnard');
 });
 
 test('URL complète avec https/www : le handle seul est capté', () => {

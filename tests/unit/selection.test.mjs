@@ -175,12 +175,12 @@ test('un mot qui RESSEMBLE à un placeholder sans en être un reste masqué', ()
 // famille ; ce terme est cherché littéralement, donc il matche aussi à
 // l'intérieur de son adresse e-mail. La règle d'origine jetait toute détection
 // chevauchant un masque manuel - l'entité EMAIL disparaissait, et le document
-// livré portait « landry.[PERSONNALISE_1].pro@gmail.com » là où il portait
+// livré portait « adrien.[PERSONNALISE_1].pro@gmail.com » là où il portait
 // « [EMAIL_1] » sans le profil. La fonctionnalité censée mieux protéger
 // protégeait moins, et pour l'utilisateur le plus prudent.
 test('un masque forcé contenu dans une détection ne la découpe pas', () => {
-  const email = { source: 'regex', type: 'EMAIL', value: 'landry.kapgnep@exemple.fr', start: 10, end: 35 };
-  const forceInterne = { source: 'manuel', type: 'PERSONNALISE', value: 'kapgnep', start: 17, end: 24 };
+  const email = { source: 'regex', type: 'EMAIL', value: 'adrien.mesnard@exemple.fr', start: 10, end: 35 };
+  const forceInterne = { source: 'manuel', type: 'PERSONNALISE', value: 'mesnard', start: 17, end: 24 };
   const actives = selectActive([email], [forceInterne], new Set());
   assert.deepEqual(actives.map(e => e.type), ['EMAIL'],
     'l’e-mail doit survivre : il masque déjà tout ce que le terme forcé masquerait');

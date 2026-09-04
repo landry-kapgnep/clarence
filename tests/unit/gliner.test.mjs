@@ -236,7 +236,7 @@ test('pipeline absent : aucune entité, aucune exception (repli silencieux)', as
 });
 
 // --- Seuil par groupe + pontage des noms en deux morceaux.
-// Régression réelle : sur un vrai CV, « LANDRY KAPGNEP » (titre du document,
+// Régression réelle : sur un vrai CV, « ADRIEN MESNARD » (titre du document,
 // seul sur sa ligne) sortait en deux spans à 0,47 et 0,36. Avec un seuil
 // unique à 0,50 le nom fuyait entièrement ; sans pontage, seul le prénom
 // aurait été masqué et le patronyme serait resté en clair à côté.
@@ -245,7 +245,7 @@ test('le groupe identité a un seuil PROPRE, plus bas que le défaut', () => {
   const identite = GROUPES.find(g => g.labels.includes('person'));
   assert.ok(identite.seuil < GLINER_THRESHOLD, 'le groupe identité doit surcharger le seuil');
   // Borne HAUTE, re-mesurée sur les poids fp16 le 06/08/2026 : le titre de CV
-  // isolé « LANDRY KAPGNEP » sort à 0,494 (contre 0,47 + 0,36 en int8 - le fp16
+  // isolé « ADRIEN MESNARD » sort à 0,494 (contre 0,47 + 0,36 en int8 - le fp16
   // relève le score ET fusionne les deux spans en un seul). C'est la plus basse
   // vraie valeur du corpus : le seuil doit rester dessous, sinon le nom fuit.
   assert.ok(identite.seuil < 0.494,
@@ -253,15 +253,15 @@ test('le groupe identité a un seuil PROPRE, plus bas que le défaut', () => {
 });
 
 test('un nom de CV isolé à 0,47 est masqué ENTIÈREMENT (seuil + pontage)', async () => {
-  const texte = 'LANDRY KAPGNEP';
+  const texte = 'ADRIEN MESNARD';
   // Scores réels mesurés sur le vrai modèle pour cette entrée exacte.
   const pipe = async (t, labels) => labels.includes('person')
-    ? [{ label: 'person', start: 0, end: 6, spanText: 'LANDRY', score: 0.47 },
-       { label: 'person', start: 7, end: 14, spanText: 'KAPGNEP', score: 0.36 }]
+    ? [{ label: 'person', start: 0, end: 6, spanText: 'ADRIEN', score: 0.47 },
+       { label: 'person', start: 7, end: 14, spanText: 'MESNARD', score: 0.36 }]
     : [];
   const out = await detectGliner(texte, pipe);
   assert.equal(out.length, 1, 'le nom doit former UNE entité');
-  assert.equal(out[0].value, 'LANDRY KAPGNEP', 'le patronyme ne doit pas rester en clair');
+  assert.equal(out[0].value, 'ADRIEN MESNARD', 'le patronyme ne doit pas rester en clair');
   const { masked } = maskText(texte, out);
   assert.equal(masked, '[PERSONNE_1]');
 });
@@ -526,7 +526,7 @@ test('sans accent dans le texte, AUCUNE passe supplémentaire n\'est payée', as
 
 test('adoucirCasse : longueur strictement préservée', () => {
   for (const s of [
-    'LANDRY KAPGNEP', 'NANTES CEDEX 3', 'Sébastien PIEVE', 'ÉLÉONORE VASSEUR',
+    'ADRIEN MESNARD', 'NANTES CEDEX 3', 'Sébastien PIEVE', 'ÉLÉONORE VASSEUR',
     // « İ » minusculise en deux points de code : le garde-fou doit le laisser
     // intact plutôt que d'allonger la chaîne.
     'BİLGİ', 'STRAßE', 'L\'ÉTAT', '', 'rien en capitales', 'BIC', 'A',
@@ -536,7 +536,7 @@ test('adoucirCasse : longueur strictement préservée', () => {
 });
 
 test('adoucirCasse : garde l\'initiale, n\'adoucit que la suite', () => {
-  assert.equal(adoucirCasse('LANDRY KAPGNEP'), 'Landry Kapgnep');
+  assert.equal(adoucirCasse('ADRIEN MESNARD'), 'Adrien Mesnard');
   assert.equal(adoucirCasse('NANTES CEDEX 3'), 'Nantes Cedex 3');
   // La majuscule initiale est le signal dont se sert un modèle « cased » : la
   // retirer a été mesuré et rejeté (spike POS, 3 fuites).
@@ -550,18 +550,18 @@ test('adoucirCasse : garde l\'initiale, n\'adoucit que la suite', () => {
 });
 
 test('une entité vue SEULEMENT sur la copie à casse adoucie est retenue', async () => {
-  // Cas réel P12 : « LANDRY KAPGNEP » sort en company 0,72 sur le texte
+  // Cas réel P12 : « ADRIEN MESNARD » sort en company 0,72 sur le texte
   // naturel et en person 0,99 une fois la casse adoucie.
   const pipe = async (texte, labels) => {
-    const i = texte.indexOf('Landry Kapgnep');
+    const i = texte.indexOf('Adrien Mesnard');
     if (i === -1 || !labels.includes('person')) return [];
-    return [{ label: 'person', score: 0.99, start: i, end: i + 14, spanText: 'Landry Kapgnep' }];
+    return [{ label: 'person', score: 0.99, start: i, end: i + 14, spanText: 'Adrien Mesnard' }];
   };
-  const [e] = await detectGliner('LANDRY KAPGNEP', pipe);
+  const [e] = await detectGliner('ADRIEN MESNARD', pipe);
   assert.equal(e.type, 'PER');
   // La valeur se relit sur le texte d'origine : c'est elle qu'on masque et
   // qu'on réinjecte, pas la copie de travail.
-  assert.equal(e.value, 'LANDRY KAPGNEP');
+  assert.equal(e.value, 'ADRIEN MESNARD');
   assert.equal(e.start, 0);
   assert.equal(e.end, 14);
 });

@@ -140,7 +140,7 @@ for (const t of TAILLES) {
 
 // --- CV réel ---------------------------------------------------------------
 if (process.argv[2]) {
-  const VRAIES = ['KAPGNEP', 'Semantikmatch', 'Sorbonne', 'UNODC', 'Twini', 'SafePrompt', 'Île-de-France'];
+  const VRAIES = ['MESNARD', 'Semantikmatch', 'Sorbonne', 'UNODC', 'Twini', 'SafePrompt', 'Île-de-France'];
   const FAUSSES = ['Bénévole terrain', 'IA', 'Ollama', 'JaCoCo', 'BDD', 'LAMP',
                    'Profil R&D', 'NSI', 'Sankey', 'Cohortes', 'Data Engineer'];
   const b = readFileSync(process.argv[2]);

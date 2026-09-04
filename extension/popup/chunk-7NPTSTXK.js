@@ -497,7 +497,7 @@ var REGEX_PATTERNS = [
   },
   {
     // Handle de profil social/pro : identifie directement une personne, et
-    // contient très souvent le nom en minuscules (« linkedin.com/in/landry-kapgnep »)
+    // contient très souvent le nom en minuscules (« linkedin.com/in/adrien-mesnard »)
     // - forme que le NER ne détecte pas. Déterministe : le domaine lève toute
     // ambiguïté, donc aucun risque de faux positif sur de la prose.
     // extract: seul le handle est masqué, le domaine reste lisible (contexte utile).

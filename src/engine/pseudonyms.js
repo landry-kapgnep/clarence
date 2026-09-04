@@ -253,8 +253,8 @@ export function createPseudonymizer({ seed = 'clarence', avoid = () => false, lo
   // l'option promet s'arrêtait aux frontières du type.
   //
   // Le mécanisme est celui qui existe déjà : `pseudoToken` consulte `tokenMap`,
-  // donc « kapgnep » rencontré dans « LANDRY KAPGNEP » puis dans
-  // « landry.kapgnep.pro » rend deux fois le même composant. L'ordre de
+  // donc « mesnard » rencontré dans « ADRIEN MESNARD » puis dans
+  // « adrien.mesnard.pro » rend deux fois le même composant. L'ordre de
   // première rencontre n'importe pas.
   //
   // Tous les composants sont substitués, y compris ceux qui ne sont pas des

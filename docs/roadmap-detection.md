@@ -102,7 +102,7 @@ Rebalayage complet en fp16 → seuil du groupe identité **0,38 → 0,46** :
 (« zéro-fuite > faux positifs »). 0,50 casse le **structuré** : rédhibitoire.
 
 Les scores des cas-bornes ont été re-mesurés, pas extrapolés :
-`Amandine ROUSSEAU` 0,398 → **0,998**, `LANDRY KAPGNEP` 0,47 + 0,36 (deux spans)
+`Amandine ROUSSEAU` 0,398 → **0,998**, `ADRIEN MESNARD` 0,47 + 0,36 (deux spans)
 → **0,494** (un seul span), `CERTIFICAT DE SCOLARITE` 0,36 en PER → **0,469** en
 ORG **isolé** (mais préservé en contexte réel : 100 % sur son document).
 
@@ -221,7 +221,7 @@ devenue inutile - et qui, elle, aurait masqué le vrai problème.
 Scores mesurés dans le vrai contexte (document de 402 caractères, un seul
 chunk - pas de fenêtrage en jeu) : `KAROLINE` **0,130**, `ANSELME` **0,042**.
 Très en dessous du seuil, et bien plus bas que le cas déjà documenté
-(« LANDRY KAPGNEP », 0,47/0,36) - même forme (nom isolé, TOUT-MAJUSCULE, sur sa
+(« ADRIEN MESNARD », 0,47/0,36) - même forme (nom isolé, TOUT-MAJUSCULE, sur sa
 propre ligne) mais un score 3 à 10× plus faible. Pourquoi : sans indice de
 taille de police (un `.txt` n'en porte pas), le modèle n'a que la ponctuation
 autour (« certifie que\n\nKAROLINE ANSELME\n\n ») pour juger - visiblement
@@ -267,7 +267,7 @@ moins chère (WebGPU, modèle plus petit).
 ## ~~P0 - Fuites de noms propres~~ ✅ CORRIGÉ (21/07/2026)
 
 - **Nom TOUT-MAJUSCULE** : `boostCase` ignorait volontairement le tout-majuscule
-  (`tok !== lower → return tok`), donc « LANDRY KAPGNEP » n'était jamais soumis
+  (`tok !== lower → return tok`), donc « ADRIEN MESNARD » n'était jamais soumis
   au modèle *cased* sous une forme reconnaissable. Corrigé : mot tout en
   majuscules de ≥ 4 lettres remis en Titre (seuil qui épargne les acronymes
   SQL/API/JWT/BUT/IUT). Coût nul (la passe boostée existait déjà), longueur
@@ -280,7 +280,7 @@ moins chère (WebGPU, modèle plus petit).
 
 Le nom du propriétaire du CV **fuit à 3 endroits** - c'est le pire cas possible.
 
-1. **Nom en titre TOUT-MAJUSCULE** : `LANDRY KAPGNEP` (titre du CV) non masqué. Le
+1. **Nom en titre TOUT-MAJUSCULE** : `ADRIEN MESNARD` (titre du CV) non masqué. Le
    modèle NER *cased* (`bert-...-cased`) déteste le tout-majuscule et rate ces
    noms isolés sans contexte de phrase.
    - Piste A : passe supplémentaire *title-case* sur les tokens tout-majuscules
@@ -290,8 +290,8 @@ Le nom du propriétaire du CV **fuit à 3 endroits** - c'est le pire cas possibl
    - Piste B : heuristique déterministe « un bloc de 1-3 mots capitalisés isolé
      en haut du document = probablement le nom ». Ciblé, moins de faux positifs.
 
-2. **Nom en minuscule dans les URL** : `linkedin.com/in/landry-kapgnep`,
-   `github.com/landry-kapgnep` → « landry »/« kapgnep » en clair. Combine la
+2. **Nom en minuscule dans les URL** : `linkedin.com/in/adrien-mesnard`,
+   `github.com/adrien-mesnard` → « adrien »/« mesnard » en clair. Combine la
    faiblesse minuscule du NER ET la fragmentation P1.
 
 ---
@@ -1178,7 +1178,7 @@ modèle étiquette confiamment des fragments de mots **avec des scores plus
 | `CLÉSEXPÉRIENCES` (2 en-têtes de colonnes collés) | santé | 0,59 |
 | `InformatiqueEn cours` | poste | 0,61 |
 | `courts-métrages`, `complexes`, `INTÉRÊTS` | lieu / personne | 0,62-0,72 |
-| **`LANDRY` (le vrai nom)** | **personne** | **0,47** |
+| **`ADRIEN` (le vrai nom)** | **personne** | **0,47** |
 
 Sur les fixtures PROPRES, le plancher de bruit du groupe identité est à
 **0,26** ; sur ce CV il monte à **0,74**. Autrement dit : **le sur-masquage
@@ -1202,7 +1202,7 @@ les titres). Masquer ce bloc par construction ne dépendrait d'aucun score.
 ## P1 - Fragmentation de mots (fuite PARTIELLE + lisibilité) - cause identifiée
 
 Symptômes : `[ENTREPRISE_4]antikmatch` (Semantikmatch coupé), `[ENTREPRISE_3]ODC`
-(UNODC coupé), `github.com/landry-[LIEU_2]`. Le placeholder remplace un fragment,
+(UNODC coupé), `github.com/adrien-[LIEU_2]`. Le placeholder remplace un fragment,
 le reste du mot **reste en clair**.
 
 - **Cause** : pdfjs découpe parfois un seul mot en plusieurs *items* (kerning,
@@ -1450,9 +1450,9 @@ clair, et des valeurs recevaient `[TYPE_N]` au lieu d'un pseudonyme.
 
 | détecté | type | conséquence |
 |---|---|---|
-| `LANDRY KAPGNEP` ×1 | ORG | pseudonyme tiré du vivier des sociétés |
-| `KAPGNEP` ×2 | ORG | idem |
-| `LANDRY` seul | *rien* | **fuite** |
+| `ADRIEN MESNARD` ×1 | ORG | pseudonyme tiré du vivier des sociétés |
+| `MESNARD` ×2 | ORG | idem |
+| `ADRIEN` seul | *rien* | **fuite** |
 | `NANTES`, `SARCELLES`, `FOSSES` | *rien* | lieux en clair |
 
 Classé en entreprise, le nom n'hérite pas de la **décomposition par composant**
@@ -1467,7 +1467,7 @@ Dans le même document, « Sébastien PIEVE » (casse mixte) sortait correctemen
 
 |  | texte naturel | casse adoucie |
 |---|---|---|
-| `LANDRY KAPGNEP` | company 0,72 | **person 0,99** |
+| `ADRIEN MESNARD` | company 0,72 | **person 0,99** |
 | `FOSSES` | person 0,36 | **location 0,70** |
 | `NANTES` | location 0,40 *(sous seuil)* | **location 0,53** |
 | `SARCELLES` | location 0,43 | 0,43 - **non réglé** |
@@ -1506,7 +1506,7 @@ CV allemand). Borne basse **inchangée** (100/95/88 %).
   `SARCELLES`. Le correctif est partiel, jamais total.
 - L'adresse en capitales n'est pas détectée.
 - Le débordement de bornes reste possible : la passe adoucie a produit
-  « LANDRY Sexe Masculin » comme un seul span PER, et la fusion garde le plus
+  « ADRIEN Sexe Masculin » comme un seul span PER, et la fusion garde le plus
   long. C'est du sur-masquage, pas une fuite. Revu sur un vrai CV :
   « COMPÉTENCES CLÉS Data & IA » avale l'intitulé de section.
 
@@ -1529,7 +1529,7 @@ profil « Développeur / Tech », éditable, jamais une liste dans le moteur.
   pendant ce test. Il avait un trou propre, **corrigé le 15/08** : `caseVariants`
   faisait varier la casse et jamais les **composants**, donc un nom complet
   saisi dans une seule case ne protégeait ni le prénom ni le patronyme isolés -
-  précisément la forme d'un formulaire (« Nom KAPGNEP » / « Prénom(s) LANDRY »).
+  précisément la forme d'un formulaire (« Nom MESNARD » / « Prénom(s) ADRIEN »).
   Même leçon que les pseudonymes par composant du 03/08, enfin reportée.
 
   Périmètre volontairement étroit : **seuls `prenom` et `nom`** sont décomposés.
@@ -1538,7 +1538,7 @@ profil « Développeur / Tech », éditable, jamais une liste dans le moteur.
   règle de POSITION partagée avec `pseudonyms.js` (sortie dans `honorifics.js`
   pour ne pas en tenir deux copies).
 
-  Vérifié : profil rempli → `KAPGNEP`, `LANDRY` **et** `SARCELLES` masqués
+  Vérifié : profil rempli → `MESNARD`, `ADRIEN` **et** `SARCELLES` masqués
   (ce dernier par le champ « Ville », qui existait déjà). Le seul raté restant
   du modèle est donc couvert dès que le profil est renseigné.
 
@@ -1669,7 +1669,7 @@ réorienté tout le reste :
 | score | type | valeur |
 |---|---|---|
 | 0,83 | ORG | `SafePrompt` |
-| 0,79 | PER | `LANDRY KAPGNEP` |
+| 0,79 | PER | `ADRIEN MESNARD` |
 | 0,77 | LOC | `Spécialités` |
 | 0,76 | LOC | `Bénévole terrain` |
 | 0,68 | LOC | `Sorbonne Paris Nord` |
@@ -1683,7 +1683,7 @@ lequel couper. **Ne pas y revenir.**
 
 Les dix faux positifs restants étaient tous composés de mots courants
 (`Bénévole terrain`, `Anglais C1`, `Mars 2026`, `Développement & Web`) ; les
-vraies valeurs, jamais (`KAPGNEP`, `Sorbonne`, `Twini`, `UNODC`).
+vraies valeurs, jamais (`MESNARD`, `Sorbonne`, `Twini`, `UNODC`).
 
 Lexique tiré du vocabulaire WordPiece de mBERT (Apache 2.0), dont on ne garde
 que les entrées **entièrement minuscules** : par convention de ce vocabulaire un

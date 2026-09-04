@@ -34,7 +34,7 @@ export const IDENTITY_KEY = 'clarenceIdentity';
 // Emails, téléphones, IBAN et NIR sont déjà repérés par la couche déterministe
 // - regex validées mathématiquement - sans que l'utilisateur déclare quoi que
 // ce soit. Un nom, lui, dépend entièrement d'un modèle statistique, et le
-// modèle rate (fuite mesurée sur un CV titré « LANDRY KAPGNEP »).
+// modèle rate (fuite mesurée sur un CV titré « ADRIEN MESNARD »).
 export const IDENTITY_ESSENTIELS = new Set(['prenom', 'nom']);
 
 export const IDENTITY_FIELDS = [
@@ -90,10 +90,10 @@ export function identityTerms(identity) {
 // COMPOSANTS D'UN NOM MULTI-MOTS - le nom protège chacune de ses parties.
 //
 // Le défaut que ça corrige (P12, trouvé sur un vrai casier judiciaire). Un
-// formulaire officiel éclate le nom sur deux lignes : « Nom KAPGNEP » puis
-// « Prénom(s) LANDRY ». Qui a saisi son nom complet dans une seule case ne
+// formulaire officiel éclate le nom sur deux lignes : « Nom MESNARD » puis
+// « Prénom(s) ADRIEN ». Qui a saisi son nom complet dans une seule case ne
 // voyait donc masquer NI l'un NI l'autre, puisque `forcedMasks` cherche la
-// chaîne littérale « Landry Kapgnep », qui n'apparaît nulle part sous cette
+// chaîne littérale « Adrien Mesnard », qui n'apparaît nulle part sous cette
 // forme. Le garde-fou déterministe - celui qui ne dépend d'aucun score - ne
 // jouait pas dans le cas précis où il aurait été le plus utile.
 //
@@ -129,7 +129,7 @@ function composantsDeNom(identity) {
 }
 
 // Variantes de casse d'un terme : forcedMasks est littéral, or l'utilisateur
-// déclare « Landry Kapgnep » quand son CV affiche « LANDRY KAPGNEP » - le cas
+// déclare « Adrien Mesnard » quand son CV affiche « ADRIEN MESNARD » - le cas
 // exact qui a motivé ce module. On génère donc, pour chaque terme déclaré :
 // tel quel, majuscules, minuscules, et Casse Titre par mot. Déterministe,
 // zéro coût moteur (quelques recherches littérales de plus).

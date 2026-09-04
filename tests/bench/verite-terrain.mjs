@@ -132,7 +132,7 @@ export const CORPUS = [
     // judiciaire, acte d'état civil, attestation), les valeurs sont en
     // capitales et les libellés ne le sont pas.
     //
-    // Mesuré : « LANDRY KAPGNEP » sortait en ENTREPRISE à 0,72 sur le texte
+    // Mesuré : « ADRIEN MESNARD » sortait en ENTREPRISE à 0,72 sur le texte
     // naturel, et en PERSONNE à 0,99 une fois la casse adoucie. Le nom recevait
     // donc un pseudonyme d'entreprise, et le prénom isolé n'était jamais
     // masqué - la décomposition par composant ne vaut que pour les PER.

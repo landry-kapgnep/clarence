@@ -37,9 +37,9 @@ test('ne capitalise pas un mot d\'une seule lettre', () => {
 });
 
 // --- TOUT-MAJUSCULE : fuite constatée sur un vrai CV (nom en titre jamais
-// détecté car le modèle cased ne reconnaît pas « LANDRY KAPGNEP »).
+// détecté car le modèle cased ne reconnaît pas « ADRIEN MESNARD »).
 test('remet en Titre un patronyme écrit tout en majuscules', () => {
-  assert.equal(boostCase('LANDRY KAPGNEP'), 'Landry Kapgnep');
+  assert.equal(boostCase('ADRIEN MESNARD'), 'Adrien Mesnard');
 });
 
 test('épargne les acronymes courts d\'un CV (SQL, API, JWT, BUT, IUT…)', () => {

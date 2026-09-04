@@ -13,67 +13,67 @@ test('normalizeIdentity : entrée nulle → statut neuf, tous champs vides', () 
 });
 
 test('normalizeIdentity : statut inconnu ramené à neuf, champs inattendus ignorés', () => {
-  const id = normalizeIdentity({ status: 'pirate', champs: { nom: 'Kapgnep', inconnu: 'x' } });
+  const id = normalizeIdentity({ status: 'pirate', champs: { nom: 'Mesnard', inconnu: 'x' } });
   assert.equal(id.status, 'neuf');
-  assert.deepEqual(id.champs.nom, ['Kapgnep']);
+  assert.deepEqual(id.champs.nom, ['Mesnard']);
   assert.equal('inconnu' in id.champs, false);
 });
 
 test('champs multi-lignes : un terme par ligne, vides retirés, tableaux acceptés', () => {
   const id = normalizeIdentity({ status: 'configuré', champs: {
     emails: 'perso@mail.fr\n\n  pro@mail.fr  ',
-    pseudos: ['landry-kapgnep', '', 'lkap']
+    pseudos: ['adrien-mesnard', '', 'lkap']
   }});
   assert.deepEqual(id.champs.emails, ['perso@mail.fr', 'pro@mail.fr']);
-  assert.deepEqual(id.champs.pseudos, ['landry-kapgnep', 'lkap']);
+  assert.deepEqual(id.champs.pseudos, ['adrien-mesnard', 'lkap']);
 });
 
 test('identityTerms : GARDE-FOU - un terme trop court ne sort JAMAIS', () => {
   // Une initiale (« L ») en recherche littérale masquerait une lettre sur
   // deux du document entier. Ce test protège ce garde-fou.
   const terms = identityTerms({ status: 'configuré', champs: {
-    prenom: 'L\nLandry', nom: 'K', autres: 'ab'
+    prenom: 'L\nAdrien', nom: 'K', autres: 'ab'
   }});
-  assert.deepEqual(terms, ['Landry', 'ab']);
+  assert.deepEqual(terms, ['Adrien', 'ab']);
   for (const t of terms) assert.ok(t.length >= MIN_TERM_LENGTH);
 });
 
 test('identityTerms : dédoublonnage insensible à la casse, premier gagnant', () => {
   const terms = identityTerms({ status: 'configuré', champs: {
-    nom: 'Kapgnep', pseudos: 'kapgnep\nKAPGNEP', employeurs: 'Semantikmatch'
+    nom: 'Mesnard', pseudos: 'mesnard\nMESNARD', employeurs: 'Semantikmatch'
   }});
-  assert.deepEqual(terms, ['Kapgnep', 'Semantikmatch']);
+  assert.deepEqual(terms, ['Mesnard', 'Semantikmatch']);
 });
 
 test('bout en bout : identité → forcedMasks → toutes les occurrences masquées', () => {
   // Le chemin réel de production (identitySearchTerms, avec variantes de
   // casse) : les termes déclarés doivent masquer chaque occurrence,
   // indépendamment de tout modèle et de tout score.
-  const texte = 'LANDRY KAPGNEP — contact : landry.kapgnep.pro@gmail.com. Landry travaille chez Semantikmatch.';
+  const texte = 'ADRIEN MESNARD — contact : adrien.mesnard.pro@gmail.com. Adrien travaille chez Semantikmatch.';
   const terms = identitySearchTerms({ status: 'configuré', champs: {
-    prenom: 'Landry', nom: 'Kapgnep',
-    emails: 'landry.kapgnep.pro@gmail.com', employeurs: 'Semantikmatch'
+    prenom: 'Adrien', nom: 'Mesnard',
+    emails: 'adrien.mesnard.pro@gmail.com', employeurs: 'Semantikmatch'
   }});
   const forced = forcedMasks(texte, terms);
   const actives = selectActive([], forced, new Set());
   const { masked } = maskText(texte, actives);
-  assert.ok(!/landry/i.test(masked), 'le prénom fuit : ' + masked);
-  assert.ok(!/kapgnep/i.test(masked), 'le nom fuit : ' + masked);
+  assert.ok(!/adrien/i.test(masked), 'le prénom fuit : ' + masked);
+  assert.ok(!/mesnard/i.test(masked), 'le nom fuit : ' + masked);
   assert.ok(!masked.includes('Semantikmatch'), 'l\'employeur fuit : ' + masked);
 });
 
 test('identitySearchTerms : les variantes de casse couvrent le CV en MAJUSCULES', () => {
-  // LE cas qui a motivé ce module : l'utilisateur déclare « Landry Kapgnep »,
-  // son CV titre « LANDRY KAPGNEP ». forcedMasks est littéral - sans les
+  // LE cas qui a motivé ce module : l'utilisateur déclare « Adrien Mesnard »,
+  // son CV titre « ADRIEN MESNARD ». forcedMasks est littéral - sans les
   // variantes générées, le nom fuirait.
-  const texte = 'LANDRY KAPGNEP — Landry Kapgnep — landry kapgnep.';
-  const terms = identitySearchTerms({ status: 'configuré', champs: { prenom: 'Landry', nom: 'Kapgnep' } });
-  assert.ok(terms.includes('LANDRY'), 'variante MAJUSCULES absente');
-  assert.ok(terms.includes('landry'), 'variante minuscules absente');
+  const texte = 'ADRIEN MESNARD — Adrien Mesnard — adrien mesnard.';
+  const terms = identitySearchTerms({ status: 'configuré', champs: { prenom: 'Adrien', nom: 'Mesnard' } });
+  assert.ok(terms.includes('ADRIEN'), 'variante MAJUSCULES absente');
+  assert.ok(terms.includes('adrien'), 'variante minuscules absente');
   const forced = forcedMasks(texte, terms);
   const { masked } = maskText(texte, selectActive([], forced, new Set()));
-  assert.ok(!/landry/i.test(masked), 'une variante de casse fuit : ' + masked);
-  assert.ok(!/kapgnep/i.test(masked), 'une variante de casse fuit : ' + masked);
+  assert.ok(!/adrien/i.test(masked), 'une variante de casse fuit : ' + masked);
+  assert.ok(!/mesnard/i.test(masked), 'une variante de casse fuit : ' + masked);
 });
 
 test('identitySearchTerms : casse Titre générée pour un terme déclaré en majuscules', () => {
@@ -84,18 +84,18 @@ test('identitySearchTerms : casse Titre générée pour un terme déclaré en ma
 
 // --- COMPOSANTS D'UN NOM MULTI-MOTS (P12) ---------------------------------
 // Trouvé sur un vrai casier judiciaire : un formulaire éclate le nom sur deux
-// lignes (« Nom KAPGNEP », « Prénom(s) LANDRY »). Qui saisit son nom complet
+// lignes (« Nom MESNARD », « Prénom(s) ADRIEN »). Qui saisit son nom complet
 // dans une seule case ne voyait masquer NI l'un NI l'autre, forcedMasks étant
 // littéral. Le garde-fou déterministe manquait là où il servait le plus.
 
 test('un nom complet saisi dans UNE case protège chacun de ses composants', () => {
-  const texte = 'IDENTITÉ  Nom  KAPGNEP  Prénom(s)  LANDRY  Sexe  Masculin';
+  const texte = 'IDENTITÉ  Nom  MESNARD  Prénom(s)  ADRIEN  Sexe  Masculin';
   const terms = identitySearchTerms({
-    status: 'configuré', champs: { prenom: 'Landry Kapgnep' }
+    status: 'configuré', champs: { prenom: 'Adrien Mesnard' }
   });
   const { masked } = maskText(texte, selectActive([], forcedMasks(texte, terms), new Set()));
-  assert.ok(!/landry/i.test(masked), 'le prénom isolé fuit : ' + masked);
-  assert.ok(!/kapgnep/i.test(masked), 'le patronyme isolé fuit : ' + masked);
+  assert.ok(!/adrien/i.test(masked), 'le prénom isolé fuit : ' + masked);
+  assert.ok(!/mesnard/i.test(masked), 'le patronyme isolé fuit : ' + masked);
   // Le libellé du formulaire, lui, doit survivre.
   assert.match(masked, /Masculin/);
 });

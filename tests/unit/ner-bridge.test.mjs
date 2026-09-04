@@ -36,10 +36,10 @@ test('idem pour les autres formes courantes (CHU, ENS)', () => {
 });
 
 test('un prénom TOUT-MAJUSCULE suivi du patronyme est toujours recollé (sens avant)', () => {
-  const t = 'LANDRY KAPGNEP, développeur';
-  const start = t.indexOf('LANDRY');
+  const t = 'ADRIEN MESNARD, développeur';
+  const start = t.indexOf('ADRIEN');
   const [e] = bridgeNameParts(t, [
-    { type: 'PER', value: 'LANDRY', start, end: start + 6, source: 'ner' }
+    { type: 'PER', value: 'ADRIEN', start, end: start + 6, source: 'ner' }
   ]);
-  assert.equal(e.value, 'LANDRY KAPGNEP');
+  assert.equal(e.value, 'ADRIEN MESNARD');
 });

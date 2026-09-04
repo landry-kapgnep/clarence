@@ -126,10 +126,10 @@ test('les particules nobiliaires sont conservées (lisibilité, non identifiante
 
 test('la casse TOUT-MAJUSCULE du patronyme est reproduite (convention CV FR)', () => {
   const p = createPseudonymizer({ seed: 's1' });
-  const v = p('PER', 'LANDRY KAPGNEP');
+  const v = p('PER', 'ADRIEN MESNARD');
   assert.equal(v, v.toUpperCase(), 'casse non reproduite : ' + v);
   // et le composant seul reste cohérent avec le nom complet
-  assert.equal(p('PER', 'KAPGNEP'), v.split(' ')[1]);
+  assert.equal(p('PER', 'MESNARD'), v.split(' ')[1]);
 });
 
 test('un nom à trait d\'union reste composé, et ses parties restent cohérentes', () => {
@@ -141,7 +141,7 @@ test('un nom à trait d\'union reste composé, et ses parties restent cohérente
 
 test('AUCUN composant réel ne subsiste dans le pseudo (anti-fuite)', () => {
   const p = createPseudonymizer({ seed: 's1' });
-  for (const vrai of ['Priya Deva', 'LANDRY KAPGNEP', 'Marc-Antoine De La Villardière']) {
+  for (const vrai of ['Priya Deva', 'ADRIEN MESNARD', 'Marc-Antoine De La Villardière']) {
     const faux = p('PER', vrai);
     for (const mot of vrai.split(/[\s-]+/)) {
       if (['De', 'La'].includes(mot)) continue; // particules gardées volontairement
@@ -237,26 +237,26 @@ test('aucun type PEU FIABLE ne reçoit de pseudonyme réaliste', () => {
 
 test("l email reprend les composants du nom de la personne", () => {
   const p = createPseudonymizer({ seed: "s1" });
-  const nom = p("PER", "LANDRY KAPGNEP");
-  const mail = p("EMAIL", "landry.kapgnep.pro@gmail.com");
+  const nom = p("PER", "ADRIEN MESNARD");
+  const mail = p("EMAIL", "adrien.mesnard.pro@gmail.com");
   const [prenom, patronyme] = nom.toLowerCase().split(" ");
   assert.ok(mail.startsWith(prenom + "." + patronyme),
     "email incohérent avec le nom : " + nom + " / " + mail);
-  assert.ok(!/landry|kapgnep/i.test(mail), "un composant réel a fuité : " + mail);
+  assert.ok(!/adrien|mesnard/i.test(mail), "un composant réel a fuité : " + mail);
 });
 
 test("le handle reprend les composants du nom, séparateur préservé", () => {
   const p = createPseudonymizer({ seed: "s1" });
-  const nom = p("PER", "LANDRY KAPGNEP");
-  const handle = p("PSEUDO", "landry-kapgnep");
+  const nom = p("PER", "ADRIEN MESNARD");
+  const handle = p("PSEUDO", "adrien-mesnard");
   assert.equal(handle, nom.toLowerCase().replace(" ", "-"));
-  assert.ok(!/landry|kapgnep/i.test(handle), "un composant réel a fuité : " + handle);
+  assert.ok(!/adrien|mesnard/i.test(handle), "un composant réel a fuité : " + handle);
 });
 
 test("la cohérence ne dépend pas de l ordre de rencontre", () => {
   const p = createPseudonymizer({ seed: "s1" });
-  const handle = p("PSEUDO", "landry-kapgnep");   // vu EN PREMIER
-  const nom = p("PER", "LANDRY KAPGNEP");
+  const handle = p("PSEUDO", "adrien-mesnard");   // vu EN PREMIER
+  const nom = p("PER", "ADRIEN MESNARD");
   assert.equal(handle, nom.toLowerCase().replace(" ", "-"));
 });
 

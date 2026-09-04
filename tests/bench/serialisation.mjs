@@ -68,7 +68,7 @@ const FORMES = {
 };
 
 // Vraies données de CE document, relevées à la main lors de l'audit du 18/08.
-const VRAIES = ['KAPGNEP', 'LANDRY', 'Sorbonne', 'UNODC', 'Twini', 'Frontières',
+const VRAIES = ['MESNARD', 'ADRIEN', 'Sorbonne', 'UNODC', 'Twini', 'Frontières',
                 'SafePrompt', 'Île-de-France', 'IUT'];
 const estVraie = v => VRAIES.some(x => v.includes(x));
 

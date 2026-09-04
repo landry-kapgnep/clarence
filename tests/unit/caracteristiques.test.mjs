@@ -56,8 +56,8 @@ test('lexique et suffixes sont comptés SÉPARÉMENT', () => {
   assert.equal(conteneurisee.partLexique, 0);
   assert.equal(conteneurisee.partSuffixe, 1);
 
-  const kapgnep = caracteristiques({ value: 'Kapgnep' }, ctx);
-  assert.equal(kapgnep.aucunCourant, 1);
+  const mesnard = caracteristiques({ value: 'Mesnard' }, ctx);
+  assert.equal(mesnard.aucunCourant, 1);
 });
 
 // --- Ce que dit le document -----------------------------------------------
@@ -89,18 +89,18 @@ test('les occurrences montent en échelle logarithmique et saturent', () => {
 // --- Fragmentation en sous-mots -------------------------------------------
 
 test('la fragmentation compte les morceaux WordPiece, gloutonnement', () => {
-  const vocab = new Set(['sor', '##bonne', 'terrain', 'kap', '##gne', '##p']);
+  const vocab = new Set(['sor', '##bonne', 'terrain', 'mes', '##nar', '##d']);
   assert.equal(morceaux('terrain', vocab), 1);
   assert.equal(morceaux('sorbonne', vocab), 2);
-  assert.equal(morceaux('kapgnep', vocab), 3);
+  assert.equal(morceaux('mesnard', vocab), 3);
 });
 
 test('sans vocabulaire de sous-mots, la fragmentation vaut 0 partout', () => {
   // Comportement voulu : le vocabulaire pèse ~1 Mo, on ne l'embarque que si la
   // mesure prouve qu'il gagne sa place. Son absence ne doit rien casser.
-  const ctx = contexteDocument('Kapgnep');
-  assert.equal(caracteristiques({ value: 'Kapgnep' }, ctx).fragmentation, 0);
-  assert.equal(morceaux('Kapgnep', null), 1);
+  const ctx = contexteDocument('Mesnard');
+  assert.equal(caracteristiques({ value: 'Mesnard' }, ctx).fragmentation, 0);
+  assert.equal(morceaux('Mesnard', null), 1);
 });
 
 test('un mot entièrement inconnu du vocabulaire ne boucle pas', () => {
@@ -114,7 +114,7 @@ test('un mot entièrement inconnu du vocabulaire ne boucle pas', () => {
 
 test('casse et ponctuation de liaison', () => {
   const ctx = contexteDocument('');
-  assert.equal(caracteristiques({ value: 'LANDRY KAPGNEP' }, ctx).toutCapitales, 1);
+  assert.equal(caracteristiques({ value: 'ADRIEN MESNARD' }, ctx).toutCapitales, 1);
   assert.equal(caracteristiques({ value: 'Rose Fontaine' }, ctx).toutCapitales, 0);
   assert.equal(caracteristiques({ value: 'Rose Fontaine' }, ctx).casseDeTitre, 1);
   assert.equal(caracteristiques({ value: 'canal acoustique' }, ctx).casseDeTitre, 0);

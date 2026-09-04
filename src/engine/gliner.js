@@ -322,7 +322,7 @@ export function desaccentuer(texte) {
 // valeurs sont en capitales, classe de document absente du corpus (fait de CV
 // et de mémoires), ce qui explique que le défaut ait survécu si longtemps :
 //
-//   « LANDRY KAPGNEP »   company 0,72   →  person   0,99
+//   « ADRIEN MESNARD »   company 0,72   →  person   0,99
 //   « FOSSES »           person  0,36   →  location 0,70
 //   « NANTES »           location 0,40  →  location 0,53   (0,40 était sous le seuil)
 //
@@ -473,7 +473,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
   snapToWordBoundaries(text, all);
 
   // Recollage des noms détectés en deux morceaux. Cas réel : sur un CV,
-  // « LANDRY KAPGNEP » sort en deux spans distincts (0,47 et 0,36) - sans
+  // « ADRIEN MESNARD » sort en deux spans distincts (0,47 et 0,36) - sans
   // pontage, seul le prénom passerait le seuil et le patronyme fuirait en
   // clair à côté du placeholder. Mécanisme partagé avec le moteur BERT.
   bridgeNameParts(text, all);

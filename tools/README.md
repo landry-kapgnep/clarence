@@ -84,7 +84,7 @@ Deux pièges, tous deux rencontrés :
 - **`huggingface-cli` est déprécié** au profit de `hf` (`hf auth login`,
   `hf upload`). L'ancienne forme marche encore, avec un avertissement.
 - **Le chemin est relatif au répertoire courant**, pas à la racine du dépôt.
-  Depuis `C:\Users\Landry`, `tools/llmlingua2-onnx` n'existe pas et la commande
+  Depuis `C:\Users\Adrien`, `tools/llmlingua2-onnx` n'existe pas et la commande
   échoue sur un `FileNotFoundError` peu parlant. D'où le chemin absolu ci-dessus.
 
 `--exclude "onnx/model.onnx"` écarte le **fp32 de 710 Mo**, dont l'extension ne

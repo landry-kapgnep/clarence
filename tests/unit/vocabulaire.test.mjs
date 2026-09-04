@@ -10,7 +10,7 @@ test('mots courants reconnus, noms propres non', () => {
   for (const m of ['terrain', 'données', 'allemand', 'mars', 'développement']) {
     assert.ok(estMotCourant(m), `« ${m} » devrait être courant`);
   }
-  for (const m of ['Kapgnep', 'Twini', 'Semantikmatch', 'UNODC', 'Sorbonne']) {
+  for (const m of ['Mesnard', 'Twini', 'Semantikmatch', 'UNODC', 'Sorbonne']) {
     assert.ok(!estMotCourant(m), `« ${m} » ne devrait PAS être courant`);
   }
 });

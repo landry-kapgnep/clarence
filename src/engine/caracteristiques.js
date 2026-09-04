@@ -7,7 +7,7 @@
 // cinq suffixes parce qu'ils mordaient sur des noms de lieux - signe qu'une
 // règle écrite à la main atteint sa limite. Les signaux qui restent sont
 // individuellement faibles (mesuré : « acoustique » se fragmente en 3 morceaux
-// comme « Kapgnep », et « Sorbonne » n'en fait qu'un) ; les combiner est
+// comme « Mesnard », et « Sorbonne » n'en fait qu'un) ; les combiner est
 // précisément ce qu'un classifieur fait mieux qu'une suite de `if`.
 //
 // Règle de conception : ce module ne décide rien et ne charge rien. Il rend des

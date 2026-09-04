@@ -45,14 +45,14 @@ const STOPWORDS_FR = new Set([
 
 // Longueur minimale d'un mot tout en majuscules pour être remis en Titre.
 // Épargne les acronymes courts omniprésents dans un CV (SQL, API, JWT, CTF,
-// IUT, BUT, NSI, PHP) tout en visant les patronymes (LANDRY, KAPGNEP).
+// IUT, BUT, NSI, PHP) tout en visant les patronymes (ADRIEN, MESNARD).
 const ALLCAPS_MIN = 4;
 
 // Normalise la casse pour la passe "boostée" du NER. Deux cas, car le modèle
 // est *cased* et ne reconnaît un nom propre qu'en Casse Titre :
 //  - mot entièrement minuscule (hors mot-outil) → capitalisé ;
 //  - mot entièrement majuscule d'au moins ALLCAPS_MIN lettres → mis en Titre.
-//    Sans ça, un nom en titre de document (« LANDRY KAPGNEP » sur un CV) n'est
+//    Sans ça, un nom en titre de document (« ADRIEN MESNARD » sur un CV) n'est
 //    Jamais détecté : fuite constatée sur un vrai fichier.
 // Préserve la longueur exacte de la chaîne (les offsets restent valides) ;
 // un mot en casse mixte (déjà exploitable par le modèle) n'est jamais modifié.
@@ -178,8 +178,8 @@ export function snapToWordBoundaries(text, entities) {
 //  - noms nobiliaires ("Sébastien De La Villardière" : "Villardière" pris pour
 //    un LIEU, le prénom + particules laissés en clair) ;
 //  - patronyme en majuscules séparé du prénom en deux détections distinctes
-//    ("Amandine" + "ROUSSEAU-LEFEBVRE" ; ou, avec GLiNER, "LANDRY" détecté et
-//    "KAPGNEP" laissé en clair - le nom en tête d'un vrai CV).
+//    ("Amandine" + "ROUSSEAU-LEFEBVRE" ; ou, avec GLiNER, "ADRIEN" détecté et
+//    "MESNARD" laissé en clair - le nom en tête d'un vrai CV).
 // Recollage déterministe, toujours ancré sur une détection existante (jamais
 // de nom créé de zéro). Tradeoff assumé (priorité zéro-fuite) : peut
 // sur-masquer un lieu précédé d'un mot capitalisé + particule ("Voyage De La
@@ -210,7 +210,7 @@ const FWD_ALLCAPS = new RegExp(`^\\s+${ALLCAPS}(?![A-Za-zÀ-ÿ0-9]|[-'’]?\\d)`
 const BACK_PARTICLE = new RegExp(`(${CAPWORD_MIXTE}(?:\\s+${PARTICLE})+\\s+)$`);
 export function bridgeNameParts(text, entities) {
   for (const e of entities) {
-    // (a) extension avant depuis un PER : " De La Rochefoucauld", " KAPGNEP".
+    // (a) extension avant depuis un PER : " De La Rochefoucauld", " MESNARD".
     if (e.type === 'PER') {
       let m;
       while ((m = FWD_PARTICLE.exec(text.slice(e.end))) || (m = FWD_ALLCAPS.exec(text.slice(e.end)))) {

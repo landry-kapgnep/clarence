@@ -139,7 +139,7 @@ pas une inférence.
 `src/popup/identity.js` : l'utilisateur déclare UNE FOIS ce qui l'identifie
 (nom, emails, employeurs, écoles, pseudos…). Ces termes alimentent
 `forcedMasks` avec leurs **variantes de casse** générées (un CV titre
-« LANDRY KAPGNEP » quand on déclare « Landry Kapgnep » - sans variantes, le nom
+« ADRIEN MESNARD » quand on déclare « Adrien Mesnard » - sans variantes, le nom
 fuyait). Le masquage de sa propre identité devient ainsi **déterministe**,
 jamais suspendu à un score de modèle. `chrome.storage.local` exclusivement,
 jamais `sync` (voir le commentaire en tête du module). Le moteur n'est pas
