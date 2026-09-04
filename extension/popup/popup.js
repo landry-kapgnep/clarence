@@ -17,7 +17,7 @@ import {
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-7NPTSTXK.js";
+} from "./chunk-GWTDFSIC.js";
 import {
   createBatchedPipeline
 } from "./chunk-IT5BP6N7.js";
@@ -2544,7 +2544,7 @@ async function retirerDuMasquage(valeur) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-US6SQXDB.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-EGHPW45D.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -2557,7 +2557,7 @@ async function retirerDuMasquage(valeur) {
       fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
       mapping = res.mapping;
     } else {
-      const { anonymizeUnits } = await import("./anonymize-units-LWBDR3UO.js");
+      const { anonymizeUnits } = await import("./anonymize-units-TFDW3MDZ.js");
       const { results, mapping: m } = await anonymizeUnits(r.units, {
         entitesConnues: r.entites,
         intitules: r.intitules,
@@ -3136,7 +3136,7 @@ async function processFile() {
       fileSetStatus(msg("etat_lecture_pdf"));
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-US6SQXDB.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-EGHPW45D.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -3167,7 +3167,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-LWBDR3UO.js");
+    const { anonymizeUnits } = await import("./anonymize-units-TFDW3MDZ.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {

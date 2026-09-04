@@ -420,26 +420,19 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
 
 // --- ARBITRAGE DES FAUX POSITIFS -----------------------------------------
 //
-// Le problème qu'il traite. Le label « person » désigne toute expression qui
-// RÉFÈRE à une personne, pas seulement un nom : le modèle sort donc
-// « Analyste », « Ingénieure », « Second candidat », « Poste occupé ». Il a
-// raison linguistiquement, c'est notre besoin qui porte sur les entités
-// NOMMÉES. Aucun seuil ne les écarte - mesuré, ces faux positifs sortent
-// Au-dessus de vraies entités (« Réunion » 0,961 contre « Villetaneuse »
-// 0,699).
+// Le label « person » désigne toute expression qui RÉFÈRE à une personne : le
+// modèle sort « Analyste », « Second candidat », « Poste occupé ». Aucun seuil
+// ne les écarte, ils sortent au-dessus de vraies entités (« Réunion » 0,961
+// contre « Villetaneuse » 0,699).
 //
-// Pourquoi une passe séparée, et pas des labels ajoutés au groupe identité :
-// les labels se concurrencent dans un même appel (gotcha documenté). Mis face
-// à « person », un label « job title » sort écrasé à 0,000 et ne sert à rien.
-// Seul, il répond.
+// Passe séparée et pas des labels ajoutés au groupe identité : les labels se
+// concurrencent dans un même appel. Face à « person », un label « job title »
+// sort à 0,000. Seul, il répond.
 //
-// Ce que ça coûte. Une inférence par valeur distincte, pas par occurrence, et
-// sur un texte très court. Les appels partent en parallèle donc le
-// regroupement en lots les rassemble (voir src/engine/batch.js).
+// Coût : une inférence par valeur distincte, pas par occurrence, sur un texte
+// très court, et les appels partent en lot.
 //
-// Ce que ça ne touche jamais : la couche déterministe. On n'arbitre que les
-// entités venues du modèle (`source === 'ner'`) et de type nom propre. Un IBAN
-// validé mathématiquement ne se discute pas.
+// Ne touche jamais le déterministe : on n'arbitre que `source === 'ner'`.
 export const LABELS_LEURRE = ['job title', 'section heading', 'common noun', 'skill or hobby'];
 
 // Mesuré sur 21 faux positifs et 15 vraies entités du document piégé :

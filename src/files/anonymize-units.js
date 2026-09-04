@@ -144,30 +144,22 @@ function joinWithSentinel(units) {
   return { combined, ranges };
 }
 
-// units : [{ id, text }].
+// units : [{ id, text }] → { results, mapping }.
 //
-// Retourne { results, mapping } :
-// - results : [{ id, text, maskedText, entities }] dans l'ordre d'entrée.
-//   `entities` : offsets locaux à l'unité + placeholder - utile à DOCX qui
-//   doit redistribuer sur des runs ; CSV/XLSX n'utilisent que `maskedText`.
-// - mapping : table de correspondance complète, identique à celle de maskText.
+// results : [{ id, text, maskedText, entities }] dans l'ordre d'entrée.
+// `entities` porte des offsets locaux à l'unité, utile à DOCX qui redistribue
+// sur des runs ; CSV et XLSX n'utilisent que `maskedText`.
 //
-// Limite connue et assumée : `entities` ne couvre que les valeurs
-// explicitement détectées (regex/NER) sur le document combiné - PAS les
-// répétitions rattrapées uniquement par la propagation de maskText (elle,
-// bien incluse dans `maskedText`). Sans impact pour CSV/XLSX ; pour DOCX,
-// une répétition non détectée dans son propre paragraphe pourrait ne pas
-// être masquée dans le fichier réécrit - limite documentée, pas cachée.
-// Options de règles personnalisées (mêmes primitives que le mode texte,
-// voir selection.js - logique zéro tolérance partagée, jamais dupliquée) :
-// - forceTerms    : termes « toujours masquer » (recherche littérale, toutes occurrences) ;
-// - disabledTypes : Set de types que l'utilisateur choisit de NE PAS masquer ;
-// - keepValues    : valeurs « ne jamais masquer » (les masques forcés restent intouchables).
-// onProgress (optionnel) : transmis à detectNER, pour afficher l'avancement
-// (le NER est le poste long - voir commentaire dans ner.js).
-// signal (optionnel) : AbortSignal. Un traitement abandonné doit s'arrêter, pas
-// seulement voir son résultat ignoré - sinon il continue d'occuper le modèle et
-// le run suivant attend derrière lui (voir src/engine/annulation.js).
+// Limite assumée : `entities` ne couvre que les valeurs explicitement
+// détectées, pas les répétitions rattrapées par la propagation de maskText
+// (celles-ci sont bien dans `maskedText`). Sans impact pour CSV/XLSX ; pour
+// DOCX une répétition non détectée dans son propre paragraphe pourrait ne pas
+// être masquée dans le fichier réécrit.
+//
+// Options : forceTerms, disabledTypes, keepValues - mêmes primitives que le
+// mode texte (selection.js), jamais dupliquées. onProgress remonte l'avancement
+// du NER. signal est un AbortSignal : un traitement abandonné doit s'arrêter,
+// sinon il occupe le modèle et le run suivant attend derrière.
 export async function anonymizeUnits(units, { nerPipeline, nerDetect, maskOpts, forceTerms, disabledTypes, keepValues, onProgress, signal, arbitre, intitules, entitesConnues } = {}) {
   const nonEmpty = units.filter(u => u.text.length > 0);
   const { combined, ranges } = joinWithSentinel(nonEmpty);

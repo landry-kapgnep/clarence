@@ -71,28 +71,21 @@ function contientLesMots(botte, aiguille) {
   return false;
 }
 
-// Filtre post-sélection : retire les entités des types désactivés et celles
-// visées par « ne jamais masquer ». Les masques manuels (y compris forcés)
-// sont intouchables : l'utilisateur a le dernier mot.
+// Filtre post-sélection : retire les types désactivés et les entités visées par
+// « ne jamais masquer ». Les masques manuels sont intouchables.
 //
-// La correspondance n'est plus exacte, et c'est une correction de bug mesurée.
-// Sur un vrai mémoire, 14 termes saisis en « ne jamais masquer » n'en ont vu
-// que 6 appliqués. Cause : le modèle détecte « Joss Moorkens », « Rivas
-// Ginel », « Google Translate » comme entités entières, tandis que
-// l'utilisateur saisit le patronyme ou la marque seuls. Aucune égalité stricte
-// ne pouvait donc matcher, et la règle restait sans effet - sans que rien ne
-// le signale, ce qui est le pire cas : on croit sa consigne appliquée.
+// La correspondance n'est pas exacte, et c'est une correction de bug. Sur un
+// mémoire, 14 termes saisis n'en ont vu que 6 appliqués : le modèle détecte
+// « Joss Moorkens » entier quand l'utilisateur saisit le patronyme seul. Aucune
+// égalité stricte ne matchait, et rien ne le signalait - on croyait sa consigne
+// appliquée.
 //
-// La comparaison se fait donc par SUITE DE MOTS ENTIERS, dans les deux sens :
-//  - « Moorkens » épargne l'entité « Joss Moorkens » (le terme est dedans) ;
-//  - « Joss Moorkens » épargne l'entité « Moorkens » (l'entité est dedans).
-// Les frontières de mot interdisent les correspondances par accident :
-// « MT » n'épargne ni « Amtrak » ni « Smith ».
+// Comparaison par SUITE DE MOTS ENTIERS, dans les deux sens : « Moorkens »
+// épargne « Joss Moorkens », et l'inverse. Les frontières de mot interdisent
+// les accidents : « MT » n'épargne ni « Amtrak » ni « Smith ».
 //
-// Risque assumé : garder « Paris » épargnerait aussi une personne nommée
-// « Paris Dupont ». C'est une conséquence directe d'une consigne explicite de
-// l'utilisateur, et « toujours masquer » reprend la main dessus (les masques
-// manuels passent avant, première condition du filtre).
+// Risque assumé : garder « Paris » épargne aussi « Paris Dupont ». C'est la
+// conséquence d'une consigne explicite, et « toujours masquer » reprend la main.
 export function filterByRules(entities, { disabledTypes = new Set(), keepValues = [] } = {}) {
   const keep = (keepValues || [])
     .map(v => motsDe(v))

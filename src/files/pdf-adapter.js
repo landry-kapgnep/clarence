@@ -1,25 +1,16 @@
-// Adaptateur PDF → Markdown. Contrairement à CSV/XLSX/DOCX, la sortie n'est
-// Jamais une réécriture du fichier d'origine : c'est un nouveau document texte
-// (.md). Pas de problème de réinjection dans un format contraint (aucune
-// redistribution sur des runs nécessaire) - le seul vrai risque est la
-// fidélité de l'extraction, pas la réécriture.
+// Adaptateur PDF → Markdown. La sortie n'est jamais une réécriture du fichier
+// d'origine mais un nouveau document texte, donc pas de redistribution sur des
+// runs : le seul vrai risque est la fidélité de l'extraction.
 //
-// Worker pdfjs : en navigateur, la v6 exige GlobalWorkerOptions.workerSrc
-// (aucun repli automatique - vérifié en vrai Chrome, l'extension plantait) ;
-// en Node (tests), elle s'en passe toute seule. On pointe donc vers le worker
-// embarqué dans vendor/ (copié par build.mjs, comme les .wasm du NER)
-// uniquement quand l'API d'extension existe. Local, CSP 'self', zéro code
-// distant. Validé : le bundle esbuild ne contient ni eval() ni new Function().
+// En navigateur, pdfjs v6 exige `GlobalWorkerOptions.workerSrc` sans repli
+// (vérifié en vrai Chrome, l'extension plantait) ; en Node il s'en passe. On
+// pointe donc vers le worker de vendor/ uniquement quand l'API d'extension
+// existe. Local, CSP 'self', zéro code distant.
 //
-// Limites assumées et documentées, jamais silencieuses :
-// - PDF scanné (sans couche texte) → aucune unité extraite ; le garde-fou
-//   générique de processFile() ("Aucun texte à analyser") s'applique déjà,
-//   aucun code spécifique requis ici.
-// - PDF chiffré/protégé → getDocument(...).promise rejette, remonte dans le
-//   catch générique de processFile().
-// - Mise en page multi-colonnes NON gérée : le regroupement par Y sur toute
-//   la largeur de page mélangerait l'ordre de lecture des colonnes. Hors
-//   scope v1, comme les zones de texte/notes pour DOCX à l'origine.
+// Limites assumées : un PDF scanné ne rend aucune unité (le garde-fou de
+// processFile s'applique), un PDF chiffré fait rejeter getDocument, et la mise
+// en page multi-colonnes n'est pas gérée ici - le regroupement par Y sur toute
+// la largeur mélangerait l'ordre de lecture.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // Configuration pdfjs, en un seul endroit. Les deux chemins PDF (Markdown et
@@ -326,28 +317,19 @@ async function parseStructure(buffer) {
 
 // Intitulés de section, reconnus à leur PLACE et jamais à leur sens.
 //
-// Soumis seuls, « SOMMAIRE », « COMPÉTENCES », « LANGUES » sortent en
-// ENTREPRISE ou LIEU entre 0,50 et 0,79, au-dessus de vraies entités. Quatre
-// approches lexicales ont été mesurées et échouent toutes (seuil plus haut,
-// labels leurres, question « nom propre / nom commun », fertilité du
-// tokenizer) : elles jugent le mot isolé, alors qu'un humain reconnaît un
-// intitulé à sa position dans la page.
+// Soumis seuls, « SOMMAIRE » ou « COMPÉTENCES » sortent en ENTREPRISE ou LIEU
+// entre 0,50 et 0,79, au-dessus de vraies entités. Quatre approches lexicales
+// ont été mesurées et échouent : elles jugent le mot isolé, alors qu'un humain
+// reconnaît un intitulé à sa position.
 //
-// Cinq conditions, toutes déterministes :
-//  (1) PAS un titre en gros corps. Garde-fou essentiel : le nom en tête d'un CV
-//      en est un (corps 21 contre 8 pour les rubriques) et doit rester masqué ;
-//  (2) trois mots au plus ;
-//  (3) aucune ponctuation de phrase ;
-//  (4) entièrement en capitales ;
-//  (5) le document en contient au moins deux, donc c'est un motif de mise en
-//      page et pas un mot isolé écarté par accident.
+// Cinq conditions déterministes : (1) pas un titre en gros corps, garde-fou
+// essentiel puisque le nom en tête d'un CV en est un ; (2) trois mots au plus ;
+// (3) aucune ponctuation de phrase ; (4) tout en capitales ; (5) le document en
+// contient au moins deux, donc c'est un motif de mise en page.
 //
-// `structurel` ne saute que la passe contextuelle : `detectRegex` tourne sur le
-// document entier, donc « BIC : AGRIFRPP882 » reste protégé.
-//
-// Risque assumé, mesuré nul sur le corpus : un nom en capitales dans le corps
-// du texte (signature, liste d'auteurs) ne serait plus masqué automatiquement.
-// Le profil d'identité et « toujours masquer » le forcent toujours.
+// `structurel` ne saute que la passe contextuelle, `detectRegex` tourne partout.
+// Risque assumé, mesuré nul : un nom en capitales dans un bloc de signature ne
+// serait plus masqué automatiquement.
 const PONCTUATION_PHRASE = /[.!?,;:]/;
 
 // Un numéro de rubrique final est légitime (« ANNEXE 2 ») ; des chiffres

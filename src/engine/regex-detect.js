@@ -270,25 +270,20 @@ export const REGEX_PATTERNS = [
     // Identifiants nationaux annoncés par un libellé (formats sans tirets, ou
     // non-US). Le libellé lève l'ambiguïté d'une suite de chiffres banale.
     //
-    // Libellés espagnols et allemands ajoutés le 08/08/2026 : le motif était
-    // anglophone, donc « Seguridad Social : 28 1234567840 » et « Steuer-ID :
-    // 12345678901 » fuyaient. Ces deux-là n'ont pas de clé de contrôle qu'on
-    // sache vérifier à peu de frais, et « 11 chiffres » nu est une forme bien
-    // trop banale pour être masquée sans contexte : le libellé est donc
-    // Indispensable ici, contrairement au DNI qui se valide seul (voir plus bas).
-    // UN VERBE DE LIAISON peut séparer le libellé de la valeur - « Die
-    // Steuer-ID LAUTET 12345678901 », « the tax id IS 123-45-6789 ». Sans lui,
-    // le motif n'attrapait que les libellés suivis de deux-points, donc il
-    // marchait sur une fiche et échouait sur une phrase rédigée.
+    // Libellés espagnols et allemands ajoutés parce que le motif était
+    // anglophone : « Seguridad Social : 28 1234567840 » et « Steuer-ID :
+    // 12345678901 » fuyaient. Ces deux-là n'ont pas de clé de contrôle
+    // vérifiable, et « 11 chiffres » nu est trop banal pour être masqué sans
+    // contexte. Le libellé est donc indispensable, contrairement au DNI.
     //
-    // Le défaut était déjà connu et corrigé sur le motif REFERENCE plus bas
-    // (« his employee identifier is EMP-4471-KD ») ; je ne l'avais pas
-    // répliqué ici. Trouvé par le harnais d'injection à son premier passage,
-    // sur de la vraie prose allemande - un cas qu'aucun de nos documents de
-    // test ne contenait.
+    // Un VERBE DE LIAISON peut séparer le libellé de la valeur (« Die
+    // Steuer-ID LAUTET 12345678901 »). Sans lui le motif n'attrapait que les
+    // libellés suivis de deux-points : il marchait sur une fiche et échouait
+    // sur une phrase rédigée. Défaut déjà corrigé sur REFERENCE plus bas et
+    // pas répliqué ici ; trouvé par le harnais d'injection.
     //
-    // Volontairement un seul mot, comme pour REFERENCE : au-delà on relierait
-    // un libellé à une valeur trop lointaine et sans rapport.
+    // Un seul mot, comme pour REFERENCE : au-delà on relierait un libellé à une
+    // valeur trop lointaine.
     type: 'ID_NATIONAL',
     // Le préfixe `[A-Z]{0,2}` sert aux identifiants qui commencent par des
     // lettres (le NI britannique, « AB 123456 C »). Mais sous le drapeau `i`
