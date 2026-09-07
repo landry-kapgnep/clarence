@@ -1667,6 +1667,47 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
   background: color-mix(in srgb, var(--moss) 48%, transparent);
 }
 
+/* BULLE DE CHOIX DE CATÉGORIE.
+   En `fixed`, posée sur `body` : `.popup-shell` coupe ce qui déborde, donc une
+   bulle dans le flux se ferait tronquer près d'un bord. Le menu ne vit plus
+   dans la cellule, où sa largeur étirait la ligne et toutes les autres. */
+.bulle-categorie {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--bg-raised);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55),
+              inset 0 0 0 1px rgba(237, 230, 211, 0.14);
+}
+/* Le menu prend la largeur de son libellé le plus long (« Autres termes à
+   toujours masquer »), ce qui poussait la bulle à 545 px dans un panneau de
+   420. On la borne, le libellé se coupe. */
+.bulle-categorie { max-width: calc(100vw - 16px); }
+.bulle-categorie select {
+  min-width: 120px;
+  max-width: 210px;
+  text-overflow: ellipsis;
+}
+/* La confirmation est explicite : choisir ne suffit pas, il faut valider. Sans
+   ce bouton on ne savait pas si l'ajout avait été pris. */
+.bulle-categorie .bulle-ok {
+  width: 26px; height: 26px;
+  padding: 0;
+  border: 0;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--moss) 30%, transparent);
+  color: var(--moss);
+  cursor: pointer;
+  font-size: var(--t-etiquette);
+  line-height: 1;
+}
+.bulle-categorie .bulle-ok:hover {
+  background: color-mix(in srgb, var(--moss) 46%, transparent);
+}
+
 /* La légende porte les deux positions, elle a donc besoin de sa largeur. */
 :is(#mappingWrap, #fileMappingWrap) th.map-bascule-th {
   width: 1%;

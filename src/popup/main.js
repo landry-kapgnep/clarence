@@ -271,6 +271,14 @@ const ajoutesAuProfil = new Set();
 // « gardée », d'où la bascule peut repartir dans l'autre sens.
 const lignesGardees = new Map();
 
+// Ordre d'affichage, figé à la première analyse.
+//
+// Le tri par fréquence était rejoué à chaque rendu : basculer une ligne la
+// faisait changer de place, souvent jusqu'en bas de la table, et on croyait
+// l'avoir supprimée. Une ligne ne doit pas bouger sous le doigt qui vient de
+// la toucher, donc on retient son rang une fois pour toutes.
+const ordreLignes = new Map();
+
 function tableCorrections(mapping) {
   // Les lignes gardées ne sont plus dans le mapping, puisqu'elles ne sont plus
   // masquées : on les rajoute pour qu'elles restent visibles et réversibles.
@@ -279,7 +287,15 @@ function tableCorrections(mapping) {
     .map(([value, l]) => ({ ...l, value, gardee: true }));
   const toutes = [...mapping, ...gardees];
   if (!toutes.length) return `<p>${msg('aucun_masque_actif')}</p>`;
-  const triees = toutes.sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+
+  // Les valeurs inconnues prennent leur rang maintenant, par fréquence
+  // décroissante : trois clics en haut de table récupèrent le plus de
+  // placeholders. Ensuite ce rang ne bouge plus.
+  const nouvelles = toutes.filter(m => !ordreLignes.has(m.value))
+    .sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  for (const m of nouvelles) ordreLignes.set(m.value, ordreLignes.size);
+  const triees = [...toutes].sort(
+    (a, b) => ordreLignes.get(a.value) - ordreLignes.get(b.value));
   return `<table><thead><tr>
       <th scope="col">${msg('placeholder')}</th>
       <th scope="col">${msg('valeur')}</th>
@@ -711,7 +727,8 @@ async function analyze() {
   // Un nouveau texte, ce sont d'autres détections : les décisions prises sur
   // le précédent ne s'y appliquent pas.
   if (text !== currentText) {
-    manualEntities = []; removedKeys = new Set(); lignesGardees.clear();
+    manualEntities = []; removedKeys = new Set();
+    lignesGardees.clear(); ordreLignes.clear();
   }
   currentText = text;
   const btn = $('analyzeBtn');
@@ -2327,45 +2344,71 @@ const CATEGORIE_PAR_TYPE = {
   ETABLISSEMENT: 'ecoles', PSEUDO: 'pseudos'
 };
 
+// Choix de la catégorie, dans une bulle flottante.
+//
+// Le menu vivait dans la cellule : il l'élargissait, ce qui étirait la ligne et
+// toutes les autres avec elle. Et il n'y avait rien à confirmer - choisir
+// enregistrait aussitôt, puis on cliquait dans le vide pour refermer sans
+// savoir si c'était pris.
+//
+// La bulle est en `position: fixed`, calculée sur la position du bouton :
+// `.popup-shell` coupe ce qui déborde, une bulle posée dans le flux se ferait
+// donc tronquer près du bord.
 function demanderCategorie(bouton) {
+  fermerBulleCategorie();
   const valeur = bouton.dataset.valeur;
-  const cellule = bouton.parentElement;
-  const avant = cellule.innerHTML;
   const choisi = CATEGORIE_PAR_TYPE[bouton.dataset.type] || 'autres';
 
-  const sel = document.createElement('select');
-  sel.className = 'mini-select map-categorie';
-  sel.setAttribute('aria-label', msg('infobulle_au_profil'));
-  sel.innerHTML = IDENTITY_FIELDS.map(([k, label]) =>
-    `<option value="${k}"${k === choisi ? ' selected' : ''}>${esc(label)}</option>`).join('');
-  cellule.innerHTML = '';
-  cellule.appendChild(sel);
+  const bulle = document.createElement('div');
+  bulle.className = 'bulle-categorie';
+  bulle.innerHTML =
+    `<select class="mini-select" aria-label="${msg('infobulle_au_profil')}">` +
+    IDENTITY_FIELDS.map(([k, label]) =>
+      `<option value="${k}"${k === choisi ? ' selected' : ''}>${esc(label)}</option>`).join('') +
+    `</select>` +
+    `<button type="button" class="bulle-ok" aria-label="${msg('valider')}"` +
+    ` title="${msg('valider')}">\u2713</button>`;
+  document.body.appendChild(bulle);
+
+  const r = bouton.getBoundingClientRect();
+  const large = bulle.offsetWidth;
+  // Ancrée sous le bouton, ramenée dans la fenêtre si elle en sortirait.
+  bulle.style.top = `${Math.round(r.bottom + 4)}px`;
+  bulle.style.left =
+    `${Math.round(Math.max(8, Math.min(r.right - large, window.innerWidth - large - 8)))}px`;
+
+  const sel = bulle.querySelector('select');
   sel.focus();
 
-  // Le `blur` du select programme une restauration a 120 ms. Elle partait APRES
-  // le succes et remettait le « + » a la place de la coche : le clic semblait
-  // sans effet. Un drapeau la neutralise une fois l'ajout fait.
-  let termine = false;
-  const restaurer = () => { if (!termine) cellule.innerHTML = avant; };
-  sel.addEventListener('keydown', e => { if (e.key === 'Escape') restaurer(); });
-  sel.addEventListener('blur', () => setTimeout(restaurer, 120));
-  sel.addEventListener('change', async () => {
+  bulleCategorie = bulle;
+  bulle.addEventListener('keydown', e => { if (e.key === 'Escape') fermerBulleCategorie(); });
+  bulle.querySelector('.bulle-ok').addEventListener('click', async () => {
     const champs = { ...identityCache.champs };
     const liste = [...(champs[sel.value] || [])];
     if (!liste.includes(valeur)) liste.push(valeur);
     champs[sel.value] = liste;
     await saveIdentity({ ...identityCache, champs, status: 'configure' });
     identityCache = await loadIdentity();
-    termine = true;
     ajoutesAuProfil.add(valeur);
-    cellule.innerHTML = avant;
-    marquerFait(cellule.querySelector('.map-profil'), msg('ajoute_au_profil_court'));
-    // Le mode se lit sur la table qui porte le bouton : plus sur qu'un etat
-    // global, et ca marche meme si les deux tables sont peuplees.
-    const enFichier = !!cellule.closest('#fileMappingWrap');
+    fermerBulleCategorie();
+    marquerFait(bouton, msg('ajoute_au_profil_court'));
+    // Le mode se lit sur la table qui porte le bouton : plus sûr qu'un état
+    // global, et ça marche même si les deux tables sont peuplées.
+    const enFichier = !!bouton.closest('#fileMappingWrap');
     (enFichier ? fileSetStatus : setStatus)(msg('ajoute_au_profil', [valeur]), 'ok');
   });
 }
+
+let bulleCategorie = null;
+function fermerBulleCategorie() {
+  bulleCategorie?.remove();
+  bulleCategorie = null;
+}
+// Un clic ailleurs referme, comme n'importe quel menu.
+document.addEventListener('click', ev => {
+  if (bulleCategorie && !bulleCategorie.contains(ev.target)
+      && !ev.target.closest('.map-profil')) fermerBulleCategorie();
+});
 $('fileResetBtn').addEventListener('click', () => {
   annulerRunFichier('');
   chosenFile = null;

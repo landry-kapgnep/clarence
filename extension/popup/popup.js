@@ -1971,11 +1971,16 @@ function refreshOverlayIfOpen() {
 }
 var ajoutesAuProfil = /* @__PURE__ */ new Set();
 var lignesGardees = /* @__PURE__ */ new Map();
+var ordreLignes = /* @__PURE__ */ new Map();
 function tableCorrections(mapping) {
   const gardees = [...lignesGardees.entries()].filter(([v]) => !mapping.some((m) => m.value === v)).map(([value, l]) => ({ ...l, value, gardee: true }));
   const toutes = [...mapping, ...gardees];
   if (!toutes.length) return `<p>${msg("aucun_masque_actif")}</p>`;
-  const triees = toutes.sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  const nouvelles = toutes.filter((m) => !ordreLignes.has(m.value)).sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  for (const m of nouvelles) ordreLignes.set(m.value, ordreLignes.size);
+  const triees = [...toutes].sort(
+    (a, b) => ordreLignes.get(a.value) - ordreLignes.get(b.value)
+  );
   return `<table><thead><tr>
       <th scope="col">${msg("placeholder")}</th>
       <th scope="col">${msg("valeur")}</th>
@@ -2219,6 +2224,7 @@ async function analyze() {
     manualEntities = [];
     removedKeys = /* @__PURE__ */ new Set();
     lignesGardees.clear();
+    ordreLignes.clear();
   }
   currentText = text;
   const btn = $("analyzeBtn");
@@ -3354,40 +3360,45 @@ var CATEGORIE_PAR_TYPE = {
   PSEUDO: "pseudos"
 };
 function demanderCategorie(bouton) {
+  fermerBulleCategorie();
   const valeur = bouton.dataset.valeur;
-  const cellule = bouton.parentElement;
-  const avant = cellule.innerHTML;
   const choisi = CATEGORIE_PAR_TYPE[bouton.dataset.type] || "autres";
-  const sel = document.createElement("select");
-  sel.className = "mini-select map-categorie";
-  sel.setAttribute("aria-label", msg("infobulle_au_profil"));
-  sel.innerHTML = IDENTITY_FIELDS.map(([k, label]) => `<option value="${k}"${k === choisi ? " selected" : ""}>${esc(label)}</option>`).join("");
-  cellule.innerHTML = "";
-  cellule.appendChild(sel);
+  const bulle = document.createElement("div");
+  bulle.className = "bulle-categorie";
+  bulle.innerHTML = `<select class="mini-select" aria-label="${msg("infobulle_au_profil")}">` + IDENTITY_FIELDS.map(([k, label]) => `<option value="${k}"${k === choisi ? " selected" : ""}>${esc(label)}</option>`).join("") + `</select><button type="button" class="bulle-ok" aria-label="${msg("valider")}" title="${msg("valider")}">\u2713</button>`;
+  document.body.appendChild(bulle);
+  const r = bouton.getBoundingClientRect();
+  const large = bulle.offsetWidth;
+  bulle.style.top = `${Math.round(r.bottom + 4)}px`;
+  bulle.style.left = `${Math.round(Math.max(8, Math.min(r.right - large, window.innerWidth - large - 8)))}px`;
+  const sel = bulle.querySelector("select");
   sel.focus();
-  let termine = false;
-  const restaurer = () => {
-    if (!termine) cellule.innerHTML = avant;
-  };
-  sel.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") restaurer();
+  bulleCategorie = bulle;
+  bulle.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") fermerBulleCategorie();
   });
-  sel.addEventListener("blur", () => setTimeout(restaurer, 120));
-  sel.addEventListener("change", async () => {
+  bulle.querySelector(".bulle-ok").addEventListener("click", async () => {
     const champs = { ...identityCache.champs };
     const liste = [...champs[sel.value] || []];
     if (!liste.includes(valeur)) liste.push(valeur);
     champs[sel.value] = liste;
     await saveIdentity({ ...identityCache, champs, status: "configure" });
     identityCache = await loadIdentity();
-    termine = true;
     ajoutesAuProfil.add(valeur);
-    cellule.innerHTML = avant;
-    marquerFait(cellule.querySelector(".map-profil"), msg("ajoute_au_profil_court"));
-    const enFichier = !!cellule.closest("#fileMappingWrap");
+    fermerBulleCategorie();
+    marquerFait(bouton, msg("ajoute_au_profil_court"));
+    const enFichier = !!bouton.closest("#fileMappingWrap");
     (enFichier ? fileSetStatus : setStatus)(msg("ajoute_au_profil", [valeur]), "ok");
   });
 }
+var bulleCategorie = null;
+function fermerBulleCategorie() {
+  bulleCategorie?.remove();
+  bulleCategorie = null;
+}
+document.addEventListener("click", (ev) => {
+  if (bulleCategorie && !bulleCategorie.contains(ev.target) && !ev.target.closest(".map-profil")) fermerBulleCategorie();
+});
 $("fileResetBtn").addEventListener("click", () => {
   annulerRunFichier("");
   chosenFile = null;
