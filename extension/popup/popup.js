@@ -1963,6 +1963,32 @@ function closeOverlay() {
 function refreshOverlayIfOpen() {
   if (overlayKind) openOverlay(overlayKind);
 }
+function tableCorrections(mapping) {
+  if (!mapping.length) return `<p>${msg("aucun_masque_actif")}</p>`;
+  const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  return `<table><thead><tr>
+      <th scope="col">${msg("placeholder")}</th>
+      <th scope="col">${msg("valeur")}</th>
+      <th scope="col" class="map-occ"><span class="visuellement-cache">${msg("fois")}</span></th>
+      <th scope="col" class="map-act">${msg("garder")}</th>
+      <th scope="col" class="map-act">${msg("profil")}</th>
+    </tr></thead><tbody>${triees.map(
+    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" aria-label="${msg("infobulle_garder")}" title="${msg("infobulle_garder")}">\u2212</button></td><td class="map-act"><button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button></td></tr>`
+  ).join("")}</tbody></table>`;
+}
+function marquerFait(bouton, libelle) {
+  bouton.textContent = "\u2713";
+  bouton.classList.add("fait");
+  bouton.disabled = true;
+  bouton.setAttribute("aria-label", libelle);
+  bouton.title = libelle;
+}
+function retirerDuMasquageTexte(valeur) {
+  for (const e of activeEntities()) {
+    if (e.value === valeur) removedKeys.add(entityKey(e));
+  }
+  render();
+}
 function render() {
   const entities = activeEntities();
   $("results").hidden = false;
@@ -1979,9 +2005,7 @@ function render() {
   lastMapping = mapping;
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {
   });
-  $("mappingWrap").innerHTML = mapping.length ? `<table>${mapping.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
-  ).join("")}</table>` : `<p>${msg("aucun_masque_actif")}</p>`;
+  $("mappingWrap").innerHTML = tableCorrections(mapping);
   $("status").textContent = entities.length ? `${entities.length} \xE9l\xE9ment(s) masqu\xE9(s).` : msg("rien_detecte");
   $("status").className = "status";
   refreshOverlayIfOpen();
@@ -2609,15 +2633,7 @@ function showFileResults(mapping, copyable, duree) {
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {
   });
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
-  $("fileMappingWrap").innerHTML = mapping.length ? `<table><thead><tr>
-        <th scope="col">${msg("placeholder")}</th>
-        <th scope="col">${msg("valeur")}</th>
-        <th scope="col" class="map-occ"><span class="visuellement-cache">${msg("fois")}</span></th>
-        <th scope="col" class="map-act">${msg("garder")}</th>
-        <th scope="col" class="map-act">${msg("profil")}</th>
-      </tr></thead><tbody>${triees.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" aria-label="${msg("infobulle_garder")}" title="${msg("infobulle_garder")}">\u2212</button></td><td class="map-act"><button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button></td></tr>`
-  ).join("")}</tbody></table>` : `<p>${msg("aucun_masque_actif")}</p>`;
+  $("fileMappingWrap").innerHTML = tableCorrections(mapping);
   const suffixe = (duree ? ` ${duree}.` : "") + (compressionEchouee ? ` \u26A0 Compression indisponible : ${compressionEchouee}.` : "") + (compressionInfo ? ` \u2248 ${compressionInfo.avant} \u2192 ${compressionInfo.apres} tokens (\u2212${Math.round((1 - compressionInfo.apres / compressionInfo.avant) * 100)} %).` : "");
   $("fileSummary").textContent = (mapping.length ? `${mapping.length} valeurs masqu\xE9es, m\xE9tadonn\xE9es nettoy\xE9es.` : msg("aucune_donnee_sensible")) + suffixe;
   $("fileSummary").className = "status active";
@@ -3283,15 +3299,21 @@ for (const [idChamp] of APERCUS_TERMES) {
 }
 rendreApercuTermes();
 $("fileCancelBtn").addEventListener("click", () => annulerRunFichier());
-$("fileMappingWrap").addEventListener("click", (ev) => {
-  const btn = ev.target.closest(".map-retirer");
-  if (btn) {
-    retirerDuMasquage(btn.dataset.valeur);
-    return;
-  }
-  const prof = ev.target.closest(".map-profil");
-  if (prof) demanderCategorie(prof);
-});
+for (const [id, retirer] of [
+  ["fileMappingWrap", retirerDuMasquage],
+  ["mappingWrap", retirerDuMasquageTexte]
+]) {
+  $(id).addEventListener("click", (ev) => {
+    const btn = ev.target.closest(".map-retirer");
+    if (btn && !btn.disabled) {
+      marquerFait(btn, msg("retire_du_masquage"));
+      retirer(btn.dataset.valeur);
+      return;
+    }
+    const prof = ev.target.closest(".map-profil");
+    if (prof && !prof.disabled) demanderCategorie(prof);
+  });
+}
 var CATEGORIE_PAR_TYPE = {
   PER: "nom",
   EMAIL: "emails",
@@ -3331,7 +3353,9 @@ function demanderCategorie(bouton) {
     await saveIdentity({ ...identityCache, champs, status: "configure" });
     identityCache = await loadIdentity();
     restaurer();
-    fileSetStatus(msg("ajoute_au_profil", [valeur]), "ok");
+    marquerFait(cellule.querySelector(".map-profil"), msg("ajoute_au_profil_court"));
+    const enFichier = !!cellule.closest("#fileMappingWrap");
+    (enFichier ? fileSetStatus : setStatus)(msg("ajoute_au_profil", [valeur]), "ok");
   });
 }
 $("fileResetBtn").addEventListener("click", () => {

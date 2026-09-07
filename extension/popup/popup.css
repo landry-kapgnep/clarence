@@ -1625,6 +1625,20 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
   color: var(--paper-dim);
   cursor: pointer;
 }
+/* Etat « fait » : le clic a pris, le bouton se retire du jeu.
+   Sans lui la ligne restait strictement identique apres un ajout au profil, et
+   rien n'empechait de recliquer. --moss est le vert deja present dans la
+   palette ; on n'en introduit pas un autre pour un etat transitoire. */
+.map-retirer.fait, .map-profil.fait {
+  background: color-mix(in srgb, var(--moss) 22%, transparent);
+  color: var(--moss);
+  cursor: default;
+}
+.map-retirer.fait:hover, .map-profil.fait:hover {
+  background: color-mix(in srgb, var(--moss) 22%, transparent);
+  color: var(--moss);
+}
+
 .map-retirer:hover, .map-profil:hover {
   background: var(--control-ghost-hover-bg);
   color: var(--paper);

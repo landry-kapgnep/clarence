@@ -250,6 +250,66 @@ function refreshOverlayIfOpen() {
   if (overlayKind) openOverlay(overlayKind);
 }
 
+// Table des corrections, identique dans les deux modes.
+//
+// Le mode Texte n'avait ni en-tetes ni actions : on y lisait les valeurs sans
+// pouvoir les corriger, alors que le mode Fichier proposait les deux gestes.
+// Un seul rendu, donc, et plus rien a resynchroniser.
+//
+// Les lignes sont triees par frequence : un placeholder vu douze fois se
+// corrige en un clic, un vu une fois ne rapporte qu'une fois.
+function tableCorrections(mapping) {
+  if (!mapping.length) return `<p>${msg('aucun_masque_actif')}</p>`;
+  const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  return `<table><thead><tr>
+      <th scope="col">${msg('placeholder')}</th>
+      <th scope="col">${msg('valeur')}</th>
+      <th scope="col" class="map-occ"><span class="visuellement-cache">${msg('fois')}</span></th>
+      <th scope="col" class="map-act">${msg('garder')}</th>
+      <th scope="col" class="map-act">${msg('profil')}</th>
+    </tr></thead><tbody>${triees.map(m =>
+      `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td>` +
+      `<td class="map-occ">${m.occurrences || 1}×</td>` +
+      // `data-valeur` porte la valeur reelle : c'est elle qu'on ajoutera aux
+      // termes, pas le placeholder.
+      `<td class="map-act">` +
+      `<button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
+      ` aria-label="${msg('infobulle_garder')}" title="${msg('infobulle_garder')}">−</button></td>` +
+      // « au profil » vit ICI plutot que dans un bandeau : la ligne NOMME la
+      // valeur, la ou un bandeau ne pouvait qu'annoncer « une personne a ete
+      // detectee » sans dire laquelle.
+      `<td class="map-act">` +
+      `<button type="button" class="map-profil" data-valeur="${esc(m.value)}"` +
+      ` data-type="${esc(m.type || '')}" aria-label="${msg('infobulle_au_profil')}"` +
+      ` title="${msg('infobulle_au_profil')}">+</button></td></tr>`
+    ).join('')}</tbody></table>`;
+}
+
+// Retour visuel apres un clic : le bouton devient une coche verte et se
+// desactive.
+//
+// Sans lui, la ligne restait strictement identique apres l'ajout au profil -
+// rien ne disait que le clic avait pris, et on pouvait recliquer indefiniment.
+// Le titre et le nom accessible suivent, sinon le bouton mentirait a qui ne
+// voit pas la couleur.
+function marquerFait(bouton, libelle) {
+  bouton.textContent = '✓';
+  bouton.classList.add('fait');
+  bouton.disabled = true;
+  bouton.setAttribute('aria-label', libelle);
+  bouton.title = libelle;
+}
+
+// Retrait d'un faux positif en mode Texte. L'equivalent du mode Fichier
+// reecrit un champ et relance le traitement ; ici il suffit d'ajouter les cles
+// des entites concernees aux retraits, comme un clic sur le surlignage.
+function retirerDuMasquageTexte(valeur) {
+  for (const e of activeEntities()) {
+    if (e.value === valeur) removedKeys.add(entityKey(e));
+  }
+  render();
+}
+
 function render() {
   const entities = activeEntities();
   $('results').hidden = false;
@@ -270,11 +330,7 @@ function render() {
   lastMapping = mapping;
   chrome.storage?.session?.set({ clarenceMapping: mapping }).catch(() => {});
 
-  $('mappingWrap').innerHTML = mapping.length
-    ? `<table>${mapping.map(m =>
-        `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td></tr>`
-      ).join('')}</table>`
-    : `<p>${msg('aucun_masque_actif')}</p>`;
+  $('mappingWrap').innerHTML = tableCorrections(mapping);
 
   $('status').textContent = entities.length
     ? `${entities.length} élément(s) masqué(s).`
@@ -1233,32 +1289,7 @@ function showFileResults(mapping, copyable, duree) {
   // masquage, « + » pour ajouter au profil. Les deux gardent leur nom complet
   // en `aria-label` et en infobulle - un bouton compact ne doit pas être un
   // bouton muet.
-  $('fileMappingWrap').innerHTML = mapping.length
-    ? `<table><thead><tr>
-        <th scope="col">${msg('placeholder')}</th>
-        <th scope="col">${msg('valeur')}</th>
-        <th scope="col" class="map-occ"><span class="visuellement-cache">${msg('fois')}</span></th>
-        <th scope="col" class="map-act">${msg('garder')}</th>
-        <th scope="col" class="map-act">${msg('profil')}</th>
-      </tr></thead><tbody>${triees.map(m =>
-        `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td>` +
-        `<td class="map-occ">${m.occurrences || 1}×</td>` +
-        // `data-valeur` porte la valeur réelle : c'est elle qu'on ajoutera aux
-        // termes « ne jamais masquer », pas le placeholder.
-        `<td class="map-act">` +
-        `<button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
-        ` aria-label="${msg('infobulle_garder')}" title="${msg('infobulle_garder')}">−</button></td>` +
-        // « au profil » vit ICI plutôt que dans un bandeau, et c'est tout
-        // l'intérêt : la ligne NOMME la valeur. Un bandeau ne pouvait
-        // qu'annoncer « une personne a été détectée » - laquelle ? une ou
-        // plusieurs ? - et ne disait rien d'une date de naissance ou d'une
-        // école, qui méritent le même geste.
-        `<td class="map-act">` +
-        `<button type="button" class="map-profil" data-valeur="${esc(m.value)}"` +
-        ` data-type="${esc(m.type || '')}" aria-label="${msg('infobulle_au_profil')}"` +
-        ` title="${msg('infobulle_au_profil')}">+</button></td></tr>`
-      ).join('')}</tbody></table>`
-    : `<p>${msg('aucun_masque_actif')}</p>`;
+  $('fileMappingWrap').innerHTML = tableCorrections(mapping);
   // duree : omise pour la régénération (retirerDuMasquage) - son propre
   // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
   // pas ce que « durée de traitement » désigne pour l'utilisateur.
@@ -2200,12 +2231,21 @@ $('fileCancelBtn').addEventListener('click', () => annulerRunFichier());
 
 // Délégation : la table est reconstruite à chaque régénération, un écouteur
 // posé sur chaque bouton serait perdu au premier retrait.
-$('fileMappingWrap').addEventListener('click', ev => {
-  const btn = ev.target.closest('.map-retirer');
-  if (btn) { retirerDuMasquage(btn.dataset.valeur); return; }
-  const prof = ev.target.closest('.map-profil');
-  if (prof) demanderCategorie(prof);
-});
+for (const [id, retirer] of [['fileMappingWrap', retirerDuMasquage],
+                             ['mappingWrap', retirerDuMasquageTexte]]) {
+  $(id).addEventListener('click', ev => {
+    const btn = ev.target.closest('.map-retirer');
+    if (btn && !btn.disabled) {
+      // La coche part avant la regeneration : en mode Fichier elle prend
+      // plusieurs secondes, et sans retour immediat on reclique.
+      marquerFait(btn, msg('retire_du_masquage'));
+      retirer(btn.dataset.valeur);
+      return;
+    }
+    const prof = ev.target.closest('.map-profil');
+    if (prof && !prof.disabled) demanderCategorie(prof);
+  });
+}
 
 // À quelle catégorie ? - demandé sur place, avec une réponse déjà proposée.
 //
@@ -2247,7 +2287,11 @@ function demanderCategorie(bouton) {
     await saveIdentity({ ...identityCache, champs, status: 'configure' });
     identityCache = await loadIdentity();
     restaurer();
-    fileSetStatus(msg('ajoute_au_profil', [valeur]), 'ok');
+    marquerFait(cellule.querySelector('.map-profil'), msg('ajoute_au_profil_court'));
+    // Le mode se lit sur la table qui porte le bouton : plus sur qu'un etat
+    // global, et ca marche meme si les deux tables sont peuplees.
+    const enFichier = !!cellule.closest('#fileMappingWrap');
+    (enFichier ? fileSetStatus : setStatus)(msg('ajoute_au_profil', [valeur]), 'ok');
   });
 }
 $('fileResetBtn').addEventListener('click', () => {

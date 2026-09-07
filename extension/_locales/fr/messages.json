@@ -137,6 +137,12 @@
   "francais": {
     "message": "Français"
   },
+  "retire_du_masquage": {
+    "message": "retiré du masquage"
+  },
+  "ajoute_au_profil_court": {
+    "message": "ajouté au profil"
+  },
   "infobulle_garder": {
     "message": "Ne plus masquer ce terme dans tout le document"
   },
