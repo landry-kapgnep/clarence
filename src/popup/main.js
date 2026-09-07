@@ -284,7 +284,7 @@ function tableCorrections(mapping) {
       <th scope="col">${msg('placeholder')}</th>
       <th scope="col">${msg('valeur')}</th>
       <th scope="col" class="map-occ"><span class="visuellement-cache">${msg('fois')}</span></th>
-      <th scope="col" class="map-act">${msg('garder')}</th>
+      <th scope="col" class="map-bascule-th">${msg('retirer')} / ${msg('garder')}</th>
       <th scope="col" class="map-act">${msg('profil')}</th>
     </tr></thead><tbody>${triees.map(m =>
       `<tr${m.gardee ? ' class="gardee"' : ''}>` +
@@ -292,17 +292,21 @@ function tableCorrections(mapping) {
       `<td class="map-occ">${m.occurrences || 1}×</td>` +
       // `data-valeur` porte la valeur reelle : c'est elle qu'on ajoutera aux
       // termes, pas le placeholder.
-      // Bascule à deux positions : masqué (par défaut, c'est une détection) ou
-      // gardé. Les données de la ligne voyagent sur le bouton : au retour en
-      // arrière, le mapping a déjà été remplacé et ne les porte plus.
+      // Interrupteur a deux positions, dont la legende de colonne nomme les
+      // bouts. Une premiere version changeait le glyphe d'un bouton au clic :
+      // avant d'y toucher elle etait indiscernable d'un bouton simple, donc on
+      // ne pouvait pas deviner qu'il y avait deux etats.
+      //
+      // Les donnees de la ligne voyagent sur le controle : au retour en
+      // arriere, le mapping a deja ete remplace et ne les porte plus.
       `<td class="map-act">` +
-      `<button type="button" class="map-bascule${m.gardee ? ' gardee' : ''}"` +
+      `<button type="button" role="switch" class="map-bascule"` +
       ` data-valeur="${esc(m.value)}" data-etat="${m.gardee ? 'gardee' : 'masque'}"` +
       ` data-placeholder="${esc(m.placeholder || '')}" data-occ="${m.occurrences || 1}"` +
-      ` data-type="${esc(m.type || '')}" aria-pressed="${m.gardee ? 'true' : 'false'}"` +
-      ` aria-label="${msg(m.gardee ? 'infobulle_remasquer' : 'infobulle_garder')}"` +
+      ` data-type="${esc(m.type || '')}" aria-checked="${m.gardee ? 'true' : 'false'}"` +
+      ` aria-label="${msg('garder')}"` +
       ` title="${msg(m.gardee ? 'infobulle_remasquer' : 'infobulle_garder')}">` +
-      `${m.gardee ? '\u2713' : '\u2212'}</button></td>` +
+      `<span class="poignee" aria-hidden="true"></span></button></td>` +
       // « au profil » vit ICI plutot que dans un bandeau : la ligne NOMME la
       // valeur, la ou un bandeau ne pouvait qu'annoncer « une personne a ete
       // detectee » sans dire laquelle.
@@ -2294,10 +2298,9 @@ for (const [id, basculer] of [['fileMappingWrap', basculerGardeFichier],
       const garder = btn.dataset.etat !== 'gardee';
       // L'état part AVANT la régénération : en mode Fichier elle prend
       // plusieurs secondes, et sans retour immédiat on reclique.
-      btn.classList.toggle('gardee', garder);
-      btn.textContent = garder ? '\u2713' : '\u2212';
       btn.dataset.etat = garder ? 'gardee' : 'masque';
-      btn.setAttribute('aria-pressed', String(garder));
+      btn.setAttribute('aria-checked', String(garder));
+      btn.title = msg(garder ? 'infobulle_remasquer' : 'infobulle_garder');
       basculer(btn.dataset.valeur, garder, {
         placeholder: btn.dataset.placeholder,
         type: btn.dataset.type,

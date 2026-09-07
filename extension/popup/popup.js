@@ -1980,10 +1980,10 @@ function tableCorrections(mapping) {
       <th scope="col">${msg("placeholder")}</th>
       <th scope="col">${msg("valeur")}</th>
       <th scope="col" class="map-occ"><span class="visuellement-cache">${msg("fois")}</span></th>
-      <th scope="col" class="map-act">${msg("garder")}</th>
+      <th scope="col" class="map-bascule-th">${msg("retirer")} / ${msg("garder")}</th>
       <th scope="col" class="map-act">${msg("profil")}</th>
     </tr></thead><tbody>${triees.map(
-    (m) => `<tr${m.gardee ? ' class="gardee"' : ""}><td class="mono">${esc(m.placeholder || "")}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" class="map-bascule${m.gardee ? " gardee" : ""}" data-valeur="${esc(m.value)}" data-etat="${m.gardee ? "gardee" : "masque"}" data-placeholder="${esc(m.placeholder || "")}" data-occ="${m.occurrences || 1}" data-type="${esc(m.type || "")}" aria-pressed="${m.gardee ? "true" : "false"}" aria-label="${msg(m.gardee ? "infobulle_remasquer" : "infobulle_garder")}" title="${msg(m.gardee ? "infobulle_remasquer" : "infobulle_garder")}">${m.gardee ? "\u2713" : "\u2212"}</button></td><td class="map-act">` + (ajoutesAuProfil.has(m.value) ? `<button type="button" class="map-profil fait" disabled aria-label="${msg("ajoute_au_profil_court")}" title="${msg("ajoute_au_profil_court")}">\u2713</button>` : `<button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button>`) + `</td></tr>`
+    (m) => `<tr${m.gardee ? ' class="gardee"' : ""}><td class="mono">${esc(m.placeholder || "")}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" role="switch" class="map-bascule" data-valeur="${esc(m.value)}" data-etat="${m.gardee ? "gardee" : "masque"}" data-placeholder="${esc(m.placeholder || "")}" data-occ="${m.occurrences || 1}" data-type="${esc(m.type || "")}" aria-checked="${m.gardee ? "true" : "false"}" aria-label="${msg("garder")}" title="${msg(m.gardee ? "infobulle_remasquer" : "infobulle_garder")}"><span class="poignee" aria-hidden="true"></span></button></td><td class="map-act">` + (ajoutesAuProfil.has(m.value) ? `<button type="button" class="map-profil fait" disabled aria-label="${msg("ajoute_au_profil_court")}" title="${msg("ajoute_au_profil_court")}">\u2713</button>` : `<button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button>`) + `</td></tr>`
   ).join("")}</tbody></table>`;
 }
 function marquerFait(bouton, libelle) {
@@ -3327,10 +3327,9 @@ for (const [id, basculer] of [
     const btn = ev.target.closest(".map-bascule");
     if (btn && !btn.disabled) {
       const garder = btn.dataset.etat !== "gardee";
-      btn.classList.toggle("gardee", garder);
-      btn.textContent = garder ? "\u2713" : "\u2212";
       btn.dataset.etat = garder ? "gardee" : "masque";
-      btn.setAttribute("aria-pressed", String(garder));
+      btn.setAttribute("aria-checked", String(garder));
+      btn.title = msg(garder ? "infobulle_remasquer" : "infobulle_garder");
       basculer(btn.dataset.valeur, garder, {
         placeholder: btn.dataset.placeholder,
         type: btn.dataset.type,

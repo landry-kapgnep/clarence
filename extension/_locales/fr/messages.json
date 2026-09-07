@@ -412,6 +412,9 @@
       }
     }
   },
+  "retirer": {
+    "message": "retirer"
+  },
   "garder": {
     "message": "garder"
   },
