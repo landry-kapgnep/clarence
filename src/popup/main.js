@@ -258,6 +258,10 @@ function refreshOverlayIfOpen() {
 //
 // Les lignes sont triees par frequence : un placeholder vu douze fois se
 // corrige en un clic, un vu une fois ne rapporte qu'une fois.
+// Valeurs deja poussees dans le profil. La table est reconstruite a chaque
+// analyse ; sans cette memoire la coche disparaitrait au premier rendu suivant.
+const ajoutesAuProfil = new Set();
+
 function tableCorrections(mapping) {
   if (!mapping.length) return `<p>${msg('aucun_masque_actif')}</p>`;
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
@@ -279,9 +283,14 @@ function tableCorrections(mapping) {
       // valeur, la ou un bandeau ne pouvait qu'annoncer « une personne a ete
       // detectee » sans dire laquelle.
       `<td class="map-act">` +
-      `<button type="button" class="map-profil" data-valeur="${esc(m.value)}"` +
-      ` data-type="${esc(m.type || '')}" aria-label="${msg('infobulle_au_profil')}"` +
-      ` title="${msg('infobulle_au_profil')}">+</button></td></tr>`
+      (ajoutesAuProfil.has(m.value)
+        ? `<button type="button" class="map-profil fait" disabled` +
+          ` aria-label="${msg('ajoute_au_profil_court')}"` +
+          ` title="${msg('ajoute_au_profil_court')}">✓</button>`
+        : `<button type="button" class="map-profil" data-valeur="${esc(m.value)}"` +
+          ` data-type="${esc(m.type || '')}" aria-label="${msg('infobulle_au_profil')}"` +
+          ` title="${msg('infobulle_au_profil')}">+</button>`) +
+      `</td></tr>`
     ).join('')}</tbody></table>`;
 }
 
@@ -2276,7 +2285,11 @@ function demanderCategorie(bouton) {
   cellule.appendChild(sel);
   sel.focus();
 
-  const restaurer = () => { cellule.innerHTML = avant; };
+  // Le `blur` du select programme une restauration a 120 ms. Elle partait APRES
+  // le succes et remettait le « + » a la place de la coche : le clic semblait
+  // sans effet. Un drapeau la neutralise une fois l'ajout fait.
+  let termine = false;
+  const restaurer = () => { if (!termine) cellule.innerHTML = avant; };
   sel.addEventListener('keydown', e => { if (e.key === 'Escape') restaurer(); });
   sel.addEventListener('blur', () => setTimeout(restaurer, 120));
   sel.addEventListener('change', async () => {
@@ -2286,7 +2299,9 @@ function demanderCategorie(bouton) {
     champs[sel.value] = liste;
     await saveIdentity({ ...identityCache, champs, status: 'configure' });
     identityCache = await loadIdentity();
-    restaurer();
+    termine = true;
+    ajoutesAuProfil.add(valeur);
+    cellule.innerHTML = avant;
     marquerFait(cellule.querySelector('.map-profil'), msg('ajoute_au_profil_court'));
     // Le mode se lit sur la table qui porte le bouton : plus sur qu'un etat
     // global, et ca marche meme si les deux tables sont peuplees.

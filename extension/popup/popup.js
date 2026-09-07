@@ -1963,6 +1963,7 @@ function closeOverlay() {
 function refreshOverlayIfOpen() {
   if (overlayKind) openOverlay(overlayKind);
 }
+var ajoutesAuProfil = /* @__PURE__ */ new Set();
 function tableCorrections(mapping) {
   if (!mapping.length) return `<p>${msg("aucun_masque_actif")}</p>`;
   const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
@@ -1973,7 +1974,7 @@ function tableCorrections(mapping) {
       <th scope="col" class="map-act">${msg("garder")}</th>
       <th scope="col" class="map-act">${msg("profil")}</th>
     </tr></thead><tbody>${triees.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" aria-label="${msg("infobulle_garder")}" title="${msg("infobulle_garder")}">\u2212</button></td><td class="map-act"><button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button></td></tr>`
+    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" aria-label="${msg("infobulle_garder")}" title="${msg("infobulle_garder")}">\u2212</button></td><td class="map-act">` + (ajoutesAuProfil.has(m.value) ? `<button type="button" class="map-profil fait" disabled aria-label="${msg("ajoute_au_profil_court")}" title="${msg("ajoute_au_profil_court")}">\u2713</button>` : `<button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button>`) + `</td></tr>`
   ).join("")}</tbody></table>`;
 }
 function marquerFait(bouton, libelle) {
@@ -3338,8 +3339,9 @@ function demanderCategorie(bouton) {
   cellule.innerHTML = "";
   cellule.appendChild(sel);
   sel.focus();
+  let termine = false;
   const restaurer = () => {
-    cellule.innerHTML = avant;
+    if (!termine) cellule.innerHTML = avant;
   };
   sel.addEventListener("keydown", (e) => {
     if (e.key === "Escape") restaurer();
@@ -3352,7 +3354,9 @@ function demanderCategorie(bouton) {
     champs[sel.value] = liste;
     await saveIdentity({ ...identityCache, champs, status: "configure" });
     identityCache = await loadIdentity();
-    restaurer();
+    termine = true;
+    ajoutesAuProfil.add(valeur);
+    cellule.innerHTML = avant;
     marquerFait(cellule.querySelector(".map-profil"), msg("ajoute_au_profil_court"));
     const enFichier = !!cellule.closest("#fileMappingWrap");
     (enFichier ? fileSetStatus : setStatus)(msg("ajoute_au_profil", [valeur]), "ok");

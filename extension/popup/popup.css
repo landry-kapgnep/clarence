@@ -1369,16 +1369,16 @@ td.map-occ {
    avait qu'une action, fausse depuis qu'il y en a deux : la colonne des actions
    grossissait et écrasait la valeur, dont les longues (une adresse e-mail)
    débordaient sur les boutons. */
-#fileMappingWrap th,
-#fileMappingWrap td:first-child,
-#fileMappingWrap td.map-occ,
-#fileMappingWrap td.map-act { width: 1%; white-space: nowrap; }
-#fileMappingWrap td:nth-child(2) {
+:is(#mappingWrap, #fileMappingWrap) th,
+:is(#mappingWrap, #fileMappingWrap) td:first-child,
+:is(#mappingWrap, #fileMappingWrap) td.map-occ,
+:is(#mappingWrap, #fileMappingWrap) td.map-act { width: 1%; white-space: nowrap; }
+:is(#mappingWrap, #fileMappingWrap) td:nth-child(2) {
   width: 100%;
   /* Une adresse e-mail est un seul « mot » : sans ça elle pousse la colonne. */
   overflow-wrap: anywhere;
 }
-#fileMappingWrap thead th {
+:is(#mappingWrap, #fileMappingWrap) thead th {
   font-size: var(--t-meta);
   font-weight: 600;
   letter-spacing: .08em;
@@ -1400,12 +1400,12 @@ td.map-occ {
   z-index: 1;
   background: var(--bg-field);
 }
-#fileMappingWrap thead th.map-act,
-#fileMappingWrap thead th.map-occ { text-align: center; }
-#fileMappingWrap td.map-act { text-align: center; padding: 0 3px; }
+:is(#mappingWrap, #fileMappingWrap) thead th.map-act,
+:is(#mappingWrap, #fileMappingWrap) thead th.map-occ { text-align: center; }
+:is(#mappingWrap, #fileMappingWrap) td.map-act { text-align: center; padding: 0 3px; }
 /* La ligne reste large : le survol la relie d'un bout à l'autre au moment où
    on vise son bouton. Teinte reprise des contrôles, aucun ton nouveau. */
-#fileMappingWrap tr:hover { background: var(--control-ghost-bg); }
+:is(#mappingWrap, #fileMappingWrap) tr:hover { background: var(--control-ghost-bg); }
 
 /* Termes propres à UN document, hors profil.
    Séparés des champs de « Personnaliser le masquage » pour une raison
@@ -1633,6 +1633,9 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
   background: color-mix(in srgb, var(--moss) 22%, transparent);
   color: var(--moss);
   cursor: default;
+  /* `button:disabled` pose 0.45 d'opacite. Un bouton grise dit « indisponible » ;
+     ici il dit « c'est fait », ce qui doit rester parfaitement lisible. */
+  opacity: 1;
 }
 .map-retirer.fait:hover, .map-profil.fait:hover {
   background: color-mix(in srgb, var(--moss) 22%, transparent);
@@ -1785,5 +1788,5 @@ select option { background: var(--bg-raised); color: var(--paper); }
 /* Les deux légendes d'action se touchaient. Le « × » se lisant seul, le mot
    « fois » est retiré de l'écran (gardé pour les lecteurs d'écran), et il reste
    de quoi séparer « garder » de « profil ». */
-#fileMappingWrap thead th.map-act { padding-left: 6px; padding-right: 6px; }
-#fileMappingWrap thead th.map-occ { padding-right: 10px; }
+:is(#mappingWrap, #fileMappingWrap) thead th.map-act { padding-left: 6px; padding-right: 6px; }
+:is(#mappingWrap, #fileMappingWrap) thead th.map-occ { padding-right: 10px; }
