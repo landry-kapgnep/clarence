@@ -4,7 +4,7 @@
 // l'utilisateur croit à tort son document protégé. D'où des tests serrés.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseTermes, ajouterTerme } from '../../src/popup/termes.js';
+import { parseTermes, ajouterTerme, retirerTerme } from '../../src/popup/termes.js';
 
 test('la TABULATION sépare les termes - la saisie en vrac demandée', () => {
   assert.deepEqual(parseTermes('ChatGPT\tMT\tOpenAI'), ['ChatGPT', 'MT', 'OpenAI']);
@@ -78,4 +78,16 @@ test('ajouterTerme : un champ vide donne le terme seul', () => {
 
 test('ajouterTerme : un terme vide ne modifie rien', () => {
   assert.equal(ajouterTerme('ChatGPT', '   '), 'ChatGPT');
+});
+
+test('retirerTerme enlève un terme sans toucher aux autres', () => {
+  assert.equal(retirerTerme('ChatGPT, MT, OpenAI', 'MT'), 'ChatGPT, OpenAI');
+  assert.equal(retirerTerme('ChatGPT, MT', 'chatgpt'), 'MT');
+  assert.equal(retirerTerme('ChatGPT', 'absent'), 'ChatGPT');
+  assert.equal(retirerTerme('', 'MT'), '');
+});
+
+test('retirerTerme et ajouterTerme sont réciproques', () => {
+  const avant = 'ChatGPT, OpenAI';
+  assert.equal(retirerTerme(ajouterTerme(avant, 'MT'), 'MT'), avant);
 });

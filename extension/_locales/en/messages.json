@@ -137,11 +137,11 @@
   "francais": {
     "message": "French"
   },
-  "retire_du_masquage": {
-    "message": "no longer masked"
-  },
   "ajoute_au_profil_court": {
     "message": "added to profile"
+  },
+  "infobulle_remasquer": {
+    "message": "mask again"
   },
   "infobulle_garder": {
     "message": "Stop masking this term throughout the document"

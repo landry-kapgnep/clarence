@@ -42,10 +42,19 @@ const clesUtilisees = () => {
     for (const m of lire(f).matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)) vues.add(m[1]);
   }
   for (const f of SOURCES_JS) {
-    // `[,)]` et non `)` seul : un message paramétré s'écrit msg('clé', [...]),
-    // et le scanner le manquait - il déclarait alors orpheline une clé bel et
-    // bien utilisée.
-    for (const m of lire(f).matchAll(/msg\('([^']+)'\s*[,)]/g)) vues.add(m[1]);
+    // TOUTES les chaînes littérales d'un appel `msg(...)`, pas seulement la
+    // première. Quatrième angle mort de ce scanner, et la même leçon que les
+    // trois précédents : une clé peut arriver par un ternaire
+    // (`msg(x ? 'a' : 'b')`) ou après un paramètre, et une règle qui ne prévoit
+    // que la forme dont on se souvient déclare orphelines des clés employées.
+    // Un littéral terminé par « _ » est un PRÉFIXE concaténé
+    // (`msg('format_' + type)`), pas une clé : le compter comme telle ferait
+    // échouer le test sur une clé qui n'existe pas et n'a pas à exister.
+    for (const appel of lire(f).matchAll(/msg\(([^)]*)\)/g)) {
+      for (const lit of appel[1].matchAll(/'([^']+)'/g)) {
+        if (!lit[1].endsWith('_')) vues.add(lit[1]);
+      }
+    }
   }
   // Les noms de profils livrés servent de clé d'affichage, résolue au rendu
   // depuis le nom interne : ils n'apparaissent donc pas littéralement.

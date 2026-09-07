@@ -39,3 +39,16 @@ export function ajouterTerme(valeur, terme) {
   // relit corresponde à ce qui sera appliqué.
   return [...existants, t].join(', ');
 }
+
+// Réciproque : retire un terme d'une liste saisie.
+//
+// La bascule « garder » de la table des corrections doit pouvoir revenir en
+// arrière, sans quoi un clic de trop est définitif pour le document en cours.
+// La comparaison est insensible à la casse et aux espaces de bord, comme la
+// saisie l'est déjà.
+export function retirerTerme(valeur, terme) {
+  const t = (terme || '').trim().toLowerCase();
+  if (!t) return valeur || '';
+  const restants = parseTermes(valeur).filter(x => x.toLowerCase() !== t);
+  return restants.join(', ');
+}

@@ -1344,7 +1344,7 @@ td.map-occ {
 }
 /* Style repris des contrôles existants (plat, carré, sans translucidité),
    pas d'une pastille générique. */
-.map-retirer {
+.map-bascule {
   font-size: var(--t-meta);
   padding: 2px 6px;
   line-height: 1.3;
@@ -1354,7 +1354,7 @@ td.map-occ {
   cursor: pointer;
   white-space: nowrap;
 }
-.map-retirer:hover { background: var(--control-ghost-hover-bg); color: var(--paper); }
+.map-bascule:hover { background: var(--control-ghost-hover-bg); color: var(--paper); }
 
 /* Quatre colonnes de natures DIFFÉRENTES : trois doivent tenir leur contenu
    (placeholder, compte, bouton), une seule doit absorber le reste (la valeur).
@@ -1489,7 +1489,7 @@ td.map-occ {
 .mapping-bloc td:nth-child(2) { overflow-wrap: anywhere; }
 /* Respiration : une ligne par valeur, lisible d'un coup d'œil. */
 .mapping-bloc td { padding: 5px 6px; vertical-align: baseline; }
-.mapping-bloc .map-retirer { white-space: nowrap; }
+.mapping-bloc .map-bascule { white-space: nowrap; }
 
 /* Garde-fou général : rien de ce qui vit dans la coquille ne dépasse sa
    largeur, quelle que soit la nature de l'élément. */
@@ -1613,7 +1613,7 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
 
 /* Actions d'un seul signe : la légende de colonne porte le sens, le bouton
    porte le geste. Carré, pour que « − » et « + » aient la même empreinte. */
-.map-retirer, .map-profil {
+.map-bascule, .map-profil {
   width: 22px;
   height: 22px;
   padding: 0;
@@ -1629,7 +1629,21 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
    Sans lui la ligne restait strictement identique apres un ajout au profil, et
    rien n'empechait de recliquer. --moss est le vert deja present dans la
    palette ; on n'en introduit pas un autre pour un etat transitoire. */
-.map-retirer.fait, .map-profil.fait {
+/* Position « gardée » de la bascule : la valeur n'est plus masquée. Le bouton
+   reste actif, c'est tout l'objet d'une bascule - on doit pouvoir revenir. */
+.map-bascule.gardee {
+  background: color-mix(in srgb, var(--moss) 22%, transparent);
+  color: var(--moss);
+}
+.map-bascule.gardee:hover {
+  background: color-mix(in srgb, var(--moss) 34%, transparent);
+  color: var(--moss);
+}
+/* Une ligne gardée n'est plus masquée : son placeholder n'existe plus, on le
+   montre barré plutôt que de laisser croire qu'il s'applique encore. */
+tr.gardee td:first-child { text-decoration: line-through; opacity: 0.5; }
+
+.map-bascule.fait, .map-profil.fait {
   background: color-mix(in srgb, var(--moss) 22%, transparent);
   color: var(--moss);
   cursor: default;
@@ -1637,16 +1651,16 @@ footer .avertissement span[aria-hidden] { color: var(--seal-lit); flex: 0 0 auto
      ici il dit « c'est fait », ce qui doit rester parfaitement lisible. */
   opacity: 1;
 }
-.map-retirer.fait:hover, .map-profil.fait:hover {
+.map-bascule.fait:hover, .map-profil.fait:hover {
   background: color-mix(in srgb, var(--moss) 22%, transparent);
   color: var(--moss);
 }
 
-.map-retirer:hover, .map-profil:hover {
+.map-bascule:hover, .map-profil:hover {
   background: var(--control-ghost-hover-bg);
   color: var(--paper);
 }
-.map-retirer:focus-visible, .map-profil:focus-visible {
+.map-bascule:focus-visible, .map-profil:focus-visible {
   outline: 2px solid var(--seal-lit);
   outline-offset: 1px;
 }

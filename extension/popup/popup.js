@@ -1253,6 +1253,12 @@ function ajouterTerme(valeur, terme) {
   if (existants.includes(t)) return valeur || "";
   return [...existants, t].join(", ");
 }
+function retirerTerme(valeur, terme) {
+  const t = (terme || "").trim().toLowerCase();
+  if (!t) return valeur || "";
+  const restants = parseTermes(valeur).filter((x) => x.toLowerCase() !== t);
+  return restants.join(", ");
+}
 
 // src/engine/pseudonyms.js
 var LOCALES = {
@@ -1964,9 +1970,12 @@ function refreshOverlayIfOpen() {
   if (overlayKind) openOverlay(overlayKind);
 }
 var ajoutesAuProfil = /* @__PURE__ */ new Set();
+var lignesGardees = /* @__PURE__ */ new Map();
 function tableCorrections(mapping) {
-  if (!mapping.length) return `<p>${msg("aucun_masque_actif")}</p>`;
-  const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  const gardees = [...lignesGardees.entries()].filter(([v]) => !mapping.some((m) => m.value === v)).map(([value, l]) => ({ ...l, value, gardee: true }));
+  const toutes = [...mapping, ...gardees];
+  if (!toutes.length) return `<p>${msg("aucun_masque_actif")}</p>`;
+  const triees = toutes.sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
   return `<table><thead><tr>
       <th scope="col">${msg("placeholder")}</th>
       <th scope="col">${msg("valeur")}</th>
@@ -1974,7 +1983,7 @@ function tableCorrections(mapping) {
       <th scope="col" class="map-act">${msg("garder")}</th>
       <th scope="col" class="map-act">${msg("profil")}</th>
     </tr></thead><tbody>${triees.map(
-    (m) => `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" class="map-retirer" data-valeur="${esc(m.value)}" aria-label="${msg("infobulle_garder")}" title="${msg("infobulle_garder")}">\u2212</button></td><td class="map-act">` + (ajoutesAuProfil.has(m.value) ? `<button type="button" class="map-profil fait" disabled aria-label="${msg("ajoute_au_profil_court")}" title="${msg("ajoute_au_profil_court")}">\u2713</button>` : `<button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button>`) + `</td></tr>`
+    (m) => `<tr${m.gardee ? ' class="gardee"' : ""}><td class="mono">${esc(m.placeholder || "")}</td><td class="mono">${esc(m.value)}</td><td class="map-occ">${m.occurrences || 1}\xD7</td><td class="map-act"><button type="button" class="map-bascule${m.gardee ? " gardee" : ""}" data-valeur="${esc(m.value)}" data-etat="${m.gardee ? "gardee" : "masque"}" data-placeholder="${esc(m.placeholder || "")}" data-occ="${m.occurrences || 1}" data-type="${esc(m.type || "")}" aria-pressed="${m.gardee ? "true" : "false"}" aria-label="${msg(m.gardee ? "infobulle_remasquer" : "infobulle_garder")}" title="${msg(m.gardee ? "infobulle_remasquer" : "infobulle_garder")}">${m.gardee ? "\u2713" : "\u2212"}</button></td><td class="map-act">` + (ajoutesAuProfil.has(m.value) ? `<button type="button" class="map-profil fait" disabled aria-label="${msg("ajoute_au_profil_court")}" title="${msg("ajoute_au_profil_court")}">\u2713</button>` : `<button type="button" class="map-profil" data-valeur="${esc(m.value)}" data-type="${esc(m.type || "")}" aria-label="${msg("infobulle_au_profil")}" title="${msg("infobulle_au_profil")}">+</button>`) + `</td></tr>`
   ).join("")}</tbody></table>`;
 }
 function marquerFait(bouton, libelle) {
@@ -1984,9 +1993,14 @@ function marquerFait(bouton, libelle) {
   bouton.setAttribute("aria-label", libelle);
   bouton.title = libelle;
 }
-function retirerDuMasquageTexte(valeur) {
-  for (const e of activeEntities()) {
-    if (e.value === valeur) removedKeys.add(entityKey(e));
+function basculerGardeTexte(valeur, garder, infos) {
+  if (garder) {
+    const cles = activeEntities().filter((e) => e.value === valeur).map(entityKey);
+    for (const k of cles) removedKeys.add(k);
+    lignesGardees.set(valeur, { ...infos, cles });
+  } else {
+    for (const k of lignesGardees.get(valeur)?.cles || []) removedKeys.delete(k);
+    lignesGardees.delete(valeur);
   }
   render();
 }
@@ -2204,6 +2218,7 @@ async function analyze() {
   if (text !== currentText) {
     manualEntities = [];
     removedKeys = /* @__PURE__ */ new Set();
+    lignesGardees.clear();
   }
   currentText = text;
   const btn = $("analyzeBtn");
@@ -2545,12 +2560,14 @@ var termesAMasquer = () => [
   ...parseLines($("docMask")?.value),
   ...identityForceTerms()
 ];
-async function retirerDuMasquage(valeur) {
+async function basculerGardeFichier(valeur, garder, infos) {
   const champ = $("docKeep");
   if (!fileRegen || !champ) return;
   const avant = champ.value;
-  champ.value = ajouterTerme(avant, valeur);
+  champ.value = garder ? ajouterTerme(avant, valeur) : retirerTerme(avant, valeur);
   if (champ.value === avant) return;
+  if (garder) lignesGardees.set(valeur, infos);
+  else lignesGardees.delete(valeur);
   rendreApercuTermes();
   const btn = $("fileAnalyzeBtn");
   btn.disabled = true;
@@ -2589,10 +2606,12 @@ async function retirerDuMasquage(valeur) {
       mapping = m;
     }
     showFileResults(mapping, r.kind.mime.startsWith("text/"));
-    fileSetStatus(`\xAB ${valeur} \xBB n\u2019est plus masqu\xE9.`);
+    fileSetStatus(garder ? `\xAB ${valeur} \xBB n\u2019est plus masqu\xE9.` : `\xAB ${valeur} \xBB est de nouveau masqu\xE9.`);
   } catch (err) {
     console.error("[clarence]", err);
     champ.value = avant;
+    if (garder) lignesGardees.delete(valeur);
+    else lignesGardees.set(valeur, infos);
     rendreApercuTermes();
     fileSetStatus("Mise \xE0 jour impossible. D\xE9tail en console.", "error");
   } finally {
@@ -3300,15 +3319,23 @@ for (const [idChamp] of APERCUS_TERMES) {
 }
 rendreApercuTermes();
 $("fileCancelBtn").addEventListener("click", () => annulerRunFichier());
-for (const [id, retirer] of [
-  ["fileMappingWrap", retirerDuMasquage],
-  ["mappingWrap", retirerDuMasquageTexte]
+for (const [id, basculer] of [
+  ["fileMappingWrap", basculerGardeFichier],
+  ["mappingWrap", basculerGardeTexte]
 ]) {
   $(id).addEventListener("click", (ev) => {
-    const btn = ev.target.closest(".map-retirer");
+    const btn = ev.target.closest(".map-bascule");
     if (btn && !btn.disabled) {
-      marquerFait(btn, msg("retire_du_masquage"));
-      retirer(btn.dataset.valeur);
+      const garder = btn.dataset.etat !== "gardee";
+      btn.classList.toggle("gardee", garder);
+      btn.textContent = garder ? "\u2713" : "\u2212";
+      btn.dataset.etat = garder ? "gardee" : "masque";
+      btn.setAttribute("aria-pressed", String(garder));
+      basculer(btn.dataset.valeur, garder, {
+        placeholder: btn.dataset.placeholder,
+        type: btn.dataset.type,
+        occurrences: Number(btn.dataset.occ) || 1
+      });
       return;
     }
     const prof = ev.target.closest(".map-profil");

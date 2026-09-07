@@ -18,7 +18,7 @@ import { appliquerTraductions, msg } from './i18n.js';
 import { createBatchedPipeline } from '../engine/batch.js';
 import { OperationAnnulee, estAnnulation, verifierAnnulation } from '../engine/annulation.js';
 import { poidsDeTraitement, expliquerPoids } from './poids.js';
-import { parseTermes, ajouterTerme } from './termes.js';
+import { parseTermes, ajouterTerme, retirerTerme } from './termes.js';
 import { mergeEntities } from '../engine/merge.js';
 import { selectActive, entityKey, forcedMasks, filterByRules } from '../engine/selection.js';
 import { createPseudonymizer } from '../engine/pseudonyms.js';
@@ -262,9 +262,24 @@ function refreshOverlayIfOpen() {
 // analyse ; sans cette memoire la coche disparaitrait au premier rendu suivant.
 const ajoutesAuProfil = new Set();
 
+// Lignes que l'utilisateur a choisi de NE PLUS masquer, avec ce qu'il faut
+// pour continuer à les afficher.
+//
+// Une valeur gardée sort du masquage, donc du mapping, donc de la table : la
+// ligne disparaissait et on perdait la trace de sa propre décision, sans
+// pouvoir revenir dessus. On les mémorise pour les réafficher en position
+// « gardée », d'où la bascule peut repartir dans l'autre sens.
+const lignesGardees = new Map();
+
 function tableCorrections(mapping) {
-  if (!mapping.length) return `<p>${msg('aucun_masque_actif')}</p>`;
-  const triees = [...mapping].sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
+  // Les lignes gardées ne sont plus dans le mapping, puisqu'elles ne sont plus
+  // masquées : on les rajoute pour qu'elles restent visibles et réversibles.
+  const gardees = [...lignesGardees.entries()]
+    .filter(([v]) => !mapping.some(m => m.value === v))
+    .map(([value, l]) => ({ ...l, value, gardee: true }));
+  const toutes = [...mapping, ...gardees];
+  if (!toutes.length) return `<p>${msg('aucun_masque_actif')}</p>`;
+  const triees = toutes.sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0));
   return `<table><thead><tr>
       <th scope="col">${msg('placeholder')}</th>
       <th scope="col">${msg('valeur')}</th>
@@ -272,13 +287,22 @@ function tableCorrections(mapping) {
       <th scope="col" class="map-act">${msg('garder')}</th>
       <th scope="col" class="map-act">${msg('profil')}</th>
     </tr></thead><tbody>${triees.map(m =>
-      `<tr><td class="mono">${esc(m.placeholder)}</td><td class="mono">${esc(m.value)}</td>` +
+      `<tr${m.gardee ? ' class="gardee"' : ''}>` +
+      `<td class="mono">${esc(m.placeholder || '')}</td><td class="mono">${esc(m.value)}</td>` +
       `<td class="map-occ">${m.occurrences || 1}×</td>` +
       // `data-valeur` porte la valeur reelle : c'est elle qu'on ajoutera aux
       // termes, pas le placeholder.
+      // Bascule à deux positions : masqué (par défaut, c'est une détection) ou
+      // gardé. Les données de la ligne voyagent sur le bouton : au retour en
+      // arrière, le mapping a déjà été remplacé et ne les porte plus.
       `<td class="map-act">` +
-      `<button type="button" class="map-retirer" data-valeur="${esc(m.value)}"` +
-      ` aria-label="${msg('infobulle_garder')}" title="${msg('infobulle_garder')}">−</button></td>` +
+      `<button type="button" class="map-bascule${m.gardee ? ' gardee' : ''}"` +
+      ` data-valeur="${esc(m.value)}" data-etat="${m.gardee ? 'gardee' : 'masque'}"` +
+      ` data-placeholder="${esc(m.placeholder || '')}" data-occ="${m.occurrences || 1}"` +
+      ` data-type="${esc(m.type || '')}" aria-pressed="${m.gardee ? 'true' : 'false'}"` +
+      ` aria-label="${msg(m.gardee ? 'infobulle_remasquer' : 'infobulle_garder')}"` +
+      ` title="${msg(m.gardee ? 'infobulle_remasquer' : 'infobulle_garder')}">` +
+      `${m.gardee ? '\u2713' : '\u2212'}</button></td>` +
       // « au profil » vit ICI plutot que dans un bandeau : la ligne NOMME la
       // valeur, la ou un bandeau ne pouvait qu'annoncer « une personne a ete
       // detectee » sans dire laquelle.
@@ -309,12 +333,20 @@ function marquerFait(bouton, libelle) {
   bouton.title = libelle;
 }
 
-// Retrait d'un faux positif en mode Texte. L'equivalent du mode Fichier
-// reecrit un champ et relance le traitement ; ici il suffit d'ajouter les cles
-// des entites concernees aux retraits, comme un clic sur le surlignage.
-function retirerDuMasquageTexte(valeur) {
-  for (const e of activeEntities()) {
-    if (e.value === valeur) removedKeys.add(entityKey(e));
+// Bascule en mode Texte. Le mode Fichier réécrit un champ et relance tout le
+// traitement ; ici il suffit d'ajouter ou de retirer les clés des entités
+// concernées, comme un clic sur un surlignage.
+//
+// Les clés sont mémorisées au moment où on garde : au retour, les entités ne
+// sont plus actives, donc on ne pourrait plus les retrouver par leur valeur.
+function basculerGardeTexte(valeur, garder, infos) {
+  if (garder) {
+    const cles = activeEntities().filter(e => e.value === valeur).map(entityKey);
+    for (const k of cles) removedKeys.add(k);
+    lignesGardees.set(valeur, { ...infos, cles });
+  } else {
+    for (const k of lignesGardees.get(valeur)?.cles || []) removedKeys.delete(k);
+    lignesGardees.delete(valeur);
   }
   render();
 }
@@ -672,7 +704,11 @@ async function analyze() {
     setStatus(`Texte trop long (${text.length.toLocaleString('fr-FR')} caractères, max ${MAX_INPUT.toLocaleString('fr-FR')}). Découpe-le.`, 'error');
     return;
   }
-  if (text !== currentText) { manualEntities = []; removedKeys = new Set(); }
+  // Un nouveau texte, ce sont d'autres détections : les décisions prises sur
+  // le précédent ne s'y appliquent pas.
+  if (text !== currentText) {
+    manualEntities = []; removedKeys = new Set(); lignesGardees.clear();
+  }
   currentText = text;
   const btn = $('analyzeBtn');
   btn.disabled = true;
@@ -1157,13 +1193,17 @@ const termesAMasquer = () => [
 // enregistre le profil. L'éphémère devient durable par un geste explicite,
 // jamais par surprise. Et il n'y a qu'une seule liste, donc rien à
 // resynchroniser.
-async function retirerDuMasquage(valeur) {
+// Bascule en mode Fichier : écrit ou retire le terme du champ visible, puis
+// régénère. Le champ reste la source de vérité, donc l'utilisateur peut aussi
+// corriger à la main ce que la bascule a écrit.
+async function basculerGardeFichier(valeur, garder, infos) {
   const champ = $('docKeep');
   if (!fileRegen || !champ) return;
   const avant = champ.value;
-  champ.value = ajouterTerme(avant, valeur);
-  // Rien changé : le terme y était déjà.
+  champ.value = garder ? ajouterTerme(avant, valeur) : retirerTerme(avant, valeur);
+  // Rien changé : le terme y était déjà, ou n'y était pas.
   if (champ.value === avant) return;
+  if (garder) lignesGardees.set(valeur, infos); else lignesGardees.delete(valeur);
   rendreApercuTermes();
 
   const btn = $('fileAnalyzeBtn');
@@ -1206,13 +1246,19 @@ async function retirerDuMasquage(valeur) {
     }
 
     showFileResults(mapping, r.kind.mime.startsWith('text/'));
-    fileSetStatus(`« ${valeur} » n’est plus masqué.`);
+    fileSetStatus(garder
+      ? `« ${valeur} » n’est plus masqué.`
+      : `« ${valeur} » est de nouveau masqué.`);
   } catch (err) {
     console.error('[clarence]', err);
     // Le fichier précédent reste valide et téléchargeable : on ne le remplace
     // que si la régénération a abouti. Mieux vaut un retrait sans effet qu'un
     // résultat à moitié réécrit.
+    // Le fichier précédent reste valide : on remet aussi l'état de la bascule
+    // dans la position qu'il avait, sinon la table mentirait sur ce qui est
+    // réellement masqué.
     champ.value = avant;
+    if (garder) lignesGardees.delete(valeur); else lignesGardees.set(valeur, infos);
     rendreApercuTermes();
     fileSetStatus('Mise à jour impossible. Détail en console.', 'error');
   } finally {
@@ -1299,7 +1345,7 @@ function showFileResults(mapping, copyable, duree) {
   // en `aria-label` et en infobulle - un bouton compact ne doit pas être un
   // bouton muet.
   $('fileMappingWrap').innerHTML = tableCorrections(mapping);
-  // duree : omise pour la régénération (retirerDuMasquage) - son propre
+  // duree : omise pour la régénération (basculerGardeFichier) - son propre
   // message (« … n'est plus masqué ») prime, et sa quasi-instantanéité n'est
   // pas ce que « durée de traitement » désigne pour l'utilisateur.
   const suffixe = (duree ? ` ${duree}.` : '') +
@@ -2240,15 +2286,23 @@ $('fileCancelBtn').addEventListener('click', () => annulerRunFichier());
 
 // Délégation : la table est reconstruite à chaque régénération, un écouteur
 // posé sur chaque bouton serait perdu au premier retrait.
-for (const [id, retirer] of [['fileMappingWrap', retirerDuMasquage],
-                             ['mappingWrap', retirerDuMasquageTexte]]) {
+for (const [id, basculer] of [['fileMappingWrap', basculerGardeFichier],
+                              ['mappingWrap', basculerGardeTexte]]) {
   $(id).addEventListener('click', ev => {
-    const btn = ev.target.closest('.map-retirer');
+    const btn = ev.target.closest('.map-bascule');
     if (btn && !btn.disabled) {
-      // La coche part avant la regeneration : en mode Fichier elle prend
-      // plusieurs secondes, et sans retour immediat on reclique.
-      marquerFait(btn, msg('retire_du_masquage'));
-      retirer(btn.dataset.valeur);
+      const garder = btn.dataset.etat !== 'gardee';
+      // L'état part AVANT la régénération : en mode Fichier elle prend
+      // plusieurs secondes, et sans retour immédiat on reclique.
+      btn.classList.toggle('gardee', garder);
+      btn.textContent = garder ? '\u2713' : '\u2212';
+      btn.dataset.etat = garder ? 'gardee' : 'masque';
+      btn.setAttribute('aria-pressed', String(garder));
+      basculer(btn.dataset.valeur, garder, {
+        placeholder: btn.dataset.placeholder,
+        type: btn.dataset.type,
+        occurrences: Number(btn.dataset.occ) || 1
+      });
       return;
     }
     const prof = ev.target.closest('.map-profil');
