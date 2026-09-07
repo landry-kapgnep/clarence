@@ -74,9 +74,13 @@ export const GROUPES = [
     seuil: 0.46,
     labels: ['person', 'company', 'location'],
     types: { person: 'PER', company: 'ORG', location: 'LOC' },
-    // Voir `pertinent` plus bas : un texte sans la moindre majuscule ne peut
-    // produire aucun nom propre, donc aucune entité de ce groupe.
-    pertinent: t => /\p{Lu}/u.test(t)
+    // PAS de garde `pertinent` ici, et c'est une correction.
+    //
+    // Il valait « un texte sans la moindre majuscule ne peut produire aucun nom
+    // propre ». Mesuré, c'est faux : sur « j habite a paris et je travaille chez
+    // innovatech », le modele rend `paris` et `innovatech` a 1,00. On sautait
+    // donc l'inference sur les documents les MOINS bien ecrits, qui sont
+    // exactement ceux ou l'utilisateur ne peut compter sur rien d'autre.
   },
   {
     // Seul : associé à d'autres labels il perd sa précision, et « address »
@@ -208,10 +212,22 @@ export function estPronom(valeur) {
 // du RGPD, alors que le bruit qu'on retire rendait le document inexploitable.
 const TYPES_FILTRES_PAR_VOCABULAIRE = new Set(['ORG', 'LOC']);
 
-function estPlausiblePourLeType(type, valeur) {
+// `texteCase` : le texte d'ou vient la valeur porte-t-il des majuscules ?
+//
+// L'exigence de majuscule sur la valeur n'a de sens que si l'auteur en met.
+// Dans un texte integralement en minuscules elle ne separe rien : elle exige un
+// artefact absent partout, donc elle jette TOUTES les entites - mesure faite,
+// `paris` et `innovatech` a 1,00 de confiance etaient rejetes. Le document le
+// moins bien ecrit se retrouvait le moins protege.
+function estPlausiblePourLeType(type, valeur, texteCase = true) {
   if (TYPES_NOMS_PROPRES.has(type)) {
     if (estPronom(valeur)) return false;
-    if (!/\p{Lu}/u.test(valeur)) return false;
+    // Une lettre seule est du bruit, et un masque d'un caractère ne protège
+    // rien. `ner.js` écarte déjà ces fragments (« R » de « Référent ») ; le
+    // garde manquait ici, et il s'est vu dès qu'on a cessé d'exiger une
+    // majuscule : « j habite » sortait « j » en PERSONNE à 0,77.
+    if (valeur.trim().length < 2) return false;
+    if (texteCase && !/\p{Lu}/u.test(valeur)) return false;
     // Un nom propre n'est pas fait de mots du dictionnaire. Voir
     // vocabulaire.js pour la mesure qui a mené ici, et pour ce qu'on y perd.
     if (TYPES_FILTRES_PAR_VOCABULAIRE.has(type) && estVocabulaireCourant(valeur)) return false;
@@ -290,6 +306,9 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
 
   for (const { offset, text: chunk } of chunks) {
     const duChunk = [];
+    // Calcule une fois par chunk : l'exigence de majuscule se releve sur le
+    // texte source, pas sur chaque valeur prise isolement.
+    const chunkAMajuscules = /\p{Lu}/u.test(chunk);
     const chunkNu = desaccentuer(chunk);
     const chunkCasse = adoucirCasse(chunk);
     // Les variantes ne sont ajoutées QUE si elles changent quelque chose : une
@@ -340,7 +359,7 @@ export async function detectGliner(text, glinerPipeline, { onProgress, disabledT
           // La valeur se relit toujours sur le texte d'origine : c'est le texte
           // accentué qu'il faudra masquer, pas la copie de travail.
           const valeur = chunk.slice(s.start, s.end);
-          if (!estPlausiblePourLeType(type, valeur)) continue;
+          if (!estPlausiblePourLeType(type, valeur, chunkAMajuscules)) continue;
           duChunk.push({
             type,
             value: valeur,

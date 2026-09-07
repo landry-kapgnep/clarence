@@ -17,7 +17,7 @@ import {
   selectActive,
   snapToWordBoundaries,
   verifierAnnulation
-} from "./chunk-PYXQA352.js";
+} from "./chunk-OKI6SJBV.js";
 import {
   createBatchedPipeline
 } from "./chunk-IT5BP6N7.js";
@@ -76,10 +76,14 @@ var GROUPES = [
     // docs/roadmap-detection.md, annexe.
     seuil: 0.46,
     labels: ["person", "company", "location"],
-    types: { person: "PER", company: "ORG", location: "LOC" },
-    // Voir `pertinent` plus bas : un texte sans la moindre majuscule ne peut
-    // produire aucun nom propre, donc aucune entité de ce groupe.
-    pertinent: (t) => new RegExp("\\p{Lu}", "u").test(t)
+    types: { person: "PER", company: "ORG", location: "LOC" }
+    // PAS de garde `pertinent` ici, et c'est une correction.
+    //
+    // Il valait « un texte sans la moindre majuscule ne peut produire aucun nom
+    // propre ». Mesuré, c'est faux : sur « j habite a paris et je travaille chez
+    // innovatech », le modele rend `paris` et `innovatech` a 1,00. On sautait
+    // donc l'inference sur les documents les MOINS bien ecrits, qui sont
+    // exactement ceux ou l'utilisateur ne peut compter sur rien d'autre.
   },
   {
     // Seul : associé à d'autres labels il perd sa précision, et « address »
@@ -196,10 +200,11 @@ function estPronom(valeur) {
   return PRONOMS.has(nu) || (nu.includes("'") || nu.includes("\u2019") ? PRONOMS.has(avantApostrophe) : false);
 }
 var TYPES_FILTRES_PAR_VOCABULAIRE = /* @__PURE__ */ new Set(["ORG", "LOC"]);
-function estPlausiblePourLeType(type, valeur) {
+function estPlausiblePourLeType(type, valeur, texteCase = true) {
   if (TYPES_NOMS_PROPRES.has(type)) {
     if (estPronom(valeur)) return false;
-    if (!new RegExp("\\p{Lu}", "u").test(valeur)) return false;
+    if (valeur.trim().length < 2) return false;
+    if (texteCase && !new RegExp("\\p{Lu}", "u").test(valeur)) return false;
     if (TYPES_FILTRES_PAR_VOCABULAIRE.has(type) && estVocabulaireCourant(valeur)) return false;
     return true;
   }
@@ -239,6 +244,7 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
   let done = 0;
   for (const { offset, text: chunk } of chunks) {
     const duChunk = [];
+    const chunkAMajuscules = new RegExp("\\p{Lu}", "u").test(chunk);
     const chunkNu = desaccentuer(chunk);
     const chunkCasse = adoucirCasse(chunk);
     const variantes = [chunk];
@@ -253,7 +259,7 @@ async function detectGliner(text, glinerPipeline, { onProgress, disabledTypes: d
           const type = groupe.types[s.label];
           if (!type || desactives.has(type) || s.score < seuil) continue;
           const valeur = chunk.slice(s.start, s.end);
-          if (!estPlausiblePourLeType(type, valeur)) continue;
+          if (!estPlausiblePourLeType(type, valeur, chunkAMajuscules)) continue;
           duChunk.push({
             type,
             value: valeur,
@@ -2584,7 +2590,7 @@ async function basculerGardeFichier(valeur, garder, infos) {
     const forceTerms = termesAMasquer();
     let mapping;
     if (r.mode === "pdf") {
-      const { reconstructPdf } = await import("./pdf-reconstruct-FF6YWATL.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-R2QVP5KJ.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const res = await reconstructPdf(r.tampon.slice(0), {
         entitesConnues: r.entites,
@@ -2597,7 +2603,7 @@ async function basculerGardeFichier(valeur, garder, infos) {
       fileOutBlob = new Blob([res.buffer], { type: "application/pdf" });
       mapping = res.mapping;
     } else {
-      const { anonymizeUnits } = await import("./anonymize-units-JDFDAQHM.js");
+      const { anonymizeUnits } = await import("./anonymize-units-Z32R5X56.js");
       const { results, mapping: m } = await anonymizeUnits(r.units, {
         entitesConnues: r.entites,
         intitules: r.intitules,
@@ -3170,7 +3176,7 @@ async function processFile() {
       fileSetStatus(msg("etat_lecture_pdf"));
       await ensureNER();
       verifierAnnulation(signal);
-      const { reconstructPdf } = await import("./pdf-reconstruct-FF6YWATL.js");
+      const { reconstructPdf } = await import("./pdf-reconstruct-R2QVP5KJ.js");
       const pdflib = await import("./es-RR6ZCDY3.js");
       const tampon = await source.arrayBuffer();
       const { buffer: outBuf, mapping: mapping2, entitesContextuelles: entitesContextuelles2 } = await reconstructPdf(tampon, {
@@ -3201,7 +3207,7 @@ async function processFile() {
       fileSetStatus("");
       return;
     }
-    const { anonymizeUnits } = await import("./anonymize-units-JDFDAQHM.js");
+    const { anonymizeUnits } = await import("./anonymize-units-Z32R5X56.js");
     const input = kind.text ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(await source.arrayBuffer()) : await source.arrayBuffer();
     const { units, intitules } = await adapter.extractTextUnits(input);
     if (!units.length) {

@@ -163,6 +163,9 @@ var STOP_NOMS_CIVILITE = /* @__PURE__ */ new Set([
 var MOIS = "January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|janvier|f\xE9vrier|fevrier|mars|avril|mai|juin|juillet|ao\xFBt|aout|septembre|octobre|novembre|d\xE9cembre|decembre";
 var DATE = `(?:\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4}|\\d{4}-\\d{2}-\\d{2}|(?:${MOIS})\\s+\\d{1,2}(?:st|nd|rd|th)?,?\\s+\\d{4}|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${MOIS})\\s+\\d{4}|(?:${MOIS})\\s+\\d{4}|\\d{1,2}[\\/.-]\\d{4})`;
 var ETATS_US = "Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming";
+var VOIES_FR = String.raw`(?:[Rr]ue|[Aa]venue|[Aa]v\.|[Bb]oulevard|[Bb]d\.?` + String.raw`|[Ii]mpasse|[Aa]ll[ée]e|[Cc]hemin|[Pp]lace|[Cc]ours|[Qq]uai` + String.raw`|[Rr]oute|[Ss]quare|[Pp]assage)`;
+var ARTICLES_FR = String.raw`(?:de\s+la\s+|de\s+l'|du\s+|des\s+|de\s+|d'|la\s+|le\s+)`;
+var VOIES_FR_SANS_NUMERO = String.raw`(?:rue|avenue|av\.|boulevard|bd\.?|impasse|all[ée]e|quai)`;
 var REGEX_PATTERNS = [
   { type: "EMAIL", re: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, validate: null },
   // maskIfStructureMatches : la structure IBAN (pays connu + 2 chiffres + corps
@@ -288,7 +291,28 @@ var REGEX_PATTERNS = [
     // une PERSONNE (mesuré sur tous-defauts.pdf). On ne met pas le drapeau `i`
     // sur tout le motif : les groupes [A-ZÀ-Ü] plus loin exigent délibérément
     // une majuscule pour le nom de la voie.
-    re: /\b\d{1,4}\s?(?:bis|ter)?\s*,?\s*(?:[Rr]ue|[Aa]venue|[Aa]v\.|[Bb]oulevard|[Bb]d\.?|[Ii]mpasse|[Aa]ll[ée]e|[Cc]hemin|[Pp]lace|[Cc]ours|[Qq]uai|[Rr]oute|[Ss]quare|[Pp]assage)\s+(?:de\s+la\s+|de\s+l'|du\s+|des\s+|de\s+|d'|la\s+|le\s+)?[A-Za-zÀ-ÿ0-9'-]+(?:\s+[A-ZÀ-Ü][a-zà-ÿ'-]+){0,3}/g,
+    re: new RegExp(String.raw`\b\d{1,4}\s?(?:bis|ter)?\s*,?\s*` + VOIES_FR + String.raw`\s+` + ARTICLES_FR + String.raw`?[A-Za-zÀ-ÿ0-9'-]+(?:\s+[A-ZÀ-Ü][a-zà-ÿ'-]+){0,3}`, "g"),
+    validate: null
+  },
+  {
+    // Voie SANS numéro : « rue de la Liberté », « avenue Foch ».
+    //
+    // Le motif numéroté ci-dessus exige un numéro, ce qui laissait passer toute
+    // mention de voie sans lui. Mesuré : le modèle contextuel trouve pourtant
+    // « rue de la liberté » à 0,90, mais nos garde-fous la rejettent - en
+    // minuscules faute de majuscule, en capitales parce que « rue » et
+    // « liberté » sont au dictionnaire. Elle ne pouvait donc être masquée par
+    // personne.
+    //
+    // Une liste statique est admissible ici pour la même raison que les
+    // civilités : les types de voie sont une classe FERMÉE, une langue en
+    // compte une poignée et n'en invente pas.
+    //
+    // Le nom qui suit est EXIGÉ, sinon « je marche dans la rue » deviendrait
+    // une adresse. Le numéro n'étant plus là pour borner le sur-masquage,
+    // c'est ce nom qui borne.
+    type: "ADRESSE",
+    re: new RegExp(String.raw`\b` + VOIES_FR_SANS_NUMERO + String.raw`\s+` + ARTICLES_FR + String.raw`?[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9'-]*` + String.raw`(?:\s+[A-ZÀ-Ü][a-zà-ÿ'-]+){0,2}`, "gi"),
     validate: null
   },
   {

@@ -2282,3 +2282,85 @@ apprendrait à jeter les vraies, donc à fuir.
 
 Ce qui les traite déjà, c'est la liste éditable d'un profil. La pièce qui
 manquait était de savoir lequel proposer.
+
+## P16 - un texte en minuscules n'était protégé par rien (07/09/2026)
+
+Signalé à l'usage : « rue de la liberté » n'est pas masquée, la même chaîne en
+capitales l'est. La sonde `tests/bench/sonde-casse.mjs` compare ce que le
+modèle rend et ce que nos filtres jettent ensuite - les deux réponses appellent
+des corrections opposées, donc il fallait mesurer avant de toucher au pipeline.
+
+**Le modèle voyait tout. C'est nous qui jetions.**
+
+| phrase | span | score | verdict |
+|---|---|---|---|
+| `Je suis Philippe et je suis dans la rue de la liberté.` | `rue de la liberté` | 0,90 | rejeté : aucune majuscule |
+| `...dans la Rue de la Liberté.` | `Rue de la Liberté` | 0,94 | rejeté : vocabulaire courant |
+| `j habite a paris et je travaille chez innovatech.` | `paris` | **1,00** | rejeté : aucune majuscule |
+| | `innovatech` | **1,00** | rejeté : aucune majuscule |
+| `contactez marie dubois...` | `marie dubois` | **1,00** | rejeté : aucune majuscule |
+
+Un texte intégralement en minuscules ne recevait donc **aucune** protection
+contextuelle : toutes ses entités sortaient à pleine confiance et étaient
+écartées. Le document le moins bien écrit était le moins protégé.
+
+### Pourquoi les passes de casse ne pouvaient rien y faire
+
+Trois passes existent déjà (naturelle, désaccentuée, capitales adoucies) et une
+quatrième - minuscules vers capitales, `boostCase` - vit dans `ner.js`, le
+moteur de repli, jamais dans GLiNER.
+
+La câbler n'aurait rien changé : **les passes préservent les offsets**, donc la
+valeur retenue vient toujours du texte d'origine, et c'est elle que le
+garde-fou inspecte. Aucune variante de casse ne franchit un filtre qui lit la
+casse de la source. Le problème n'était pas dans les passes, il était dans le
+garde-fou.
+
+### Deux causes, deux corrections
+
+1. **Le pré-filtre `pertinent` sautait le groupe identité** sur un texte sans
+   majuscule, au motif que « pas de capitale, donc pas de nom propre ». Retiré :
+   la mesure ci-dessus le réfute directement. Le coût est une inférence de plus
+   sur les unités entièrement en minuscules, exactement celles qui n'étaient pas
+   protégées.
+2. **L'exigence de majuscule sur la valeur** ne s'applique plus quand le texte
+   source n'en porte aucune. Là où l'auteur met des capitales, leur absence
+   redevient un signal et continue d'écarter « vendeur », « candidat »,
+   « service comptabilite ».
+
+### Ce que ça a révélé au passage
+
+Le filtre « une lettre seule est du bruit » existait dans `ner.js` et manquait
+dans `gliner.js` - même angle mort que `boostCase`. Il s'est vu dès qu'on a
+cessé d'exiger une majuscule : « j habite » sortait `j` en PERSONNE à 0,77.
+
+### La rue reste un cas à part
+
+`Rue de la Liberté` est rejetée **même en capitales**, par le filtre de
+vocabulaire (« rue » et « liberté » sont au dictionnaire). Le garde-fou de
+majuscule n'y était pour rien.
+
+Elle est désormais couverte par un second motif ADRESSE déterministe, pour les
+voies **sans numéro**. Les types de voie sont une classe FERMÉE, donc une liste
+statique y est admissible - même critère que les civilités.
+
+Ce motif n'accepte pas les types de voie qui sont aussi des noms communs
+ordinaires (`cours`, `route`, `place`, `chemin`, `passage`, `square`) : sans
+numéro pour la borner, ils produisaient « cours du pétrole monte » et « route
+est longue ». Le nom qui suit est exigé, sinon « je marche dans la rue »
+deviendrait une adresse.
+
+### Mesure au banc, avant / après
+
+| | avant | après |
+|---|---|---|
+| Rappel structuré | 100 % (20/20) | **100 %** (20/20) |
+| Rappel contextuel | 84 % (37/44) | **86 %** (38/44) |
+| Termes préservés | 93 % (53/57) | **93 %** (53/57) |
+
+Aucun coût en sur-masquage, et un raté de longue date fermé au passage :
+`formulaire-fr.txt` manquait `ADRESSE « 18 RUE DES GLYCINES »`. Le motif
+numéroté est sensible à la casse (ses groupes `[A-ZÀ-Ü]` exigent délibérément
+une majuscule pour le nom de la voie, donc `[Rr]ue` ne couvre pas `RUE`) ; le
+nouveau motif sans numéro tourne avec le drapeau `i` et l'attrape. Le document
+passe de 71 % à 86 % de rappel contextuel.

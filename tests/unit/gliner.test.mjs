@@ -126,17 +126,17 @@ test('un type désactivé fait SAUTER la passe entière (pas juste un filtre ava
       ? [{ label: 'date of birth', start: 0, end: 10, spanText: '1988-03-14', score: 0.9 }]
       : [];
   };
-  // « 1988-03-14 » n'a aucune majuscule : le groupe identité est sauté par son
-  // pré-filtre `pertinent` (il ne pourrait produire aucun nom propre). Restent
-  // le groupe date et le groupe sensible → 2 appels.
+  // Les trois groupes tournent. Le groupe identité N'EST PLUS sauté sur un texte
+  // sans majuscule : ce pré-filtre reposait sur « pas de capitale, donc pas de
+  // nom propre », mesuré faux (« paris » sort à 1,00 en minuscules).
   passes = 0;
   await detectGliner('1988-03-14', pipe);
-  assert.equal(passes, 2);
+  assert.equal(passes, 3);
 
   // DATE_naissance désactivé → le groupe date n'est plus appelé du tout.
   passes = 0;
   const out = await detectGliner('1988-03-14', pipe, { disabledTypes: new Set(['DATE_NAISSANCE']) });
-  assert.equal(passes, 1, 'la passe désactivée a quand même coûté une inférence');
+  assert.equal(passes, 2, 'la passe désactivée a quand même coûté une inférence');
   assert.equal(out.length, 0);
 });
 
@@ -217,18 +217,39 @@ test('progression : le total EXCLUT les passes sautées par le pré-filtre', asy
   assert.equal(dernier.done, dernier.total, 'la progression doit finir à 100 %');
 });
 
-test('pré-filtre : une passe dont le résultat serait DE TOUTE FAÇON jeté est sautée', async () => {
-  // `estPlausiblePourLeType` écarte déjà les PER/ORG/LIEU sans majuscule. Si le
-  // texte entier n'en a aucune, la passe ne peut rien produire qui survive :
-  // on la saute. Zéro perte par construction.
+test('un texte sans majuscule est analysé, et ses entités survivent', async () => {
+  // Remplace un pré-filtre qui sautait le groupe identité quand le texte
+  // n'avait aucune majuscule, sur la règle « pas de capitale, donc pas de nom
+  // propre ». MESURÉ FAUX : sur « j habite a paris et je travaille chez
+  // innovatech », le modèle rend les deux à 1,00. On sautait l'inférence sur
+  // les documents les moins bien écrits, c'est-à-dire ceux où l'utilisateur ne
+  // peut compter sur rien d'autre.
   const vus = [];
-  await detectGliner('aucune majuscule ici', async (t, labels) => { vus.push(labels); return []; });
-  assert.ok(!vus.some(l => l.includes('person')), 'le groupe identité aurait dû être sauté');
+  const pipe = async (t, labels) => {
+    vus.push(labels);
+    return labels.includes('person')
+      ? [{ label: 'location', start: 11, end: 16, spanText: 'paris', score: 0.95 }]
+      : [];
+  };
+  const out = await detectGliner('j habite a paris', pipe);
+  assert.ok(vus.some(l => l.includes('person')), 'le groupe identité doit tourner');
+  assert.deepEqual(out.map(e => [e.type, e.value]), [['LOC', 'paris']]);
+});
 
-  const vus2 = [];
-  await detectGliner('Avec Une Majuscule', async (t, labels) => { vus2.push(labels); return []; });
-  assert.ok(vus2.some(l => l.includes('person')), 'avec une majuscule, le groupe identité doit tourner');
-  assert.ok(!vus2.some(l => l.includes('date of birth')), 'sans chiffre, le groupe date doit être sauté');
+test('dès que le texte porte des majuscules, une valeur sans capitale est écartée', async () => {
+  // Le garde-fou n'est levé QUE sur un texte intégralement en minuscules. Là où
+  // l'auteur met des capitales, leur absence redevient un signal - c'est ce qui
+  // écarte « vendeur », « candidat » et consorts.
+  const pipe = async (t, labels) => (labels.includes('person')
+    ? [{ label: 'person', start: 9, end: 16, spanText: 'vendeur', score: 0.9 }]
+    : []);
+  assert.deepEqual(await detectGliner('Contacte vendeur', pipe), []);
+});
+
+test('pré-filtre : le groupe date est sauté sur un texte sans chiffre', async () => {
+  const vus = [];
+  await detectGliner('Avec Une Majuscule', async (t, labels) => { vus.push(labels); return []; });
+  assert.ok(!vus.some(l => l.includes('date of birth')), 'sans chiffre, le groupe date doit être sauté');
 });
 
 test('pipeline absent : aucune entité, aucune exception (repli silencieux)', async () => {

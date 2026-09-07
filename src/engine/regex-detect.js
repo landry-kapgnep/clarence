@@ -55,6 +55,24 @@ const ETATS_US = 'Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticu
   + '|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia'
   + '|Washington|West Virginia|Wisconsin|Wyoming';
 
+// Types de voie et articles, partagés par les deux motifs d'adresse : l'un
+// exige un numéro, l'autre non, et deux copies de la même liste divergeraient
+// au premier ajout.
+// Les variantes de casse sont écrites en dur : le motif numéroté tourne SANS le
+// drapeau `i` (ses groupes [A-ZÀ-Ü] exigent délibérément une majuscule pour le
+// nom de la voie), donc une liste en minuscules seules lui ferait rater
+// « 99 Av. Jean Jaurès ».
+const VOIES_FR = String.raw`(?:[Rr]ue|[Aa]venue|[Aa]v\.|[Bb]oulevard|[Bb]d\.?`
+  + String.raw`|[Ii]mpasse|[Aa]ll[ée]e|[Cc]hemin|[Pp]lace|[Cc]ours|[Qq]uai`
+  + String.raw`|[Rr]oute|[Ss]quare|[Pp]assage)`;
+const ARTICLES_FR = String.raw`(?:de\s+la\s+|de\s+l'|du\s+|des\s+|de\s+|d'|la\s+|le\s+)`;
+// Sans numéro pour la borner, une voie doit se reconnaître à son seul type. On
+// retire donc ceux qui sont AUSSI des noms communs ordinaires : cours, route,
+// place, chemin, passage, square. Mesuré, ils produisaient « cours du pétrole
+// monte », « route est longue » et « chemin de fer ».
+const VOIES_FR_SANS_NUMERO =
+  String.raw`(?:rue|avenue|av\.|boulevard|bd\.?|impasse|all[ée]e|quai)`;
+
 export const REGEX_PATTERNS = [
   { type: 'EMAIL', re: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, validate: null },
   // maskIfStructureMatches : la structure IBAN (pays connu + 2 chiffres + corps
@@ -180,7 +198,34 @@ export const REGEX_PATTERNS = [
     // une PERSONNE (mesuré sur tous-defauts.pdf). On ne met pas le drapeau `i`
     // sur tout le motif : les groupes [A-ZÀ-Ü] plus loin exigent délibérément
     // une majuscule pour le nom de la voie.
-    re: /\b\d{1,4}\s?(?:bis|ter)?\s*,?\s*(?:[Rr]ue|[Aa]venue|[Aa]v\.|[Bb]oulevard|[Bb]d\.?|[Ii]mpasse|[Aa]ll[ée]e|[Cc]hemin|[Pp]lace|[Cc]ours|[Qq]uai|[Rr]oute|[Ss]quare|[Pp]assage)\s+(?:de\s+la\s+|de\s+l'|du\s+|des\s+|de\s+|d'|la\s+|le\s+)?[A-Za-zÀ-ÿ0-9'-]+(?:\s+[A-ZÀ-Ü][a-zà-ÿ'-]+){0,3}/g,
+    re: new RegExp(String.raw`\b\d{1,4}\s?(?:bis|ter)?\s*,?\s*` + VOIES_FR
+      + String.raw`\s+` + ARTICLES_FR
+      + String.raw`?[A-Za-zÀ-ÿ0-9'-]+(?:\s+[A-ZÀ-Ü][a-zà-ÿ'-]+){0,3}`, 'g'),
+    validate: null
+  },
+  {
+    // Voie SANS numéro : « rue de la Liberté », « avenue Foch ».
+    //
+    // Le motif numéroté ci-dessus exige un numéro, ce qui laissait passer toute
+    // mention de voie sans lui. Mesuré : le modèle contextuel trouve pourtant
+    // « rue de la liberté » à 0,90, mais nos garde-fous la rejettent - en
+    // minuscules faute de majuscule, en capitales parce que « rue » et
+    // « liberté » sont au dictionnaire. Elle ne pouvait donc être masquée par
+    // personne.
+    //
+    // Une liste statique est admissible ici pour la même raison que les
+    // civilités : les types de voie sont une classe FERMÉE, une langue en
+    // compte une poignée et n'en invente pas.
+    //
+    // Le nom qui suit est EXIGÉ, sinon « je marche dans la rue » deviendrait
+    // une adresse. Le numéro n'étant plus là pour borner le sur-masquage,
+    // c'est ce nom qui borne.
+    type: 'ADRESSE',
+    re: new RegExp(String.raw`\b` + VOIES_FR_SANS_NUMERO + String.raw`\s+`
+      + ARTICLES_FR + String.raw`?[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9'-]*`
+      // La suite exige une majuscule, comme dans le motif numéroté : sinon elle
+      // avale le verbe qui suit (« route est longue »).
+      + String.raw`(?:\s+[A-ZÀ-Ü][a-zà-ÿ'-]+){0,2}`, 'gi'),
     validate: null
   },
   {

@@ -18,6 +18,8 @@ import {
   GLINER_MODEL, GLINER_VARIANTE, glinerModelUrl, GROUPES
 } from '../../src/engine/gliner.js';
 import { estVocabulaireCourant } from '../../src/engine/vocabulaire.js';
+import { detectGliner } from '../../src/engine/gliner.js';
+import { detectRegex } from '../../src/engine/regex-detect.js';
 import { createBatchedPipeline } from '../../src/engine/batch.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -73,10 +75,11 @@ async function chargerGliner() {
 
 // Les trois raisons de rejet, dans l'ordre où `estPlausiblePourLeType` les
 // applique. On les rejoue ici pour pouvoir NOMMER celle qui s'applique.
-function raisonDuRejet(type, valeur, seuil, score) {
+function raisonDuRejet(type, valeur, seuil, score, texteCase) {
   if (score < seuil) return `sous le seuil (${score.toFixed(2)} < ${seuil})`;
   if (!['PER', 'ORG', 'LOC'].includes(type)) return null;
-  if (!/\p{Lu}/u.test(valeur)) return 'aucune majuscule';
+  // La majuscule n'est exigée que si le texte source en porte : voir gliner.js.
+  if (texteCase && !/\p{Lu}/u.test(valeur)) return 'aucune majuscule';
   if (['ORG', 'LOC'].includes(type) && estVocabulaireCourant(valeur)) {
     return 'vocabulaire courant';
   }
@@ -91,14 +94,19 @@ const labels = groupe.labels;
 console.log(`groupe testé : ${labels.join(', ')}  (seuil ${groupe.seuil})\n`);
 for (const phrase of PHRASES) {
   const spans = await pipe(phrase, labels);
+  const texteCase = /\p{Lu}/u.test(phrase);
   console.log(phrase);
   if (!spans.length) console.log('    (le modèle ne rend rien)');
   for (const s of spans.sort((a, b) => b.score - a.score)) {
     const type = groupe.types[s.label];
-    const raison = raisonDuRejet(type, s.spanText, groupe.seuil, s.score);
+    const raison = raisonDuRejet(type, s.spanText, groupe.seuil, s.score, texteCase);
     console.log(`    ${(s.spanText + '                    ').slice(0, 22)}`
       + ` ${(type || s.label + '?').padEnd(6)} ${s.score.toFixed(2)}`
       + `  ${raison ? 'REJETÉ : ' + raison : 'gardé'}`);
   }
+  // Ce que le pipeline complet rend vraiment, regex comprise.
+  const final = [...detectRegex(phrase), ...await detectGliner(phrase, pipe)];
+  const noms = [...new Set(final.map(e => `${e.type}:${e.value}`))];
+  console.log('    => pipeline complet : ' + (noms.join(' | ') || 'rien'));
   console.log('');
 }
