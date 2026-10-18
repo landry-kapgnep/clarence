@@ -1,7 +1,14 @@
+
 # Clarence
 
 Extension Chrome qui retire les données personnelles d'un texte ou fichier
 avant de l'envoyer à Gemini/ChatGPT/Claude. Le traitement se fait entièrement du côté du navigateur
+
+
+
+https://github.com/user-attachments/assets/0296c3d0-6c54-43a5-baac-0551b3188704
+
+
 
 ## Principe
 
